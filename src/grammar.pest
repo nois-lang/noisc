@@ -1,23 +1,57 @@
-file = { SOI ~ program ~ EOI }
+file = { SOI ~ program? ~ EOI }
 
 program = { (statement | _COMMENT | NEWLINE)* }
 
-statement = { declaration }
+statement = { declaration | expression }
 
-declaration = { identifier ~ equals ~ expression }
+declaration = { identifier ~ EQUALS ~ expression }
 
-identifier = { ASCII_ALPHANUMERIC+ }
+identifier = @{ ASCII_ALPHANUMERIC+ }
 
-equals = _{ "=" }
+expression = { string_literal | number_literal | struct_init | enum_init | list_init | function }
 
-expression = { number }
+string_literal = ${ "\"" ~ inner_string ~ "\"" }
 
-number = @{
+inner_string = @{ char* }
+
+char = {
+    !("\"" | "\\") ~ ANY
+    | "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t")
+    | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
+}
+
+struct_init = {"todo"}
+
+enum_init = {"todo"}
+
+list_init = {"todo"}
+
+function = { multiline_function | arrow_function }
+
+multiline_function = { argument_list ~ BLOCK_OPEN ~ program? ~ BLOCK_CLOSE }
+
+argument_list = { identifier | (ARGS_OPEN ~ identifier? ~ (COMMA ~ identifier)* ~ COMMA? ~ ARGS_CLOSE) }
+
+arrow_function = {"todo"}
+
+number_literal = @{
     "-"?
     ~ ("0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT*)
     ~ ("." ~ ASCII_DIGIT*)?
     ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)?
 }
+
+EQUALS = _{ "=" }
+
+BLOCK_OPEN = _{ "{" }
+
+BLOCK_CLOSE = _{ "}" }
+
+ARGS_OPEN = _{ "(" }
+
+ARGS_CLOSE = _{ ")" }
+
+COMMA = _ { "," }
 
 _COMMENT   = _{ "//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
 
