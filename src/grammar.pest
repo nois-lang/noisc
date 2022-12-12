@@ -1,25 +1,24 @@
-file = { SOI ~ statements? ~ EOI }
+file = _{ SOI ~ block ~ NEWLINE* ~ EOI }
 
-statements = { (statement | _COMMENT | NEWLINE)* }
+statement = _{ declaration | expression | return_statement }
 
-statement = { declaration | expression }
+block = { NEWLINE* ~ (statement ~ NEWLINE+)* ~ statement? ~ NEWLINE* }
 
 declaration = { identifier ~ EQUALS ~ expression }
 
-expression = _{
-	expression_part ~ DOT ~ function_call   // method call
-    | expression_part                       // any other expression
-}
-
-expression_part = _{
-	string_literal
-    | number_literal
-    | struct_init
+expression = { (
+    struct_init
     | enum_init
     | list_init
     | function_init
     | function_call
-}
+	| string_literal
+    | number_literal
+    | identifier) ~ method_call* }
+
+method_call = { DOT ~ function_call }
+
+return_statement = { (RETURN_KEYWORD? ~ expression) | RETURN_KEYWORD }
 
 struct_init = {"todo"}
 
@@ -29,14 +28,14 @@ list_init = {"todo"}
 
 function_init = { multiline_function_init | arrow_function_init }
 
-multiline_function_init = { argument_list ~ BLOCK_OPEN ~ statements? ~ BLOCK_CLOSE }
+multiline_function_init = _{ argument_list ~ BLOCK_OPEN ~ block ~ BLOCK_CLOSE }
 
 argument_list = {
     identifier
     | (BRACE_OPEN ~ identifier? ~ (COMMA ~ identifier)* ~ COMMA? ~ BRACE_CLOSE)
 }
 
-arrow_function_init = {"todo"}
+arrow_function_init = _{"todo"}
 
 function_call = { identifier ~ BRACE_OPEN ~ parameter_list ~ BRACE_CLOSE }
 
@@ -65,6 +64,8 @@ char = {
     | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
 }
 
+RETURN_KEYWORD = _{ "return" }
+
 EQUALS = _{ "=" }
 
 BLOCK_OPEN = _{ "{" }
@@ -79,6 +80,6 @@ COMMA = _{ "," }
 
 DOT = _{ "." }
 
-_COMMENT   = _{ "//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
+COMMENT = _{ "//" ~ (!"\n" ~ ANY)* }
 
 WHITESPACE = _{ " " | "\t" }
