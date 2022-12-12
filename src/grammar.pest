@@ -7,8 +7,8 @@ block = { NEWLINE* ~ (statement ~ NEWLINE+)* ~ statement? ~ NEWLINE* }
 declaration = { identifier ~ EQUALS ~ expression }
 
 expression = _{ (
-    struct_init
-    | enum_init
+    struct_define
+    | enum_define
     | list_init
     | function_init
     | function_call
@@ -20,24 +20,24 @@ method_call = { DOT ~ function_call }
 
 return_statement = { RETURN_KEYWORD ~ expression? }
 
-struct_init = {"todo"}
+struct_define = { STRUCT_OP ~ BRACE_OPEN ~ expression? ~ (COMMA ~ expression)* ~ BRACE_CLOSE }
 
-enum_init = {"todo"}
+enum_define = { ENUM_OP ~ BRACE_OPEN ~ expression? ~ (COMMA ~ expression)* ~ BRACE_CLOSE }
 
 list_init = { BRACKET_OPEN ~ expression? ~ (COMMA ~ expression)* ~ BRACKET_CLOSE }
 
 function_init = { multiline_function_init | arrow_function_init }
 
-multiline_function_init = _{ argument_list ~ BLOCK_OPEN ~ block ~ BLOCK_CLOSE }
+multiline_function_init = _{ argument_list ~ BRACE_OPEN ~ block ~ BRACE_CLOSE }
 
 argument_list = {
     identifier
-    | (BRACE_OPEN ~ identifier? ~ (COMMA ~ identifier)* ~ COMMA? ~ BRACE_CLOSE)
+    | (PAREN_OPEN ~ identifier? ~ (COMMA ~ identifier)* ~ COMMA? ~ PAREN_CLOSE)
 }
 
 arrow_function_init = _{"todo"}
 
-function_call = { identifier ~ BRACE_OPEN ~ parameter_list ~ BRACE_CLOSE }
+function_call = { identifier ~ PAREN_OPEN ~ parameter_list ~ PAREN_CLOSE }
 
 parameter_list = { expression? ~ (COMMA ~ expression)* ~ COMMA? }
 
@@ -66,15 +66,19 @@ char = {
 
 RETURN_KEYWORD = _{ "return" }
 
+STRUCT_OP = _{ "#" }
+
+ENUM_OP = _{ "|" }
+
 EQUALS = _{ "=" }
 
-BLOCK_OPEN = _{ "{" }
+BRACE_OPEN = _{ "{" }
 
-BLOCK_CLOSE = _{ "}" }
+BRACE_CLOSE = _{ "}" }
 
-BRACE_OPEN = _{ "(" }
+PAREN_OPEN = _{ "(" }
 
-BRACE_CLOSE = _{ ")" }
+PAREN_CLOSE = _{ ")" }
 
 BRACKET_OPEN = _{ "[" }
 
