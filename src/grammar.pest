@@ -6,8 +6,13 @@ statement = { declaration | expression }
 
 declaration = { identifier ~ EQUALS ~ expression }
 
-expression = {
-    string_literal
+expression = _{
+	expression_part ~ DOT ~ function_call   // method call
+    | expression_part                       // any other expression
+}
+
+expression_part = _{
+	string_literal
     | number_literal
     | struct_init
     | enum_init
@@ -33,11 +38,7 @@ argument_list = {
 
 arrow_function_init = {"todo"}
 
-function_call = { prefix_function_call | suffix_function_call }
-
-prefix_function_call = { identifier ~ BRACE_OPEN ~ parameter_list ~ BRACE_CLOSE }
-
-suffix_function_call = {"todo"}
+function_call = { identifier ~ BRACE_OPEN ~ parameter_list ~ BRACE_CLOSE }
 
 parameter_list = { expression? ~ (COMMA ~ expression)* ~ COMMA? }
 
@@ -74,7 +75,9 @@ BRACE_OPEN = _{ "(" }
 
 BRACE_CLOSE = _{ ")" }
 
-COMMA = _ { "," }
+COMMA = _{ "," }
+
+DOT = _{ "." }
 
 _COMMENT   = _{ "//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
 
