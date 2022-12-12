@@ -1,23 +1,19 @@
-file = { SOI ~ program? ~ EOI }
+file = { SOI ~ statements? ~ EOI }
 
-program = { (statement | _COMMENT | NEWLINE)* }
+statements = { (statement | _COMMENT | NEWLINE)* }
 
 statement = { declaration | expression }
 
 declaration = { identifier ~ EQUALS ~ expression }
 
-identifier = @{ ASCII_ALPHANUMERIC+ }
-
-expression = { string_literal | number_literal | struct_init | enum_init | list_init | function }
-
-string_literal = ${ "\"" ~ inner_string ~ "\"" }
-
-inner_string = @{ char* }
-
-char = {
-    !("\"" | "\\") ~ ANY
-    | "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t")
-    | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
+expression = {
+    string_literal
+    | number_literal
+    | struct_init
+    | enum_init
+    | list_init
+    | function_init
+    | function_call
 }
 
 struct_init = {"todo"}
@@ -26,13 +22,26 @@ enum_init = {"todo"}
 
 list_init = {"todo"}
 
-function = { multiline_function | arrow_function }
+function_init = { multiline_function_init | arrow_function_init }
 
-multiline_function = { argument_list ~ BLOCK_OPEN ~ program? ~ BLOCK_CLOSE }
+multiline_function_init = { argument_list ~ BLOCK_OPEN ~ statements? ~ BLOCK_CLOSE }
 
-argument_list = { identifier | (ARGS_OPEN ~ identifier? ~ (COMMA ~ identifier)* ~ COMMA? ~ ARGS_CLOSE) }
+argument_list = {
+    identifier
+    | (BRACE_OPEN ~ identifier? ~ (COMMA ~ identifier)* ~ COMMA? ~ BRACE_CLOSE)
+}
 
-arrow_function = {"todo"}
+arrow_function_init = {"todo"}
+
+function_call = { prefix_function_call | suffix_function_call }
+
+prefix_function_call = { identifier ~ BRACE_OPEN ~ parameter_list ~ BRACE_CLOSE }
+
+suffix_function_call = {"todo"}
+
+parameter_list = { expression? ~ (COMMA ~ expression)* ~ COMMA? }
+
+identifier = @{ ASCII_ALPHANUMERIC+ }
 
 number_literal = @{
     "-"?
@@ -41,15 +50,29 @@ number_literal = @{
     ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)?
 }
 
+string_literal = @{string_literal_single | string_literal_double}
+
+string_literal_single = { "'" ~ inner_string ~ "'" }
+
+string_literal_double = { "\"" ~ inner_string ~ "\"" }
+
+inner_string = @{ char* }
+
+char = {
+    !("\"" | "\\" | "'" | "'") ~ ANY
+    | "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t")
+    | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
+}
+
 EQUALS = _{ "=" }
 
 BLOCK_OPEN = _{ "{" }
 
 BLOCK_CLOSE = _{ "}" }
 
-ARGS_OPEN = _{ "(" }
+BRACE_OPEN = _{ "(" }
 
-ARGS_CLOSE = _{ ")" }
+BRACE_CLOSE = _{ ")" }
 
 COMMA = _ { "," }
 
