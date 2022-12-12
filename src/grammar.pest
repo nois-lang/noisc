@@ -6,7 +6,7 @@ block = { NEWLINE* ~ (statement ~ NEWLINE+)* ~ statement? ~ NEWLINE* }
 
 declaration = { identifier ~ EQUALS ~ expression }
 
-expression = { (
+expression = _{ (
     struct_init
     | enum_init
     | list_init
@@ -24,7 +24,7 @@ struct_init = {"todo"}
 
 enum_init = {"todo"}
 
-list_init = {"todo"}
+list_init = { BRACKET_OPEN ~ expression? ~ (COMMA ~ expression)* ~ BRACKET_CLOSE }
 
 function_init = { multiline_function_init | arrow_function_init }
 
@@ -75,6 +75,10 @@ BLOCK_CLOSE = _{ "}" }
 BRACE_OPEN = _{ "(" }
 
 BRACE_CLOSE = _{ ")" }
+
+BRACKET_OPEN = _{ "[" }
+
+BRACKET_CLOSE = _{ "]" }
 
 COMMA = _{ "," }
 
