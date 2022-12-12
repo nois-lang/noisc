@@ -1,0 +1,24 @@
+file = { SOI ~ program ~ EOI }
+
+program = { (statement | _COMMENT | NEWLINE)* }
+
+statement = { declaration }
+
+declaration = { identifier ~ equals ~ expression }
+
+identifier = { ASCII_ALPHANUMERIC+ }
+
+equals = _{ "=" }
+
+expression = { number }
+
+number = @{
+    "-"?
+    ~ ("0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT*)
+    ~ ("." ~ ASCII_DIGIT*)?
+    ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)?
+}
+
+_COMMENT   = _{ "//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
+
+WHITESPACE = _{ " " | "\t" }
