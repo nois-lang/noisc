@@ -1,6 +1,6 @@
 file = _{ SOI ~ block ~ NEWLINE* ~ EOI }
 
-statement = _{ declaration | expression | return_statement }
+statement = _{ return_statement | declaration | expression }
 
 block = { NEWLINE* ~ (statement ~ NEWLINE+)* ~ statement? ~ NEWLINE* }
 
@@ -18,7 +18,7 @@ expression = { (
 
 method_call = { DOT ~ function_call }
 
-return_statement = { (RETURN_KEYWORD? ~ expression) | RETURN_KEYWORD }
+return_statement = { RETURN_KEYWORD ~ expression? }
 
 struct_init = {"todo"}
 
@@ -46,7 +46,7 @@ identifier = @{ ASCII_ALPHANUMERIC+ }
 number_literal = @{
     "-"?
     ~ ("0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT*)
-    ~ ("." ~ ASCII_DIGIT*)?
+    ~ ("." ~ ASCII_DIGIT+)?
     ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)?
 }
 
