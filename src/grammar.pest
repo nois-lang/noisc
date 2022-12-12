@@ -1,8 +1,8 @@
-file = _{ SOI ~ block ~ NEWLINE* ~ EOI }
+file = _{ SOI ~ block ~ EOI }
 
 statement = _{ return_statement | declaration | expression }
 
-block = { NEWLINE* ~ (statement ~ NEWLINE+)* ~ statement? ~ NEWLINE* }
+block = { NEWLINE* ~ (statement ~ NEWLINE+)* ~ statement? }
 
 declaration = { identifier ~ EQUALS ~ expression }
 
@@ -30,12 +30,12 @@ function_init = { multiline_function_init | arrow_function_init }
 
 multiline_function_init = _{ argument_list ~ BRACE_OPEN ~ block ~ BRACE_CLOSE }
 
+arrow_function_init = _{ argument_list? ~ ARROW_OP ~ (NEWLINE* ~ statement) }
+
 argument_list = {
     identifier
     | (PAREN_OPEN ~ identifier? ~ (COMMA ~ identifier)* ~ COMMA? ~ PAREN_CLOSE)
 }
-
-arrow_function_init = _{"todo"}
 
 function_call = { identifier ~ PAREN_OPEN ~ parameter_list ~ PAREN_CLOSE }
 
@@ -69,6 +69,8 @@ RETURN_KEYWORD = _{ "return" }
 STRUCT_OP = _{ "#" }
 
 ENUM_OP = _{ "|" }
+
+ARROW_OP = _{ "->" }
 
 EQUALS = _{ "=" }
 
