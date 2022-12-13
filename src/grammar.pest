@@ -7,7 +7,8 @@ block = { NEWLINE* ~ (statement ~ NEWLINE+)* ~ statement? }
 declaration = { identifier ~ EQUALS ~ expression }
 
 expression = _{ (
-    struct_define
+    struct_accessor
+    | struct_define
     | enum_define
     | list_init
     | function_init
@@ -15,6 +16,8 @@ expression = _{ (
 	| string_literal
     | number_literal
     | identifier) ~ method_call* }
+
+struct_accessor = { identifier ~ DOT ~ identifier }
 
 method_call = { DOT ~ function_call }
 
@@ -24,7 +27,12 @@ struct_define = { STRUCT_OP ~ BRACE_OPEN ~ expression? ~ (COMMA ~ expression)* ~
 
 enum_define = { ENUM_OP ~ BRACE_OPEN ~ expression? ~ (COMMA ~ expression)* ~ BRACE_CLOSE }
 
-list_init = { BRACKET_OPEN ~ expression? ~ (COMMA ~ expression)* ~ BRACKET_CLOSE }
+/// #DDFF88
+list_init = {
+    BRACKET_OPEN
+    ~ (NEWLINE* ~ expression ~ (NEWLINE* ~ COMMA ~ NEWLINE* ~ expression ~ NEWLINE*)*)?
+    ~ COMMA?
+    ~ NEWLINE* ~ BRACKET_CLOSE }
 
 function_init = { multiline_function_init | arrow_function_init }
 
@@ -41,8 +49,10 @@ function_call = { identifier ~ PAREN_OPEN ~ parameter_list ~ PAREN_CLOSE }
 
 parameter_list = { expression? ~ (COMMA ~ expression)* ~ COMMA? }
 
+/// #AA66CC
 identifier = @{ ASCII_ALPHANUMERIC+ }
 
+/// #EF9F76
 number_literal = @{
     "-"?
     ~ ("0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT*)
@@ -50,6 +60,7 @@ number_literal = @{
     ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)?
 }
 
+/// #A6D189
 string_literal = @{string_literal_single | string_literal_double}
 
 string_literal_single = { "'" ~ inner_string ~ "'" }

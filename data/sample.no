@@ -1,0 +1,50 @@
+(a, b) { a + b }
+(a, b) {
+    c = a + b
+    c
+}
+() {42}
+-> 42
+(a, b) -> a + b
+a -> a + 12
+[a, b, ..t] -> [a, b]
+
+fizBuzz = () {
+    mapToWord = i -> match [i % 3 == 0, i % 5 == 0] {
+        [true, true] -> "FizzBuzz",
+        [true, _   ] -> "Fizz",
+        [_   , true] -> "Buzz",
+        _ -> i ~ [C]
+    }
+    range(0, 100)
+        .map(+)
+        .map(mapToWord)
+        .join()
+}
+
+fizBuzzShort = ->
+    range(0, 100)
+        .map(+)
+        .map(i -> match [i % 3 == 0, i % 5 == 0] {
+            [true, true] -> "FizzBuzz",
+            [true, _   ] -> "Fizz",
+            [_   , true] -> "Buzz",
+            _ -> i ~ [C]
+        })
+        .join()
+
+
+User = #{id, name, age}
+user = User(12, 'Jack', 34)
+
+UserRole = |{Admin, Guest}
+
+dropDatabase = (user, role) ->
+    match role {
+        Admin -> drop(),
+        Guest -> panic('no access'),
+    }
+
+helloWorld = -> println('Hello, World!')
+
+helloWorldEarly = () {println('Hello, World!')}
