@@ -31,7 +31,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_number_literals() {
+    fn parse_numbers() {
         let source = r#"
 1
 12.5
@@ -42,16 +42,16 @@ mod tests {
             rule: Rule::file,
             tokens: [
                 block(0, 12, [
-                    number_literal(1, 2),
-                    number_literal(3, 7),
-                    number_literal(8, 12),
+                    expression(1, 2, [number(1, 2)]),
+                    expression(3, 7, [number(3, 7)]),
+                    expression(8, 12, [number(8, 12)]),
                 ])
             ]
         }
     }
 
     #[test]
-    fn parse_string_literals() {
+    fn parse_strings() {
         let source = r#"
 ""
 ''
@@ -67,14 +67,14 @@ mod tests {
             rule: Rule::file,
             tokens: [
                 block(0, 61, [
-                    string_literal(1, 3),
-                    string_literal(4, 6),
-                    string_literal(7, 10),
-                    string_literal(11, 17),
-                    string_literal(18, 21),
-                    string_literal(22, 38),
-                    string_literal(39, 50),
-                    string_literal(51, 61),
+                    expression(1, 3, [string(1, 3)]),
+                    expression(4, 6, [string(4, 6)]),
+                    expression(7, 10, [string(7, 10)]),
+                    expression(11, 17, [string(11, 17)]),
+                    expression(18, 21, [string(18, 21)]),
+                    expression(22, 38, [string(22, 38)]),
+                    expression(39, 50, [string(39, 50)]),
+                    expression(51, 61, [string(51, 61)]),
                 ])
             ]
         }
@@ -102,32 +102,30 @@ mod tests {
             rule: Rule::file,
             tokens: [
                 block(0, 85, [
-                    list_init(1, 3, []),
-                    list_init(4, 7, []),
-                    list_init(8, 11, []),
-                    list_init(12, 16, [
-                        number_literal(13, 14)
-                    ]),
-                    list_init(17, 26, [
-                        number_literal(18, 19),
-                        number_literal(21, 22),
-                        number_literal(24, 25),
-                    ]),
-                    list_init(27, 40, [
-                        number_literal(28, 29),
-                        number_literal(31, 32),
-                        string_literal(34, 39),
-                    ]),
-                    list_init(41, 55, [
-                        number_literal(42, 43),
-                        number_literal(45, 46),
-                        string_literal(48, 53),
-                    ]),
-                    list_init(56, 84, [
-                        number_literal(62, 63),
-                        number_literal(69, 70),
-                        string_literal(76, 81),
-                    ]),
+                    expression(1, 3, [list_init(1, 3, [])]),
+                    expression(4, 7, [list_init(4, 7, [])]),
+                    expression(8, 11, [list_init(8, 11, [])]),
+                    expression(12, 16, [list_init(12, 16, [expression(13, 14, [number(13, 14)])])]),
+                    expression(17, 26, [list_init(17, 26, [
+                        expression(18, 19, [number(18, 19)]),
+                        expression(21, 22, [number(21, 22)]),
+                        expression(24, 25, [number(24, 25)]),
+                    ])]),
+                    expression(27, 40, [list_init(27, 40, [
+                        expression(28, 29, [number(28, 29)]),
+                        expression(31, 32, [number(31, 32)]),
+                        expression(34, 39, [string(34, 39)]),
+                    ])]),
+                    expression(41, 55, [list_init(41, 55, [
+                        expression(42, 43, [number(42, 43)]),
+                        expression(45, 46, [number(45, 46)]),
+                        expression(48, 53, [string(48, 53)]),
+                    ])]),
+                    expression(56, 84, [list_init(56, 84, [
+                        expression(62, 63, [number(62, 63)]),
+                        expression(69, 70, [number(69, 70)]),
+                        expression(76, 81, [string(76, 81)]),
+                    ])]),
                 ])
             ]
         }
@@ -149,16 +147,16 @@ mod tests {
             rule: Rule::file,
             tokens: [
                 block(0, 37, [
-                    struct_define(1, 11, [
+                    expression(1, 11, [struct_define(1, 11, [
                         identifier(3, 4),
                         identifier(6, 7),
                         identifier(9, 10)
-                    ]),
-                    struct_define(12, 36, [
+                    ])]),
+                    expression(12, 36, [struct_define(12, 36, [
                         identifier(19, 20),
                         identifier(26, 27),
                         identifier(33, 34)
-                    ])
+                    ])])
                 ])
             ]
         }
@@ -182,16 +180,16 @@ mod tests {
             rule: Rule::file,
             tokens: [
                 block(0, 37, [
-                    enum_define(1, 11, [
+                    expression(1, 11, [enum_define(1, 11, [
                         identifier(3, 4),
                         identifier(6, 7),
                         identifier(9, 10)
-                    ]),
-                    enum_define(12, 36, [
+                    ])]),
+                    expression(12, 36, [enum_define(12, 36, [
                         identifier(19, 20),
                         identifier(26, 27),
                         identifier(33, 34)
-                    ])
+                    ])])
                 ])
             ]
         }
