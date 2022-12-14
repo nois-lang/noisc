@@ -1,20 +1,20 @@
 file = _{ SOI ~ block ~ EOI }
 
-statement = _{ return_statement | declaration | expression }
+statement = _{ return_statement | assignment | expression }
 
-block = { NEWLINE* ~ (statement ~ NEWLINE+)* ~ statement? }
+block = { N* ~ (statement ~ N+)* ~ statement? }
 
-declaration = { identifier ~ EQUALS ~ expression }
+assignment = { identifier ~ EQUALS ~ expression }
 
 expression = _{ (
-    struct_accessor
+    number_literal
     | struct_define
     | enum_define
     | list_init
     | function_init
     | function_call
 	| string_literal
-    | number_literal
+    | struct_accessor
     | identifier) ~ method_call* }
 
 struct_accessor = { identifier ~ DOT ~ identifier }
@@ -23,22 +23,30 @@ method_call = { DOT ~ function_call }
 
 return_statement = { RETURN_KEYWORD ~ expression? }
 
-struct_define = { STRUCT_OP ~ BRACE_OPEN ~ expression? ~ (COMMA ~ expression)* ~ BRACE_CLOSE }
+struct_define = {
+    STRUCT_OP ~ BRACE_OPEN
+    ~ N* ~ identifier? ~ N*
+    ~ (COMMA ~ N* ~ identifier ~ N*)*
+    ~ BRACE_CLOSE }
 
-enum_define = { ENUM_OP ~ BRACE_OPEN ~ expression? ~ (COMMA ~ expression)* ~ BRACE_CLOSE }
+enum_define = { 
+    ENUM_OP ~ BRACE_OPEN 
+    ~ N* ~ identifier? ~ N*
+    ~ (COMMA ~ N* ~ identifier ~ N*)*
+    ~ BRACE_CLOSE }
 
 /// #DDFF88
 list_init = {
     BRACKET_OPEN
-    ~ (NEWLINE* ~ expression ~ (NEWLINE* ~ COMMA ~ NEWLINE* ~ expression ~ NEWLINE*)*)?
+    ~ (N* ~ expression ~ (N* ~ COMMA ~ N* ~ expression ~ N*)*)?
     ~ COMMA?
-    ~ NEWLINE* ~ BRACKET_CLOSE }
+    ~ N* ~ BRACKET_CLOSE }
 
 function_init = { multiline_function_init | arrow_function_init }
 
 multiline_function_init = _{ argument_list ~ BRACE_OPEN ~ block ~ BRACE_CLOSE }
 
-arrow_function_init = _{ argument_list? ~ ARROW_OP ~ (NEWLINE* ~ statement) }
+arrow_function_init = _{ argument_list? ~ ARROW_OP ~ (N* ~ statement) }
 
 argument_list = {
     identifier
@@ -54,8 +62,7 @@ identifier = @{ ASCII_ALPHANUMERIC+ }
 
 /// #EF9F76
 number_literal = @{
-    "-"?
-    ~ ("0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT*)
+    ("0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT*)
     ~ ("." ~ ASCII_DIGIT+)?
     ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)?
 }
@@ -100,6 +107,8 @@ BRACKET_CLOSE = _{ "]" }
 COMMA = _{ "," }
 
 DOT = _{ "." }
+
+N = _{ NEWLINE }
 
 COMMENT = _{ "//" ~ (!"\n" ~ ANY)* }
 

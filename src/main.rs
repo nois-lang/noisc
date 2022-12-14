@@ -1,3 +1,4 @@
+#[macro_use]
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
@@ -17,6 +18,6 @@ fn main() {
         c
     }
     "#;
-    let try_parsed = NoisParser::parse(Rule::file, source);
-    println!("{:#?}", try_parsed.unwrap())
+    let parsed = NoisParser::parse(Rule::file, source).unwrap();
+    println!("{:#?}", parsed)
 }
