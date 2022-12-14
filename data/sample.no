@@ -59,10 +59,10 @@ a -> a + 12
 
 fizBuzz = () {
     mapToWord = i -> match [i % 3 == 0, i % 5 == 0] {
-        [true, true] -> "FizzBuzz",
-        [true, _   ] -> "Fizz",
-        [_   , true] -> "Buzz",
-        _ -> i ~ [C]
+        [true, true] => "FizzBuzz",
+        [true, _   ] => "Fizz",
+        [_   , true] => "Buzz",
+        _ => i.to([C])
     }
     range(0, 100)
         .map(i -> i + 1)
@@ -74,10 +74,10 @@ fizBuzzShort = ->
     range(0, 100)
         .map(i -> i + 1)
         .map(i -> match [i % 3 == 0, i % 5 == 0] {
-            [true, true] -> "FizzBuzz",
-            [true, _   ] -> "Fizz",
-            [_   , true] -> "Buzz",
-            _ -> i.to([C])
+            [true, true] => "FizzBuzz",
+            [true, _   ] => "Fizz",
+            [_   , true] => "Buzz",
+            _ => i.to([C])
         })
         .join()
 
@@ -89,8 +89,8 @@ UserRole = |{Admin, Guest}
 
 dropDatabase = (user, role) ->
     match role {
-        Admin -> drop(),
-        Guest -> panic('no access'),
+        Admin => drop(),
+        Guest => panic('no access'),
     }
 
 helloWorld = -> println('Hello, World!')

@@ -27,8 +27,8 @@ operand                       = _{
   | match_expression
   | struct_define
   | enum_define
-  | list_init
   | function_init
+  | list_init
   | function_call
   | string
   | identifier
@@ -82,7 +82,7 @@ match_expression		      =  {
     ~ match_clause ~ N* ~ (COMMA ~ N* ~ match_clause)* ~ COMMA? ~ N*
   ~ BRACE_CLOSE
 }
-  match_clause   	 	 	  =  { predicate_expression ~ ARROW_OP ~ expression }
+  match_clause   	 	 	  =  { predicate_expression ~ MATCH_OP ~ expression }
     predicate_expression      =  { expression }
 
 /// #AA66CC
@@ -99,6 +99,7 @@ char                          =  {
 }
 RETURN_KEYWORD                = _{ "return" }
 MATCH_KEYWORD                 = _{ "match" }
+MATCH_OP                      = _{ "=>" }
 STRUCT_OP                     = _{ "#" }
 ENUM_OP                       = _{ "|" }
 ARROW_OP                      = _{ "->" }
@@ -130,5 +131,5 @@ AMPERSAND                     = _{ "&" }
 PIPE                          = _{ "|" }
 PERCENT                       = _{ "%" }
 N                             = _{ NEWLINE }
-COMMENT                       = _{ "//" ~ (!"\n" ~ ANY)* }
+COMMENT                       = _{ "//" ~ (!"\n" ~ ANY)*}
 WHITESPACE                    = _{ " " | "\t" }
