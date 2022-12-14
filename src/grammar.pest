@@ -3,10 +3,10 @@ file                          = _{ SOI ~ block ~ EOI }
     statement                 = _{ return_statement | assignment | expression }
       return_statement        =  { RETURN_KEYWORD ~ expression? }
       assignment              =  { identifier ~ EQUALS ~ expression }
-      expression              =  { unary_expr ~ (binary_operator ~ unary_expr )* }
+      expression              =  { unary_expr ~ (binary_operator ~ unary_expr)* }
         unary_expr            = _{ unary_operator? ~ (operand | (PAREN_OPEN ~ expression ~ PAREN_CLOSE)) }
-        binary_operator       =  { "+" | "-" | "*" | "/" | "^" | "." }
-        unary_operator        =  { "-" | "!" }
+        binary_operator       =  { PLUS | MINUS | ASTERISK | SLASH | CARET | DOT }
+        unary_operator        =  { MINUS | EXCLAMATION }
 
 operand                       = _{
     number
@@ -21,8 +21,8 @@ operand                       = _{
   /// #EF9F76
   number                      = @{
     ("0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT*)
-    ~ ("." ~ ASCII_DIGIT+)?
-    ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)?
+    ~ (DOT ~ ASCII_DIGIT+)?
+    ~ (^"e" ~ (PLUS | MINUS)? ~ ASCII_DIGIT+)?
   }
   struct_define               =  {
     STRUCT_OP ~ BRACE_OPEN ~ N*
@@ -42,7 +42,7 @@ operand                       = _{
     ~ BRACKET_CLOSE }
   function_init               =  { block_function_init | arrow_function_init }
     block_function_init       = _{ argument_list ~ BRACE_OPEN ~ block ~ BRACE_CLOSE }
-    arrow_function_init       = _{ argument_list? ~ ARROW_OP ~ (N* ~ statement) }
+    arrow_function_init       = _{ argument_list? ~ ARROW_OP ~ N* ~ statement }
       argument_list           =  {
         identifier ~ N*
         | (PAREN_OPEN ~ N*
@@ -56,8 +56,8 @@ operand                       = _{
 identifier                    = @{ ASCII_ALPHANUMERIC+ }
 /// #A6D189
 string                        = @{string_single | string_double}
-string_single                 =  { "'" ~ inner_string ~ "'" }
-string_double                 =  { "\"" ~ inner_string ~ "\"" }
+string_single                 =  { QUOTE ~ inner_string ~ QUOTE }
+string_double                 =  { DOUBLE_QUOTE ~ inner_string ~ DOUBLE_QUOTE }
 inner_string                  = @{ char* }
 char                          =  {
     !("\"" | "\\" | "'" | "'") ~ ANY
@@ -68,15 +68,23 @@ RETURN_KEYWORD                = _{ "return" }
 STRUCT_OP                     = _{ "#" }
 ENUM_OP                       = _{ "|" }
 ARROW_OP                      = _{ "->" }
-EQUALS                        = _{ "    =" }
+EQUALS                        = _{ "=" }
 BRACE_OPEN                    = _{ "{" }
 BRACE_CLOSE                   = _{ "}" }
 PAREN_OPEN                    = _{ "(" }
 PAREN_CLOSE                   = _{ ")" }
 BRACKET_OPEN                  = _{ "[" }
 BRACKET_CLOSE                 = _{ "]" }
+QUOTE                         = _{ "'" }
+DOUBLE_QUOTE                  = _{ "\"" }
 COMMA                         = _{ "," }
 DOT                           = _{ "." }
+MINUS                         = _{ !ARROW_OP ~ "-" }
+PLUS                          = _{ "+" }
+ASTERISK                      = _{ "*" }
+EXCLAMATION                   = _{ "!" }
+SLASH                         = _{ "/" }
+CARET                         = _{ "^" }
 N                             = _{ NEWLINE }
 COMMENT                       = _{ "//" ~ (!"\n" ~ ANY)* }
 WHITESPACE                    = _{ " " | "\t" }
