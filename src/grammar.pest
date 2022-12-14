@@ -1,14 +1,16 @@
 file = _{ SOI ~ block ~ EOI }
 
-statement = _{ return_statement | assignment | expression }
-
 block = { N* ~ (statement ~ N+)* ~ statement? }
+
+statement = _{ return_statement | assignment | expression }
 
 assignment = { identifier ~ EQUALS ~ expression }
 
-expression = _{ op_expression | expression_part }
+expression = { unary_expr ~ (binary_operator ~ unary_expr )* }
 
-expression_part = _{
+unary_expr = _{ unary_operator? ~ (operand | (PAREN_OPEN ~ expression ~ PAREN_CLOSE)) }
+
+operand = _{
     (number_literal
     | struct_define
     | enum_define
@@ -16,21 +18,12 @@ expression_part = _{
     | function_init
     | function_call
 	| string_literal
-    | struct_accessor
-    | identifier) ~ method_call*
+    | identifier)
 }
 
-op_expression = { unary_expr ~ (binary_operator ~ unary_expr )+ }
-
-unary_expr = { unary_operator? ~ (expression_part | (PAREN_OPEN ~ expression ~ PAREN_CLOSE)) }
-
-binary_operator = { "+" | "-" | "*" | "/" | "^" }
+binary_operator = { "+" | "-" | "*" | "/" | "^" | "." }
 
 unary_operator = { "-" | "!" }
-
-struct_accessor = { identifier ~ DOT ~ identifier }
-
-method_call = { DOT ~ function_call }
 
 return_statement = { RETURN_KEYWORD ~ expression? }
 
@@ -64,9 +57,9 @@ argument_list = {
     | (PAREN_OPEN ~ identifier? ~ (COMMA ~ identifier)* ~ COMMA? ~ PAREN_CLOSE)
 }
 
-function_call = { identifier ~ PAREN_OPEN ~ parameter_list ~ PAREN_CLOSE }
+function_call = { identifier ~ PAREN_OPEN ~ N* ~ parameter_list ~ N* ~ PAREN_CLOSE }
 
-parameter_list = { expression? ~ (COMMA ~ expression)* ~ COMMA? }
+parameter_list = { expression? ~ N* ~ (COMMA ~ N* ~ expression)* ~ COMMA? }
 
 /// #AA66CC
 identifier = @{ ASCII_ALPHANUMERIC+ }
