@@ -2,11 +2,11 @@ file                          = _{ SOI ~ block ~ EOI }
   block                       =  { N* ~ (statement ~ N+)* ~ statement? }
     statement                 = _{ return_statement | assignment | expression }
       return_statement        =  { RETURN_KEYWORD ~ expression? }
-      assignment              =  { identifier ~ EQUALS ~ expression }
+      assignment              =  { assignee ~ EQUALS ~ expression }
       expression              =  { unary_expr ~ (binary_operator ~ unary_expr)* }
         unary_expr            = _{ unary_operator? ~ (operand | (PAREN_OPEN ~ expression ~ PAREN_CLOSE)) }
         binary_operator       =  { PLUS | MINUS | ASTERISK | SLASH | CARET | DOT | EQUALS_OP | GREATER | LESS | AND_OP | OR_OP }
-        unary_operator        =  { MINUS | EXCLAMATION }
+        unary_operator        =  { MINUS | EXCLAMATION | SPREAD_OP }
 
 operand                       = _{
     number
@@ -44,13 +44,22 @@ operand                       = _{
     block_function_init       = _{ argument_list ~ BRACE_OPEN ~ block ~ BRACE_CLOSE }
     arrow_function_init       = _{ argument_list? ~ ARROW_OP ~ N* ~ statement }
       argument_list           =  {
-        identifier ~ N*
+        assignee ~ N*
         | (PAREN_OPEN ~ N*
-          ~ identifier? ~ N* ~ (COMMA ~ N* ~ identifier ~ N*)* ~ COMMA? ~ N*
+          ~ assignee? ~ N* ~ (COMMA ~ N* ~ assignee ~ N*)* ~ COMMA? ~ N*
         ~ PAREN_CLOSE)
       }
   function_call               =  { identifier ~ PAREN_OPEN ~ N* ~ parameter_list ~ N* ~ PAREN_CLOSE }
     parameter_list            =  { expression? ~ N* ~ (COMMA ~ N* ~ expression)* ~ COMMA? }
+
+assignee                      =  { identifier | pattern }
+  pattern                     = _{
+    BRACKET_OPEN ~ N*
+    ~ (N* ~ pattern_item? ~ (N* ~ COMMA ~ N* ~ pattern_item ~ N*)*)?
+    ~ COMMA? ~ N*
+    ~ BRACKET_CLOSE
+  }
+    pattern_item              = { HOLE_OP | SPREAD_OP? ~ identifier }
 
 /// #AA66CC
 identifier                    = @{ ASCII_ALPHANUMERIC+ }
@@ -71,6 +80,8 @@ ARROW_OP                      = _{ "->" }
 EQUALS_OP                     = _{ "==" }
 AND_OP                        = _{ "&&" }
 OR_OP                         = _{ "||" }
+SPREAD_OP                     =  { ".." }
+HOLE_OP                       =  { "_" }
 EQUALS                        = _{ !EQUALS_OP ~ "=" }
 BRACE_OPEN                    = _{ "{" }
 BRACE_CLOSE                   = _{ "}" }
@@ -81,7 +92,7 @@ BRACKET_CLOSE                 = _{ "]" }
 QUOTE                         = _{ "'" }
 DOUBLE_QUOTE                  = _{ "\"" }
 COMMA                         = _{ "," }
-DOT                           = _{ "." }
+DOT                           = _{ !SPREAD_OP ~ "." }
 MINUS                         = _{ !ARROW_OP ~ "-" }
 PLUS                          = _{ "+" }
 ASTERISK                      = _{ "*" }
