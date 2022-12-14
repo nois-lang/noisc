@@ -22,7 +22,9 @@ file                          = _{ SOI ~ block ~ EOI }
         unary_operator        =  { MINUS | EXCLAMATION | SPREAD_OP }
 
 operand                       = _{
-    number
+    HOLE_OP
+  | number
+  | match_expression
   | struct_define
   | enum_define
   | list_init
@@ -73,7 +75,15 @@ assignee                      =  { identifier | pattern }
     ~ COMMA? ~ N*
     ~ BRACKET_CLOSE
   }
-    pattern_item              = { HOLE_OP | SPREAD_OP? ~ identifier }
+    pattern_item              =  { HOLE_OP | SPREAD_OP? ~ identifier }
+
+match_expression		      =  {
+  MATCH_KEYWORD ~ expression ~ BRACE_OPEN ~ N*
+    ~ match_clause ~ N* ~ (COMMA ~ N* ~ match_clause)* ~ COMMA? ~ N*
+  ~ BRACE_CLOSE
+}
+  match_clause   	 	 	  =  { predicate_expression ~ ARROW_OP ~ expression }
+    predicate_expression      =  { expression }
 
 /// #AA66CC
 identifier                    = @{ ASCII_ALPHANUMERIC+ }
@@ -88,6 +98,7 @@ char                          =  {
     | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
 }
 RETURN_KEYWORD                = _{ "return" }
+MATCH_KEYWORD                 = _{ "match" }
 STRUCT_OP                     = _{ "#" }
 ENUM_OP                       = _{ "|" }
 ARROW_OP                      = _{ "->" }

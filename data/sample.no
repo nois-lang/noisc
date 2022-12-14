@@ -65,19 +65,19 @@ fizBuzz = () {
         _ -> i ~ [C]
     }
     range(0, 100)
-        .map(+)
+        .map(i -> i + 1)
         .map(mapToWord)
         .join()
 }
 
 fizBuzzShort = ->
     range(0, 100)
-        .map(+)
+        .map(i -> i + 1)
         .map(i -> match [i % 3 == 0, i % 5 == 0] {
             [true, true] -> "FizzBuzz",
             [true, _   ] -> "Fizz",
             [_   , true] -> "Buzz",
-            _ -> i ~ [C]
+            _ -> i.to([C])
         })
         .join()
 
