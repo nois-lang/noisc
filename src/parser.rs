@@ -4,7 +4,7 @@ pub struct NoisParser;
 
 #[cfg(test)]
 mod tests {
-    use pest::{parses_to, Parser};
+    use pest::parses_to;
 
     use crate::parser::*;
 
@@ -35,13 +35,14 @@ mod tests {
         let source = r#"
 1
 12.5
-1e21"#;
+1e21
+"#;
         parses_to! {
             parser: NoisParser,
             input: source,
             rule: Rule::file,
             tokens: [
-                block(0, 12, [
+                block(0, 13, [
                     expression(1, 2, [number(1, 2)]),
                     expression(3, 7, [number(3, 7)]),
                     expression(8, 12, [number(8, 12)]),
@@ -60,13 +61,14 @@ mod tests {
 'a'
 'a\\\b\f\n\r\tb'
 'a\u1234bc'
-'hey 😎'"#;
+'hey 😎'
+"#;
         parses_to! {
             parser: NoisParser,
             input: source,
             rule: Rule::file,
             tokens: [
-                block(0, 61, [
+                block(0, 62, [
                     expression(1, 3, [string(1, 3)]),
                     expression(4, 6, [string(4, 6)]),
                     expression(7, 10, [string(7, 10)]),
@@ -172,8 +174,6 @@ mod tests {
     C
 }
 "#;
-        let pairs = NoisParser::parse(Rule::file, source).unwrap();
-        println!("{}", pairs);
         parses_to! {
             parser: NoisParser,
             input: source,

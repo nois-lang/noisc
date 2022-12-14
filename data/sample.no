@@ -1,3 +1,51 @@
+// commment
+
+// numbers
+1
+12.5
+1e21
+
+// strings
+""
+''
+"a"
+"a\nb"
+'a'
+'a\\\b\f\n\r\tb'
+'a\u1234bc'
+'hey 😎'
+
+// lists
+[]
+[ ]
+[,]
+[1,]
+[1, 2, 3]
+[1, 2, 'abc']
+[1, 2, 'abc',]
+[
+    1,
+    2,
+    'abc',
+]
+
+// struct_defines
+#{a, b, c}
+#{
+    a,
+    b,
+    c
+}
+
+// enum_defines
+|{A, B, C}
+|{
+    A,
+    B,
+    C
+}
+
+// todo
 (a, b) { a + b }
 (a, b) {
     c = a + b
