@@ -3,9 +3,22 @@ file                          = _{ SOI ~ block ~ EOI }
     statement                 = _{ return_statement | assignment | expression }
       return_statement        =  { RETURN_KEYWORD ~ expression? }
       assignment              =  { assignee ~ EQUALS ~ expression }
-      expression              =  { unary_expr ~ (binary_operator ~ unary_expr)* }
+      expression              =  { unary_expr ~ (N* ~ binary_operator ~ N* ~ unary_expr)* }
         unary_expr            = _{ unary_operator? ~ (operand | (PAREN_OPEN ~ expression ~ PAREN_CLOSE)) }
-        binary_operator       =  { PLUS | MINUS | ASTERISK | SLASH | CARET | DOT | EQUALS_OP | GREATER | LESS | AND_OP | OR_OP }
+        binary_operator       =  {
+            PLUS
+          | MINUS
+          | ASTERISK
+          | SLASH
+          | CARET
+          | PERCENT
+          | DOT
+          | EQUALS_OP
+          | GREATER
+          | LESS
+          | AND_OP
+          | OR_OP
+        }
         unary_operator        =  { MINUS | EXCLAMATION | SPREAD_OP }
 
 operand                       = _{
@@ -53,7 +66,8 @@ operand                       = _{
     parameter_list            =  { expression? ~ N* ~ (COMMA ~ N* ~ expression)* ~ COMMA? }
 
 assignee                      =  { identifier | pattern }
-  pattern                     = _{
+  pattern                     = _{ HOLE_OP | list_pattern }
+  list_pattern                = _{
     BRACKET_OPEN ~ N*
     ~ (N* ~ pattern_item? ~ (N* ~ COMMA ~ N* ~ pattern_item ~ N*)*)?
     ~ COMMA? ~ N*
@@ -103,6 +117,7 @@ GREATER                       = _{ ">" }
 LESS                          = _{ "<" }
 AMPERSAND                     = _{ "&" }
 PIPE                          = _{ "|" }
+PERCENT                       = _{ "%" }
 N                             = _{ NEWLINE }
 COMMENT                       = _{ "//" ~ (!"\n" ~ ANY)* }
 WHITESPACE                    = _{ " " | "\t" }
