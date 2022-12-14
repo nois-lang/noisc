@@ -6,8 +6,10 @@ block = { N* ~ (statement ~ N+)* ~ statement? }
 
 assignment = { identifier ~ EQUALS ~ expression }
 
-expression = _{ (
-    number_literal
+expression = _{ op_expression | expression_part }
+
+expression_part = _{
+    (number_literal
     | struct_define
     | enum_define
     | list_init
@@ -15,7 +17,16 @@ expression = _{ (
     | function_call
 	| string_literal
     | struct_accessor
-    | identifier) ~ method_call* }
+    | identifier) ~ method_call*
+}
+
+op_expression = { unary_expr ~ (binary_operator ~ unary_expr )+ }
+
+unary_expr = { unary_operator? ~ (expression_part | (PAREN_OPEN ~ expression ~ PAREN_CLOSE)) }
+
+binary_operator = { "+" | "-" | "*" | "/" | "^" }
+
+unary_operator = { "-" | "!" }
 
 struct_accessor = { identifier ~ DOT ~ identifier }
 
@@ -29,8 +40,8 @@ struct_define = {
     ~ (COMMA ~ N* ~ identifier ~ N*)*
     ~ BRACE_CLOSE }
 
-enum_define = { 
-    ENUM_OP ~ BRACE_OPEN 
+enum_define = {
+    ENUM_OP ~ BRACE_OPEN
     ~ N* ~ identifier? ~ N*
     ~ (COMMA ~ N* ~ identifier ~ N*)*
     ~ BRACE_CLOSE }
@@ -75,6 +86,8 @@ string_literal_single = { "'" ~ inner_string ~ "'" }
 string_literal_double = { "\"" ~ inner_string ~ "\"" }
 
 inner_string = @{ char* }
+
+e = { "" }
 
 char = {
     !("\"" | "\\" | "'" | "'") ~ ANY
