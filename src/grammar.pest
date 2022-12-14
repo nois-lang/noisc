@@ -5,7 +5,7 @@ file                          = _{ SOI ~ block ~ EOI }
       assignment              =  { identifier ~ EQUALS ~ expression }
       expression              =  { unary_expr ~ (binary_operator ~ unary_expr)* }
         unary_expr            = _{ unary_operator? ~ (operand | (PAREN_OPEN ~ expression ~ PAREN_CLOSE)) }
-        binary_operator       =  { PLUS | MINUS | ASTERISK | SLASH | CARET | DOT }
+        binary_operator       =  { PLUS | MINUS | ASTERISK | SLASH | CARET | DOT | EQUALS_OP | GREATER | LESS | AND_OP | OR_OP }
         unary_operator        =  { MINUS | EXCLAMATION }
 
 operand                       = _{
@@ -68,7 +68,10 @@ RETURN_KEYWORD                = _{ "return" }
 STRUCT_OP                     = _{ "#" }
 ENUM_OP                       = _{ "|" }
 ARROW_OP                      = _{ "->" }
-EQUALS                        = _{ "=" }
+EQUALS_OP                     = _{ "==" }
+AND_OP                        = _{ "&&" }
+OR_OP                         = _{ "||" }
+EQUALS                        = _{ !EQUALS_OP ~ "=" }
 BRACE_OPEN                    = _{ "{" }
 BRACE_CLOSE                   = _{ "}" }
 PAREN_OPEN                    = _{ "(" }
@@ -85,6 +88,10 @@ ASTERISK                      = _{ "*" }
 EXCLAMATION                   = _{ "!" }
 SLASH                         = _{ "/" }
 CARET                         = _{ "^" }
+GREATER                       = _{ ">" }
+LESS                          = _{ "<" }
+AMPERSAND                     = _{ "&" }
+PIPE                          = _{ "|" }
 N                             = _{ NEWLINE }
 COMMENT                       = _{ "//" ~ (!"\n" ~ ANY)* }
 WHITESPACE                    = _{ " " | "\t" }
