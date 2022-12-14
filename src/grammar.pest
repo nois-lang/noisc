@@ -1,121 +1,82 @@
-file = _{ SOI ~ block ~ EOI }
+file                          = _{ SOI ~ block ~ EOI }
+  block                       =  { N* ~ (statement ~ N+)* ~ statement? }
+    statement                 = _{ return_statement | assignment | expression }
+      return_statement        =  { RETURN_KEYWORD ~ expression? }
+      assignment              =  { identifier ~ EQUALS ~ expression }
+      expression              =  { unary_expr ~ (binary_operator ~ unary_expr )* }
+        unary_expr            = _{ unary_operator? ~ (operand | (PAREN_OPEN ~ expression ~ PAREN_CLOSE)) }
+        binary_operator       =  { "+" | "-" | "*" | "/" | "^" | "." }
+        unary_operator        =  { "-" | "!" }
 
-block = { N* ~ (statement ~ N+)* ~ statement? }
-
-statement = _{ return_statement | assignment | expression }
-
-assignment = { identifier ~ EQUALS ~ expression }
-
-expression = { unary_expr ~ (binary_operator ~ unary_expr )* }
-
-unary_expr = _{ unary_operator? ~ (operand | (PAREN_OPEN ~ expression ~ PAREN_CLOSE)) }
-
-operand = _{
-    (number_literal
-    | struct_define
-    | enum_define
-    | list_init
-    | function_init
-    | function_call
-	| string_literal
-    | identifier)
+operand                       = _{
+    number
+  | struct_define
+  | enum_define
+  | list_init
+  | function_init
+  | function_call
+  | string
+  | identifier
 }
-
-binary_operator = { "+" | "-" | "*" | "/" | "^" | "." }
-
-unary_operator = { "-" | "!" }
-
-return_statement = { RETURN_KEYWORD ~ expression? }
-
-struct_define = {
-    STRUCT_OP ~ BRACE_OPEN
-    ~ N* ~ identifier? ~ N*
-    ~ (COMMA ~ N* ~ identifier ~ N*)*
-    ~ BRACE_CLOSE }
-
-enum_define = {
-    ENUM_OP ~ BRACE_OPEN
-    ~ N* ~ identifier? ~ N*
-    ~ (COMMA ~ N* ~ identifier ~ N*)*
-    ~ BRACE_CLOSE }
-
-/// #DDFF88
-list_init = {
-    BRACKET_OPEN
-    ~ (N* ~ expression ~ (N* ~ COMMA ~ N* ~ expression ~ N*)*)?
-    ~ COMMA?
-    ~ N* ~ BRACKET_CLOSE }
-
-function_init = { multiline_function_init | arrow_function_init }
-
-multiline_function_init = _{ argument_list ~ BRACE_OPEN ~ block ~ BRACE_CLOSE }
-
-arrow_function_init = _{ argument_list? ~ ARROW_OP ~ (N* ~ statement) }
-
-argument_list = {
-    identifier
-    | (PAREN_OPEN ~ identifier? ~ (COMMA ~ identifier)* ~ COMMA? ~ PAREN_CLOSE)
-}
-
-function_call = { identifier ~ PAREN_OPEN ~ N* ~ parameter_list ~ N* ~ PAREN_CLOSE }
-
-parameter_list = { expression? ~ N* ~ (COMMA ~ N* ~ expression)* ~ COMMA? }
-
-/// #AA66CC
-identifier = @{ ASCII_ALPHANUMERIC+ }
-
-/// #EF9F76
-number_literal = @{
+  /// #EF9F76
+  number                      = @{
     ("0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT*)
     ~ ("." ~ ASCII_DIGIT+)?
     ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)?
-}
+  }
+  struct_define               =  {
+    STRUCT_OP ~ BRACE_OPEN ~ N*
+      ~ identifier? ~ N*
+      ~ (COMMA ~ N* ~ identifier ~ N*)*
+    ~ BRACE_CLOSE }
+  enum_define                 =  {
+    ENUM_OP ~ BRACE_OPEN ~ N*
+      ~ identifier? ~ N*
+      ~ (COMMA ~ N* ~ identifier ~ N*)*
+    ~ BRACE_CLOSE }
+  /// #DDFF88
+  list_init                   =  {
+    BRACKET_OPEN ~ N*
+      ~ (N* ~ expression ~ (N* ~ COMMA ~ N* ~ expression ~ N*)*)?
+      ~ COMMA? ~ N*
+    ~ BRACKET_CLOSE }
+  function_init               =  { block_function_init | arrow_function_init }
+    block_function_init       = _{ argument_list ~ BRACE_OPEN ~ block ~ BRACE_CLOSE }
+    arrow_function_init       = _{ argument_list? ~ ARROW_OP ~ (N* ~ statement) }
+      argument_list           =  {
+        identifier ~ N*
+        | (PAREN_OPEN ~ N*
+          ~ identifier? ~ N* ~ (COMMA ~ N* ~ identifier ~ N*)* ~ COMMA? ~ N*
+        ~ PAREN_CLOSE)
+      }
+  function_call               =  { identifier ~ PAREN_OPEN ~ N* ~ parameter_list ~ N* ~ PAREN_CLOSE }
+    parameter_list            =  { expression? ~ N* ~ (COMMA ~ N* ~ expression)* ~ COMMA? }
 
+/// #AA66CC
+identifier                    = @{ ASCII_ALPHANUMERIC+ }
 /// #A6D189
-string_literal = @{string_literal_single | string_literal_double}
-
-string_literal_single = { "'" ~ inner_string ~ "'" }
-
-string_literal_double = { "\"" ~ inner_string ~ "\"" }
-
-inner_string = @{ char* }
-
-e = { "" }
-
-char = {
+string                        = @{string_single | string_double}
+string_single                 =  { "'" ~ inner_string ~ "'" }
+string_double                 =  { "\"" ~ inner_string ~ "\"" }
+inner_string                  = @{ char* }
+char                          =  {
     !("\"" | "\\" | "'" | "'") ~ ANY
     | "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t")
     | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
 }
-
-RETURN_KEYWORD = _{ "return" }
-
-STRUCT_OP = _{ "#" }
-
-ENUM_OP = _{ "|" }
-
-ARROW_OP = _{ "->" }
-
-EQUALS = _{ "=" }
-
-BRACE_OPEN = _{ "{" }
-
-BRACE_CLOSE = _{ "}" }
-
-PAREN_OPEN = _{ "(" }
-
-PAREN_CLOSE = _{ ")" }
-
-BRACKET_OPEN = _{ "[" }
-
-BRACKET_CLOSE = _{ "]" }
-
-COMMA = _{ "," }
-
-DOT = _{ "." }
-
-N = _{ NEWLINE }
-
-COMMENT = _{ "//" ~ (!"\n" ~ ANY)* }
-
-WHITESPACE = _{ " " | "\t" }
+RETURN_KEYWORD                = _{ "return" }
+STRUCT_OP                     = _{ "#" }
+ENUM_OP                       = _{ "|" }
+ARROW_OP                      = _{ "->" }
+EQUALS                        = _{ "    =" }
+BRACE_OPEN                    = _{ "{" }
+BRACE_CLOSE                   = _{ "}" }
+PAREN_OPEN                    = _{ "(" }
+PAREN_CLOSE                   = _{ ")" }
+BRACKET_OPEN                  = _{ "[" }
+BRACKET_CLOSE                 = _{ "]" }
+COMMA                         = _{ "," }
+DOT                           = _{ "." }
+N                             = _{ NEWLINE }
+COMMENT                       = _{ "//" ~ (!"\n" ~ ANY)* }
+WHITESPACE                    = _{ " " | "\t" }
