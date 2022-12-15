@@ -1,0 +1,19 @@
+name: main
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Cargo
+        run: sudo apt install cargo
+
+      - name: Test
+        run: cargo test --verbose
