@@ -1,4 +1,4 @@
-// commment
+// comment
 
 // numbers
 1

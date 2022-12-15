@@ -4,22 +4,23 @@ file                          = _{ SOI ~ block ~ EOI }
       return_statement        =  { RETURN_KEYWORD ~ expression? }
       assignment              =  { assignee ~ EQUALS ~ expression }
       expression              =  { unary_expr ~ (N* ~ binary_operator ~ N* ~ unary_expr)* }
-        unary_expr            = _{ unary_operator? ~ (operand | (PAREN_OPEN ~ expression ~ PAREN_CLOSE)) }
+        unary_expr            = _{ unary_operator? ~ (operand | (PAREN_OPEN ~ N* ~ expression ~ N* ~ PAREN_CLOSE)) }
         binary_operator       =  {
-            PLUS
-          | MINUS
-          | ASTERISK
-          | SLASH
-          | CARET
-          | PERCENT
+            ADD_OP
+          | SUBTRACT_OP
+          | MULTIPLY_OP
+          | DIVIDE_OP
+          | POWER_OP
+          | REMAINDER_OP
           | DOT
           | EQUALS_OP
-          | GREATER
-          | LESS
+          | NOT_EQUALS_OP
+          | GREATER_OP
+          | LESS_OP
           | AND_OP
           | OR_OP
         }
-        unary_operator        =  { MINUS | EXCLAMATION | SPREAD_OP }
+        unary_operator        =  { SUBTRACT_OP | NOT_OP | SPREAD_OP }
 
 operand                       = _{
     HOLE_OP
@@ -36,8 +37,8 @@ operand                       = _{
   /// #EF9F76
   number                      = @{
     ("0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT*)
-    ~ (DOT ~ ASCII_DIGIT+)?
-    ~ (^"e" ~ (PLUS | MINUS)? ~ ASCII_DIGIT+)?
+    ~ ("." ~ ASCII_DIGIT+)?
+    ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)?
   }
   struct_define               =  {
     STRUCT_OP ~ BRACE_OPEN ~ N*
@@ -77,12 +78,12 @@ assignee                      =  { identifier | pattern }
   }
     pattern_item              =  { HOLE_OP | SPREAD_OP? ~ identifier }
 
-match_expression		      =  {
+match_expression              =  {
   MATCH_KEYWORD ~ expression ~ BRACE_OPEN ~ N*
     ~ match_clause ~ N* ~ (COMMA ~ N* ~ match_clause)* ~ COMMA? ~ N*
   ~ BRACE_CLOSE
 }
-  match_clause   	 	 	  =  { predicate_expression ~ MATCH_OP ~ expression }
+  match_clause                   =  { predicate_expression ~ MATCH_OP ~ expression }
     predicate_expression      =  { expression }
 
 /// #AA66CC
@@ -103,9 +104,19 @@ MATCH_OP                      = _{ "=>" }
 STRUCT_OP                     = _{ "#" }
 ENUM_OP                       = _{ "|" }
 ARROW_OP                      = _{ "->" }
-EQUALS_OP                     = _{ "==" }
-AND_OP                        = _{ "&&" }
-OR_OP                         = _{ "||" }
+EQUALS_OP                     =  { "==" }
+NOT_EQUALS_OP                 =  { "!=" }
+AND_OP                        =  { "&&" }
+OR_OP                         =  { "||" }
+NOT_OP                        =  { !NOT_EQUALS_OP ~ "!" }
+SUBTRACT_OP                   =  { !ARROW_OP ~ "-" }
+ADD_OP                        =  { "+" }
+MULTIPLY_OP                   =  { "*" }
+DIVIDE_OP                     =  { "/" }
+POWER_OP                      =  { "^" }
+GREATER_OP                    =  { ">" }
+LESS_OP                       =  { "<" }
+REMAINDER_OP                  =  { "%" }
 SPREAD_OP                     =  { ".." }
 HOLE_OP                       =  { "_" }
 EQUALS                        = _{ !EQUALS_OP ~ "=" }
@@ -119,17 +130,8 @@ QUOTE                         = _{ "'" }
 DOUBLE_QUOTE                  = _{ "\"" }
 COMMA                         = _{ "," }
 DOT                           = _{ !SPREAD_OP ~ "." }
-MINUS                         = _{ !ARROW_OP ~ "-" }
-PLUS                          = _{ "+" }
-ASTERISK                      = _{ "*" }
-EXCLAMATION                   = _{ "!" }
-SLASH                         = _{ "/" }
-CARET                         = _{ "^" }
-GREATER                       = _{ ">" }
-LESS                          = _{ "<" }
 AMPERSAND                     = _{ "&" }
 PIPE                          = _{ "|" }
-PERCENT                       = _{ "%" }
 N                             = _{ NEWLINE }
 COMMENT                       = _{ "//" ~ (!"\n" ~ ANY)*}
 WHITESPACE                    = _{ " " | "\t" }
