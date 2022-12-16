@@ -387,7 +387,6 @@ a - (a / 12).foo(boo() / 6) * c
         }
     }
 
-    #[ignore]
     #[test]
     fn parse_assignee() {
         let source = r#"
@@ -447,7 +446,6 @@ a = []
         }
     }
 
-    #[ignore]
     #[test]
     fn parse_function_argument_pattern() {
         let source = r#"
