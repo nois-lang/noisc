@@ -14,7 +14,7 @@ mod tests {
         parses_to! {
             parser: NoisParser,
             input: source,
-            rule: Rule::file,
+            rule: Rule::program,
             tokens: [block(0, 0)]
         }
     }
@@ -25,7 +25,7 @@ mod tests {
         parses_to! {
             parser: NoisParser,
             input: source,
-            rule: Rule::file,
+            rule: Rule::program,
             tokens: [block(2, 10)]
         }
     }
@@ -40,7 +40,7 @@ mod tests {
         parses_to! {
             parser: NoisParser,
             input: source,
-            rule: Rule::file,
+            rule: Rule::program,
             tokens: [
                 block(0, 13, [
                     expression(1, 2, [number(1, 2)]),
@@ -66,7 +66,7 @@ mod tests {
         parses_to! {
             parser: NoisParser,
             input: source,
-            rule: Rule::file,
+            rule: Rule::program,
             tokens: [
                 block(0, 62, [
                     expression(1, 3, [string(1, 3)]),
@@ -101,7 +101,7 @@ mod tests {
         parses_to! {
             parser: NoisParser,
             input: source,
-            rule: Rule::file,
+            rule: Rule::program,
             tokens: [
                 block(0, 85, [
                     expression(1, 3, [list_init(1, 3, [])]),
@@ -146,7 +146,7 @@ mod tests {
         parses_to! {
             parser: NoisParser,
             input: source,
-            rule: Rule::file,
+            rule: Rule::program,
             tokens: [
                 block(0, 37, [
                     expression(1, 11, [struct_define(1, 11, [
@@ -177,7 +177,7 @@ mod tests {
         parses_to! {
             parser: NoisParser,
             input: source,
-            rule: Rule::file,
+            rule: Rule::program,
             tokens: [
                 block(0, 37, [
                     expression(1, 11, [enum_define(1, 11, [
@@ -211,7 +211,7 @@ a {}
         parses_to! {
             parser: NoisParser,
             input: source,
-            rule: Rule::file,
+            rule: Rule::program,
             tokens: [
                 block(0, 60, [
                     expression(1, 6, [
@@ -274,7 +274,7 @@ a -> a
         parses_to! {
             parser: NoisParser,
             input: source,
-            rule: Rule::file,
+            rule: Rule::program,
             tokens: [
                 block(0, 63, [
                     expression(1, 5, [
@@ -331,7 +331,7 @@ a - (a / 12).foo(boo() / 6) * c
         parses_to! {
             parser: NoisParser,
             input: source,
-            rule: Rule::file,
+            rule: Rule::program,
             tokens: [
                 block(0, 89, [
                     expression(1, 2, [identifier(1, 2)]),
@@ -365,7 +365,7 @@ a - (a / 12).foo(boo() / 6) * c
                             binary_operator(64, 65, [DIVIDE_OP(64, 65)]),
                             number(66, 68),
                         ]),
-                        binary_operator(69, 70),
+                        binary_operator(69, 70, [ACCESSOR_OP(69, 70)]),
                         function_call(70, 84, [
                             identifier(70, 73),
                             parameter_list(74, 83, [
@@ -401,7 +401,7 @@ a = []
         parses_to! {
             parser: NoisParser,
             input: source,
-            rule: Rule::file,
+            rule: Rule::program,
             tokens: [
                 block(0, 68, [
                     assignment(1, 7, [
@@ -458,7 +458,7 @@ a = []
         parses_to! {
             parser: NoisParser,
             input: source,
-            rule: Rule::file,
+            rule: Rule::program,
             tokens: [
                 block(0, 36, [
                     expression(1, 9, [
@@ -505,11 +505,11 @@ a = []
     fn parse() {
         let source = r#"
 "#;
-        println!("{}", NoisParser::parse(Rule::file, source).unwrap());
+        println!("{}", NoisParser::parse(Rule::program, source).unwrap());
         parses_to! {
             parser: NoisParser,
             input: source,
-            rule: Rule::file,
+            rule: Rule::program,
             tokens: [
             ]
         }

@@ -7,6 +7,7 @@ use pest::Parser;
 
 use crate::parser::{NoisParser, Rule};
 
+pub mod ast;
 pub mod parser;
 
 fn main() {
@@ -18,6 +19,6 @@ fn main() {
         c
     }
     "#;
-    let parsed = NoisParser::parse(Rule::file, source).unwrap();
+    let parsed = NoisParser::parse(Rule::program, source).unwrap();
     println!("{:#?}", parsed)
 }

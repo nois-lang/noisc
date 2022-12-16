@@ -1,4 +1,4 @@
-file                          = _{ SOI ~ block ~ EOI }
+program                       = _{ SOI ~ block ~ EOI }
   block                       =  { N* ~ (statement ~ N+)* ~ statement? }
     statement                 = _{ return_statement | assignment | expression }
       return_statement        =  { RETURN_KEYWORD ~ expression? }
@@ -6,21 +6,10 @@ file                          = _{ SOI ~ block ~ EOI }
       expression              =  { unary_expr ~ (N* ~ binary_operator ~ N* ~ unary_expr)* }
         unary_expr            = _{ unary_operator? ~ (operand | (PAREN_OPEN ~ N* ~ expression ~ N* ~ PAREN_CLOSE)) }
         binary_operator       =  {
-            ADD_OP
-          | SUBTRACT_OP
-          | MULTIPLY_OP
-          | DIVIDE_OP
-          | POWER_OP
-          | REMAINDER_OP
-          | DOT
-          | EQUALS_OP
-          | NOT_EQUALS_OP
-          | GREATER_OP
-          | LESS_OP
-          | AND_OP
-          | OR_OP
+          ADD_OP | SUBTRACT_OP | MULTIPLY_OP | DIVIDE_OP | EXPONENT_OP | REMAINDER_OP
+          | ACCESSOR_OP | EQUALS_OP | NOT_EQUALS_OP | GREATER_OP | LESS_OP | AND_OP | OR_OP
         }
-        unary_operator        =  { SUBTRACT_OP | NOT_OP | SPREAD_OP }
+        unary_operator        =  { ADD_OP | SUBTRACT_OP | NOT_OP | SPREAD_OP }
 
 operand                       = _{
     HOLE_OP
@@ -83,20 +72,20 @@ match_expression              =  {
     ~ match_clause ~ N* ~ (COMMA ~ N* ~ match_clause)* ~ COMMA? ~ N*
   ~ BRACE_CLOSE
 }
-  match_clause                   =  { predicate_expression ~ MATCH_OP ~ expression }
+  match_clause                =  { predicate_expression ~ MATCH_OP ~ expression }
     predicate_expression      =  { expression }
 
 /// #AA66CC
 identifier                    = @{ ASCII_ALPHANUMERIC+ }
 /// #A6D189
 string                        = @{string_single | string_double}
-string_single                 =  { QUOTE ~ inner_string ~ QUOTE }
-string_double                 =  { DOUBLE_QUOTE ~ inner_string ~ DOUBLE_QUOTE }
+string_single                 = _{ QUOTE ~ inner_string ~ QUOTE }
+string_double                 = _{ DOUBLE_QUOTE ~ inner_string ~ DOUBLE_QUOTE }
 inner_string                  = @{ char* }
-char                          =  {
-    !("\"" | "\\" | "'" | "'") ~ ANY
-    | "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t")
-    | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
+char                          = _{
+  !("\"" | "\\" | "'" | "'") ~ ANY
+  | "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t")
+  | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
 }
 RETURN_KEYWORD                = _{ "return" }
 MATCH_KEYWORD                 = _{ "match" }
@@ -113,10 +102,11 @@ SUBTRACT_OP                   =  { !ARROW_OP ~ "-" }
 ADD_OP                        =  { "+" }
 MULTIPLY_OP                   =  { "*" }
 DIVIDE_OP                     =  { "/" }
-POWER_OP                      =  { "^" }
+EXPONENT_OP                      =  { "^" }
 GREATER_OP                    =  { ">" }
 LESS_OP                       =  { "<" }
 REMAINDER_OP                  =  { "%" }
+ACCESSOR_OP                   =  { !SPREAD_OP ~ "." }
 SPREAD_OP                     =  { ".." }
 HOLE_OP                       =  { "_" }
 EQUALS                        = _{ !EQUALS_OP ~ "=" }
@@ -129,7 +119,6 @@ BRACKET_CLOSE                 = _{ "]" }
 QUOTE                         = _{ "'" }
 DOUBLE_QUOTE                  = _{ "\"" }
 COMMA                         = _{ "," }
-DOT                           = _{ !SPREAD_OP ~ "." }
 AMPERSAND                     = _{ "&" }
 PIPE                          = _{ "|" }
 N                             = _{ NEWLINE }
