@@ -113,50 +113,59 @@ pub enum PatternItem {
     Spread(Identifier),
 }
 
-pub fn parse_block(pair: &Pair<Rule>) -> Result<Program, Error<Rule>> {
-    match pair.as_rule() {
-        Rule::block => {
-            let statements: Vec<Statement> = pair
-                .clone()
-                .into_inner()
-                .map(|s| parse_statement(&s).unwrap())
-                .collect();
-            Ok(Program::Block { statements })
+pub trait AstParser<A> {
+    fn parse(self: &Self) -> Result<A, Error<Rule>>;
+}
+
+impl AstParser<Program> for Pair<'static, Rule> {
+    fn parse(&self) -> Result<Program, Error<Rule>> {
+        match self.as_rule() {
+            Rule::block => {
+                let statements: Vec<Statement> = self
+                    .clone()
+                    .into_inner()
+                    .map(|s| s.parse().unwrap())
+                    .collect();
+                Ok(Program::Block { statements })
+            }
+            _ => Err(Error::new_from_span(
+                ErrorVariant::CustomError {
+                    message: "unable to parse block".to_string(),
+                },
+                self.as_span(),
+            )),
         }
-        _ => Err(Error::new_from_span(
-            ErrorVariant::CustomError {
-                message: "unable to parse block".to_string(),
-            },
-            pair.as_span(),
-        )),
     }
 }
 
-fn parse_statement(pair: &Pair<Rule>) -> Result<Statement, Error<Rule>> {
-    println!("{:?}", pair.as_rule());
-    match pair.as_rule() {
-        Rule::return_statement => todo!(),
-        Rule::assignment => todo!(),
-        Rule::expression => {
-            parse_expression(pair).map(|expression| Statement::Expression { expression })
+impl AstParser<Expression> for Pair<'static, Rule> {
+    fn parse(&self) -> Result<Expression, Error<Rule>> {
+        match self.as_rule() {
+            Rule::expression => Ok(Expression::Operand(Box::from(Operand::Number(42)))),
+            _ => Err(Error::new_from_span(
+                ErrorVariant::CustomError {
+                    message: "unable to parse expression".to_string(),
+                },
+                self.as_span(),
+            )),
         }
-        _ => Err(Error::new_from_span(
-            ErrorVariant::CustomError {
-                message: "unable to parse statement".to_string(),
-            },
-            pair.as_span(),
-        )),
     }
 }
 
-fn parse_expression(pair: &Pair<Rule>) -> Result<Expression, Error<Rule>> {
-    match pair.as_rule() {
-        Rule::expression => Ok(Expression::Operand(Box::from(Operand::Number(42)))),
-        _ => Err(Error::new_from_span(
-            ErrorVariant::CustomError {
-                message: "unable to parse expression".to_string(),
-            },
-            pair.as_span(),
-        )),
+impl AstParser<Statement> for Pair<'static, Rule> {
+    fn parse(&self) -> Result<Statement, Error<Rule>> {
+        match self.as_rule() {
+            Rule::return_statement => todo!(),
+            Rule::assignment => todo!(),
+            Rule::expression => self
+                .parse()
+                .map(|expression| Statement::Expression { expression }),
+            _ => Err(Error::new_from_span(
+                ErrorVariant::CustomError {
+                    message: "unable to parse statement".to_string(),
+                },
+                self.as_span(),
+            )),
+        }
     }
 }
