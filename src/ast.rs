@@ -117,6 +117,10 @@ pub trait AstParser<A> {
     fn parse(self: &Self) -> Result<A, Error<Rule>>;
 }
 
+fn custom_error(pair: &Pair<Rule>, message: String) -> Error<Rule> {
+    Error::new_from_span(ErrorVariant::CustomError { message }, pair.as_span())
+}
+
 impl AstParser<Program> for Pair<'static, Rule> {
     fn parse(&self) -> Result<Program, Error<Rule>> {
         match self.as_rule() {
@@ -128,25 +132,9 @@ impl AstParser<Program> for Pair<'static, Rule> {
                     .collect();
                 Ok(Program::Block { statements })
             }
-            _ => Err(Error::new_from_span(
-                ErrorVariant::CustomError {
-                    message: "unable to parse block".to_string(),
-                },
-                self.as_span(),
-            )),
-        }
-    }
-}
-
-impl AstParser<Expression> for Pair<'static, Rule> {
-    fn parse(&self) -> Result<Expression, Error<Rule>> {
-        match self.as_rule() {
-            Rule::expression => Ok(Expression::Operand(Box::from(Operand::Number(42)))),
-            _ => Err(Error::new_from_span(
-                ErrorVariant::CustomError {
-                    message: "unable to parse expression".to_string(),
-                },
-                self.as_span(),
+            _ => Err(custom_error(
+                self,
+                format!("expected block, found {:?}", self.as_rule()),
             )),
         }
     }
@@ -160,11 +148,21 @@ impl AstParser<Statement> for Pair<'static, Rule> {
             Rule::expression => self
                 .parse()
                 .map(|expression| Statement::Expression { expression }),
-            _ => Err(Error::new_from_span(
-                ErrorVariant::CustomError {
-                    message: "unable to parse statement".to_string(),
-                },
-                self.as_span(),
+            _ => Err(custom_error(
+                self,
+                format!("expected statement, found {:?}", self.as_rule()),
+            )),
+        }
+    }
+}
+
+impl AstParser<Expression> for Pair<'static, Rule> {
+    fn parse(&self) -> Result<Expression, Error<Rule>> {
+        match self.as_rule() {
+            Rule::expression => Ok(Expression::Operand(Box::from(Operand::Number(42)))),
+            _ => Err(custom_error(
+                self,
+                format!("expected expression, found {:?}", self.as_rule()),
             )),
         }
     }
