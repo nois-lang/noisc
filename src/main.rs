@@ -5,6 +5,7 @@ extern crate pest_derive;
 extern crate core;
 
 use crate::ast::parse_block;
+use colored::Colorize;
 use pest::Parser;
 
 use crate::parser::{NoisParser, Rule};
@@ -22,11 +23,18 @@ fn main() {
     // }
     // "#;
     let source = r#"
-(a, b, [c]) {
+(a, b, c) {
     print(a)
 }
 "#;
     let parsed = NoisParser::parse(Rule::program, source).unwrap();
-    let p = parse_block(&parsed.into_iter().next().unwrap());
-    println!("{}", p.unwrap())
+    let program = parse_block(&parsed.into_iter().next().unwrap());
+    match program {
+        Ok(p) => {
+            println!("{}", p)
+        }
+        Err(e) => {
+            eprintln!("{}", e.to_string().red())
+        }
+    }
 }
