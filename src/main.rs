@@ -24,5 +24,5 @@ fn main() {
     let source = "42";
     let parsed = NoisParser::parse(Rule::program, source).unwrap();
     let p = parse_program(&parsed.into_iter().next().unwrap());
-    println!("{:?}", p)
+    println!("{}", p.unwrap())
 }

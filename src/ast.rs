@@ -1,6 +1,9 @@
 use crate::parser::Rule;
 use pest::error::{Error, ErrorVariant};
 use pest::iterators::Pair;
+use regex::Regex;
+use std::fmt;
+use std::fmt::{Debug, Display, Formatter};
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Program {
@@ -132,10 +135,20 @@ impl<'a> From<pest::Span<'a>> for Span {
     }
 }
 
-pub type AstPair<A> = (Span, A);
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
+pub struct AstPair<A>(Span, A);
+
+impl<T: Debug> Display for AstPair<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let s = format!("{:#?}", self);
+        let re1 = Regex::new(r"(?mU)\n.*Span \{[\s\S]*},").unwrap();
+        let no_span = re1.replace_all(s.as_str(), "");
+        write!(f, "{}", no_span)
+    }
+}
 
 pub fn new_pair<A>(p: &Pair<Rule>, ast: A) -> AstPair<A> {
-    (p.as_span().into(), ast)
+    AstPair(p.as_span().into(), ast)
 }
 
 fn custom_error(pair: &Pair<Rule>, message: String) -> Error<Rule> {
@@ -156,7 +169,7 @@ pub fn parse_program(pair: &Pair<Rule>) -> Result<AstPair<Program>, Error<Rule>>
         }
         _ => Err(custom_error(
             pair,
-            format!("expected block, found {:?}", pair.as_rule()),
+            format!("expected program, found {:?}", pair.as_rule()),
         )),
     }
 }
@@ -165,11 +178,8 @@ pub fn parse_statement(pair: &Pair<Rule>) -> Result<AstPair<Statement>, Error<Ru
     match pair.as_rule() {
         Rule::return_statement => todo!(),
         Rule::assignment => todo!(),
-        Rule::expression => {
-            let p: Result<AstPair<Statement>, Error<Rule>> = parse_expression(pair)
-                .map(|expression| new_pair(pair, Statement::Expression { expression }));
-            p
-        }
+        Rule::expression => parse_expression(pair)
+            .map(|expression| new_pair(pair, Statement::Expression { expression })),
         _ => Err(custom_error(
             pair,
             format!("expected statement, found {:?}", pair.as_rule()),
@@ -179,10 +189,24 @@ pub fn parse_statement(pair: &Pair<Rule>) -> Result<AstPair<Statement>, Error<Ru
 
 pub fn parse_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error<Rule>> {
     match pair.as_rule() {
-        Rule::expression => Ok(new_pair(
+        Rule::expression => {
+            let children = pair.clone().into_inner().collect::<Vec<_>>();
+            if children.len() == 1 {
+                return parse_operand(&children[0])
+                    .map(|o| new_pair(pair, Expression::Operand(Box::from(o))));
+            }
+            todo!("other expression logic")
+        }
+        _ => Err(custom_error(
             pair,
-            Expression::Operand(Box::from(new_pair(pair, Operand::Number(42)))),
+            format!("expected expression, found {:?}", pair.as_rule()),
         )),
+    }
+}
+
+pub fn parse_operand(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
+    match pair.as_rule() {
+        Rule::number => Ok(new_pair(pair, Operand::Number(42))),
         _ => Err(custom_error(
             pair,
             format!("expected expression, found {:?}", pair.as_rule()),
