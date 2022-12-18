@@ -4,7 +4,7 @@ extern crate pest;
 extern crate pest_derive;
 extern crate core;
 
-use crate::ast::parse_program;
+use crate::ast::parse_block;
 use pest::Parser;
 
 use crate::parser::{NoisParser, Rule};
@@ -21,8 +21,12 @@ fn main() {
     //     c
     // }
     // "#;
-    let source = r#"print("hello, world!", 123)"#;
+    let source = r#"
+(a, b, c) {
+    print(a)
+}
+"#;
     let parsed = NoisParser::parse(Rule::program, source).unwrap();
-    let p = parse_program(&parsed.into_iter().next().unwrap());
+    let p = parse_block(&parsed.into_iter().next().unwrap());
     println!("{}", p.unwrap())
 }

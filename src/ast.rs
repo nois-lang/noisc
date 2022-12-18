@@ -4,12 +4,9 @@ use pest::iterators::Pair;
 use regex::Regex;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
-use std::process::id;
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
-pub enum Program {
-    Block { statements: Vec<AstPair<Statement>> },
-}
+pub struct Block(Vec<AstPair<Statement>>);
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Statement {
@@ -60,7 +57,7 @@ pub enum Operand {
     },
     FunctionInit {
         arguments: Vec<AstPair<Assignee>>,
-        statements: Vec<AstPair<Statement>>,
+        block: AstPair<Block>,
     },
     FunctionCall {
         identifier: AstPair<Identifier>,
@@ -164,7 +161,7 @@ fn custom_error(pair: &Pair<Rule>, message: String) -> Error<Rule> {
     Error::new_from_span(ErrorVariant::CustomError { message }, pair.as_span())
 }
 
-pub fn parse_program(pair: &Pair<Rule>) -> Result<AstPair<Program>, Error<Rule>> {
+pub fn parse_block(pair: &Pair<Rule>) -> Result<AstPair<Block>, Error<Rule>> {
     match pair.as_rule() {
         Rule::block => {
             let mut statements: Vec<AstPair<Statement>> = vec![];
@@ -174,7 +171,7 @@ pub fn parse_program(pair: &Pair<Rule>) -> Result<AstPair<Program>, Error<Rule>>
                     Err(e) => return Err(e),
                 }
             }
-            Ok(from_pair(pair, Program::Block { statements }))
+            Ok(from_pair(pair, Block(statements)))
         }
         _ => Err(custom_error(
             pair,
@@ -234,6 +231,27 @@ pub fn parse_operand(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>>
                 },
             ))
         }
+        Rule::function_init => {
+            let ch = children(pair);
+            let arguments: Result<Vec<AstPair<Assignee>>, Error<Rule>> = children(&ch[0])
+                .into_iter()
+                .map(|a| parse_assignee(&a))
+                .collect();
+            if let Err(e) = arguments {
+                return Err(e);
+            }
+            let block = parse_block(&ch[1]);
+            if let Err(e) = block {
+                return Err(e);
+            }
+            Ok(from_pair(
+                pair,
+                Operand::FunctionInit {
+                    arguments: arguments.unwrap(),
+                    block: block.unwrap(),
+                },
+            ))
+        }
         Rule::identifier => {
             let identifier = parse_identifier(pair);
             identifier.and_then(|i| Ok(from_span(&i.0, Operand::Identifier(i.1.clone()))))
@@ -276,4 +294,28 @@ pub fn parse_parameter_list(pair: &Pair<Rule>) -> Result<Vec<AstPair<Expression>
             format!("expected expression, found {:?}", pair.as_rule()),
         )),
     }
+}
+
+fn parse_assignee(pair: &Pair<Rule>) -> Result<AstPair<Assignee>, Error<Rule>> {
+    match pair.as_rule() {
+        Rule::assignee => {
+            let ch = children(pair);
+            return if ch.len() == 1 {
+                let id = parse_identifier(&ch[0]);
+                id.map(|i| from_span(&i.0, Assignee::Identifier(from_span(&i.0, i.1))))
+            } else {
+                let patterns: Result<Vec<AstPair<PatternItem>>, Error<Rule>> =
+                    ch.iter().map(|p| parse_pattern_item(p)).collect();
+                patterns.map(|p| from_pair(pair, Assignee::Pattern { pattern_items: p }))
+            };
+        }
+        _ => Err(custom_error(
+            pair,
+            format!("expected assignee, found {:?}", pair.as_rule()),
+        )),
+    }
+}
+
+fn parse_pattern_item(pair: &Pair<Rule>) -> Result<AstPair<PatternItem>, Error<Rule>> {
+    todo!()
 }

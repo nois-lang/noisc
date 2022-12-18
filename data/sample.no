@@ -45,7 +45,6 @@
     C
 }
 
-// todo
 (a, b) { a + b }
 (a, b) {
     c = a + b
