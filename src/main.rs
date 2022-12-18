@@ -21,7 +21,7 @@ fn main() {
     //     c
     // }
     // "#;
-    let source = "42";
+    let source = r#"print("hello, world!", 123)"#;
     let parsed = NoisParser::parse(Rule::program, source).unwrap();
     let p = parse_program(&parsed.into_iter().next().unwrap());
     println!("{}", p.unwrap())
