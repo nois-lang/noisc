@@ -22,7 +22,7 @@ fn main() {
     // }
     // "#;
     let source = r#"
-(a, b, c) {
+(a, b, [c]) {
     print(a)
 }
 "#;

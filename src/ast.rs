@@ -2,6 +2,7 @@ use crate::parser::Rule;
 use pest::error::{Error, ErrorVariant};
 use pest::iterators::Pair;
 use regex::Regex;
+use std::any::Any;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 
@@ -300,7 +301,7 @@ fn parse_assignee(pair: &Pair<Rule>) -> Result<AstPair<Assignee>, Error<Rule>> {
     match pair.as_rule() {
         Rule::assignee => {
             let ch = children(pair);
-            return if ch.len() == 1 {
+            return if ch.len() == 1 && ch[0].as_rule() == Rule::pattern_item {
                 let id = parse_identifier(&ch[0]);
                 id.map(|i| from_span(&i.0, Assignee::Identifier(from_span(&i.0, i.1))))
             } else {
@@ -317,5 +318,8 @@ fn parse_assignee(pair: &Pair<Rule>) -> Result<AstPair<Assignee>, Error<Rule>> {
 }
 
 fn parse_pattern_item(pair: &Pair<Rule>) -> Result<AstPair<PatternItem>, Error<Rule>> {
-    todo!()
+    Err(custom_error(
+        pair,
+        format!("patterns are not yet implemented"),
+    ))
 }
