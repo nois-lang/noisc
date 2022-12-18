@@ -4,34 +4,34 @@ use pest::iterators::Pair;
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Program {
-    Block { statements: Vec<Statement> },
+    Block { statements: Vec<AstPair<Statement>> },
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Statement {
     Return {
-        expression: Option<Expression>,
+        expression: Option<AstPair<Expression>>,
     },
     Assignment {
-        assignee: Assignee,
-        expression: Expression,
+        assignee: AstPair<Assignee>,
+        expression: AstPair<Expression>,
     },
     Expression {
-        expression: Expression,
+        expression: AstPair<Expression>,
     },
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Expression {
-    Operand(Box<Operand>),
+    Operand(Box<AstPair<Operand>>),
     Unary {
-        operand: Box<Expression>,
-        operator: UnaryOperator,
+        operand: Box<AstPair<Expression>>,
+        operator: Box<AstPair<UnaryOperator>>,
     },
     Binary {
-        left_operand: Box<Expression>,
-        operator: BinaryOperator,
-        right_operand: Box<Expression>,
+        left_operand: Box<AstPair<Expression>>,
+        operator: Box<AstPair<BinaryOperator>>,
+        right_operand: Box<AstPair<Expression>>,
     },
 }
 
@@ -40,27 +40,27 @@ pub enum Operand {
     Hole,
     Number(i128),
     MatchExpression {
-        condition: Box<Expression>,
-        match_clauses: Vec<MatchClause>,
+        condition: Box<AstPair<Expression>>,
+        match_clauses: Vec<AstPair<MatchClause>>,
     },
     StructDefinition {
-        identifier: Identifier,
-        field_identifiers: Vec<Identifier>,
+        identifier: AstPair<Identifier>,
+        field_identifiers: Vec<AstPair<Identifier>>,
     },
     EnumDefinition {
-        identifier: Identifier,
-        value_identifiers: Vec<Identifier>,
+        identifier: AstPair<Identifier>,
+        value_identifiers: Vec<AstPair<Identifier>>,
     },
     ListInit {
-        items: Vec<Expression>,
+        items: Vec<AstPair<Expression>>,
     },
     FunctionInit {
-        arguments: Vec<Assignee>,
-        statements: Vec<Statement>,
+        arguments: Vec<AstPair<Assignee>>,
+        statements: Vec<AstPair<Statement>>,
     },
     FunctionCall {
-        identifier: Identifier,
-        parameters: Vec<Expression>,
+        identifier: AstPair<Identifier>,
+        parameters: Vec<AstPair<Expression>>,
     },
     String(String),
     Identifier(String),
@@ -96,74 +96,96 @@ pub struct Identifier(pub String);
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub struct MatchClause {
-    pub predicate_expression: Box<Expression>,
-    pub expression: Box<Expression>,
+    pub predicate_expression: Box<AstPair<Expression>>,
+    pub expression: Box<AstPair<Expression>>,
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Assignee {
-    Identifier(Identifier),
-    Pattern { pattern_items: Vec<PatternItem> },
+    Identifier(AstPair<Identifier>),
+    Pattern {
+        pattern_items: Vec<AstPair<PatternItem>>,
+    },
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum PatternItem {
     Hole,
-    Identifier(Identifier),
-    Spread(Identifier),
+    Identifier(AstPair<Identifier>),
+    Spread(AstPair<Identifier>),
 }
 
-pub trait AstParser<A> {
-    fn parse(self: &Self) -> Result<A, Error<Rule>>;
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
+pub struct Span {
+    input: String,
+    start: usize,
+    end: usize,
+}
+
+impl<'a> From<pest::Span<'a>> for Span {
+    fn from(span: pest::Span<'a>) -> Self {
+        Self {
+            input: span.as_str().to_string(),
+            start: span.start(),
+            end: span.end(),
+        }
+    }
+}
+
+pub type AstPair<A> = (Span, A);
+
+pub fn new_pair<A>(p: &Pair<Rule>, ast: A) -> AstPair<A> {
+    (p.as_span().into(), ast)
 }
 
 fn custom_error(pair: &Pair<Rule>, message: String) -> Error<Rule> {
     Error::new_from_span(ErrorVariant::CustomError { message }, pair.as_span())
 }
 
-impl AstParser<Program> for Pair<'static, Rule> {
-    fn parse(&self) -> Result<Program, Error<Rule>> {
-        match self.as_rule() {
-            Rule::block => {
-                let statements: Vec<Statement> = self
-                    .clone()
-                    .into_inner()
-                    .map(|s| s.parse().unwrap())
-                    .collect();
-                Ok(Program::Block { statements })
+pub fn parse_program(pair: &Pair<Rule>) -> Result<AstPair<Program>, Error<Rule>> {
+    match pair.as_rule() {
+        Rule::block => {
+            let mut statements: Vec<AstPair<Statement>> = vec![];
+            for statement in pair.clone().into_inner().map(|s| parse_statement(&s)) {
+                match statement {
+                    Ok(s) => statements.push(s),
+                    Err(e) => return Err(e),
+                }
             }
-            _ => Err(custom_error(
-                self,
-                format!("expected block, found {:?}", self.as_rule()),
-            )),
+            Ok(new_pair(pair, Program::Block { statements }))
         }
+        _ => Err(custom_error(
+            pair,
+            format!("expected block, found {:?}", pair.as_rule()),
+        )),
     }
 }
 
-impl AstParser<Statement> for Pair<'static, Rule> {
-    fn parse(&self) -> Result<Statement, Error<Rule>> {
-        match self.as_rule() {
-            Rule::return_statement => todo!(),
-            Rule::assignment => todo!(),
-            Rule::expression => self
-                .parse()
-                .map(|expression| Statement::Expression { expression }),
-            _ => Err(custom_error(
-                self,
-                format!("expected statement, found {:?}", self.as_rule()),
-            )),
+pub fn parse_statement(pair: &Pair<Rule>) -> Result<AstPair<Statement>, Error<Rule>> {
+    match pair.as_rule() {
+        Rule::return_statement => todo!(),
+        Rule::assignment => todo!(),
+        Rule::expression => {
+            let p: Result<AstPair<Statement>, Error<Rule>> = parse_expression(pair)
+                .map(|expression| new_pair(pair, Statement::Expression { expression }));
+            p
         }
+        _ => Err(custom_error(
+            pair,
+            format!("expected statement, found {:?}", pair.as_rule()),
+        )),
     }
 }
 
-impl AstParser<Expression> for Pair<'static, Rule> {
-    fn parse(&self) -> Result<Expression, Error<Rule>> {
-        match self.as_rule() {
-            Rule::expression => Ok(Expression::Operand(Box::from(Operand::Number(42)))),
-            _ => Err(custom_error(
-                self,
-                format!("expected expression, found {:?}", self.as_rule()),
-            )),
-        }
+pub fn parse_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error<Rule>> {
+    match pair.as_rule() {
+        Rule::expression => Ok(new_pair(
+            pair,
+            Expression::Operand(Box::from(new_pair(pair, Operand::Number(42)))),
+        )),
+        _ => Err(custom_error(
+            pair,
+            format!("expected expression, found {:?}", pair.as_rule()),
+        )),
     }
 }

@@ -2,9 +2,9 @@
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
+extern crate core;
 
-use crate::ast::{AstParser, Program};
-use pest::error::Error;
+use crate::ast::parse_program;
 use pest::Parser;
 
 use crate::parser::{NoisParser, Rule};
@@ -23,6 +23,6 @@ fn main() {
     // "#;
     let source = "42";
     let parsed = NoisParser::parse(Rule::program, source).unwrap();
-    let p: &Result<Program, Error<Rule>> = &parsed.into_iter().next().unwrap().parse();
+    let p = parse_program(&parsed.into_iter().next().unwrap());
     println!("{:?}", p)
 }
