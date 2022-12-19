@@ -164,14 +164,11 @@ fn custom_error(pair: &Pair<Rule>, message: String) -> Error<Rule> {
 pub fn parse_block(pair: &Pair<Rule>) -> Result<AstPair<Block>, Error<Rule>> {
     match pair.as_rule() {
         Rule::block => {
-            let mut statements: Vec<AstPair<Statement>> = vec![];
-            for statement in children(pair).into_iter().map(|s| parse_statement(&s)) {
-                match statement {
-                    Ok(s) => statements.push(s),
-                    Err(e) => return Err(e),
-                }
-            }
-            Ok(from_pair(pair, Block(statements)))
+            let statements = children(pair)
+                .into_iter()
+                .map(|s| parse_statement(&s))
+                .collect::<Result<_, _>>();
+            Ok(from_pair(pair, Block(statements?)))
         }
         _ => Err(custom_error(
             pair,
@@ -183,7 +180,16 @@ pub fn parse_block(pair: &Pair<Rule>) -> Result<AstPair<Block>, Error<Rule>> {
 pub fn parse_statement(pair: &Pair<Rule>) -> Result<AstPair<Statement>, Error<Rule>> {
     match pair.as_rule() {
         Rule::return_statement => todo!(),
-        Rule::assignment => todo!(),
+        Rule::assignment => {
+            let ch = children(pair);
+            Ok(from_pair(
+                pair,
+                Statement::Assignment {
+                    assignee: parse_assignee(&ch[0])?,
+                    expression: parse_expression(&ch[1])?,
+                },
+            ))
+        }
         Rule::expression => parse_expression(pair)
             .map(|expression| from_pair(pair, Statement::Expression { expression })),
         _ => Err(custom_error(
@@ -196,10 +202,12 @@ pub fn parse_statement(pair: &Pair<Rule>) -> Result<AstPair<Statement>, Error<Ru
 pub fn parse_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error<Rule>> {
     match pair.as_rule() {
         Rule::expression => {
-            let children = children(pair);
-            if children.len() == 1 {
-                return parse_operand(&children[0])
-                    .map(|o| from_pair(pair, Expression::Operand(Box::from(o))));
+            let ch = children(pair);
+            if ch.len() == 1 {
+                return Ok(from_pair(
+                    pair,
+                    Expression::Operand(Box::from(parse_operand(&ch[0])?)),
+                ));
             }
             todo!("other expression logic")
         }
@@ -215,19 +223,11 @@ pub fn parse_operand(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>>
         Rule::number => Ok(from_pair(pair, Operand::Number(42))),
         Rule::function_call => {
             let ch = children(pair);
-            let identifier = parse_identifier(&ch[0]);
-            if let Err(e) = identifier {
-                return Err(e);
-            }
-            let parameter_list = parse_parameter_list(&ch[1]);
-            if let Err(e) = parameter_list {
-                return Err(e);
-            }
             Ok(from_pair(
                 pair,
                 Operand::FunctionCall {
-                    identifier: identifier.unwrap(),
-                    parameters: parameter_list.unwrap(),
+                    identifier: parse_identifier(&ch[0])?,
+                    parameters: parse_parameter_list(&ch[1])?,
                 },
             ))
         }
@@ -237,18 +237,12 @@ pub fn parse_operand(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>>
                 .into_iter()
                 .map(|a| parse_assignee(&a))
                 .collect();
-            if let Err(e) = arguments {
-                return Err(e);
-            }
-            let block = parse_block(&ch[1]);
-            if let Err(e) = block {
-                return Err(e);
-            }
+            let block = parse_block(&ch[1])?;
             Ok(from_pair(
                 pair,
                 Operand::FunctionInit {
-                    arguments: arguments.unwrap(),
-                    block: block.unwrap(),
+                    arguments: arguments?,
+                    block,
                 },
             ))
         }
