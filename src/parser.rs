@@ -43,9 +43,9 @@ mod tests {
             rule: Rule::program,
             tokens: [
                 block(0, 13, [
-                    expression(1, 2, [number(1, 2)]),
-                    expression(3, 7, [number(3, 7)]),
-                    expression(8, 12, [number(8, 12)]),
+                    expression(1, 2, [integer(1, 2)]),
+                    expression(3, 7, [float(3, 7)]),
+                    expression(8, 12, [float(8, 12)]),
                 ])
             ]
         }
@@ -107,25 +107,25 @@ mod tests {
                     expression(1, 3, [list_init(1, 3, [])]),
                     expression(4, 7, [list_init(4, 7, [])]),
                     expression(8, 11, [list_init(8, 11, [])]),
-                    expression(12, 16, [list_init(12, 16, [expression(13, 14, [number(13, 14)])])]),
+                    expression(12, 16, [list_init(12, 16, [expression(13, 14, [integer(13, 14)])])]),
                     expression(17, 26, [list_init(17, 26, [
-                        expression(18, 19, [number(18, 19)]),
-                        expression(21, 22, [number(21, 22)]),
-                        expression(24, 25, [number(24, 25)]),
+                        expression(18, 19, [integer(18, 19)]),
+                        expression(21, 22, [integer(21, 22)]),
+                        expression(24, 25, [integer(24, 25)]),
                     ])]),
                     expression(27, 40, [list_init(27, 40, [
-                        expression(28, 29, [number(28, 29)]),
-                        expression(31, 32, [number(31, 32)]),
+                        expression(28, 29, [integer(28, 29)]),
+                        expression(31, 32, [integer(31, 32)]),
                         expression(34, 39, [string(34, 39)]),
                     ])]),
                     expression(41, 55, [list_init(41, 55, [
-                        expression(42, 43, [number(42, 43)]),
-                        expression(45, 46, [number(45, 46)]),
+                        expression(42, 43, [integer(42, 43)]),
+                        expression(45, 46, [integer(45, 46)]),
                         expression(48, 53, [string(48, 53)]),
                     ])]),
                     expression(56, 84, [list_init(56, 84, [
-                        expression(62, 63, [number(62, 63)]),
-                        expression(69, 70, [number(69, 70)]),
+                        expression(62, 63, [integer(62, 63)]),
+                        expression(69, 70, [integer(69, 70)]),
                         expression(76, 81, [string(76, 81)]),
                     ])]),
                 ])
@@ -346,7 +346,7 @@ a - (a / 12).foo(boo() / 6) * c
                         expression(20, 54, [
                             identifier(20, 21),
                             binary_operator(22, 24, [EQUALS_OP(22, 24)]),
-                            number(25, 26),
+                            integer(25, 26),
                             binary_operator(31, 33, [OR_OP(31, 33)]),
                             identifier(34, 35),
                             binary_operator(36, 38, [EQUALS_OP(36, 38)]),
@@ -363,7 +363,7 @@ a - (a / 12).foo(boo() / 6) * c
                         expression(62, 68, [
                             identifier(62, 63),
                             binary_operator(64, 65, [DIVIDE_OP(64, 65)]),
-                            number(66, 68),
+                            integer(66, 68),
                         ]),
                         binary_operator(69, 70, [ACCESSOR_OP(69, 70)]),
                         function_call(70, 84, [
@@ -375,7 +375,7 @@ a - (a / 12).foo(boo() / 6) * c
                                         parameter_list(78, 78)
                                     ]),
                                     binary_operator(80, 81, [DIVIDE_OP(80, 81)]),
-                                    number(82, 83)
+                                    integer(82, 83)
                                 ])
                             ])
                         ]),

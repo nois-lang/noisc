@@ -24,7 +24,7 @@ fn main() {
     let program = parse_block(&parsed.into_iter().next().unwrap());
     match program {
         Ok(p) => {
-            println!("{}", p)
+            println!("{p}")
         }
         Err(e) => {
             eprintln!("{}", e.to_string().red())

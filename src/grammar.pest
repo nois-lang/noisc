@@ -13,7 +13,8 @@ program                       = _{ SOI ~ block ~ EOI }
 
 operand                       = _{
     HOLE_OP
-  | number
+  | float
+  | integer
   | match_expression
   | struct_define
   | enum_define
@@ -24,10 +25,11 @@ operand                       = _{
   | identifier
 }
   /// #EF9F76
-  number                      = @{
+  integer                     = @{
     ("0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT*)
-    ~ ("." ~ ASCII_DIGIT+)?
-    ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)?
+  }
+  float                       = @{
+    integer ~ ("." ~ ASCII_DIGIT+) | integer ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)
   }
   struct_define               =  {
     STRUCT_OP ~ BRACE_OPEN ~ N*
