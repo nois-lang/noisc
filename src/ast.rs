@@ -241,8 +241,11 @@ pub fn parse_operand(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>>
         }
         Rule::function_call => parse_function_all(pair),
         Rule::function_init => parse_function_init(pair),
-        Rule::identifier => parse_identifier(pair)
-            .and_then(|i| Ok(from_span(&i.0, Operand::Identifier(i.1.clone())))),
+        Rule::list_init => parse_list_init(pair),
+        Rule::identifier => {
+            let id = parse_identifier(pair)?;
+            Ok(from_span(&id.0, Operand::Identifier(id.1)))
+        }
         _ => Err(custom_error(
             pair,
             format!("expected operand, found {:?}", pair.as_rule()),
@@ -284,18 +287,20 @@ pub fn parse_function_all(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<R
 
 pub fn parse_function_init(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
     let ch = children(pair);
-    let arguments: Result<Vec<AstPair<Assignee>>, Error<Rule>> = children(&ch[0])
+    let arguments: Vec<AstPair<Assignee>> = children(&ch[0])
         .into_iter()
         .map(|a| parse_assignee(&a))
-        .collect();
+        .collect::<Result<_, _>>()?;
     let block = parse_block(&ch[1])?;
-    Ok(from_pair(
-        pair,
-        Operand::FunctionInit {
-            arguments: arguments?,
-            block,
-        },
-    ))
+    Ok(from_pair(pair, Operand::FunctionInit { arguments, block }))
+}
+
+pub fn parse_list_init(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
+    let items: Vec<AstPair<Expression>> = children(pair)
+        .into_iter()
+        .map(|a| parse_expression(&a))
+        .collect::<Result<_, _>>()?;
+    Ok(from_pair(pair, Operand::ListInit { items }))
 }
 
 fn parse_identifier(pair: &Pair<Rule>) -> Result<AstPair<Identifier>, Error<Rule>> {
@@ -353,7 +358,7 @@ fn parse_pattern_item(pair: &Pair<Rule>) -> Result<AstPair<PatternItem>, Error<R
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::{parse_file, Expression, Operand, Statement};
+    use crate::ast::{parse_file, AstPair, Expression, Operand, Statement};
     use crate::parser::{NoisParser, Rule};
     use pest::Parser;
 
@@ -362,7 +367,7 @@ mod tests {
         ($value:expr, $pattern:pat => $extracted_value:expr) => {
             match $value {
                 $pattern => $extracted_value,
-                _ => panic!("Pattern doesn't match!"),
+                _ => panic!("pattern doesn't match"),
             }
         };
     }
@@ -384,7 +389,7 @@ mod tests {
 "#;
         let file = &NoisParser::parse(Rule::program, source).unwrap();
         let block = parse_file(file).unwrap().1;
-        let numbers: Vec<Operand> = block
+        let numbers = block
             .0
             .into_iter()
             .map(|s| {
@@ -429,5 +434,53 @@ mod tests {
         assert_eq!(strings[5], "a\\\n\r\tb");
         assert_eq!(strings[6], "a\u{1234}bc");
         assert_eq!(strings[7], "hey 😎");
+    }
+
+    #[test]
+    fn build_ast_list_init() {
+        let source = r#"
+[]
+[ ]
+[,]
+[1,]
+[1, 2, 3]
+[1, 2, 'abc']
+[1, 2, 'abc',]
+[
+    1,
+    2,
+    'abc',
+]
+"#;
+        let file = &NoisParser::parse(Rule::program, source).unwrap();
+        let block = parse_file(file).unwrap().1;
+        let get_list_items = |p: &Operand| -> Vec<Operand> {
+            let exps: Vec<AstPair<Expression>> =
+                match_enum!(p.clone(), Operand::ListInit{items: l} => l);
+            exps.into_iter()
+                .map(|e| match_enum!(e.1, Expression::Operand(o) => o).1)
+                .collect()
+        };
+        let lists = block
+            .0
+            .into_iter()
+            .map(|s| {
+                let exp = match_enum!(s.1, Statement::Expression { expression: e } => e);
+                let op = *match_enum!(exp.1, Expression::Operand(o) => o);
+                op.1
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(get_list_items(&lists[0]).len(), 0);
+        assert_eq!(get_list_items(&lists[1]).len(), 0);
+        assert_eq!(get_list_items(&lists[2]).len(), 0);
+        assert_eq!(get_list_items(&lists[3]).len(), 1);
+        assert_eq!(get_list_items(&lists[4]).len(), 3);
+        assert_eq!(get_list_items(&lists[5]).len(), 3);
+        assert_eq!(get_list_items(&lists[6]).len(), 3);
+        assert_eq!(get_list_items(&lists[7]).len(), 3);
+        let l7 = get_list_items(&lists[7]);
+        assert_eq!(match_enum!(l7[0], Operand::Integer(i) => i), 1);
+        assert_eq!(match_enum!(l7[1], Operand::Integer(i) => i), 2);
+        assert_eq!(match_enum!(&l7[2], Operand::String(s) => s), "abc");
     }
 }

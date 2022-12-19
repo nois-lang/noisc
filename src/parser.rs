@@ -83,7 +83,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_list_literal() {
+    fn parse_list_init() {
         let source = r#"
 []
 [ ]
