@@ -59,7 +59,7 @@ mod tests {
 "a"
 "a\nb"
 'a'
-'a\\\b\f\n\r\tb'
+'a\\\n\r\tb'
 'a\u1234bc'
 'hey 😎'
 "#;
@@ -68,15 +68,15 @@ mod tests {
             input: source,
             rule: Rule::program,
             tokens: [
-                block(0, 62, [
+                block(0, 58, [
                     expression(1, 3, [string(1, 3)]),
                     expression(4, 6, [string(4, 6)]),
                     expression(7, 10, [string(7, 10)]),
                     expression(11, 17, [string(11, 17)]),
                     expression(18, 21, [string(18, 21)]),
-                    expression(22, 38, [string(22, 38)]),
-                    expression(39, 50, [string(39, 50)]),
-                    expression(51, 61, [string(51, 61)]),
+                    expression(22, 34, [string(22, 34)]),
+                    expression(35, 46, [string(35, 46)]),
+                    expression(47, 57, [string(47, 57)]),
                 ])
             ]
         }

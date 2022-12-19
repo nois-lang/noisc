@@ -1,4 +1,5 @@
 use crate::parser::Rule;
+use enquote::unquote;
 use pest::error::{Error, ErrorVariant};
 use pest::iterators::{Pair, Pairs};
 use regex::Regex;
@@ -225,60 +226,76 @@ pub fn parse_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error<
 
 pub fn parse_operand(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
     match pair.as_rule() {
-        Rule::integer => {
-            let num_s = pair.as_str();
-            let num = match num_s.parse::<i128>() {
-                Ok(n) => Ok(n),
+        Rule::integer => parse_integer(pair),
+        Rule::float => parse_float(pair),
+        Rule::string => {
+            let raw_str = pair.as_str();
+            let str = match unquote(raw_str) {
+                Ok(s) => Ok(s),
                 Err(_) => Err(custom_error(
                     pair,
-                    format!("unable to parse integer {num_s}"),
+                    format!("unable to parse string {raw_str}"),
                 )),
             }?;
-            Ok(from_pair(pair, Operand::Integer(num)))
+            Ok(from_pair(pair, Operand::String(str)))
         }
-        Rule::float => {
-            let num_s = pair.as_str();
-            let num = match num_s.parse::<f64>() {
-                Ok(n) => Ok(n),
-                Err(_) => Err(custom_error(pair, format!("unable to parse float {num_s}"))),
-            }?;
-            Ok(from_pair(pair, Operand::Float(num)))
-        }
-        Rule::function_call => {
-            let ch = children(pair);
-            Ok(from_pair(
-                pair,
-                Operand::FunctionCall {
-                    identifier: parse_identifier(&ch[0])?,
-                    parameters: parse_parameter_list(&ch[1])?,
-                },
-            ))
-        }
-        Rule::function_init => {
-            let ch = children(pair);
-            let arguments: Result<Vec<AstPair<Assignee>>, Error<Rule>> = children(&ch[0])
-                .into_iter()
-                .map(|a| parse_assignee(&a))
-                .collect();
-            let block = parse_block(&ch[1])?;
-            Ok(from_pair(
-                pair,
-                Operand::FunctionInit {
-                    arguments: arguments?,
-                    block,
-                },
-            ))
-        }
-        Rule::identifier => {
-            let identifier = parse_identifier(pair);
-            identifier.and_then(|i| Ok(from_span(&i.0, Operand::Identifier(i.1.clone()))))
-        }
-        Rule::string => Ok(from_pair(pair, Operand::String(pair.as_str().to_string()))),
+        Rule::function_call => parse_function_all(pair),
+        Rule::function_init => parse_function_init(pair),
+        Rule::identifier => parse_identifier(pair)
+            .and_then(|i| Ok(from_span(&i.0, Operand::Identifier(i.1.clone())))),
         _ => Err(custom_error(
             pair,
             format!("expected operand, found {:?}", pair.as_rule()),
         )),
     }
+}
+
+pub fn parse_integer(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
+    let num_s = pair.as_str();
+    let num = match num_s.parse::<i128>() {
+        Ok(n) => Ok(n),
+        Err(_) => Err(custom_error(
+            pair,
+            format!("unable to parse integer {num_s}"),
+        )),
+    }?;
+    Ok(from_pair(pair, Operand::Integer(num)))
+}
+
+pub fn parse_float(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
+    let num_s = pair.as_str();
+    let num = match num_s.parse::<f64>() {
+        Ok(n) => Ok(n),
+        Err(_) => Err(custom_error(pair, format!("unable to parse float {num_s}"))),
+    }?;
+    Ok(from_pair(pair, Operand::Float(num)))
+}
+
+pub fn parse_function_all(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
+    let ch = children(pair);
+    Ok(from_pair(
+        pair,
+        Operand::FunctionCall {
+            identifier: parse_identifier(&ch[0])?,
+            parameters: parse_parameter_list(&ch[1])?,
+        },
+    ))
+}
+
+pub fn parse_function_init(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
+    let ch = children(pair);
+    let arguments: Result<Vec<AstPair<Assignee>>, Error<Rule>> = children(&ch[0])
+        .into_iter()
+        .map(|a| parse_assignee(&a))
+        .collect();
+    let block = parse_block(&ch[1])?;
+    Ok(from_pair(
+        pair,
+        Operand::FunctionInit {
+            arguments: arguments?,
+            block,
+        },
+    ))
 }
 
 fn parse_identifier(pair: &Pair<Rule>) -> Result<AstPair<Identifier>, Error<Rule>> {
@@ -341,7 +358,7 @@ mod tests {
     use pest::Parser;
 
     #[macro_export]
-    macro_rules! extract_enum_value {
+    macro_rules! match_enum {
         ($value:expr, $pattern:pat => $extracted_value:expr) => {
             match $value {
                 $pattern => $extracted_value,
@@ -371,19 +388,46 @@ mod tests {
             .0
             .into_iter()
             .map(|s| {
-                let exp = extract_enum_value!(s.1, Statement::Expression { expression: e } => e);
-                let op = *extract_enum_value!(exp.1, Expression::Operand(o) => o);
+                let exp = match_enum!(s.1, Statement::Expression { expression: e } => e);
+                let op = *match_enum!(exp.1, Expression::Operand(o) => o);
                 op.1
             })
             .collect::<Vec<_>>();
-        assert_eq!(extract_enum_value!(numbers[0], Operand::Integer(n) => n), 1);
-        assert_eq!(
-            extract_enum_value!(numbers[1], Operand::Float(n) => n),
-            12.5
-        );
-        assert_eq!(
-            extract_enum_value!(numbers[2], Operand::Float(n) => n),
-            1e21
-        );
+        assert_eq!(match_enum!(numbers[0], Operand::Integer(n) => n), 1);
+        assert_eq!(match_enum!(numbers[1], Operand::Float(n) => n), 12.5);
+        assert_eq!(match_enum!(numbers[2], Operand::Float(n) => n), 1e21);
+    }
+
+    #[test]
+    fn build_ast_string() {
+        let source = r#"
+""
+''
+"a"
+"a\nb"
+'a'
+'a\\\n\r\tb'
+'a\u1234bc'
+'hey 😎'
+"#;
+        let file = &NoisParser::parse(Rule::program, source).unwrap();
+        let block = parse_file(file).unwrap().1;
+        let strings: Vec<String> = block
+            .0
+            .into_iter()
+            .map(|s| {
+                let exp = match_enum!(s.1, Statement::Expression { expression: e } => e);
+                let op = *match_enum!(exp.1, Expression::Operand(o) => o);
+                match_enum!(op.1, Operand::String(s) => s)
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(strings[0], "");
+        assert_eq!(strings[1], "");
+        assert_eq!(strings[2], "a");
+        assert_eq!(strings[3], "a\nb");
+        assert_eq!(strings[4], "a");
+        assert_eq!(strings[5], "a\\\n\r\tb");
+        assert_eq!(strings[6], "a\u{1234}bc");
+        assert_eq!(strings[7], "hey 😎");
     }
 }
