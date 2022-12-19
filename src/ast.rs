@@ -47,12 +47,10 @@ pub enum Operand {
         match_clauses: Vec<AstPair<MatchClause>>,
     },
     StructDefinition {
-        identifier: AstPair<Identifier>,
-        field_identifiers: Vec<AstPair<Identifier>>,
+        fields: Vec<AstPair<Identifier>>,
     },
     EnumDefinition {
-        identifier: AstPair<Identifier>,
-        value_identifiers: Vec<AstPair<Identifier>>,
+        values: Vec<AstPair<Identifier>>,
     },
     ListInit {
         items: Vec<AstPair<Expression>>,
@@ -242,6 +240,8 @@ pub fn parse_operand(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>>
         Rule::function_call => parse_function_all(pair),
         Rule::function_init => parse_function_init(pair),
         Rule::list_init => parse_list_init(pair),
+        Rule::struct_define => parse_struct_define(pair),
+        Rule::enum_define => parse_enum_define(pair),
         Rule::identifier => {
             let id = parse_identifier(pair)?;
             Ok(from_span(&id.0, Operand::Identifier(id.1)))
@@ -303,6 +303,22 @@ pub fn parse_list_init(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule
     Ok(from_pair(pair, Operand::ListInit { items }))
 }
 
+pub fn parse_struct_define(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
+    let fields: Vec<AstPair<Identifier>> = children(pair)
+        .into_iter()
+        .map(|a| parse_identifier(&a))
+        .collect::<Result<_, _>>()?;
+    Ok(from_pair(pair, Operand::StructDefinition { fields }))
+}
+
+pub fn parse_enum_define(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
+    let values: Vec<AstPair<Identifier>> = children(pair)
+        .into_iter()
+        .map(|a| parse_identifier(&a))
+        .collect::<Result<_, _>>()?;
+    Ok(from_pair(pair, Operand::EnumDefinition { values }))
+}
+
 fn parse_identifier(pair: &Pair<Rule>) -> Result<AstPair<Identifier>, Error<Rule>> {
     match pair.as_rule() {
         Rule::identifier => Ok(from_pair(pair, Identifier(pair.as_str().to_string()))),
@@ -358,7 +374,7 @@ fn parse_pattern_item(pair: &Pair<Rule>) -> Result<AstPair<PatternItem>, Error<R
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::{parse_file, AstPair, Expression, Operand, Statement};
+    use crate::ast::{parse_file, AstPair, Expression, Identifier, Operand, Statement};
     use crate::parser::{NoisParser, Rule};
     use pest::Parser;
 
@@ -398,6 +414,7 @@ mod tests {
                 op.1
             })
             .collect::<Vec<_>>();
+        assert_eq!(numbers.len(), 3);
         assert_eq!(match_enum!(numbers[0], Operand::Integer(n) => n), 1);
         assert_eq!(match_enum!(numbers[1], Operand::Float(n) => n), 12.5);
         assert_eq!(match_enum!(numbers[2], Operand::Float(n) => n), 1e21);
@@ -426,6 +443,7 @@ mod tests {
                 match_enum!(op.1, Operand::String(s) => s)
             })
             .collect::<Vec<_>>();
+        assert_eq!(strings.len(), 8);
         assert_eq!(strings[0], "");
         assert_eq!(strings[1], "");
         assert_eq!(strings[2], "a");
@@ -470,6 +488,7 @@ mod tests {
                 op.1
             })
             .collect::<Vec<_>>();
+        assert_eq!(lists.len(), 8);
         assert_eq!(get_list_items(&lists[0]).len(), 0);
         assert_eq!(get_list_items(&lists[1]).len(), 0);
         assert_eq!(get_list_items(&lists[2]).len(), 0);
@@ -482,5 +501,69 @@ mod tests {
         assert_eq!(match_enum!(l7[0], Operand::Integer(i) => i), 1);
         assert_eq!(match_enum!(l7[1], Operand::Integer(i) => i), 2);
         assert_eq!(match_enum!(&l7[2], Operand::String(s) => s), "abc");
+    }
+
+    #[test]
+    fn build_ast_struct_init() {
+        let source = r#"
+#{a, b, c}
+#{
+    a,
+    b,
+    c
+}
+"#;
+        let file = &NoisParser::parse(Rule::program, source).unwrap();
+        let block = parse_file(file).unwrap().1;
+        let get_struct_items = |p: &Operand| -> Vec<Identifier> {
+            match_enum!(p.clone(), Operand::StructDefinition{fields: fs} => fs)
+                .into_iter()
+                .map(|a| a.1)
+                .collect()
+        };
+        let structs = block
+            .0
+            .into_iter()
+            .map(|s| {
+                let exp = match_enum!(s.1, Statement::Expression { expression: e } => e);
+                let op = *match_enum!(exp.1, Expression::Operand(o) => o);
+                op.1
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(structs.len(), 2);
+        assert_eq!(get_struct_items(&structs[0]).len(), 3);
+        assert_eq!(get_struct_items(&structs[1]).len(), 3);
+    }
+
+    #[test]
+    fn build_ast_enum_init() {
+        let source = r#"
+|{A, B, C}
+|{
+    A,
+    B,
+    C
+}
+"#;
+        let file = &NoisParser::parse(Rule::program, source).unwrap();
+        let block = parse_file(file).unwrap().1;
+        let get_enum_items = |p: &Operand| -> Vec<Identifier> {
+            match_enum!(p.clone(), Operand::EnumDefinition{values: vs} => vs)
+                .into_iter()
+                .map(|a| a.1)
+                .collect()
+        };
+        let enums = block
+            .0
+            .into_iter()
+            .map(|s| {
+                let exp = match_enum!(s.1, Statement::Expression { expression: e } => e);
+                let op = *match_enum!(exp.1, Expression::Operand(o) => o);
+                op.1
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(enums.len(), 2);
+        assert_eq!(get_enum_items(&enums[0]).len(), 3);
+        assert_eq!(get_enum_items(&enums[1]).len(), 3);
     }
 }

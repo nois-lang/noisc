@@ -34,12 +34,12 @@ operand                       = _{
   struct_define               =  {
     STRUCT_OP ~ BRACE_OPEN ~ N*
       ~ identifier? ~ N*
-      ~ (COMMA ~ N* ~ identifier ~ N*)*
+      ~ (COMMA ~ N* ~ identifier ~ N*)* ~ COMMA?
     ~ BRACE_CLOSE }
   enum_define                 =  {
     ENUM_OP ~ BRACE_OPEN ~ N*
       ~ identifier? ~ N*
-      ~ (COMMA ~ N* ~ identifier ~ N*)*
+      ~ (COMMA ~ N* ~ identifier ~ N*)* ~ COMMA?
     ~ BRACE_CLOSE }
   /// #DDFF88
   list_init                   =  {
