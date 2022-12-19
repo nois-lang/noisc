@@ -16,12 +16,12 @@ pub mod parser;
 fn main() {
     let source = r#"
         a = (a, b, c) {
-            d = a
-            print(a)
+            d = [1, 2.5, 'abc']
+            print(d)
         }
     "#;
-    let parsed = NoisParser::parse(Rule::program, source).unwrap();
-    let program = parse_block(&parsed.into_iter().next().unwrap());
+    let program = NoisParser::parse(Rule::program, source)
+        .and_then(|parsed| parse_block(&parsed.into_iter().next().unwrap()));
     match program {
         Ok(p) => {
             println!("{p}")
