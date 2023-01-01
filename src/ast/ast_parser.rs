@@ -43,7 +43,7 @@ pub fn parse_statement(pair: &Pair<Rule>) -> Result<AstPair<Statement>, Error<Ru
             ))
         }
         Rule::expression => parse_expression(pair)
-            .map(|expression| from_pair(pair, Statement::Expression { expression })),
+            .map(|expression| from_pair(pair, Statement::Expression(expression))),
         _ => Err(custom_error(
             pair,
             format!("expected statement, found {:?}", pair.as_rule()),
@@ -341,7 +341,7 @@ mod tests {
             .0
             .into_iter()
             .map(|s| {
-                let exp = match_enum!(s.1, Statement::Expression { expression: e } => e);
+                let exp = match_enum!(s.1, Statement::Expression(e) => e);
                 let op = *match_enum!(exp.1, Expression::Operand(o) => o);
                 op.1
             })
@@ -370,7 +370,7 @@ mod tests {
             .0
             .into_iter()
             .map(|s| {
-                let exp = match_enum!(s.1, Statement::Expression { expression: e } => e);
+                let exp = match_enum!(s.1, Statement::Expression(e) => e);
                 let op = *match_enum!(exp.1, Expression::Operand(o) => o);
                 match_enum!(op.1, Operand::String(s) => s)
             })
@@ -415,7 +415,7 @@ mod tests {
             .0
             .into_iter()
             .map(|s| {
-                let exp = match_enum!(s.1, Statement::Expression { expression: e } => e);
+                let exp = match_enum!(s.1, Statement::Expression(e) => e);
                 let op = *match_enum!(exp.1, Expression::Operand(o) => o);
                 op.1
             })
@@ -457,7 +457,7 @@ mod tests {
             .0
             .into_iter()
             .map(|s| {
-                let exp = match_enum!(s.1, Statement::Expression { expression: e } => e);
+                let exp = match_enum!(s.1, Statement::Expression(e) => e);
                 let op = *match_enum!(exp.1, Expression::Operand(o) => o);
                 op.1
             })
@@ -489,7 +489,7 @@ mod tests {
             .0
             .into_iter()
             .map(|s| {
-                let exp = match_enum!(s.1, Statement::Expression { expression: e } => e);
+                let exp = match_enum!(s.1, Statement::Expression(e) => e);
                 let op = *match_enum!(exp.1, Expression::Operand(o) => o);
                 op.1
             })
@@ -505,7 +505,7 @@ mod tests {
         let file = &NoisParser::parse(Rule::program, source).unwrap();
         let block: AstPair<Block> = parse_file(file).unwrap();
         let statement = block.1 .0.first().unwrap().1.clone();
-        let exp = match_enum!(statement, Statement::Expression { expression: e } => e);
+        let exp = match_enum!(statement, Statement::Expression(e) => e);
         let (left_op, op, right_op) = match_enum!(
             exp.1,
             Expression::Binary { left_operand: l, operator: o, right_operand: r } => (l, o, r)

@@ -11,16 +11,12 @@ pub struct Block(pub Vec<AstPair<Statement>>);
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Statement {
-    Return {
-        expression: Option<AstPair<Expression>>,
-    },
+    Return(Option<AstPair<Expression>>),
     Assignment {
         assignee: AstPair<Assignee>,
         expression: AstPair<Expression>,
     },
-    Expression {
-        expression: AstPair<Expression>,
-    },
+    Expression(AstPair<Expression>),
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
