@@ -1,6 +1,8 @@
 use crate::ast::ast::{
-    Assignee, AstPair, Block, Expression, Identifier, Operand, PatternItem, Statement,
+    Assignee, AstPair, BinaryOperator, Block, Expression, Identifier, Operand, PatternItem,
+    Statement,
 };
+use crate::ast::expression::{Associativity, OperatorAssociativity, OperatorPrecedence};
 use crate::ast::util::{children, custom_error, from_pair, from_span, parse_children};
 use crate::parser::Rule;
 use enquote::unquote;
@@ -53,17 +55,107 @@ pub fn parse_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error<
     match pair.as_rule() {
         Rule::expression => {
             let ch = children(pair);
-            if ch.len() == 1 {
-                return Ok(from_pair(
-                    pair,
-                    Expression::Operand(Box::from(parse_operand(&ch[0])?)),
-                ));
+            match &ch[..] {
+                [o] => Ok(from_pair(
+                    o,
+                    Expression::Operand(Box::from(parse_operand(o)?)),
+                )),
+                _ => parse_complex_expression(pair),
             }
-            todo!("other expression logic")
         }
+        _ => {
+            let t_operand = parse_operand(pair);
+            return if let Ok(operand) = t_operand {
+                Ok(from_pair(pair, Expression::Operand(Box::from(operand))))
+            } else {
+                Err(custom_error(
+                    pair,
+                    format!("expected expression, found {:?}", pair.as_rule()),
+                ))
+            };
+        }
+    }
+}
+
+pub fn parse_complex_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error<Rule>> {
+    #[derive(Debug, PartialOrd, PartialEq, Clone)]
+    enum Node {
+        ValueNode(ValueNode),
+        ExpNode(ExpNode),
+    }
+    #[derive(Debug, PartialOrd, PartialEq, Clone)]
+    struct ValueNode(AstPair<Expression>);
+    #[derive(Debug, PartialOrd, PartialEq, Clone)]
+    struct ExpNode(AstPair<BinaryOperator>, Box<Node>, Box<Node>);
+    let mut operator_stack: Vec<AstPair<BinaryOperator>> = vec![];
+    let mut operand_stack: Vec<Node> = vec![];
+    let ch = children(pair);
+    for c in ch {
+        match c.as_rule() {
+            Rule::binary_operator => {
+                let o1 = parse_binary_operator(&c)?;
+                let mut o2;
+                while !operator_stack.is_empty() {
+                    o2 = operator_stack.last().unwrap();
+                    if (o1.1.associativity() != Associativity::Right
+                        && o1.1.precedence() == o2.1.precedence())
+                        || o1.1.precedence() < o2.1.precedence()
+                    {
+                        operator_stack.pop();
+                        let r_op = operand_stack.pop().unwrap();
+                        let l_op = operand_stack.pop().unwrap();
+                        operand_stack.push(Node::ExpNode(ExpNode(
+                            o1.clone(),
+                            Box::from(l_op.clone()),
+                            Box::from(r_op.clone()),
+                        )));
+                    } else {
+                        break;
+                    }
+                }
+                operator_stack.push(o1.clone());
+            }
+            _ => {
+                let operand = parse_expression(&c)?;
+                operand_stack.push(Node::ValueNode(ValueNode(operand)));
+            }
+        }
+    }
+    while !operator_stack.is_empty() {
+        let r_op = operand_stack.pop().unwrap();
+        let l_op = operand_stack.pop().unwrap();
+        operand_stack.push(Node::ExpNode(ExpNode(
+            operator_stack.pop().unwrap(),
+            Box::from(l_op.clone()),
+            Box::from(r_op.clone()),
+        )));
+    }
+    fn map_node(n: &Node) -> AstPair<Expression> {
+        match n {
+            Node::ValueNode(ValueNode(v)) => v.clone(),
+            Node::ExpNode(ExpNode(op, l, r)) => {
+                let exp = Expression::Binary {
+                    left_operand: Box::from(map_node(l)),
+                    operator: Box::new(op.clone()),
+                    right_operand: Box::from(map_node(r)),
+                };
+                from_span(&op.0, exp)
+            }
+        }
+    }
+    Ok(map_node(&operand_stack.pop().unwrap()))
+}
+
+pub fn parse_binary_operator(pair: &Pair<Rule>) -> Result<AstPair<BinaryOperator>, Error<Rule>> {
+    match pair.as_rule() {
+        Rule::binary_operator => children(pair)
+            .first()
+            .unwrap()
+            .try_into()
+            .map(|op| from_pair(pair, op)),
         _ => Err(custom_error(
             pair,
-            format!("expected expression, found {:?}", pair.as_rule()),
+            format!("expected binary operator, found {:?}", pair.as_rule()),
         )),
     }
 }
@@ -180,7 +272,7 @@ pub fn parse_parameter_list(pair: &Pair<Rule>) -> Result<Vec<AstPair<Expression>
         }
         _ => Err(custom_error(
             pair,
-            format!("expected expression, found {:?}", pair.as_rule()),
+            format!("expected parameter list, found {:?}", pair.as_rule()),
         )),
     }
 }
@@ -405,5 +497,48 @@ mod tests {
         assert_eq!(enums.len(), 2);
         assert_eq!(get_enum_items(&enums[0]).len(), 3);
         assert_eq!(get_enum_items(&enums[1]).len(), 3);
+    }
+
+    #[test]
+    fn build_ast_complex_expression() {
+        let source = r#"a + b * c"#;
+        let file = &NoisParser::parse(Rule::program, source).unwrap();
+        let block: AstPair<Block> = parse_file(file).unwrap();
+        let statement = block.1 .0.first().unwrap().1.clone();
+        let exp = match_enum!(statement, Statement::Expression { expression: e } => e);
+        let (left_op, op, right_op) = match_enum!(
+            exp.1,
+            Expression::Binary { left_operand: l, operator: o, right_operand: r } => (l, o, r)
+        );
+        assert_eq!(op.1, BinaryOperator::Add);
+        let a_id = match_enum!(
+            match_enum!(
+                left_op.1,
+                Expression::Operand(o) => o
+            ).1,
+            Operand::Identifier(i) => i
+        );
+        assert_eq!(a_id.0, "a");
+        let (sub_left_op, sub_op, sub_right_op) = match_enum!(
+            right_op.1,
+            Expression::Binary { left_operand: l, operator: o, right_operand: r } => (l, o, r)
+        );
+        assert_eq!(sub_op.1, BinaryOperator::Multiply);
+        let b_id = match_enum!(
+            match_enum!(
+                sub_left_op.1,
+                Expression::Operand(o) => o
+            ).1,
+            Operand::Identifier(i) => i
+        );
+        assert_eq!(b_id.0, "b");
+        let c_id = match_enum!(
+            match_enum!(
+                sub_right_op.1,
+                Expression::Operand(o) => o
+            ).1,
+            Operand::Identifier(i) => i
+        );
+        assert_eq!(c_id.0, "c");
     }
 }

@@ -1,3 +1,7 @@
+use crate::ast::util::custom_error;
+use crate::parser::Rule;
+use pest::error::Error;
+use pest::iterators::Pair;
 use regex::Regex;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
@@ -83,9 +87,39 @@ pub enum BinaryOperator {
     Equals,
     NotEquals,
     Greater,
+    GreaterOrEquals,
     Less,
+    LessOrEquals,
     And,
     Or,
+}
+
+impl<'a> TryFrom<&'a Pair<'a, Rule>> for BinaryOperator {
+    type Error = Error<Rule>;
+
+    fn try_from(pair: &Pair<Rule>) -> Result<Self, Self::Error> {
+        match pair.as_rule() {
+            Rule::ADD_OP => Ok(Self::Add),
+            Rule::SUBTRACT_OP => Ok(Self::Subtract),
+            Rule::MULTIPLY_OP => Ok(Self::Multiply),
+            Rule::DIVIDE_OP => Ok(Self::Multiply),
+            Rule::EXPONENT_OP => Ok(Self::Multiply),
+            Rule::REMAINDER_OP => Ok(Self::Multiply),
+            Rule::ACCESSOR_OP => Ok(Self::Multiply),
+            Rule::EQUALS_OP => Ok(Self::Multiply),
+            Rule::NOT_EQUALS_OP => Ok(Self::Multiply),
+            Rule::GREATER_OP => Ok(Self::Multiply),
+            Rule::GREATER_OR_EQUALS_OP => Ok(Self::Multiply),
+            Rule::LESS_OP => Ok(Self::Multiply),
+            Rule::LESS_OR_EQUALS_OP => Ok(Self::Multiply),
+            Rule::AND_OP => Ok(Self::Multiply),
+            Rule::OR_OP => Ok(Self::Multiply),
+            _ => Err(custom_error(
+                &pair,
+                format!("unknown binary operator {:?}", pair.as_rule()),
+            )),
+        }
+    }
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]

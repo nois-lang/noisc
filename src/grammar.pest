@@ -9,7 +9,7 @@ program                       = _{ SOI ~ block ~ EOI }
         braced_expression     = _{ (operand | (PAREN_OPEN ~ N* ~ expression ~ N* ~ PAREN_CLOSE)) }
         binary_operator       =  {
           ADD_OP | SUBTRACT_OP | MULTIPLY_OP | DIVIDE_OP | EXPONENT_OP | REMAINDER_OP
-          | ACCESSOR_OP | EQUALS_OP | NOT_EQUALS_OP | GREATER_OP | LESS_OP | AND_OP | OR_OP
+          | ACCESSOR_OP | EQUALS_OP | NOT_EQUALS_OP | GREATER_OP | GREATER_OR_EQUALS_OP | LESS_OP | LESS_OR_EQUALS_OP | AND_OP | OR_OP
         }
         unary_operator        =  { ADD_OP | SUBTRACT_OP | NOT_OP | SPREAD_OP }
 
@@ -107,8 +107,10 @@ ADD_OP                        =  { "+" }
 MULTIPLY_OP                   =  { "*" }
 DIVIDE_OP                     =  { "/" }
 EXPONENT_OP                   =  { "^" }
-GREATER_OP                    =  { ">" }
-LESS_OP                       =  { "<" }
+GREATER_OP                    =  { !GREATER_OR_EQUALS_OP ~ ">" }
+GREATER_OR_EQUALS_OP          =  { ">=" }
+LESS_OP                       =  { !LESS_OR_EQUALS_OP ~ "<" }
+LESS_OR_EQUALS_OP             =  { "<=" }
 REMAINDER_OP                  =  { "%" }
 ACCESSOR_OP                   =  { !SPREAD_OP ~ "." }
 SPREAD_OP                     =  { ".." }
