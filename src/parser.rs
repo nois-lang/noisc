@@ -4,7 +4,7 @@ pub struct NoisParser;
 
 #[cfg(test)]
 mod tests {
-    use pest::{parses_to, Parser};
+    use pest::parses_to;
 
     use crate::parser::*;
 
@@ -494,21 +494,6 @@ a = []
                         ])
                     ])
                 ])
-            ]
-        }
-    }
-
-    #[ignore]
-    #[test]
-    fn parse() {
-        let source = r#"
-"#;
-        println!("{}", NoisParser::parse(Rule::program, source).unwrap());
-        parses_to! {
-            parser: NoisParser,
-            input: source,
-            rule: Rule::program,
-            tokens: [
             ]
         }
     }
