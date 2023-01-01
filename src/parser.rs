@@ -327,13 +327,14 @@ a && (
     || d != e
 )
 a - (a / 12).foo(boo() / 6) * c
+(-(1 + a) / 4)
 "#;
         parses_to! {
             parser: NoisParser,
             input: source,
             rule: Rule::program,
             tokens: [
-                block(0, 89, [
+                block(0, 104, [
                     expression(1, 2, [identifier(1, 2)]),
                     expression(3, 8, [
                         identifier(3, 4),
@@ -381,6 +382,20 @@ a - (a / 12).foo(boo() / 6) * c
                         ]),
                         binary_operator(85, 86, [MULTIPLY_OP(85, 86)]),
                         identifier(87, 88)
+                    ]),
+                    expression(89, 103, [
+                        expression(90, 102, [
+                            unary_expression(90, 98, [
+                                unary_operator(90, 91, [SUBTRACT_OP(90, 91)]),
+                                expression(92, 97, [
+                                    integer(92, 93),
+                                    binary_operator(94, 95, [ADD_OP(94, 95)]),
+                                    identifier(96, 97)
+                                ])
+                            ]),
+                            binary_operator(99, 100, [DIVIDE_OP(99, 100)]),
+                            integer(101, 102)
+                        ])
                     ])
                 ])
             ]

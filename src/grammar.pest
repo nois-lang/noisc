@@ -3,8 +3,10 @@ program                       = _{ SOI ~ block ~ EOI }
     statement                 = _{ return_statement | assignment | expression }
       return_statement        =  { RETURN_KEYWORD ~ expression? }
       assignment              =  { assignee ~ EQUALS ~ expression }
-      expression              =  { unary_expr ~ (N* ~ binary_operator ~ N* ~ unary_expr)* }
-        unary_expr            = _{ unary_operator? ~ (operand | (PAREN_OPEN ~ N* ~ expression ~ N* ~ PAREN_CLOSE)) }
+      expression              =  { sub_expression ~ (N* ~ binary_operator ~ N* ~ sub_expression)* }
+        sub_expression        = _{ unary_expression | operand | braced_expression }
+        unary_expression      =  { unary_operator ~ braced_expression }
+        braced_expression     = _{ (operand | (PAREN_OPEN ~ N* ~ expression ~ N* ~ PAREN_CLOSE)) }
         binary_operator       =  {
           ADD_OP | SUBTRACT_OP | MULTIPLY_OP | DIVIDE_OP | EXPONENT_OP | REMAINDER_OP
           | ACCESSOR_OP | EQUALS_OP | NOT_EQUALS_OP | GREATER_OP | LESS_OP | AND_OP | OR_OP
@@ -104,7 +106,7 @@ SUBTRACT_OP                   =  { !ARROW_OP ~ "-" }
 ADD_OP                        =  { "+" }
 MULTIPLY_OP                   =  { "*" }
 DIVIDE_OP                     =  { "/" }
-EXPONENT_OP                      =  { "^" }
+EXPONENT_OP                   =  { "^" }
 GREATER_OP                    =  { ">" }
 LESS_OP                       =  { "<" }
 REMAINDER_OP                  =  { "%" }
