@@ -1,3 +1,7 @@
+use enquote::unquote;
+use pest::error::Error;
+use pest::iterators::{Pair, Pairs};
+
 use crate::ast::ast::{
     Assignee, AstPair, BinaryOperator, Block, Expression, Identifier, Operand, PatternItem,
     Statement,
@@ -5,9 +9,6 @@ use crate::ast::ast::{
 use crate::ast::expression::{Associativity, OperatorAssociativity, OperatorPrecedence};
 use crate::ast::util::{children, custom_error, from_pair, from_span, parse_children};
 use crate::parser::Rule;
-use enquote::unquote;
-use pest::error::Error;
-use pest::iterators::{Pair, Pairs};
 
 pub fn parse_file(pairs: &Pairs<Rule>) -> Result<AstPair<Block>, Error<Rule>> {
     parse_block(&pairs.clone().into_iter().next().unwrap())
@@ -16,10 +17,7 @@ pub fn parse_file(pairs: &Pairs<Rule>) -> Result<AstPair<Block>, Error<Rule>> {
 pub fn parse_block(pair: &Pair<Rule>) -> Result<AstPair<Block>, Error<Rule>> {
     match pair.as_rule() {
         Rule::block => {
-            let statements = children(pair)
-                .into_iter()
-                .map(|s| parse_statement(&s))
-                .collect::<Result<_, _>>()?;
+            let statements = parse_children(pair, parse_statement)?;
             Ok(from_pair(pair, Block { statements }))
         }
         Rule::expression => {
@@ -265,10 +263,7 @@ pub fn parse_function_init(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<
 }
 
 pub fn parse_list_init(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
-    let items: Vec<AstPair<Expression>> = children(pair)
-        .into_iter()
-        .map(|a| parse_expression(&a))
-        .collect::<Result<_, _>>()?;
+    let items = parse_children(pair, parse_expression)?;
     Ok(from_pair(pair, Operand::ListInit { items }))
 }
 
@@ -294,13 +289,7 @@ fn parse_identifier(pair: &Pair<Rule>) -> Result<AstPair<Identifier>, Error<Rule
 
 pub fn parse_parameter_list(pair: &Pair<Rule>) -> Result<Vec<AstPair<Expression>>, Error<Rule>> {
     match pair.as_rule() {
-        Rule::parameter_list => {
-            let parameters: Result<Vec<AstPair<Expression>>, Error<Rule>> = children(pair)
-                .into_iter()
-                .map(|c| parse_expression(&c))
-                .collect();
-            return parameters;
-        }
+        Rule::parameter_list => parse_children(pair, parse_expression),
         _ => Err(custom_error(
             pair,
             format!("expected parameter list, found {:?}", pair.as_rule()),
@@ -337,9 +326,11 @@ fn parse_pattern_item(pair: &Pair<Rule>) -> Result<AstPair<PatternItem>, Error<R
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::parser::NoisParser;
     use pest::Parser;
+
+    use crate::parser::NoisParser;
+
+    use super::*;
 
     #[macro_export]
     macro_rules! match_enum {
