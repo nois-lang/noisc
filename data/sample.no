@@ -11,7 +11,7 @@
 "a"
 "a\nb"
 'a'
-'a\\\b\f\n\r\tb'
+'a\\\n\r\tb'
 'a\u1234bc'
 'hey 😎'
 

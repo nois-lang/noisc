@@ -1,0 +1,3 @@
+helloWorld = -> println('Hello, World!')
+
+main = -> helloWorld()
