@@ -15,6 +15,10 @@ pub fn children<'a>(p: &'a Pair<Rule>) -> Vec<Pair<'a, Rule>> {
     p.clone().into_inner().collect::<Vec<_>>()
 }
 
+pub fn first_child<'a>(p: &'a Pair<Rule>) -> Option<Pair<'a, Rule>> {
+    children(p).into_iter().next()
+}
+
 pub fn custom_error(pair: &Pair<Rule>, message: String) -> Error<Rule> {
     Error::new_from_span(ErrorVariant::CustomError { message }, pair.as_span())
 }

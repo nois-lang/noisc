@@ -87,10 +87,10 @@ impl Display for UnaryOperator {
     }
 }
 
-impl<'a> TryFrom<&'a Pair<'a, Rule>> for UnaryOperator {
+impl TryFrom<Pair<'_, Rule>> for UnaryOperator {
     type Error = Error<Rule>;
 
-    fn try_from(pair: &Pair<Rule>) -> Result<Self, Self::Error> {
+    fn try_from(pair: Pair<Rule>) -> Result<Self, Self::Error> {
         match pair.as_rule() {
             Rule::ADD_OP => Ok(Self::Plus),
             Rule::SUBTRACT_OP => Ok(Self::Minus),
@@ -150,10 +150,10 @@ impl Display for BinaryOperator {
     }
 }
 
-impl<'a> TryFrom<&'a Pair<'a, Rule>> for BinaryOperator {
+impl TryFrom<Pair<'_, Rule>> for BinaryOperator {
     type Error = Error<Rule>;
 
-    fn try_from(pair: &Pair<Rule>) -> Result<Self, Self::Error> {
+    fn try_from(pair: Pair<Rule>) -> Result<Self, Self::Error> {
         match pair.as_rule() {
             Rule::ADD_OP => Ok(Self::Add),
             Rule::SUBTRACT_OP => Ok(Self::Subtract),
