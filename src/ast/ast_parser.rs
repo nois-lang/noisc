@@ -76,14 +76,7 @@ pub fn parse_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error<
         Rule::expression => {
             let ch = children(pair);
             match &ch[..] {
-                [o] => match o.as_rule() {
-                    Rule::operand => Ok(from_pair(
-                        o,
-                        Expression::Operand(Box::from(parse_operand(o)?)),
-                    )),
-                    Rule::unary_expression | Rule::expression => Ok(parse_expression(o)?),
-                    _ => unreachable!(),
-                },
+                [o] => Ok(parse_expression(o)?),
                 _ => parse_complex_expression(pair),
             }
         }
