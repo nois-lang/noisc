@@ -278,7 +278,10 @@ a -> a
             tokens: [
                 block(0, 63, [
                     expression(1, 5, [
-                        function_init(1, 5, [expression(4, 5, [identifier(4, 5)])])
+                        function_init(1, 5, [
+                            argument_list(1, 1, []),
+                            expression(4, 5, [identifier(4, 5)])
+                        ])
                     ]),
                     expression(6, 12, [
                         function_init(6, 12, [

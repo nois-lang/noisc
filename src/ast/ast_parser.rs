@@ -19,11 +19,18 @@ pub fn parse_block(pair: &Pair<Rule>) -> Result<AstPair<Block>, Error<Rule>> {
             let statements = children(pair)
                 .into_iter()
                 .map(|s| parse_statement(&s))
-                .collect::<Result<_, _>>();
+                .collect::<Result<_, _>>()?;
+            Ok(from_pair(pair, Block { statements }))
+        }
+        Rule::expression => {
+            let expression = parse_expression(&children(pair)[0])?;
             Ok(from_pair(
                 pair,
                 Block {
-                    statements: statements?,
+                    statements: vec![from_span(
+                        &expression.clone().0,
+                        Statement::Expression(expression),
+                    )],
                 },
             ))
         }
@@ -189,7 +196,7 @@ pub fn parse_operand(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>>
             }?;
             Ok(from_pair(pair, Operand::String(str)))
         }
-        Rule::function_call => parse_function_all(pair),
+        Rule::function_call => parse_function_call(pair),
         Rule::function_init => parse_function_init(pair),
         Rule::list_init => parse_list_init(pair),
         Rule::struct_define => parse_struct_define(pair),
@@ -226,7 +233,7 @@ pub fn parse_float(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
     Ok(from_pair(pair, Operand::Float(num)))
 }
 
-pub fn parse_function_all(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
+pub fn parse_function_call(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
     let ch = children(pair);
     Ok(from_pair(
         pair,
