@@ -20,7 +20,12 @@ pub fn parse_block(pair: &Pair<Rule>) -> Result<AstPair<Block>, Error<Rule>> {
                 .into_iter()
                 .map(|s| parse_statement(&s))
                 .collect::<Result<_, _>>();
-            Ok(from_pair(pair, Block(statements?)))
+            Ok(from_pair(
+                pair,
+                Block {
+                    statements: statements?,
+                },
+            ))
         }
         _ => Err(custom_error(
             pair,
@@ -96,16 +101,25 @@ pub fn parse_complex_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>
                 let o1 = parse_binary_operator(&c)?;
                 let mut o2;
                 while !operator_stack.is_empty() {
-                    o2 = operator_stack.last().unwrap();
+                    o2 = operator_stack.iter().cloned().last().unwrap();
+                    if o1.1.precedence() == o2.1.precedence()
+                        && o1.1.associativity() == Associativity::None
+                        && o2.1.associativity() == Associativity::None
+                    {
+                        return Err(custom_error(
+                            pair,
+                            format!("Operators {} and {} cannot be chained", o1.1, o2.1),
+                        ));
+                    }
                     if (o1.1.associativity() != Associativity::Right
                         && o1.1.precedence() == o2.1.precedence())
                         || o1.1.precedence() < o2.1.precedence()
                     {
                         operator_stack.pop();
-                        let r_op = operand_stack.pop().unwrap();
                         let l_op = operand_stack.pop().unwrap();
+                        let r_op = operand_stack.pop().unwrap();
                         operand_stack.push(Node::ExpNode(ExpNode(
-                            o1.clone(),
+                            o2,
                             Box::from(l_op.clone()),
                             Box::from(r_op.clone()),
                         )));
@@ -122,8 +136,8 @@ pub fn parse_complex_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>
         }
     }
     while !operator_stack.is_empty() {
-        let r_op = operand_stack.pop().unwrap();
         let l_op = operand_stack.pop().unwrap();
+        let r_op = operand_stack.pop().unwrap();
         operand_stack.push(Node::ExpNode(ExpNode(
             operator_stack.pop().unwrap(),
             Box::from(l_op.clone()),
@@ -135,9 +149,9 @@ pub fn parse_complex_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>
             Node::ValueNode(ValueNode(v)) => v.clone(),
             Node::ExpNode(ExpNode(op, l, r)) => {
                 let exp = Expression::Binary {
-                    left_operand: Box::from(map_node(l)),
+                    left_operand: Box::from(map_node(r)),
                     operator: Box::new(op.clone()),
-                    right_operand: Box::from(map_node(r)),
+                    right_operand: Box::from(map_node(l)),
                 };
                 from_span(&op.0, exp)
             }
@@ -325,7 +339,7 @@ mod tests {
         let source = "";
         let file = &NoisParser::parse(Rule::program, source).unwrap();
         let block = parse_file(file).unwrap().1;
-        assert!(block.0.is_empty());
+        assert!(block.statements.is_empty());
     }
 
     #[test]
@@ -338,7 +352,7 @@ mod tests {
         let file = &NoisParser::parse(Rule::program, source).unwrap();
         let block = parse_file(file).unwrap().1;
         let numbers = block
-            .0
+            .statements
             .into_iter()
             .map(|s| {
                 let exp = match_enum!(s.1, Statement::Expression(e) => e);
@@ -367,7 +381,7 @@ mod tests {
         let file = &NoisParser::parse(Rule::program, source).unwrap();
         let block = parse_file(file).unwrap().1;
         let strings: Vec<String> = block
-            .0
+            .statements
             .into_iter()
             .map(|s| {
                 let exp = match_enum!(s.1, Statement::Expression(e) => e);
@@ -412,7 +426,7 @@ mod tests {
                 .collect()
         };
         let lists = block
-            .0
+            .statements
             .into_iter()
             .map(|s| {
                 let exp = match_enum!(s.1, Statement::Expression(e) => e);
@@ -454,7 +468,7 @@ mod tests {
                 .collect()
         };
         let structs = block
-            .0
+            .statements
             .into_iter()
             .map(|s| {
                 let exp = match_enum!(s.1, Statement::Expression(e) => e);
@@ -486,7 +500,7 @@ mod tests {
                 .collect()
         };
         let enums = block
-            .0
+            .statements
             .into_iter()
             .map(|s| {
                 let exp = match_enum!(s.1, Statement::Expression(e) => e);
@@ -500,45 +514,282 @@ mod tests {
     }
 
     #[test]
-    fn build_ast_complex_expression() {
+    fn build_ast_complex_expression_basic() {
         let source = r#"a + b * c"#;
         let file = &NoisParser::parse(Rule::program, source).unwrap();
         let block: AstPair<Block> = parse_file(file).unwrap();
-        let statement = block.1 .0.first().unwrap().1.clone();
-        let exp = match_enum!(statement, Statement::Expression(e) => e);
-        let (left_op, op, right_op) = match_enum!(
-            exp.1,
-            Expression::Binary { left_operand: l, operator: o, right_operand: r } => (l, o, r)
+        let expect = r#"
+Block {
+    statements: [
+        Expression(
+            Binary {
+                left_operand: Operand(
+                    Identifier(
+                        Identifier(
+                            "a",
+                        ),
+                    ),
+                ),
+                operator: Add,
+                right_operand: Binary {
+                    left_operand: Operand(
+                        Identifier(
+                            Identifier(
+                                "b",
+                            ),
+                        ),
+                    ),
+                    operator: Multiply,
+                    right_operand: Operand(
+                        Identifier(
+                            Identifier(
+                                "c",
+                            ),
+                        ),
+                    ),
+                },
+            },
+        ),
+    ],
+}
+"#;
+        assert_eq!(format!("{:#?}", block), expect.trim())
+    }
+
+    #[test]
+    fn build_ast_complex_expression_left_associative() {
+        let source = r#"a + b - c"#;
+        let file = &NoisParser::parse(Rule::program, source).unwrap();
+        let block: AstPair<Block> = parse_file(file).unwrap();
+        let expect = r#"
+Block {
+    statements: [
+        Expression(
+            Binary {
+                left_operand: Binary {
+                    left_operand: Operand(
+                        Identifier(
+                            Identifier(
+                                "a",
+                            ),
+                        ),
+                    ),
+                    operator: Add,
+                    right_operand: Operand(
+                        Identifier(
+                            Identifier(
+                                "b",
+                            ),
+                        ),
+                    ),
+                },
+                operator: Subtract,
+                right_operand: Operand(
+                    Identifier(
+                        Identifier(
+                            "c",
+                        ),
+                    ),
+                ),
+            },
+        ),
+    ],
+}
+"#;
+        assert_eq!(format!("{:#?}", block), expect.trim())
+    }
+
+    #[test]
+    fn build_ast_complex_expression_right_associative() {
+        let source = r#"a && b && c"#;
+        let file = &NoisParser::parse(Rule::program, source).unwrap();
+        let block: AstPair<Block> = parse_file(file).unwrap();
+        let expect = r#"
+Block {
+    statements: [
+        Expression(
+            Binary {
+                left_operand: Operand(
+                    Identifier(
+                        Identifier(
+                            "a",
+                        ),
+                    ),
+                ),
+                operator: And,
+                right_operand: Binary {
+                    left_operand: Operand(
+                        Identifier(
+                            Identifier(
+                                "b",
+                            ),
+                        ),
+                    ),
+                    operator: And,
+                    right_operand: Operand(
+                        Identifier(
+                            Identifier(
+                                "c",
+                            ),
+                        ),
+                    ),
+                },
+            },
+        ),
+    ],
+}
+"#;
+        assert_eq!(format!("{:#?}", block), expect.trim())
+    }
+
+    #[test]
+    fn build_ast_complex_expression_long() {
+        let source = r#"(a + b) * "abc".len() ^ 12 ^ 3 - foo(c)"#;
+        let file = &NoisParser::parse(Rule::program, source).unwrap();
+        let block: AstPair<Block> = parse_file(file).unwrap();
+        let expect = r#"
+Block {
+    statements: [
+        Expression(
+            Binary {
+                left_operand: Binary {
+                    left_operand: Binary {
+                        left_operand: Operand(
+                            Identifier(
+                                Identifier(
+                                    "a",
+                                ),
+                            ),
+                        ),
+                        operator: Add,
+                        right_operand: Operand(
+                            Identifier(
+                                Identifier(
+                                    "b",
+                                ),
+                            ),
+                        ),
+                    },
+                    operator: Multiply,
+                    right_operand: Binary {
+                        left_operand: Binary {
+                            left_operand: Operand(
+                                String(
+                                    "abc",
+                                ),
+                            ),
+                            operator: Accessor,
+                            right_operand: Operand(
+                                FunctionCall {
+                                    identifier: Identifier(
+                                        "len",
+                                    ),
+                                    parameters: [],
+                                },
+                            ),
+                        },
+                        operator: Exponent,
+                        right_operand: Binary {
+                            left_operand: Operand(
+                                Integer(
+                                    12,
+                                ),
+                            ),
+                            operator: Exponent,
+                            right_operand: Operand(
+                                Integer(
+                                    3,
+                                ),
+                            ),
+                        },
+                    },
+                },
+                operator: Subtract,
+                right_operand: Operand(
+                    FunctionCall {
+                        identifier: Identifier(
+                            "foo",
+                        ),
+                        parameters: [
+                            Operand(
+                                Identifier(
+                                    Identifier(
+                                        "c",
+                                    ),
+                                ),
+                            ),
+                        ],
+                    },
+                ),
+            },
+        ),
+    ],
+}
+"#;
+        assert_eq!(format!("{:#?}", block), expect.trim())
+    }
+
+    #[test]
+    fn build_ast_complex_expression_chain_methods() {
+        let source = r#"a.foo().bar(b)"#;
+        let file = &NoisParser::parse(Rule::program, source).unwrap();
+        let block: AstPair<Block> = parse_file(file).unwrap();
+        let expect = r#"
+Block {
+    statements: [
+        Expression(
+            Binary {
+                left_operand: Binary {
+                    left_operand: Operand(
+                        Identifier(
+                            Identifier(
+                                "a",
+                            ),
+                        ),
+                    ),
+                    operator: Accessor,
+                    right_operand: Operand(
+                        FunctionCall {
+                            identifier: Identifier(
+                                "foo",
+                            ),
+                            parameters: [],
+                        },
+                    ),
+                },
+                operator: Accessor,
+                right_operand: Operand(
+                    FunctionCall {
+                        identifier: Identifier(
+                            "bar",
+                        ),
+                        parameters: [
+                            Operand(
+                                Identifier(
+                                    Identifier(
+                                        "b",
+                                    ),
+                                ),
+                            ),
+                        ],
+                    },
+                ),
+            },
+        ),
+    ],
+}
+"#;
+        assert_eq!(format!("{:#?}", block), expect.trim())
+    }
+
+    #[test]
+    fn build_ast_complex_expression_non_associative_fail() {
+        let source = r#"a == b <= c"#;
+        let file = &NoisParser::parse(Rule::program, source).unwrap();
+        let err = parse_file(file).unwrap_err();
+        assert_eq!(
+            err.variant.message(),
+            "Operators <= and == cannot be chained"
         );
-        assert_eq!(op.1, BinaryOperator::Add);
-        let a_id = match_enum!(
-            match_enum!(
-                left_op.1,
-                Expression::Operand(o) => o
-            ).1,
-            Operand::Identifier(i) => i
-        );
-        assert_eq!(a_id.0, "a");
-        let (sub_left_op, sub_op, sub_right_op) = match_enum!(
-            right_op.1,
-            Expression::Binary { left_operand: l, operator: o, right_operand: r } => (l, o, r)
-        );
-        assert_eq!(sub_op.1, BinaryOperator::Multiply);
-        let b_id = match_enum!(
-            match_enum!(
-                sub_left_op.1,
-                Expression::Operand(o) => o
-            ).1,
-            Operand::Identifier(i) => i
-        );
-        assert_eq!(b_id.0, "b");
-        let c_id = match_enum!(
-            match_enum!(
-                sub_right_op.1,
-                Expression::Operand(o) => o
-            ).1,
-            Operand::Identifier(i) => i
-        );
-        assert_eq!(c_id.0, "c");
     }
 }

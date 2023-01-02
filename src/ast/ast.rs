@@ -2,12 +2,13 @@ use crate::ast::util::custom_error;
 use crate::parser::Rule;
 use pest::error::Error;
 use pest::iterators::Pair;
-use regex::Regex;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
-pub struct Block(pub Vec<AstPair<Statement>>);
+pub struct Block {
+    pub statements: Vec<AstPair<Statement>>,
+}
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Statement {
@@ -90,6 +91,32 @@ pub enum BinaryOperator {
     Or,
 }
 
+impl Display for BinaryOperator {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                BinaryOperator::Add => "+",
+                BinaryOperator::Subtract => "-",
+                BinaryOperator::Multiply => "*",
+                BinaryOperator::Divide => "/",
+                BinaryOperator::Exponent => "^",
+                BinaryOperator::Remainder => "%",
+                BinaryOperator::Accessor => ".",
+                BinaryOperator::Equals => "==",
+                BinaryOperator::NotEquals => "!=",
+                BinaryOperator::Greater => ">",
+                BinaryOperator::GreaterOrEquals => ">=",
+                BinaryOperator::Less => "<",
+                BinaryOperator::LessOrEquals => "<=",
+                BinaryOperator::And => "&&",
+                BinaryOperator::Or => "||",
+            }
+        )
+    }
+}
+
 impl<'a> TryFrom<&'a Pair<'a, Rule>> for BinaryOperator {
     type Error = Error<Rule>;
 
@@ -98,18 +125,18 @@ impl<'a> TryFrom<&'a Pair<'a, Rule>> for BinaryOperator {
             Rule::ADD_OP => Ok(Self::Add),
             Rule::SUBTRACT_OP => Ok(Self::Subtract),
             Rule::MULTIPLY_OP => Ok(Self::Multiply),
-            Rule::DIVIDE_OP => Ok(Self::Multiply),
-            Rule::EXPONENT_OP => Ok(Self::Multiply),
-            Rule::REMAINDER_OP => Ok(Self::Multiply),
-            Rule::ACCESSOR_OP => Ok(Self::Multiply),
-            Rule::EQUALS_OP => Ok(Self::Multiply),
-            Rule::NOT_EQUALS_OP => Ok(Self::Multiply),
-            Rule::GREATER_OP => Ok(Self::Multiply),
-            Rule::GREATER_OR_EQUALS_OP => Ok(Self::Multiply),
-            Rule::LESS_OP => Ok(Self::Multiply),
-            Rule::LESS_OR_EQUALS_OP => Ok(Self::Multiply),
-            Rule::AND_OP => Ok(Self::Multiply),
-            Rule::OR_OP => Ok(Self::Multiply),
+            Rule::DIVIDE_OP => Ok(Self::Divide),
+            Rule::EXPONENT_OP => Ok(Self::Exponent),
+            Rule::REMAINDER_OP => Ok(Self::Remainder),
+            Rule::ACCESSOR_OP => Ok(Self::Accessor),
+            Rule::EQUALS_OP => Ok(Self::Equals),
+            Rule::NOT_EQUALS_OP => Ok(Self::NotEquals),
+            Rule::GREATER_OP => Ok(Self::Greater),
+            Rule::GREATER_OR_EQUALS_OP => Ok(Self::GreaterOrEquals),
+            Rule::LESS_OP => Ok(Self::Less),
+            Rule::LESS_OR_EQUALS_OP => Ok(Self::LessOrEquals),
+            Rule::AND_OP => Ok(Self::And),
+            Rule::OR_OP => Ok(Self::Or),
             _ => Err(custom_error(
                 &pair,
                 format!("unknown binary operator {:?}", pair.as_rule()),
@@ -159,14 +186,15 @@ impl<'a> From<pest::Span<'a>> for Span {
     }
 }
 
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(PartialOrd, PartialEq, Clone)]
 pub struct AstPair<A>(pub Span, pub A);
 
-impl<T: Debug> Display for AstPair<T> {
+impl<T: Debug> Debug for AstPair<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let s = format!("{:#?}", self);
-        let re1 = Regex::new(r"(?mU)\n.*Span \{[\s\S]*},").unwrap();
-        let no_span = re1.replace_all(s.as_str(), "");
-        write!(f, "{}", no_span)
+        if f.alternate() {
+            write!(f, "{:#?}", self.1)
+        } else {
+            write!(f, "{:?}", self.1)
+        }
     }
 }

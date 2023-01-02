@@ -13,16 +13,22 @@ pub mod parser;
 
 fn main() {
     let source = r#"
-        a = (a, b, c) {
-            d = [1, 2.5, 'abc']
-            print(d)
-        }
-    "#;
+User = #{ name, age }
+
+Role = |{ Admin, Guest }
+
+a = (a, b, c) {
+    d = [1, 2.5, 'abc']
+    e = a + b ^ c.foo("some")
+    println(d)
+    println(e + " " + "here")
+}
+"#;
     let program = NoisParser::parse(Rule::program, source)
         .and_then(|parsed| parse_block(&parsed.into_iter().next().unwrap()));
     match program {
         Ok(p) => {
-            println!("{p}")
+            println!("{:#?}", p)
         }
         Err(e) => {
             eprintln!("{}", e.to_string().red())
