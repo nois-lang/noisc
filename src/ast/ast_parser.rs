@@ -43,7 +43,15 @@ pub fn parse_block(pair: &Pair<Rule>) -> Result<AstPair<Block>, Error<Rule>> {
 
 pub fn parse_statement(pair: &Pair<Rule>) -> Result<AstPair<Statement>, Error<Rule>> {
     match pair.as_rule() {
-        Rule::return_statement => todo!(),
+        Rule::return_statement => {
+            let m_exp = children(pair).iter().next().map(|p| parse_expression(p));
+            let st = if let Some(p_exp) = m_exp {
+                Statement::Return(Some(p_exp?))
+            } else {
+                Statement::Return(None)
+            };
+            Ok(from_pair(pair, st))
+        }
         Rule::assignment => {
             let ch = children(pair);
             Ok(from_pair(
@@ -54,8 +62,10 @@ pub fn parse_statement(pair: &Pair<Rule>) -> Result<AstPair<Statement>, Error<Ru
                 },
             ))
         }
-        Rule::expression => parse_expression(pair)
-            .map(|expression| from_pair(pair, Statement::Expression(expression))),
+        Rule::expression => {
+            let exp = parse_expression(pair)?;
+            Ok(from_pair(pair, Statement::Expression(exp)))
+        }
         _ => Err(custom_error(
             pair,
             format!("expected statement, found {:?}", pair.as_rule()),
