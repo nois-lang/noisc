@@ -4,7 +4,7 @@ use pest::iterators::{Pair, Pairs};
 
 use crate::ast::ast::{
     Assignee, AstPair, BinaryOperator, Block, Expression, Identifier, Operand, PatternItem,
-    Statement,
+    Statement, UnaryOperator,
 };
 use crate::ast::expression::{Associativity, OperatorAssociativity, OperatorPrecedence};
 use crate::ast::util::{children, custom_error, from_pair, from_span, parse_children};
@@ -76,12 +76,28 @@ pub fn parse_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error<
         Rule::expression => {
             let ch = children(pair);
             match &ch[..] {
-                [o] => Ok(from_pair(
-                    o,
-                    Expression::Operand(Box::from(parse_operand(o)?)),
-                )),
+                [o] => match o.as_rule() {
+                    Rule::operand => Ok(from_pair(
+                        o,
+                        Expression::Operand(Box::from(parse_operand(o)?)),
+                    )),
+                    Rule::unary_expression | Rule::expression => Ok(parse_expression(o)?),
+                    _ => unreachable!(),
+                },
                 _ => parse_complex_expression(pair),
             }
+        }
+        Rule::unary_expression => {
+            let ch = children(pair);
+            let operator = parse_unary_operator(&ch[0])?;
+            let operand = parse_expression(&ch[1])?;
+            return Ok(from_pair(
+                pair,
+                Expression::Unary {
+                    operator: Box::new(operator),
+                    operand: Box::new(operand),
+                },
+            ));
         }
         _ => {
             let t_operand = parse_operand(pair);
@@ -185,6 +201,20 @@ pub fn parse_binary_operator(pair: &Pair<Rule>) -> Result<AstPair<BinaryOperator
         _ => Err(custom_error(
             pair,
             format!("expected binary operator, found {:?}", pair.as_rule()),
+        )),
+    }
+}
+
+pub fn parse_unary_operator(pair: &Pair<Rule>) -> Result<AstPair<UnaryOperator>, Error<Rule>> {
+    match pair.as_rule() {
+        Rule::unary_operator => children(pair)
+            .first()
+            .unwrap()
+            .try_into()
+            .map(|op| from_pair(pair, op)),
+        _ => Err(custom_error(
+            pair,
+            format!("expected unary operator, found {:?}", pair.as_rule()),
         )),
     }
 }
@@ -799,5 +829,106 @@ Block {
             err.variant.message(),
             "Operators <= and == cannot be chained"
         );
+    }
+
+    #[test]
+    fn build_ast_unary_expression() {
+        let source = r#"
+-2
+(+a + -b)
+(!a || !b) == !(a && b)
+"#;
+        let file = &NoisParser::parse(Rule::program, source).unwrap();
+        let block: AstPair<Block> = parse_file(file).unwrap();
+        let expect = r#"
+Block {
+    statements: [
+        Expression(
+            Unary {
+                operator: Minus,
+                operand: Operand(
+                    Integer(
+                        2,
+                    ),
+                ),
+            },
+        ),
+        Expression(
+            Binary {
+                left_operand: Unary {
+                    operator: Plus,
+                    operand: Operand(
+                        Identifier(
+                            Identifier(
+                                "a",
+                            ),
+                        ),
+                    ),
+                },
+                operator: Add,
+                right_operand: Unary {
+                    operator: Minus,
+                    operand: Operand(
+                        Identifier(
+                            Identifier(
+                                "b",
+                            ),
+                        ),
+                    ),
+                },
+            },
+        ),
+        Expression(
+            Binary {
+                left_operand: Binary {
+                    left_operand: Unary {
+                        operator: Not,
+                        operand: Operand(
+                            Identifier(
+                                Identifier(
+                                    "a",
+                                ),
+                            ),
+                        ),
+                    },
+                    operator: Or,
+                    right_operand: Unary {
+                        operator: Not,
+                        operand: Operand(
+                            Identifier(
+                                Identifier(
+                                    "b",
+                                ),
+                            ),
+                        ),
+                    },
+                },
+                operator: Equals,
+                right_operand: Unary {
+                    operator: Not,
+                    operand: Binary {
+                        left_operand: Operand(
+                            Identifier(
+                                Identifier(
+                                    "a",
+                                ),
+                            ),
+                        ),
+                        operator: And,
+                        right_operand: Operand(
+                            Identifier(
+                                Identifier(
+                                    "b",
+                                ),
+                            ),
+                        ),
+                    },
+                },
+            },
+        ),
+    ],
+}
+"#;
+        assert_eq!(format!("{:#?}", block), expect.trim())
     }
 }

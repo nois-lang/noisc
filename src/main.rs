@@ -22,7 +22,7 @@ helloWorld = -> println('Hello, World!')
 
 a = (a, b, c) {
     d = [1, 2.5, 'abc']
-    e = a + b ^ c.foo("some")
+    e = a + -b ^ c.foo("some")
     println(d)
     println(e + " " + "here")
     helloWorld()

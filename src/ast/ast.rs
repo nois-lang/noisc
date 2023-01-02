@@ -24,8 +24,8 @@ pub enum Statement {
 pub enum Expression {
     Operand(Box<AstPair<Operand>>),
     Unary {
-        operand: Box<AstPair<Expression>>,
         operator: Box<AstPair<UnaryOperator>>,
+        operand: Box<AstPair<Expression>>,
     },
     Binary {
         left_operand: Box<AstPair<Expression>>,
@@ -70,6 +70,39 @@ pub enum UnaryOperator {
     Minus,
     Not,
     Spread,
+}
+
+impl Display for UnaryOperator {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                UnaryOperator::Plus => "+",
+                UnaryOperator::Minus => "-",
+                UnaryOperator::Not => "!",
+                UnaryOperator::Spread => "..",
+            }
+        )
+    }
+}
+
+impl<'a> TryFrom<&'a Pair<'a, Rule>> for UnaryOperator {
+    type Error = Error<Rule>;
+
+    fn try_from(pair: &Pair<Rule>) -> Result<Self, Self::Error> {
+        match pair.as_rule() {
+            Rule::ADD_OP => Ok(Self::Plus),
+            Rule::SUBTRACT_OP => Ok(Self::Minus),
+            Rule::NOT_OP => Ok(Self::Not),
+            Rule::SPREAD_OP => Ok(Self::Spread),
+
+            _ => Err(custom_error(
+                &pair,
+                format!("unknown unary operator {:?}", pair.as_rule()),
+            )),
+        }
+    }
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
