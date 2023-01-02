@@ -32,6 +32,10 @@ pub enum Expression {
         operator: Box<AstPair<BinaryOperator>>,
         right_operand: Box<AstPair<Expression>>,
     },
+    MatchExpression {
+        condition: Box<AstPair<Expression>>,
+        match_clauses: Vec<AstPair<MatchClause>>,
+    },
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
@@ -39,10 +43,6 @@ pub enum Operand {
     Hole,
     Integer(i128),
     Float(f64),
-    MatchExpression {
-        condition: Box<AstPair<Expression>>,
-        match_clauses: Vec<AstPair<MatchClause>>,
-    },
     StructDefinition {
         fields: Vec<AstPair<Identifier>>,
     },
@@ -183,23 +183,36 @@ pub struct Identifier(pub String);
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub struct MatchClause {
-    pub predicate_expression: Box<AstPair<Expression>>,
-    pub expression: Box<AstPair<Expression>>,
+    pub predicate_expression: Box<AstPair<PredicateExpression>>,
+    pub block: Box<AstPair<Block>>,
+}
+
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
+pub enum PredicateExpression {
+    Expression(AstPair<Expression>),
+    Pattern(AstPair<Pattern>),
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Assignee {
+    Hole,
     Identifier(AstPair<Identifier>),
-    Pattern {
-        pattern_items: Vec<AstPair<PatternItem>>,
-    },
+    Pattern(AstPair<Pattern>),
+}
+
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
+pub enum Pattern {
+    Hole,
+    List(Vec<AstPair<PatternItem>>),
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum PatternItem {
     Hole,
-    Identifier(AstPair<Identifier>),
-    Spread(AstPair<Identifier>),
+    Identifier {
+        identifier: AstPair<Identifier>,
+        spread: bool,
+    },
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]

@@ -3,8 +3,8 @@ use pest::error::Error;
 use pest::iterators::{Pair, Pairs};
 
 use crate::ast::ast::{
-    Assignee, AstPair, BinaryOperator, Block, Expression, Identifier, Operand, PatternItem,
-    Statement, UnaryOperator,
+    Assignee, AstPair, BinaryOperator, Block, Expression, Identifier, MatchClause, Operand,
+    Pattern, PatternItem, PredicateExpression, Statement, UnaryOperator,
 };
 use crate::ast::expression::{Associativity, OperatorAssociativity, OperatorPrecedence};
 use crate::ast::util::{children, custom_error, from_pair, from_span, parse_children};
@@ -73,7 +73,7 @@ pub fn parse_statement(pair: &Pair<Rule>) -> Result<AstPair<Statement>, Error<Ru
 
 pub fn parse_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error<Rule>> {
     match pair.as_rule() {
-        Rule::expression => {
+        Rule::expression | Rule::predicate_expression => {
             let ch = children(pair);
             match &ch[..] {
                 [o] => Ok(parse_expression(o)?),
@@ -92,16 +92,25 @@ pub fn parse_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error<
                 },
             ));
         }
+        Rule::match_expression => {
+            let ch = children(pair);
+            let condition = parse_expression(&ch[0])?;
+            let match_clauses = ch
+                .iter()
+                .skip(1)
+                .map(|c| parse_match_clause(c))
+                .collect::<Result<_, _>>()?;
+            return Ok(from_pair(
+                pair,
+                Expression::MatchExpression {
+                    condition: Box::new(condition),
+                    match_clauses,
+                },
+            ));
+        }
         _ => {
-            let t_operand = parse_operand(pair);
-            return if let Ok(operand) = t_operand {
-                Ok(from_pair(pair, Expression::Operand(Box::from(operand))))
-            } else {
-                Err(custom_error(
-                    pair,
-                    format!("expected expression, found {:?}", pair.as_rule()),
-                ))
-            };
+            let operand = parse_operand(pair)?;
+            Ok(from_pair(pair, Expression::Operand(Box::from(operand))))
         }
     }
 }
@@ -227,6 +236,7 @@ pub fn parse_operand(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>>
             }?;
             Ok(from_pair(pair, Operand::String(str)))
         }
+        Rule::HOLE_OP => Ok(from_pair(pair, Operand::Hole)),
         Rule::function_call => parse_function_call(pair),
         Rule::function_init => parse_function_init(pair),
         Rule::list_init => parse_list_init(pair),
@@ -323,15 +333,20 @@ pub fn parse_parameter_list(pair: &Pair<Rule>) -> Result<Vec<AstPair<Expression>
 fn parse_assignee(pair: &Pair<Rule>) -> Result<AstPair<Assignee>, Error<Rule>> {
     match pair.as_rule() {
         Rule::assignee => {
-            let ch = children(pair);
-            return if ch.len() == 1 && !matches!(ch[0].as_rule(), Rule::pattern_item) {
-                let id = parse_identifier(&ch[0]);
-                id.map(|i| from_span(&i.0, Assignee::Identifier(from_span(&i.0, i.1))))
-            } else {
-                let patterns: Result<Vec<AstPair<PatternItem>>, Error<Rule>> =
-                    ch.iter().map(|p| parse_pattern_item(p)).collect();
-                patterns.map(|p| from_pair(pair, Assignee::Pattern { pattern_items: p }))
+            let ch = &children(pair)[0];
+            let assignee = match ch.as_rule() {
+                Rule::identifier => {
+                    let id = parse_identifier(ch)?;
+                    Assignee::Identifier(id)
+                }
+                Rule::HOLE_OP => Assignee::Hole,
+                Rule::pattern => {
+                    let pattern = parse_pattern(ch)?;
+                    Assignee::Pattern(pattern)
+                }
+                _ => unreachable!(),
             };
+            Ok(from_pair(ch, assignee))
         }
         _ => Err(custom_error(
             pair,
@@ -340,11 +355,95 @@ fn parse_assignee(pair: &Pair<Rule>) -> Result<AstPair<Assignee>, Error<Rule>> {
     }
 }
 
+fn parse_pattern(pair: &Pair<Rule>) -> Result<AstPair<Pattern>, Error<Rule>> {
+    match pair.as_rule() {
+        Rule::pattern => {
+            let ch = children(pair);
+            let pattern = if ch.len() == 1 && matches!(&ch[0].as_rule(), Rule::HOLE_OP) {
+                Pattern::Hole
+            } else {
+                let items = ch
+                    .iter()
+                    .map(|c| parse_pattern_item(c))
+                    .collect::<Result<_, _>>()?;
+                Pattern::List(items)
+            };
+            Ok(from_pair(pair, pattern))
+        }
+        _ => Err(custom_error(
+            pair,
+            format!("expected pattern, found {:?}", pair.as_rule()),
+        )),
+    }
+}
+
 fn parse_pattern_item(pair: &Pair<Rule>) -> Result<AstPair<PatternItem>, Error<Rule>> {
-    Err(custom_error(
-        pair,
-        format!("patterns are not yet implemented"),
-    ))
+    match pair.as_rule() {
+        Rule::pattern_item => {
+            let ch = &children(pair);
+            let item = match ch[0].as_rule() {
+                Rule::HOLE_OP => PatternItem::Hole,
+                _ => {
+                    let identifier = parse_identifier(&ch.last().unwrap())?;
+                    PatternItem::Identifier {
+                        identifier,
+                        spread: ch.len() == 2 && matches!(ch[0].as_rule(), Rule::SPREAD_OP),
+                    }
+                }
+            };
+            Ok(from_pair(pair, item))
+        }
+        _ => Err(custom_error(
+            pair,
+            format!("expected pattern item, found {:?}", pair.as_rule()),
+        )),
+    }
+}
+
+fn parse_match_clause(pair: &Pair<Rule>) -> Result<AstPair<MatchClause>, Error<Rule>> {
+    match pair.as_rule() {
+        Rule::match_clause => {
+            let ch = children(pair);
+            let exp = parse_predicate_expression(&ch[0])?;
+            let block = parse_block(&ch[1])?;
+            Ok(from_pair(
+                pair,
+                MatchClause {
+                    predicate_expression: Box::new(exp),
+                    block: Box::new(block),
+                },
+            ))
+        }
+        _ => Err(custom_error(
+            pair,
+            format!("expected match clause, found {:?}", pair.as_rule()),
+        )),
+    }
+}
+
+fn parse_predicate_expression(
+    pair: &Pair<Rule>,
+) -> Result<AstPair<PredicateExpression>, Error<Rule>> {
+    match pair.as_rule() {
+        Rule::predicate_expression => {
+            let ch = &children(pair)[0];
+            match ch.as_rule() {
+                Rule::pattern => {
+                    let pattern = parse_pattern(ch)?;
+                    Ok(from_pair(ch, PredicateExpression::Pattern(pattern)))
+                }
+                Rule::expression => {
+                    let expression = parse_expression(ch)?;
+                    Ok(from_pair(ch, PredicateExpression::Expression(expression)))
+                }
+                _ => unreachable!(),
+            }
+        }
+        _ => Err(custom_error(
+            pair,
+            format!("expected predicate expression, found {:?}", pair.as_rule()),
+        )),
+    }
 }
 
 #[cfg(test)]
@@ -919,6 +1018,440 @@ Block {
                 },
             },
         ),
+    ],
+}
+"#;
+        assert_eq!(format!("{:#?}", block), expect.trim())
+    }
+
+    #[test]
+    fn build_ast_match_expression_basic() {
+        let source = r#"
+match a {
+  1 => x,
+  a != 4 => x,
+  _ => panic(),
+}
+"#;
+        let file = &NoisParser::parse(Rule::program, source).unwrap();
+        let block: AstPair<Block> = parse_file(file).unwrap();
+        let expect = r#"
+Block {
+    statements: [
+        Expression(
+            MatchExpression {
+                condition: Operand(
+                    Identifier(
+                        Identifier(
+                            "a",
+                        ),
+                    ),
+                ),
+                match_clauses: [
+                    MatchClause {
+                        predicate_expression: Expression(
+                            Operand(
+                                Integer(
+                                    1,
+                                ),
+                            ),
+                        ),
+                        block: Block {
+                            statements: [
+                                Expression(
+                                    Operand(
+                                        Identifier(
+                                            Identifier(
+                                                "x",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        },
+                    },
+                    MatchClause {
+                        predicate_expression: Expression(
+                            Binary {
+                                left_operand: Operand(
+                                    Identifier(
+                                        Identifier(
+                                            "a",
+                                        ),
+                                    ),
+                                ),
+                                operator: NotEquals,
+                                right_operand: Operand(
+                                    Integer(
+                                        4,
+                                    ),
+                                ),
+                            },
+                        ),
+                        block: Block {
+                            statements: [
+                                Expression(
+                                    Operand(
+                                        Identifier(
+                                            Identifier(
+                                                "x",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        },
+                    },
+                    MatchClause {
+                        predicate_expression: Pattern(
+                            Hole,
+                        ),
+                        block: Block {
+                            statements: [
+                                Expression(
+                                    Operand(
+                                        FunctionCall {
+                                            identifier: Identifier(
+                                                "panic",
+                                            ),
+                                            parameters: [],
+                                        },
+                                    ),
+                                ),
+                            ],
+                        },
+                    },
+                ],
+            },
+        ),
+    ],
+}
+"#;
+        assert_eq!(format!("{:#?}", block), expect.trim())
+    }
+
+    #[test]
+    fn build_ast_match_expression_list() {
+        let source = r#"
+match a {
+  [] => x,
+  [a] => x,
+  [a, _, ..t] => x,
+  a.len() == 10 => x,
+  _ => panic(),
+}
+"#;
+        let file = &NoisParser::parse(Rule::program, source).unwrap();
+        let block: AstPair<Block> = parse_file(file).unwrap();
+        let expect = r#"
+Block {
+    statements: [
+        Expression(
+            MatchExpression {
+                condition: Operand(
+                    Identifier(
+                        Identifier(
+                            "a",
+                        ),
+                    ),
+                ),
+                match_clauses: [
+                    MatchClause {
+                        predicate_expression: Pattern(
+                            List(
+                                [],
+                            ),
+                        ),
+                        block: Block {
+                            statements: [
+                                Expression(
+                                    Operand(
+                                        Identifier(
+                                            Identifier(
+                                                "x",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        },
+                    },
+                    MatchClause {
+                        predicate_expression: Pattern(
+                            List(
+                                [
+                                    Identifier {
+                                        identifier: Identifier(
+                                            "a",
+                                        ),
+                                        spread: false,
+                                    },
+                                ],
+                            ),
+                        ),
+                        block: Block {
+                            statements: [
+                                Expression(
+                                    Operand(
+                                        Identifier(
+                                            Identifier(
+                                                "x",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        },
+                    },
+                    MatchClause {
+                        predicate_expression: Pattern(
+                            List(
+                                [
+                                    Identifier {
+                                        identifier: Identifier(
+                                            "a",
+                                        ),
+                                        spread: false,
+                                    },
+                                    Hole,
+                                    Identifier {
+                                        identifier: Identifier(
+                                            "t",
+                                        ),
+                                        spread: true,
+                                    },
+                                ],
+                            ),
+                        ),
+                        block: Block {
+                            statements: [
+                                Expression(
+                                    Operand(
+                                        Identifier(
+                                            Identifier(
+                                                "x",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        },
+                    },
+                    MatchClause {
+                        predicate_expression: Expression(
+                            Binary {
+                                left_operand: Binary {
+                                    left_operand: Operand(
+                                        Identifier(
+                                            Identifier(
+                                                "a",
+                                            ),
+                                        ),
+                                    ),
+                                    operator: Accessor,
+                                    right_operand: Operand(
+                                        FunctionCall {
+                                            identifier: Identifier(
+                                                "len",
+                                            ),
+                                            parameters: [],
+                                        },
+                                    ),
+                                },
+                                operator: Equals,
+                                right_operand: Operand(
+                                    Integer(
+                                        10,
+                                    ),
+                                ),
+                            },
+                        ),
+                        block: Block {
+                            statements: [
+                                Expression(
+                                    Operand(
+                                        Identifier(
+                                            Identifier(
+                                                "x",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        },
+                    },
+                    MatchClause {
+                        predicate_expression: Pattern(
+                            Hole,
+                        ),
+                        block: Block {
+                            statements: [
+                                Expression(
+                                    Operand(
+                                        FunctionCall {
+                                            identifier: Identifier(
+                                                "panic",
+                                            ),
+                                            parameters: [],
+                                        },
+                                    ),
+                                ),
+                            ],
+                        },
+                    },
+                ],
+            },
+        ),
+    ],
+}
+"#;
+        assert_eq!(format!("{:#?}", block), expect.trim())
+    }
+
+    #[test]
+    fn build_ast_assignee() {
+        let source = r#"
+a = []
+[] = []
+[a] = []
+[..as] = []
+[a, b,] = []
+[a, b, ..cs] = []
+_ = []
+"#;
+        let file = &NoisParser::parse(Rule::program, source).unwrap();
+        let block: AstPair<Block> = parse_file(file).unwrap();
+        let expect = r#"
+Block {
+    statements: [
+        Assignment {
+            assignee: Identifier(
+                Identifier(
+                    "a",
+                ),
+            ),
+            expression: Operand(
+                ListInit {
+                    items: [],
+                },
+            ),
+        },
+        Assignment {
+            assignee: Pattern(
+                List(
+                    [],
+                ),
+            ),
+            expression: Operand(
+                ListInit {
+                    items: [],
+                },
+            ),
+        },
+        Assignment {
+            assignee: Pattern(
+                List(
+                    [
+                        Identifier {
+                            identifier: Identifier(
+                                "a",
+                            ),
+                            spread: false,
+                        },
+                    ],
+                ),
+            ),
+            expression: Operand(
+                ListInit {
+                    items: [],
+                },
+            ),
+        },
+        Assignment {
+            assignee: Pattern(
+                List(
+                    [
+                        Identifier {
+                            identifier: Identifier(
+                                "as",
+                            ),
+                            spread: true,
+                        },
+                    ],
+                ),
+            ),
+            expression: Operand(
+                ListInit {
+                    items: [],
+                },
+            ),
+        },
+        Assignment {
+            assignee: Pattern(
+                List(
+                    [
+                        Identifier {
+                            identifier: Identifier(
+                                "a",
+                            ),
+                            spread: false,
+                        },
+                        Identifier {
+                            identifier: Identifier(
+                                "b",
+                            ),
+                            spread: false,
+                        },
+                    ],
+                ),
+            ),
+            expression: Operand(
+                ListInit {
+                    items: [],
+                },
+            ),
+        },
+        Assignment {
+            assignee: Pattern(
+                List(
+                    [
+                        Identifier {
+                            identifier: Identifier(
+                                "a",
+                            ),
+                            spread: false,
+                        },
+                        Identifier {
+                            identifier: Identifier(
+                                "b",
+                            ),
+                            spread: false,
+                        },
+                        Identifier {
+                            identifier: Identifier(
+                                "cs",
+                            ),
+                            spread: true,
+                        },
+                    ],
+                ),
+            ),
+            expression: Operand(
+                ListInit {
+                    items: [],
+                },
+            ),
+        },
+        Assignment {
+            assignee: Pattern(
+                Hole,
+            ),
+            expression: Operand(
+                ListInit {
+                    items: [],
+                },
+            ),
+        },
     ],
 }
 "#;

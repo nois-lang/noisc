@@ -63,8 +63,8 @@ operand                       = _{
   function_call               =  { identifier ~ PAREN_OPEN ~ N* ~ parameter_list ~ N* ~ PAREN_CLOSE }
     parameter_list            =  { expression? ~ N* ~ (COMMA ~ N* ~ expression)* ~ COMMA? }
 
-assignee                      =  { identifier | pattern }
-  pattern                     = _{ HOLE_OP | list_pattern }
+assignee                      =  { pattern | identifier }
+  pattern                     =  { HOLE_OP | list_pattern }
   list_pattern                = _{
     BRACKET_OPEN ~ N*
     ~ (N* ~ pattern_item? ~ (N* ~ COMMA ~ N* ~ pattern_item ~ N*)*)?
@@ -78,8 +78,8 @@ match_expression              =  {
     ~ match_clause ~ N* ~ (COMMA ~ N* ~ match_clause)* ~ COMMA? ~ N*
   ~ BRACE_CLOSE
 }
-  match_clause                =  { predicate_expression ~ MATCH_OP ~ expression }
-    predicate_expression      =  { expression }
+  match_clause                =  { predicate_expression ~ MATCH_OP ~ block }
+    predicate_expression      =  { pattern | expression }
 
 /// #AA66CC
 identifier                    = @{ ASCII_ALPHANUMERIC+ }

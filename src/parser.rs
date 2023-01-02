@@ -426,37 +426,37 @@ a = []
                         expression(5, 7, [list_init(5, 7)])
                     ]),
                     assignment(8, 15, [
-                        assignee(8, 10),
+                        assignee(8, 10, [pattern(8, 10)]),
                         expression(13, 15, [list_init(13, 15)])
                     ]),
                     assignment(16, 24, [
-                        assignee(16, 19, [
+                        assignee(16, 19, [pattern(16, 19, [
                             pattern_item(17, 18, [identifier(17, 18)])
-                        ]),
+                        ])]),
                         expression(22, 24, [list_init(22, 24)]),
                     ]),
                     assignment(25, 36, [
-                        assignee(25, 31, [
+                        assignee(25, 31, [pattern(25, 31, [
                             pattern_item(26, 30, [
                                 SPREAD_OP(26, 28),
                                 identifier(28, 30)
                             ])
-                        ]),
+                        ])]),
                         expression(34, 36, [list_init(34, 36)])
                     ]),
                     assignment(37, 49, [
-                        assignee(37, 44, [
+                        assignee(37, 44, [pattern(37, 44, [
                             pattern_item(38, 39, [identifier(38, 39)]),
                             pattern_item(41, 42, [identifier(41, 42)])
-                        ]),
+                        ])]),
                         expression(47, 49, [list_init(47, 49)])
                     ]),
                     assignment(50, 67, [
-                        assignee(50, 62, [
+                        assignee(50, 62, [pattern(50, 62, [
                             pattern_item(51, 52, [identifier(51, 52)]),
                             pattern_item(54, 55, [identifier(54, 55)]),
                             pattern_item(57, 61, [SPREAD_OP(57, 59), identifier(59, 61)])
-                        ]),
+                        ])]),
                         expression(65, 67, [list_init(65, 67)])
                     ])
                 ])
@@ -480,9 +480,9 @@ a = []
                     expression(1, 9, [
                         function_init(1, 9, [
                             argument_list(1, 6, [
-                                assignee(2, 5, [
+                                assignee(2, 5, [pattern(2, 5, [
                                     pattern_item(3, 4, [identifier(3, 4)])
-                                ])
+                                ])])
                             ]),
                             block(8, 8)
                         ])
@@ -490,12 +490,12 @@ a = []
                     expression(10, 23, [
                         function_init(10, 23, [
                             argument_list(10, 20, [
-                                assignee(11, 19, [
+                                assignee(11, 19, [pattern(11, 19, [
                                     pattern_item(12, 13, [identifier(12, 13)]),
                                     pattern_item( 15, 18, [
                                         SPREAD_OP(15, 17), identifier(17, 18)
                                     ])
-                                ])
+                                ])])
                             ]),
                             block(22, 22)
                         ])
@@ -503,10 +503,10 @@ a = []
                     expression(24, 35, [
                         function_init(24, 35, [
                             argument_list(24, 32, [
-                                assignee( 25, 31, [
+                                assignee( 25, 31, [pattern(25, 31, [
                                     pattern_item(26, 27, [HOLE_OP(26, 27)]),
                                     pattern_item(29, 30, [identifier(29, 30)])
-                                ])
+                                ])])
                             ]),
                             block(34, 34)
                         ])
