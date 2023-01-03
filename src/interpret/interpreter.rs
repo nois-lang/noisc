@@ -26,6 +26,7 @@ pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
     ));
     let identifier = Identifier::new("main");
     ctx.scope_stack.push((identifier.clone(), Scope::default()));
+    // TODO: assert that main is a function
     let main = match ctx.find(&identifier) {
         Some(Definition::User(_, exp)) => exp,
         _ => {

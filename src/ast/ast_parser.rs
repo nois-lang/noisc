@@ -21,7 +21,7 @@ pub fn parse_block(pair: &Pair<Rule>) -> Result<AstPair<Block>, Error<Rule>> {
             Ok(AstPair::from_pair(pair, Block { statements }))
         }
         Rule::expression => {
-            let expression = parse_expression(&children(pair)[0])?;
+            let expression = parse_expression(pair)?;
             Ok(AstPair::from_pair(
                 pair,
                 Block {
@@ -75,9 +75,10 @@ pub fn parse_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error<
     match pair.as_rule() {
         Rule::expression | Rule::predicate_expression => {
             let ch = children(pair);
-            match &ch[..] {
-                [o] => Ok(parse_expression(o)?),
-                _ => parse_complex_expression(pair),
+            if ch.len() == 1 {
+                Ok(parse_expression(ch.first().unwrap())?)
+            } else {
+                parse_complex_expression(pair)
             }
         }
         Rule::unary_expression => {
@@ -193,7 +194,8 @@ pub fn parse_complex_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>
             }
         }
     }
-    Ok(map_node(&operand_stack.pop().unwrap()))
+    let exp = map_node(&operand_stack.pop().unwrap());
+    Ok(exp)
 }
 
 pub fn parse_operator<'a, T>(pair: &'a Pair<'_, Rule>) -> Result<AstPair<T>, Error<Rule>>

@@ -19,11 +19,12 @@ pub trait Evaluate {
 
 impl Evaluate for AstPair<Block> {
     fn eval(&self, ctx: &mut RefMut<Context>) -> Result<Value, Error<Rule>> {
+        let mut last_res = Value::Unit;
         for statement in &self.1.statements {
-            statement.eval(ctx)?;
+            last_res = statement.eval(ctx)?;
         }
-        // TODO: return
-        Ok(Value::Unit)
+        dbg!(&self, &last_res);
+        Ok(last_res)
     }
 }
 
@@ -37,10 +38,8 @@ impl Evaluate for AstPair<Statement> {
             } => {
                 let defs = assign_expression_definitions(assignee, expression.clone());
                 ctx.scope_stack
-                    .iter()
-                    .last()
+                    .last_mut()
                     .unwrap()
-                    .clone()
                     .1
                     .definitions
                     .extend(defs);
@@ -90,7 +89,7 @@ impl Evaluate for AstPair<Operand> {
                     },
                 ));
 
-                let _res = match ctx.find(&identifier.1) {
+                let res = match ctx.find(&identifier.1) {
                     Some(Definition::User(_, exp)) => exp.eval(ctx)?,
                     Some(Definition::System(f)) => f(params.clone()),
                     _ => {
@@ -100,19 +99,15 @@ impl Evaluate for AstPair<Operand> {
                 };
 
                 ctx.scope_stack.pop();
-
-                // TODO: return
-                Ok(Value::Unit)
+                Ok(res)
             }
             Operand::FunctionInit(FunctionInit { arguments, block }) => {
-                let mut scope = ctx.scope_stack.last().unwrap().clone();
-                let x = scope.1.params;
+                let scope = &mut ctx.scope_stack.last_mut().unwrap();
+                let x = scope.1.params.clone();
                 for (arg, v) in arguments.iter().zip(x) {
                     scope.1.definitions.extend(assign_value_definitions(arg, v));
                 }
-                block.eval(ctx)?;
-                // TODO: return statement
-                Ok(Value::Unit)
+                block.eval(ctx)
             }
             Operand::Identifier(i) => i.eval(ctx),
             _ => Err(custom_error_span(
