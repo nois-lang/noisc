@@ -181,7 +181,7 @@ impl TryFrom<Pair<'_, Rule>> for BinaryOperator {
     }
 }
 
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(Debug, PartialOrd, PartialEq, Clone, Eq, Hash)]
 pub struct Identifier(pub String);
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]

@@ -13,15 +13,17 @@ use pest::Parser;
 
 use crate::ast::ast_parser::parse_block;
 use crate::cli::{Cli, Commands};
+use crate::interpret::interpreter::execute;
 use crate::parser::{NoisParser, Rule};
 
 pub mod ast;
 pub mod cli;
+pub mod interpret;
 pub mod parser;
+pub mod stdlib;
 
 fn main() {
-    let cli = Cli::parse();
-    match &cli.command {
+    match &Cli::parse().command {
         Commands::Parse { source: path } => {
             let source = read_source(path);
             let ast = parse_ast(source);
@@ -30,7 +32,7 @@ fn main() {
         Commands::Run { source: path } => {
             let source = read_source(path);
             let ast = parse_ast(source);
-            todo!()
+            execute(ast);
         }
     }
 }
