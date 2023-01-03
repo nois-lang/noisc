@@ -2,7 +2,9 @@ use crate::ast::ast::{
     Assignee, AstPair, Block, Expression, FunctionInit, Identifier, Operand, Statement,
 };
 use crate::ast::util::custom_error_span;
-use crate::interpret::context::{assign_value_definitions, Context, Definition, Scope};
+use crate::interpret::context::{
+    assign_expression_definitions, assign_value_definitions, Context, Definition, Scope,
+};
 use crate::interpret::value::Value;
 use crate::parser::Rule;
 use colored::Colorize;
@@ -29,7 +31,21 @@ impl Evaluate for AstPair<Statement> {
     fn eval(&self, ctx: &mut RefMut<Context>) -> Result<Value, Error<Rule>> {
         match &self.1 {
             Statement::Expression(exp) => exp.eval(ctx),
-            Statement::Assignment { .. } => todo!(),
+            Statement::Assignment {
+                assignee,
+                expression,
+            } => {
+                let defs = assign_expression_definitions(assignee, expression.clone());
+                ctx.scope_stack
+                    .iter()
+                    .last()
+                    .unwrap()
+                    .clone()
+                    .1
+                    .definitions
+                    .extend(defs);
+                Ok(Value::Unit)
+            }
             Statement::Return(_) => todo!(),
         }
     }
@@ -98,9 +114,10 @@ impl Evaluate for AstPair<Operand> {
                 // TODO: return statement
                 Ok(Value::Unit)
             }
-            Operand::Identifier(_) => todo!(),
+            Operand::Identifier(i) => i.eval(ctx),
             _ => Err(custom_error_span(
                 &self.0,
+                &ctx.ast_context,
                 format!("Operand {:?} cannot be evaluated", self.1),
             )),
         }
@@ -113,6 +130,7 @@ impl Evaluate for AstPair<Identifier> {
             Some(res) => res.eval(ctx),
             None => Err(custom_error_span(
                 &self.0,
+                &ctx.ast_context,
                 format!("Identifier '{}' not found", self.1),
             )),
         }

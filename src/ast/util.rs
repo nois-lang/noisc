@@ -1,15 +1,7 @@
-use crate::ast::ast::{AstPair, Span};
+use crate::ast::ast::{AstContext, AstPair, Span};
 use crate::parser::Rule;
 use pest::error::{Error, ErrorVariant};
 use pest::iterators::Pair;
-
-pub fn from_pair<A>(p: &Pair<Rule>, ast: A) -> AstPair<A> {
-    AstPair(p.as_span().into(), ast)
-}
-
-pub fn from_span<A>(s: &Span, ast: A) -> AstPair<A> {
-    AstPair(s.clone(), ast)
-}
 
 pub fn children<'a>(p: &'a Pair<Rule>) -> Vec<Pair<'a, Rule>> {
     p.clone().into_inner().collect::<Vec<_>>()
@@ -23,8 +15,8 @@ pub fn custom_error(pair: &Pair<Rule>, message: String) -> Error<Rule> {
     Error::new_from_span(ErrorVariant::CustomError { message }, pair.as_span())
 }
 
-pub fn custom_error_span(span: &Span, message: String) -> Error<Rule> {
-    Error::new_from_span(ErrorVariant::CustomError { message }, span.into())
+pub fn custom_error_span(span: &Span, ctx: &AstContext, message: String) -> Error<Rule> {
+    Error::new_from_span(ErrorVariant::CustomError { message }, span.as_span(ctx))
 }
 
 pub fn parse_children<A, F>(pair: &Pair<Rule>, f: F) -> Result<Vec<AstPair<A>>, Error<Rule>>

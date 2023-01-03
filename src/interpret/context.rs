@@ -1,4 +1,4 @@
-use crate::ast::ast::{Assignee, AstPair, Expression, Identifier, Statement};
+use crate::ast::ast::{Assignee, AstContext, AstPair, Expression, Identifier, Statement};
 use crate::interpret::value::Value;
 use crate::stdlib::lib::stdlib;
 use std::collections::HashMap;
@@ -6,6 +6,7 @@ use std::fmt::{Debug, Formatter};
 
 #[derive(Debug, Clone)]
 pub struct Context {
+    pub ast_context: AstContext,
     pub scope_stack: Vec<(Identifier, Scope)>,
 }
 
@@ -42,9 +43,10 @@ impl Debug for Definition {
 }
 
 impl Context {
-    pub fn new() -> Context {
+    pub fn new(a_ctx: AstContext) -> Context {
         let stdlib = stdlib();
         Context {
+            ast_context: a_ctx,
             scope_stack: vec![(
                 Identifier::new("stdlib"),
                 Scope {

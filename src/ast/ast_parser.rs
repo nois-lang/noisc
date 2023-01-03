@@ -7,7 +7,7 @@ use crate::ast::ast::{
     Operand, Pattern, PatternItem, PredicateExpression, Statement,
 };
 use crate::ast::expression::{Associativity, OperatorAssociativity, OperatorPrecedence};
-use crate::ast::util::{children, custom_error, first_child, from_pair, from_span, parse_children};
+use crate::ast::util::{children, custom_error, first_child, parse_children};
 use crate::parser::Rule;
 
 pub fn parse_file(pairs: &Pairs<Rule>) -> Result<AstPair<Block>, Error<Rule>> {
@@ -18,14 +18,14 @@ pub fn parse_block(pair: &Pair<Rule>) -> Result<AstPair<Block>, Error<Rule>> {
     match pair.as_rule() {
         Rule::block => {
             let statements = parse_children(pair, parse_statement)?;
-            Ok(from_pair(pair, Block { statements }))
+            Ok(AstPair::from_pair(pair, Block { statements }))
         }
         Rule::expression => {
             let expression = parse_expression(&children(pair)[0])?;
-            Ok(from_pair(
+            Ok(AstPair::from_pair(
                 pair,
                 Block {
-                    statements: vec![from_span(
+                    statements: vec![AstPair::from_span(
                         &expression.clone().0,
                         Statement::Expression(expression),
                     )],
@@ -48,11 +48,11 @@ pub fn parse_statement(pair: &Pair<Rule>) -> Result<AstPair<Statement>, Error<Ru
             } else {
                 Statement::Return(None)
             };
-            Ok(from_pair(pair, st))
+            Ok(AstPair::from_pair(pair, st))
         }
         Rule::assignment => {
             let ch = children(pair);
-            Ok(from_pair(
+            Ok(AstPair::from_pair(
                 pair,
                 Statement::Assignment {
                     assignee: parse_assignee(&ch[0])?,
@@ -62,7 +62,7 @@ pub fn parse_statement(pair: &Pair<Rule>) -> Result<AstPair<Statement>, Error<Ru
         }
         Rule::expression => {
             let exp = parse_expression(pair)?;
-            Ok(from_pair(pair, Statement::Expression(exp)))
+            Ok(AstPair::from_pair(pair, Statement::Expression(exp)))
         }
         _ => Err(custom_error(
             pair,
@@ -84,7 +84,7 @@ pub fn parse_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error<
             let ch = children(pair);
             let operator = parse_operator(&ch[0])?;
             let operand = parse_expression(&ch[1])?;
-            return Ok(from_pair(
+            return Ok(AstPair::from_pair(
                 pair,
                 Expression::Unary {
                     operator: Box::new(operator),
@@ -100,7 +100,7 @@ pub fn parse_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error<
                 .skip(1)
                 .map(|c| parse_match_clause(c))
                 .collect::<Result<_, _>>()?;
-            return Ok(from_pair(
+            return Ok(AstPair::from_pair(
                 pair,
                 Expression::MatchExpression {
                     condition: Box::new(condition),
@@ -110,7 +110,10 @@ pub fn parse_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error<
         }
         _ => {
             let operand = parse_operand(pair)?;
-            Ok(from_pair(pair, Expression::Operand(Box::from(operand))))
+            Ok(AstPair::from_pair(
+                pair,
+                Expression::Operand(Box::from(operand)),
+            ))
         }
     }
 }
@@ -186,7 +189,7 @@ pub fn parse_complex_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>
                     operator: Box::new(op.clone()),
                     right_operand: Box::from(map_node(l)),
                 };
-                from_span(&op.0, exp)
+                AstPair::from_span(&op.0, exp)
             }
         }
     }
@@ -199,7 +202,9 @@ where
 {
     let c = first_child(pair).unwrap();
     match pair.as_rule() {
-        Rule::unary_operator | Rule::binary_operator => c.try_into().map(|op| from_pair(pair, op)),
+        Rule::unary_operator | Rule::binary_operator => {
+            c.try_into().map(|op| AstPair::from_pair(pair, op))
+        }
         _ => Err(custom_error(
             pair,
             format!("expected operator, found {:?}", pair.as_rule()),
@@ -212,7 +217,7 @@ pub fn parse_operand(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>>
         Rule::integer => parse_integer(pair),
         Rule::float => parse_float(pair),
         Rule::string => parse_string(pair),
-        Rule::HOLE_OP => Ok(from_pair(pair, Operand::Hole)),
+        Rule::HOLE_OP => Ok(AstPair::from_pair(pair, Operand::Hole)),
         Rule::function_call => parse_function_call(pair),
         Rule::function_init => parse_function_init(pair),
         Rule::list_init => parse_list_init(pair),
@@ -220,7 +225,10 @@ pub fn parse_operand(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>>
         Rule::enum_define => parse_enum_define(pair),
         Rule::identifier => {
             let id = parse_identifier(pair)?;
-            Ok(from_span(&id.0, Operand::Identifier(id.1)))
+            Ok(AstPair::from_span(
+                &id.0,
+                Operand::Identifier(AstPair::from_span(&id.0, id.1)),
+            ))
         }
         _ => Err(custom_error(
             pair,
@@ -238,7 +246,7 @@ pub fn parse_integer(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>>
             format!("unable to parse integer {num_s}"),
         )),
     }?;
-    Ok(from_pair(pair, Operand::Integer(num)))
+    Ok(AstPair::from_pair(pair, Operand::Integer(num)))
 }
 
 pub fn parse_float(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
@@ -247,7 +255,7 @@ pub fn parse_float(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
         Ok(n) => Ok(n),
         Err(_) => Err(custom_error(pair, format!("unable to parse float {num_s}"))),
     }?;
-    Ok(from_pair(pair, Operand::Float(num)))
+    Ok(AstPair::from_pair(pair, Operand::Float(num)))
 }
 
 pub fn parse_string(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
@@ -259,12 +267,12 @@ pub fn parse_string(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> 
             format!("unable to parse string {raw_str}"),
         )),
     }?;
-    Ok(from_pair(pair, Operand::String(str)))
+    Ok(AstPair::from_pair(pair, Operand::String(str)))
 }
 
 pub fn parse_function_call(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
     let ch = children(pair);
-    Ok(from_pair(
+    Ok(AstPair::from_pair(
         pair,
         Operand::FunctionCall {
             identifier: parse_identifier(&ch[0])?,
@@ -277,7 +285,7 @@ pub fn parse_function_init(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<
     let ch = children(pair);
     let arguments: Vec<AstPair<Assignee>> = parse_children(&ch[0], parse_assignee)?;
     let block = parse_block(&ch[1])?;
-    Ok(from_pair(
+    Ok(AstPair::from_pair(
         pair,
         Operand::FunctionInit(FunctionInit { arguments, block }),
     ))
@@ -285,22 +293,25 @@ pub fn parse_function_init(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<
 
 pub fn parse_list_init(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
     let items = parse_children(pair, parse_expression)?;
-    Ok(from_pair(pair, Operand::ListInit { items }))
+    Ok(AstPair::from_pair(pair, Operand::ListInit { items }))
 }
 
 pub fn parse_struct_define(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
     let fields = parse_children(pair, parse_identifier)?;
-    Ok(from_pair(pair, Operand::StructDefinition { fields }))
+    Ok(AstPair::from_pair(
+        pair,
+        Operand::StructDefinition { fields },
+    ))
 }
 
 pub fn parse_enum_define(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
     let values = parse_children(pair, parse_identifier)?;
-    Ok(from_pair(pair, Operand::EnumDefinition { values }))
+    Ok(AstPair::from_pair(pair, Operand::EnumDefinition { values }))
 }
 
 fn parse_identifier(pair: &Pair<Rule>) -> Result<AstPair<Identifier>, Error<Rule>> {
     match pair.as_rule() {
-        Rule::identifier => Ok(from_pair(pair, Identifier::new(pair.as_str()))),
+        Rule::identifier => Ok(AstPair::from_pair(pair, Identifier::new(pair.as_str()))),
         _ => Err(custom_error(
             pair,
             format!(
@@ -342,7 +353,7 @@ fn parse_assignee(pair: &Pair<Rule>) -> Result<AstPair<Assignee>, Error<Rule>> {
                 }
                 _ => unreachable!(),
             };
-            Ok(from_pair(ch, assignee))
+            Ok(AstPair::from_pair(ch, assignee))
         }
         _ => Err(custom_error(
             pair,
@@ -364,7 +375,7 @@ fn parse_pattern(pair: &Pair<Rule>) -> Result<AstPair<Pattern>, Error<Rule>> {
                     .collect::<Result<_, _>>()?;
                 Pattern::List(items)
             };
-            Ok(from_pair(pair, pattern))
+            Ok(AstPair::from_pair(pair, pattern))
         }
         _ => Err(custom_error(
             pair,
@@ -387,7 +398,7 @@ fn parse_pattern_item(pair: &Pair<Rule>) -> Result<AstPair<PatternItem>, Error<R
                     }
                 }
             };
-            Ok(from_pair(pair, item))
+            Ok(AstPair::from_pair(pair, item))
         }
         _ => Err(custom_error(
             pair,
@@ -406,7 +417,7 @@ fn parse_match_clause(pair: &Pair<Rule>) -> Result<AstPair<MatchClause>, Error<R
             let ch = children(pair);
             let exp = parse_predicate_expression(&ch[0])?;
             let block = parse_block(&ch[1])?;
-            Ok(from_pair(
+            Ok(AstPair::from_pair(
                 pair,
                 MatchClause {
                     predicate_expression: Box::new(exp),
@@ -436,7 +447,7 @@ fn parse_predicate_expression(
                 Rule::expression => PredicateExpression::Expression(parse_expression(ch)?),
                 _ => unreachable!(),
             };
-            Ok(from_pair(ch, exp))
+            Ok(AstPair::from_pair(ch, exp))
         }
         _ => Err(custom_error(
             pair,

@@ -6,7 +6,7 @@ extern crate pest_derive;
 use std::fs::read_to_string;
 use std::process::exit;
 
-use crate::ast::ast::{AstPair, Block};
+use crate::ast::ast::{AstContext, AstPair, Block};
 use clap::Parser as p;
 use colored::Colorize;
 use pest::Parser;
@@ -26,19 +26,21 @@ fn main() {
     match &Cli::parse().command {
         Commands::Parse { source: path } => {
             let source = read_source(path);
-            let ast = parse_ast(source);
+            let a_ctx = AstContext { input: source };
+            let ast = parse_ast(&a_ctx);
             println!("{:#?}", ast);
         }
         Commands::Run { source: path } => {
             let source = read_source(path);
-            let ast = parse_ast(source);
-            execute(ast);
+            let a_ctx = AstContext { input: source };
+            let ast = parse_ast(&a_ctx);
+            execute(ast, a_ctx);
         }
     }
 }
 
-pub fn parse_ast(source: String) -> AstPair<Block> {
-    let pt = NoisParser::parse(Rule::program, source.as_str());
+pub fn parse_ast(a_ctx: &AstContext) -> AstPair<Block> {
+    let pt = NoisParser::parse(Rule::program, a_ctx.input.as_str());
     let ast = pt.and_then(|parsed| parse_block(&parsed.into_iter().next().unwrap()));
     match ast {
         Ok(a) => a,

@@ -1,0 +1,6 @@
+add = (a, b) -> a + b
+
+main = {
+    x = add(2, 3)
+    println(x)
+}

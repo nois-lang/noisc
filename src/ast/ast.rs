@@ -4,6 +4,7 @@ use pest::error::Error;
 use pest::iterators::Pair;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
+use std::string::ToString;
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub struct Block {
@@ -58,7 +59,7 @@ pub enum Operand {
         parameters: Vec<AstPair<Expression>>,
     },
     String(String),
-    Identifier(Identifier),
+    Identifier(AstPair<Identifier>),
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
@@ -231,31 +232,44 @@ pub enum PatternItem {
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
-pub struct Span {
+pub struct AstContext {
     pub input: String,
+}
+
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
+pub struct Span {
     pub start: usize,
     pub end: usize,
+}
+
+impl Span {
+    pub fn as_span<'a>(&self, ctx: &'a AstContext) -> pest::Span<'a> {
+        pest::Span::new(&ctx.input, self.start, self.end)
+            .expect(format!("Failed to convert {:?}", self).as_str())
+    }
 }
 
 impl<'a> From<pest::Span<'a>> for Span {
     fn from(span: pest::Span<'a>) -> Self {
         Self {
-            input: span.as_str().to_string(),
             start: span.start(),
             end: span.end(),
         }
     }
 }
 
-impl<'a> From<&'a Span> for pest::Span<'a> {
-    fn from(span: &'a Span) -> Self {
-        pest::Span::new(&span.input, span.start, span.end)
-            .expect(format!("Failed to convert {:?}", span).as_str())
-    }
-}
-
 #[derive(PartialOrd, PartialEq, Clone)]
 pub struct AstPair<A>(pub Span, pub A);
+
+impl<A> AstPair<A> {
+    pub fn from_pair(p: &Pair<Rule>, ast: A) -> AstPair<A> {
+        AstPair(p.as_span().into(), ast)
+    }
+
+    pub fn from_span(s: &Span, ast: A) -> AstPair<A> {
+        AstPair(s.clone(), ast)
+    }
+}
 
 impl<T: Debug> Debug for AstPair<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
