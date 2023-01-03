@@ -190,6 +190,12 @@ impl Identifier {
     }
 }
 
+impl Display for Identifier {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub struct MatchClause {
     pub predicate_expression: Box<AstPair<PredicateExpression>>,
@@ -243,7 +249,8 @@ impl<'a> From<pest::Span<'a>> for Span {
 
 impl<'a> From<&'a Span> for pest::Span<'a> {
     fn from(span: &'a Span) -> Self {
-        pest::Span::new(&span.input, span.start, span.end).unwrap()
+        pest::Span::new(&span.input, span.start, span.end)
+            .expect(format!("Failed to convert {:?}", span).as_str())
     }
 }
 

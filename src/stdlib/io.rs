@@ -9,7 +9,7 @@ pub fn package() -> Package {
         name: "io".to_string(),
         definitions: HashMap::from([(
             Identifier::new("println"),
-            Definition::System(|args: Vec<&Value>| {
+            Definition::System(|args| {
                 println(args.first().unwrap());
                 Value::Unit
             }),
@@ -18,5 +18,5 @@ pub fn package() -> Package {
 }
 
 pub fn println(value: &Value) -> () {
-    println!("{:#?}", value);
+    println!("{}", value);
 }

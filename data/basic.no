@@ -23,3 +23,9 @@ a = (a, b, c) {
     println(e + " " + "here")
     helloWorld()
 }
+
+main = {
+    helloWorld()
+    fizBuzzShort()
+    a(1, 2, 3)
+}

@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::process::exit;
 
@@ -8,7 +9,8 @@ use crate::interpret::context::{Context, Definition, Scope};
 use crate::interpret::evaluate::Evaluate;
 
 pub fn execute(block: AstPair<Block>) {
-    let mut ctx = Context::new();
+    let ctx_cell = RefCell::new(Context::new());
+    let ctx = &mut ctx_cell.borrow_mut();
     let block_defs = block
         .1
         .statements
@@ -16,17 +18,21 @@ pub fn execute(block: AstPair<Block>) {
         .flat_map(|s| s.1.as_definitions())
         .collect::<HashMap<_, _>>();
     ctx.scope_stack.push((
-        Identifier::new(""),
+        Identifier::new("global"),
         Scope {
             definitions: block_defs,
+            params: vec![],
         },
     ));
-    let main = match ctx.find(Identifier::new("main")) {
-        Some(Definition::User(_, main)) => main,
+    let identifier = Identifier::new("main");
+    ctx.scope_stack.push((identifier.clone(), Scope::default()));
+    let main = match ctx.find(&identifier) {
+        Some(Definition::User(_, exp)) => exp,
         _ => {
-            eprintln!("{}", format!("'main' function not found").red());
+            eprintln!("{}", format!("'{}' function not found", identifier).red());
             exit(1)
         }
     };
-    main.eval(&mut ctx).expect("error during main eval");
+    main.eval(ctx).expect("error during main eval");
+    ctx.scope_stack.pop();
 }
