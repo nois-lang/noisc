@@ -8,11 +8,11 @@ pub fn package() -> Package {
     Package {
         name: "io".to_string(),
         definitions: HashMap::from([(
-            Identifier("println".to_string()),
-            Definition::System(Box::from(|args: Vec<&Value>| {
+            Identifier::new("println"),
+            Definition::System(|args: Vec<&Value>| {
                 println(args.first().unwrap());
                 Value::Unit
-            })),
+            }),
         )]),
     }
 }

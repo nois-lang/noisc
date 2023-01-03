@@ -184,6 +184,12 @@ impl TryFrom<Pair<'_, Rule>> for BinaryOperator {
 #[derive(Debug, PartialOrd, PartialEq, Clone, Eq, Hash)]
 pub struct Identifier(pub String);
 
+impl Identifier {
+    pub fn new(name: &str) -> Identifier {
+        Identifier(name.to_string())
+    }
+}
+
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub struct MatchClause {
     pub predicate_expression: Box<AstPair<PredicateExpression>>,

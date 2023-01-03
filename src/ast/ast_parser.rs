@@ -300,7 +300,7 @@ pub fn parse_enum_define(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Ru
 
 fn parse_identifier(pair: &Pair<Rule>) -> Result<AstPair<Identifier>, Error<Rule>> {
     match pair.as_rule() {
-        Rule::identifier => Ok(from_pair(pair, Identifier(pair.as_str().to_string()))),
+        Rule::identifier => Ok(from_pair(pair, Identifier::new(pair.as_str()))),
         _ => Err(custom_error(
             pair,
             format!(
