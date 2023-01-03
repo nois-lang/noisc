@@ -1,6 +1,7 @@
 use crate::ast::ast::{Assignee, AstContext, AstPair, Expression, Identifier, Statement};
 use crate::interpret::value::Value;
 use crate::stdlib::lib::stdlib;
+use std::cell::RefMut;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
@@ -28,7 +29,8 @@ impl Default for Scope {
 #[derive(Clone)]
 pub enum Definition {
     User(AstPair<Identifier>, AstPair<Expression>),
-    System(fn(Vec<Value>) -> Value),
+    // TODO: error reporting
+    System(fn(Vec<Value>, &mut RefMut<Context>) -> Value),
     Value(Value),
 }
 
@@ -57,12 +59,22 @@ impl Context {
         }
     }
 
-    pub fn find(&self, identifier: &Identifier) -> Option<Definition> {
+    pub fn find_global(&self, identifier: &Identifier) -> Option<Definition> {
         self.scope_stack
             .iter()
+            .rev()
             .filter_map(|(_, s)| s.definitions.get(&identifier))
             .cloned()
             .next()
+    }
+    pub fn find_local(&self, identifier: &Identifier) -> Option<Definition> {
+        self.scope_stack
+            .last()
+            .unwrap()
+            .1
+            .definitions
+            .get(&identifier)
+            .cloned()
     }
 }
 

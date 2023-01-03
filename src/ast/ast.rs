@@ -44,22 +44,19 @@ pub enum Operand {
     Hole,
     Integer(i128),
     Float(f64),
-    StructDefinition {
-        fields: Vec<AstPair<Identifier>>,
-    },
-    EnumDefinition {
-        values: Vec<AstPair<Identifier>>,
-    },
-    ListInit {
-        items: Vec<AstPair<Expression>>,
-    },
+    StructDefinition { fields: Vec<AstPair<Identifier>> },
+    EnumDefinition { values: Vec<AstPair<Identifier>> },
+    ListInit { items: Vec<AstPair<Expression>> },
     FunctionInit(FunctionInit),
-    FunctionCall {
-        identifier: AstPair<Identifier>,
-        parameters: Vec<AstPair<Expression>>,
-    },
+    FunctionCall(FunctionCall),
     String(String),
     Identifier(AstPair<Identifier>),
+}
+
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
+pub struct FunctionCall {
+    pub identifier: AstPair<Identifier>,
+    pub parameters: Vec<AstPair<Expression>>,
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]

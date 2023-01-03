@@ -3,8 +3,8 @@ use pest::error::Error;
 use pest::iterators::{Pair, Pairs};
 
 use crate::ast::ast::{
-    Assignee, AstPair, BinaryOperator, Block, Expression, FunctionInit, Identifier, MatchClause,
-    Operand, Pattern, PatternItem, PredicateExpression, Statement,
+    Assignee, AstPair, BinaryOperator, Block, Expression, FunctionCall, FunctionInit, Identifier,
+    MatchClause, Operand, Pattern, PatternItem, PredicateExpression, Statement,
 };
 use crate::ast::expression::{Associativity, OperatorAssociativity, OperatorPrecedence};
 use crate::ast::util::{children, custom_error, first_child, parse_children};
@@ -276,10 +276,10 @@ pub fn parse_function_call(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<
     let ch = children(pair);
     Ok(AstPair::from_pair(
         pair,
-        Operand::FunctionCall {
+        Operand::FunctionCall(FunctionCall {
             identifier: parse_identifier(&ch[0])?,
             parameters: parse_parameter_list(&ch[1])?,
-        },
+        }),
     ))
 }
 
@@ -826,12 +826,14 @@ Block {
                             ),
                             operator: Accessor,
                             right_operand: Operand(
-                                FunctionCall {
-                                    identifier: Identifier(
-                                        "len",
-                                    ),
-                                    parameters: [],
-                                },
+                                FunctionCall(
+                                    FunctionCall {
+                                        identifier: Identifier(
+                                            "len",
+                                        ),
+                                        parameters: [],
+                                    },
+                                ),
                             ),
                         },
                         operator: Exponent,
@@ -852,20 +854,22 @@ Block {
                 },
                 operator: Subtract,
                 right_operand: Operand(
-                    FunctionCall {
-                        identifier: Identifier(
-                            "foo",
-                        ),
-                        parameters: [
-                            Operand(
-                                Identifier(
+                    FunctionCall(
+                        FunctionCall {
+                            identifier: Identifier(
+                                "foo",
+                            ),
+                            parameters: [
+                                Operand(
                                     Identifier(
-                                        "c",
+                                        Identifier(
+                                            "c",
+                                        ),
                                     ),
                                 ),
-                            ),
-                        ],
-                    },
+                            ],
+                        },
+                    ),
                 ),
             },
         ),
@@ -895,30 +899,34 @@ Block {
                     ),
                     operator: Accessor,
                     right_operand: Operand(
-                        FunctionCall {
-                            identifier: Identifier(
-                                "foo",
-                            ),
-                            parameters: [],
-                        },
+                        FunctionCall(
+                            FunctionCall {
+                                identifier: Identifier(
+                                    "foo",
+                                ),
+                                parameters: [],
+                            },
+                        ),
                     ),
                 },
                 operator: Accessor,
                 right_operand: Operand(
-                    FunctionCall {
-                        identifier: Identifier(
-                            "bar",
-                        ),
-                        parameters: [
-                            Operand(
-                                Identifier(
+                    FunctionCall(
+                        FunctionCall {
+                            identifier: Identifier(
+                                "bar",
+                            ),
+                            parameters: [
+                                Operand(
                                     Identifier(
-                                        "b",
+                                        Identifier(
+                                            "b",
+                                        ),
                                     ),
                                 ),
-                            ),
-                        ],
-                    },
+                            ],
+                        },
+                    ),
                 ),
             },
         ),
@@ -1126,12 +1134,14 @@ Block {
                             statements: [
                                 Expression(
                                     Operand(
-                                        FunctionCall {
-                                            identifier: Identifier(
-                                                "panic",
-                                            ),
-                                            parameters: [],
-                                        },
+                                        FunctionCall(
+                                            FunctionCall {
+                                                identifier: Identifier(
+                                                    "panic",
+                                                ),
+                                                parameters: [],
+                                            },
+                                        ),
                                     ),
                                 ),
                             ],
@@ -1266,12 +1276,14 @@ Block {
                                     ),
                                     operator: Accessor,
                                     right_operand: Operand(
-                                        FunctionCall {
-                                            identifier: Identifier(
-                                                "len",
-                                            ),
-                                            parameters: [],
-                                        },
+                                        FunctionCall(
+                                            FunctionCall {
+                                                identifier: Identifier(
+                                                    "len",
+                                                ),
+                                                parameters: [],
+                                            },
+                                        ),
                                     ),
                                 },
                                 operator: Equals,
@@ -1304,12 +1316,14 @@ Block {
                             statements: [
                                 Expression(
                                     Operand(
-                                        FunctionCall {
-                                            identifier: Identifier(
-                                                "panic",
-                                            ),
-                                            parameters: [],
-                                        },
+                                        FunctionCall(
+                                            FunctionCall {
+                                                identifier: Identifier(
+                                                    "panic",
+                                                ),
+                                                parameters: [],
+                                            },
+                                        ),
                                     ),
                                 ),
                             ],

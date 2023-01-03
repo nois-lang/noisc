@@ -6,17 +6,14 @@ use std::collections::HashMap;
 
 pub fn package() -> Package {
     Package {
-        name: "io".to_string(),
+        name: "binary_operator".to_string(),
         definitions: HashMap::from([(
-            Identifier::new("println"),
-            Definition::System(|args, _| {
-                println(&args[0]);
-                Value::Unit
-            }),
+            Identifier::new("+"),
+            Definition::System(|args, _| add(&args[0], &args[1])),
         )]),
     }
 }
 
-pub fn println(value: &Value) -> () {
-    println!("{}", value);
+pub fn add(a: &Value, b: &Value) -> Value {
+    a + b
 }

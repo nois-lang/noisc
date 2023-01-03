@@ -1,6 +1,7 @@
 add = (a, b) -> a + b
 
 main = {
+    a = 12.3
     x = add(2, 3)
-    println(x)
+    println(x + a)
 }
