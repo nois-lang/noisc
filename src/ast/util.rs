@@ -8,7 +8,7 @@ pub fn from_pair<A>(p: &Pair<Rule>, ast: A) -> AstPair<A> {
 }
 
 pub fn from_span<A>(s: &Span, ast: A) -> AstPair<A> {
-    AstPair(s.clone().into(), ast)
+    AstPair(s.clone(), ast)
 }
 
 pub fn children<'a>(p: &'a Pair<Rule>) -> Vec<Pair<'a, Rule>> {
@@ -21,6 +21,10 @@ pub fn first_child<'a>(p: &'a Pair<Rule>) -> Option<Pair<'a, Rule>> {
 
 pub fn custom_error(pair: &Pair<Rule>, message: String) -> Error<Rule> {
     Error::new_from_span(ErrorVariant::CustomError { message }, pair.as_span())
+}
+
+pub fn custom_error_span(span: &Span, message: String) -> Error<Rule> {
+    Error::new_from_span(ErrorVariant::CustomError { message }, span.into())
 }
 
 pub fn parse_children<A, F>(pair: &Pair<Rule>, f: F) -> Result<Vec<AstPair<A>>, Error<Rule>>

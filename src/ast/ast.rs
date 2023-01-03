@@ -52,16 +52,19 @@ pub enum Operand {
     ListInit {
         items: Vec<AstPair<Expression>>,
     },
-    FunctionInit {
-        arguments: Vec<AstPair<Assignee>>,
-        block: AstPair<Block>,
-    },
+    FunctionInit(FunctionInit),
     FunctionCall {
         identifier: AstPair<Identifier>,
         parameters: Vec<AstPair<Expression>>,
     },
     String(String),
     Identifier(Identifier),
+}
+
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
+pub struct FunctionInit {
+    pub arguments: Vec<AstPair<Assignee>>,
+    pub block: AstPair<Block>,
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
@@ -232,15 +235,17 @@ impl<'a> From<pest::Span<'a>> for Span {
     }
 }
 
+impl<'a> From<&'a Span> for pest::Span<'a> {
+    fn from(span: &'a Span) -> Self {
+        pest::Span::new(&span.input, span.start, span.end).unwrap()
+    }
+}
+
 #[derive(PartialOrd, PartialEq, Clone)]
 pub struct AstPair<A>(pub Span, pub A);
 
 impl<T: Debug> Debug for AstPair<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        if f.alternate() {
-            write!(f, "{:#?}", self.1)
-        } else {
-            write!(f, "{:?}", self.1)
-        }
+        Debug::fmt(&self.1, f)
     }
 }

@@ -3,8 +3,8 @@ use pest::error::Error;
 use pest::iterators::{Pair, Pairs};
 
 use crate::ast::ast::{
-    Assignee, AstPair, BinaryOperator, Block, Expression, Identifier, MatchClause, Operand,
-    Pattern, PatternItem, PredicateExpression, Statement,
+    Assignee, AstPair, BinaryOperator, Block, Expression, FunctionInit, Identifier, MatchClause,
+    Operand, Pattern, PatternItem, PredicateExpression, Statement,
 };
 use crate::ast::expression::{Associativity, OperatorAssociativity, OperatorPrecedence};
 use crate::ast::util::{children, custom_error, first_child, from_pair, from_span, parse_children};
@@ -277,7 +277,10 @@ pub fn parse_function_init(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<
     let ch = children(pair);
     let arguments: Vec<AstPair<Assignee>> = parse_children(&ch[0], parse_assignee)?;
     let block = parse_block(&ch[1])?;
-    Ok(from_pair(pair, Operand::FunctionInit { arguments, block }))
+    Ok(from_pair(
+        pair,
+        Operand::FunctionInit(FunctionInit { arguments, block }),
+    ))
 }
 
 pub fn parse_list_init(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
