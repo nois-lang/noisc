@@ -15,23 +15,23 @@ use crate::interpret::value::Value;
 use crate::parser::Rule;
 
 pub trait Evaluate {
-    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>>;
+    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>>;
 }
 
 impl Evaluate for AstPair<Block> {
-    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>> {
+    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
         let mut last_res = self.map(|_| Value::Unit);
         for statement in &self.1.statements {
-            last_res = statement.eval(ctx)?;
+            last_res = statement.eval(ctx, eager)?;
         }
         Ok(last_res)
     }
 }
 
 impl Evaluate for AstPair<Statement> {
-    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>> {
+    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
         match &self.1 {
-            Statement::Expression(exp) => exp.eval(ctx),
+            Statement::Expression(exp) => exp.eval(ctx, eager),
             Statement::Assignment {
                 assignee,
                 expression,
@@ -46,9 +46,9 @@ impl Evaluate for AstPair<Statement> {
 }
 
 impl Evaluate for AstPair<Expression> {
-    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>> {
+    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
         match &self.1 {
-            Expression::Operand(op) => op.eval(ctx),
+            Expression::Operand(op) => op.eval(ctx, eager),
             Expression::Unary { .. } => todo!(),
             Expression::Binary {
                 left_operand,
@@ -79,7 +79,7 @@ pub fn function_call(
         .1
         .parameters
         .iter()
-        .map(|a| a.eval(ctx))
+        .map(|a| a.eval(ctx, false))
         .collect::<Result<_, _>>()?;
     ctx.scope_stack.push(Scope {
         name: function_call.1.clone().identifier.1.0,
@@ -90,7 +90,7 @@ pub fn function_call(
 
     let id = &function_call.1.identifier;
     let res = match ctx.find_definition(&id.1) {
-        Some(Definition::User(_, exp)) => exp.eval(ctx),
+        Some(Definition::User(_, exp)) => exp.eval(ctx, true),
         Some(Definition::System(f)) => f(params.clone(), ctx),
         _ => Err(custom_error_span(
             &function_call.0,
@@ -104,7 +104,7 @@ pub fn function_call(
 }
 
 impl Evaluate for AstPair<Operand> {
-    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>> {
+    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
         match &self.1 {
             Operand::Integer(i) => Ok(self.map(|_| Value::I(*i))),
             Operand::Float(f) => Ok(self.map(|_| Value::F(*f))),
@@ -115,19 +115,23 @@ impl Evaluate for AstPair<Operand> {
                     .map(|_| Value::List(s.chars().map(|c| self.map(|_| Value::C(c))).collect())))
             }
             Operand::FunctionCall(fc) => function_call(&self.map(|_| fc.clone()), ctx),
-            Operand::FunctionInit(FunctionInit { arguments, block }) => {
-                let scope = &mut ctx.scope_stack.last_mut().unwrap();
-                let x = scope.params.clone();
-                for (arg, v) in arguments.iter().zip(x) {
-                    scope.definitions.extend(assign_value_definitions(arg, v));
+            Operand::FunctionInit(fi @ FunctionInit { arguments, block }) => {
+                if eager {
+                    let scope = &mut ctx.scope_stack.last_mut().unwrap();
+                    let x = scope.params.clone();
+                    for (arg, v) in arguments.iter().zip(x) {
+                        scope.definitions.extend(assign_value_definitions(arg, v));
+                    }
+                    block.eval(ctx, eager)
+                } else {
+                    Ok(AstPair::from_span(&self.0, Value::Fn(Box::new(fi.clone()))))
                 }
-                block.eval(ctx)
             }
             Operand::ListInit { items } => {
                 let l = Value::List(
                     match items
                         .into_iter()
-                        .map(|i| i.eval(ctx))
+                        .map(|i| i.eval(ctx, eager))
                         .collect::<Result<Vec<_>, _>>()
                     {
                         Ok(r) => r,
@@ -142,7 +146,7 @@ impl Evaluate for AstPair<Operand> {
                 );
                 Ok(self.map(|_| l.clone()))
             }
-            Operand::Identifier(i) => i.eval(ctx),
+            Operand::Identifier(i) => i.eval(ctx, eager),
             _ => Err(custom_error_span(
                 &self.0,
                 &ctx.ast_context,
@@ -153,9 +157,9 @@ impl Evaluate for AstPair<Operand> {
 }
 
 impl Evaluate for AstPair<Identifier> {
-    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>> {
+    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
         match ctx.find_definition(&self.1) {
-            Some(res) => res.eval(ctx),
+            Some(res) => res.eval(ctx, eager),
             None => Err(custom_error_span(
                 &self.0,
                 &ctx.ast_context,
@@ -166,9 +170,9 @@ impl Evaluate for AstPair<Identifier> {
 }
 
 impl Evaluate for Definition {
-    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>> {
+    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
         match self {
-            Definition::User(_, exp) => exp.eval(ctx),
+            Definition::User(_, exp) => exp.eval(ctx, eager),
             Definition::System(f) => f(ctx.scope_stack.last().unwrap().clone().params, ctx),
             Definition::Value(v) => Ok(v.clone()),
         }

@@ -39,7 +39,7 @@ pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
     };
     let mut a = ctx.scope_stack.last_mut().unwrap();
     a.callee = Some(main_id.0);
-    match main.eval(ctx) {
+    match main.eval(ctx, true) {
         Ok(_) => {}
         Err(e) => {
             eprintln!("{}", format!("{}", e).red())
