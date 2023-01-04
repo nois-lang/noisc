@@ -52,6 +52,25 @@ mod tests {
     }
 
     #[test]
+    fn parse_boolean() {
+        let source = r#"
+True
+False
+"#;
+        parses_to! {
+            parser: NoisParser,
+            input: source,
+            rule: Rule::program,
+            tokens: [
+                block(0, 12, [
+                    expression(1, 5, [boolean(1, 5)]),
+                    expression(6, 11, [boolean(6, 11)]),
+                ])
+            ]
+        }
+    }
+
+    #[test]
     fn parse_string() {
         let source = r#"
 ""

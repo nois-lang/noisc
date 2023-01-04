@@ -218,6 +218,7 @@ pub fn parse_operand(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>>
     match pair.as_rule() {
         Rule::integer => parse_integer(pair),
         Rule::float => parse_float(pair),
+        Rule::boolean => parse_boolean(pair),
         Rule::string => parse_string(pair),
         Rule::HOLE_OP => Ok(AstPair::from_pair(pair, Operand::Hole)),
         Rule::function_call => parse_function_call(pair),
@@ -243,10 +244,7 @@ pub fn parse_integer(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>>
     let num_s = pair.as_str();
     let num = match num_s.parse::<i128>() {
         Ok(n) => Ok(n),
-        Err(_) => Err(custom_error(
-            pair,
-            format!("unable to parse integer {num_s}"),
-        )),
+        Err(_) => Err(custom_error(pair, format!("unable to parse I {num_s}"))),
     }?;
     Ok(AstPair::from_pair(pair, Operand::Integer(num)))
 }
@@ -255,19 +253,25 @@ pub fn parse_float(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
     let num_s = pair.as_str();
     let num = match num_s.parse::<f64>() {
         Ok(n) => Ok(n),
-        Err(_) => Err(custom_error(pair, format!("unable to parse float {num_s}"))),
+        Err(_) => Err(custom_error(pair, format!("unable to parse F {num_s}"))),
     }?;
     Ok(AstPair::from_pair(pair, Operand::Float(num)))
+}
+
+pub fn parse_boolean(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
+    let bool_s = pair.as_str();
+    let boolean = match bool_s.to_lowercase().parse::<bool>() {
+        Ok(b) => Ok(b),
+        Err(_) => Err(custom_error(pair, format!("unable to parse B {bool_s}"))),
+    }?;
+    Ok(AstPair::from_pair(pair, Operand::Boolean(boolean)))
 }
 
 pub fn parse_string(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
     let raw_str = pair.as_str();
     let str = match unquote(raw_str) {
         Ok(s) => Ok(s),
-        Err(_) => Err(custom_error(
-            pair,
-            format!("unable to parse string {raw_str}"),
-        )),
+        Err(_) => Err(custom_error(pair, format!("unable to parse C[] {raw_str}"))),
     }?;
     Ok(AstPair::from_pair(pair, Operand::String(str)))
 }
@@ -510,6 +514,28 @@ mod tests {
         assert_eq!(match_enum!(numbers[0], Operand::Integer(n) => n), 1);
         assert_eq!(match_enum!(numbers[1], Operand::Float(n) => n), 12.5);
         assert_eq!(match_enum!(numbers[2], Operand::Float(n) => n), 1e21);
+    }
+
+    #[test]
+    fn build_ast_boolean() {
+        let source = r#"
+True
+False
+"#;
+        let file = &NoisParser::parse(Rule::program, source).unwrap();
+        let block = parse_file(file).unwrap().1;
+        let bools = block
+            .statements
+            .into_iter()
+            .map(|s| {
+                let exp = match_enum!(s.1, Statement::Expression(e) => e);
+                let op = *match_enum!(exp.1, Expression::Operand(o) => o);
+                op.1
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(bools.len(), 2);
+        assert_eq!(match_enum!(bools[0], Operand::Boolean(b) => b), true);
+        assert_eq!(match_enum!(bools[1], Operand::Boolean(b) => b), false);
     }
 
     #[test]

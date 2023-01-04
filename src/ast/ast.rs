@@ -44,6 +44,7 @@ pub enum Operand {
     Hole,
     Integer(i128),
     Float(f64),
+    Boolean(bool),
     StructDefinition { fields: Vec<AstPair<Identifier>> },
     EnumDefinition { values: Vec<AstPair<Identifier>> },
     ListInit { items: Vec<AstPair<Expression>> },

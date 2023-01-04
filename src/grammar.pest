@@ -17,6 +17,7 @@ operand                       = _{
     HOLE_OP
   | float
   | integer
+  | boolean
   | match_expression
   | struct_define
   | enum_define
@@ -33,6 +34,7 @@ operand                       = _{
   float                       = @{
     integer ~ ("." ~ ASCII_DIGIT+) | integer ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)
   }
+  boolean                       = @{ "True" | "False" }
   struct_define               =  {
     STRUCT_OP ~ BRACE_OPEN ~ N*
       ~ identifier? ~ N*

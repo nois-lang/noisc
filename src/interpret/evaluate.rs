@@ -120,6 +120,7 @@ impl Evaluate for AstPair<Operand> {
         match &self.1 {
             Operand::Integer(i) => Ok(Value::I(*i)),
             Operand::Float(f) => Ok(Value::F(*f)),
+            Operand::Boolean(b) => Ok(Value::B(*b)),
             Operand::String(s) => Ok(Value::List(s.chars().map(|c| Value::C(c)).collect())),
             Operand::FunctionCall(fc) => function_call(fc, ctx),
             Operand::FunctionInit(FunctionInit { arguments, block }) => {

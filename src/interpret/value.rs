@@ -23,7 +23,7 @@ impl Display for Value {
             Value::I(i) => write!(f, "{i}"),
             Value::F(fl) => write!(f, "{fl}"),
             Value::C(c) => write!(f, "{c}"),
-            Value::B(b) => write!(f, "{b}"),
+            Value::B(b) => write!(f, "{}", if *b { "True" } else { "False" }),
             // TODO: general list repr
             Value::List(l) => write!(
                 f,
