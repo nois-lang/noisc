@@ -1,3 +1,9 @@
+use std::cell::RefMut;
+use std::collections::HashMap;
+use std::ops::Deref;
+
+use pest::error::Error;
+
 use crate::ast::ast::{
     Assignee, AstPair, Block, Expression, FunctionCall, FunctionInit, Identifier, Operand,
     Statement,
@@ -8,20 +14,15 @@ use crate::interpret::context::{
 };
 use crate::interpret::value::Value;
 use crate::parser::Rule;
-use colored::Colorize;
-use pest::error::Error;
-use std::cell::RefMut;
-use std::collections::HashMap;
-use std::ops::Deref;
-use std::process::exit;
 
+// TODO: some ast pairs point to the wrong exp
 pub trait Evaluate {
-    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<Value, Error<Rule>>;
+    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>>;
 }
 
 impl Evaluate for AstPair<Block> {
-    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<Value, Error<Rule>> {
-        let mut last_res = Value::Unit;
+    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>> {
+        let mut last_res = self.map(|_| Value::Unit);
         for statement in &self.1.statements {
             last_res = statement.eval(ctx)?;
         }
@@ -30,7 +31,7 @@ impl Evaluate for AstPair<Block> {
 }
 
 impl Evaluate for AstPair<Statement> {
-    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<Value, Error<Rule>> {
+    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>> {
         match &self.1 {
             Statement::Expression(exp) => exp.eval(ctx),
             Statement::Assignment {
@@ -44,7 +45,7 @@ impl Evaluate for AstPair<Statement> {
                     .1
                     .definitions
                     .extend(defs);
-                Ok(Value::Unit)
+                Ok(self.map(|_| Value::Unit))
             }
             Statement::Return(_) => todo!(),
         }
@@ -52,7 +53,7 @@ impl Evaluate for AstPair<Statement> {
 }
 
 impl Evaluate for AstPair<Expression> {
-    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<Value, Error<Rule>> {
+    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>> {
         match &self.1 {
             Expression::Operand(op) => op.eval(ctx),
             Expression::Unary { .. } => todo!(),
@@ -62,14 +63,15 @@ impl Evaluate for AstPair<Expression> {
                 right_operand,
             } => {
                 let fc = FunctionCall {
-                    identifier: AstPair::from_span(&self.0, Identifier(format!("{}", operator.1))),
+                    identifier: self.map(|_| Identifier(format!("{}", operator.1))),
                     parameters: vec![left_operand, right_operand]
                         .into_iter()
                         .map(|p| p.deref())
                         .cloned()
                         .collect(),
                 };
-                function_call(&fc, ctx)
+                let a = self.map(|_| fc.clone());
+                function_call(&a, ctx)
             }
             Expression::MatchExpression { .. } => todo!(),
         }
@@ -77,52 +79,55 @@ impl Evaluate for AstPair<Expression> {
 }
 
 impl Evaluate for AstPair<Assignee> {
-    fn eval(&self, _ctx: &mut RefMut<Context>) -> Result<Value, Error<Rule>> {
+    fn eval(&self, _ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>> {
         todo!()
     }
 }
 
 pub fn function_call(
-    function_call: &FunctionCall,
+    function_call: &AstPair<FunctionCall>,
     ctx: &mut RefMut<Context>,
-) -> Result<Value, Error<Rule>> {
-    let params: Vec<Value> = function_call
+) -> Result<AstPair<Value>, Error<Rule>> {
+    let params: Vec<AstPair<Value>> = function_call
+        .1
         .parameters
         .iter()
-        .map(|p| p.eval(ctx))
+        .map(|a| -> Result<AstPair<Value>, _> { a.eval(ctx) })
         .collect::<Result<_, _>>()?;
     ctx.scope_stack.push((
-        function_call.identifier.clone().1,
+        function_call.1.identifier.clone().1,
         Scope {
             definitions: HashMap::new(),
+            callee: Some(function_call.1.identifier.clone()),
             params: params.clone(),
         },
     ));
 
-    let res = match ctx.find_global(&function_call.identifier.1) {
-        Some(Definition::User(_, exp)) => exp.eval(ctx)?,
+    let id = &function_call.1.identifier;
+    let res = match ctx.find_global(&id.1) {
+        Some(Definition::User(_, exp)) => exp.eval(ctx),
         Some(Definition::System(f)) => f(params.clone(), ctx),
-        _ => {
-            eprintln!(
-                "{}",
-                format!("'{}' function not found", function_call.identifier.1).red()
-            );
-            exit(1)
-        }
-    };
+        _ => Err(custom_error_span(
+            &function_call.0,
+            &ctx.ast_context,
+            format!("'{}' function not found", id.1),
+        )),
+    }?;
 
     ctx.scope_stack.pop();
     Ok(res)
 }
 
 impl Evaluate for AstPair<Operand> {
-    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<Value, Error<Rule>> {
+    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>> {
         match &self.1 {
-            Operand::Integer(i) => Ok(Value::I(*i)),
-            Operand::Float(f) => Ok(Value::F(*f)),
-            Operand::Boolean(b) => Ok(Value::B(*b)),
-            Operand::String(s) => Ok(Value::List(s.chars().map(|c| Value::C(c)).collect())),
-            Operand::FunctionCall(fc) => function_call(fc, ctx),
+            Operand::Integer(i) => Ok(self.map(|_| Value::I(*i))),
+            Operand::Float(f) => Ok(self.map(|_| Value::F(*f))),
+            Operand::Boolean(b) => Ok(self.map(|_| Value::B(*b))),
+            Operand::String(s) => {
+                Ok(self.map(|_| Value::List(s.chars().map(|c| Value::C(c)).collect())))
+            }
+            Operand::FunctionCall(fc) => function_call(&self.map(|_| fc.clone()), ctx),
             Operand::FunctionInit(FunctionInit { arguments, block }) => {
                 let scope = &mut ctx.scope_stack.last_mut().unwrap();
                 let x = scope.1.params.clone();
@@ -142,7 +147,7 @@ impl Evaluate for AstPair<Operand> {
 }
 
 impl Evaluate for AstPair<Identifier> {
-    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<Value, Error<Rule>> {
+    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>> {
         match ctx.find_local(&self.1) {
             Some(res) => res.eval(ctx),
             None => Err(custom_error_span(
@@ -155,10 +160,10 @@ impl Evaluate for AstPair<Identifier> {
 }
 
 impl Evaluate for Definition {
-    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<Value, Error<Rule>> {
+    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>> {
         match self {
             Definition::User(_, exp) => exp.eval(ctx),
-            Definition::System(f) => Ok(f(ctx.scope_stack.last().unwrap().clone().1.params, ctx)),
+            Definition::System(f) => f(ctx.scope_stack.last().unwrap().clone().1.params, ctx),
             Definition::Value(v) => Ok(v.clone()),
         }
     }

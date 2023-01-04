@@ -1,15 +1,13 @@
-use crate::ast::ast::FunctionInit;
-use colored::Colorize;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops;
-use std::process::exit;
+
+use crate::ast::ast::FunctionInit;
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Value {
     Unit,
     I(i128),
     F(f64),
-    // TODO: booleans
     C(char),
     B(bool),
     List(Vec<Value>),
@@ -39,9 +37,9 @@ impl Display for Value {
 }
 
 impl ops::Add for &Value {
-    type Output = Value;
+    type Output = Result<Value, String>;
 
-    fn add(self, rhs: Self) -> Value {
+    fn add(self, rhs: Self) -> Result<Value, String> {
         fn _add(a: &Value, b: &Value) -> Option<Value> {
             match (a, b) {
                 (Value::I(i1), Value::I(i2)) => Some(Value::I(i1 + i2)),
@@ -51,14 +49,11 @@ impl ops::Add for &Value {
             }
         }
         match _add(self, rhs).or(_add(rhs, self)) {
-            Some(r) => r,
-            None => {
-                eprintln!(
-                    "{}",
-                    format!("incompatible operands for '+': [{:?}, {:?}]", self, rhs).red()
-                );
-                exit(1)
-            }
+            Some(r) => Ok(r),
+            None => Err(format!(
+                "incompatible operands for '+': [{:?}, {:?}]",
+                self, rhs
+            )),
         }
     }
 }

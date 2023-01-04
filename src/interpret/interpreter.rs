@@ -17,23 +17,26 @@ pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
         .into_iter()
         .flat_map(|s| s.1.as_definitions())
         .collect::<HashMap<_, _>>();
+    let identifier = Identifier::new("main");
     ctx.scope_stack.push((
         Identifier::new("global"),
         Scope {
             definitions: block_defs,
+            callee: None,
             params: vec![],
         },
     ));
-    let identifier = Identifier::new("main");
     ctx.scope_stack.push((identifier.clone(), Scope::default()));
     // TODO: assert that main is a function
-    let main = match ctx.find_global(&identifier) {
-        Some(Definition::User(_, exp)) => exp,
+    let (main_id, main) = match ctx.find_global(&identifier) {
+        Some(Definition::User(id, exp)) => (id, exp),
         _ => {
             eprintln!("{}", format!("'{}' function not found", identifier).red());
             exit(1)
         }
     };
+    let mut a = ctx.scope_stack.last_mut().unwrap();
+    a.1.callee = Some(main_id);
     match main.eval(ctx) {
         Ok(_) => {}
         Err(e) => {

@@ -1,10 +1,12 @@
-use crate::ast::util::custom_error;
-use crate::parser::Rule;
-use pest::error::Error;
-use pest::iterators::Pair;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use std::string::ToString;
+
+use pest::error::Error;
+use pest::iterators::Pair;
+
+use crate::ast::util::custom_error;
+use crate::parser::Rule;
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub struct Block {
@@ -266,6 +268,22 @@ impl<A> AstPair<A> {
 
     pub fn from_span(s: &Span, ast: A) -> AstPair<A> {
         AstPair(s.clone(), ast)
+    }
+
+    pub fn map<T, F>(&self, f: F) -> AstPair<T>
+        where
+            F: Fn(&A) -> T,
+    {
+        let t = f(&(self).1);
+        AstPair((&self.0).clone(), t)
+    }
+
+    pub fn flat_map<T, E, F>(&self, f: F) -> Result<AstPair<T>, E>
+        where
+            F: Fn(&A) -> Result<T, E>,
+    {
+        let r = f(&self.1);
+        r.map(|t| AstPair((&self.0).clone(), t))
     }
 }
 

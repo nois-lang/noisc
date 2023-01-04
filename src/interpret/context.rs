@@ -1,9 +1,13 @@
-use crate::ast::ast::{Assignee, AstContext, AstPair, Expression, Identifier, Statement};
-use crate::interpret::value::Value;
-use crate::stdlib::lib::stdlib;
 use std::cell::RefMut;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
+
+use pest::error::Error;
+
+use crate::ast::ast::{Assignee, AstContext, AstPair, Expression, Identifier, Statement};
+use crate::interpret::value::Value;
+use crate::parser::Rule;
+use crate::stdlib::lib::stdlib;
 
 #[derive(Debug, Clone)]
 pub struct Context {
@@ -14,13 +18,15 @@ pub struct Context {
 #[derive(Debug, Clone)]
 pub struct Scope {
     pub definitions: HashMap<Identifier, Definition>,
-    pub params: Vec<Value>,
+    pub callee: Option<AstPair<Identifier>>,
+    pub params: Vec<AstPair<Value>>,
 }
 
 impl Default for Scope {
     fn default() -> Self {
         Scope {
             definitions: HashMap::new(),
+            callee: None,
             params: vec![],
         }
     }
@@ -30,8 +36,8 @@ impl Default for Scope {
 pub enum Definition {
     User(AstPair<Identifier>, AstPair<Expression>),
     // TODO: error reporting
-    System(fn(Vec<Value>, &mut RefMut<Context>) -> Value),
-    Value(Value),
+    System(fn(Vec<AstPair<Value>>, &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>>),
+    Value(AstPair<Value>),
 }
 
 impl Debug for Definition {
@@ -53,6 +59,7 @@ impl Context {
                 Identifier::new("stdlib"),
                 Scope {
                     definitions: stdlib.into_iter().flat_map(|p| p.definitions).collect(),
+                    callee: None,
                     params: vec![],
                 },
             )],
@@ -105,7 +112,7 @@ pub fn assign_expression_definitions(
 
 pub fn assign_value_definitions(
     assignee: &AstPair<Assignee>,
-    value: Value,
+    value: AstPair<Value>,
 ) -> Vec<(Identifier, Definition)> {
     match assignee.clone().1 {
         Assignee::Identifier(i) => {
