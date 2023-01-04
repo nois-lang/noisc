@@ -5,8 +5,7 @@ use std::ops::Deref;
 use pest::error::Error;
 
 use crate::ast::ast::{
-    Assignee, AstPair, Block, Expression, FunctionCall, FunctionInit, Identifier, Operand,
-    Statement,
+    AstPair, Block, Expression, FunctionCall, FunctionInit, Identifier, Operand, Statement,
 };
 use crate::ast::util::custom_error_span;
 use crate::interpret::context::{
@@ -15,7 +14,6 @@ use crate::interpret::context::{
 use crate::interpret::value::Value;
 use crate::parser::Rule;
 
-// TODO: some ast pairs point to the wrong exp
 pub trait Evaluate {
     fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>>;
 }
@@ -73,12 +71,6 @@ impl Evaluate for AstPair<Expression> {
     }
 }
 
-impl Evaluate for AstPair<Assignee> {
-    fn eval(&self, _ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>> {
-        todo!()
-    }
-}
-
 pub fn function_call(
     function_call: &AstPair<FunctionCall>,
     ctx: &mut RefMut<Context>,
@@ -97,7 +89,7 @@ pub fn function_call(
     });
 
     let id = &function_call.1.identifier;
-    let res = match ctx.find_global(&id.1) {
+    let res = match ctx.find_definition(&id.1) {
         Some(Definition::User(_, exp)) => exp.eval(ctx),
         Some(Definition::System(f)) => f(params.clone(), ctx),
         _ => Err(custom_error_span(
@@ -118,7 +110,9 @@ impl Evaluate for AstPair<Operand> {
             Operand::Float(f) => Ok(self.map(|_| Value::F(*f))),
             Operand::Boolean(b) => Ok(self.map(|_| Value::B(*b))),
             Operand::String(s) => {
-                Ok(self.map(|_| Value::List(s.chars().map(|c| Value::C(c)).collect())))
+                // TODO: assign each list item correct span
+                Ok(self
+                    .map(|_| Value::List(s.chars().map(|c| self.map(|_| Value::C(c))).collect())))
             }
             Operand::FunctionCall(fc) => function_call(&self.map(|_| fc.clone()), ctx),
             Operand::FunctionInit(FunctionInit { arguments, block }) => {
@@ -128,6 +122,25 @@ impl Evaluate for AstPair<Operand> {
                     scope.definitions.extend(assign_value_definitions(arg, v));
                 }
                 block.eval(ctx)
+            }
+            Operand::ListInit { items } => {
+                let l = Value::List(
+                    match items
+                        .into_iter()
+                        .map(|i| i.eval(ctx))
+                        .collect::<Result<Vec<_>, _>>()
+                    {
+                        Ok(r) => r,
+                        Err(e) => {
+                            return Err(custom_error_span(
+                                &self.0,
+                                &ctx.ast_context,
+                                format!("Error constructing list\n{}", e),
+                            ));
+                        }
+                    },
+                );
+                Ok(self.map(|_| l.clone()))
             }
             Operand::Identifier(i) => i.eval(ctx),
             _ => Err(custom_error_span(
@@ -141,12 +154,12 @@ impl Evaluate for AstPair<Operand> {
 
 impl Evaluate for AstPair<Identifier> {
     fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>> {
-        match ctx.find_local(&self.1) {
+        match ctx.find_definition(&self.1) {
             Some(res) => res.eval(ctx),
             None => Err(custom_error_span(
                 &self.0,
                 &ctx.ast_context,
-                format!("Identifier '{}' not found in local scope", self.1),
+                format!("Identifier '{}' not found", self.1),
             )),
         }
     }

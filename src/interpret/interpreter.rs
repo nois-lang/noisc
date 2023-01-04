@@ -9,7 +9,7 @@ use crate::interpret::context::{Context, Definition, Scope};
 use crate::interpret::evaluate::Evaluate;
 
 pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
-    let ctx_cell = RefCell::new(Context::new(a_ctx));
+    let ctx_cell = RefCell::new(Context::stdlib(a_ctx));
     let ctx = &mut ctx_cell.borrow_mut();
     let block_defs = block
         .1
@@ -30,7 +30,7 @@ pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
         callee: None,
         params: vec![],
     });
-    let (main_id, main) = match ctx.find_global(&identifier) {
+    let (main_id, main) = match ctx.find_definition(&identifier) {
         Some(Definition::User(id, exp)) => (id, exp),
         _ => {
             eprintln!("{}", format!("'{}' function not found", identifier).red());
@@ -42,7 +42,7 @@ pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
     match main.eval(ctx) {
         Ok(_) => {}
         Err(e) => {
-            eprintln!("{}", format!("error during main eval:\n{}", e).red())
+            eprintln!("{}", format!("{}", e).red())
         }
     };
     ctx.scope_stack.pop();

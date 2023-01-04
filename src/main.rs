@@ -1,3 +1,4 @@
+extern crate core;
 #[macro_use]
 extern crate pest;
 #[macro_use]
@@ -6,11 +7,11 @@ extern crate pest_derive;
 use std::fs::read_to_string;
 use std::process::exit;
 
-use crate::ast::ast::{AstContext, AstPair, Block};
 use clap::Parser as p;
 use colored::Colorize;
 use pest::Parser;
 
+use crate::ast::ast::{AstContext, AstPair, Block};
 use crate::ast::ast_parser::parse_block;
 use crate::cli::{Cli, Commands};
 use crate::interpret::interpreter::execute;

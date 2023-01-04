@@ -26,7 +26,6 @@ pub struct Scope {
 #[derive(Clone)]
 pub enum Definition {
     User(AstPair<Identifier>, AstPair<Expression>),
-    // TODO: error reporting
     System(fn(Vec<AstPair<Value>>, &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>>),
     Value(AstPair<Value>),
 }
@@ -42,7 +41,7 @@ impl Debug for Definition {
 }
 
 impl Context {
-    pub fn new(a_ctx: AstContext) -> Context {
+    pub fn stdlib(a_ctx: AstContext) -> Context {
         let stdlib = stdlib();
         Context {
             ast_context: a_ctx,
@@ -55,21 +54,14 @@ impl Context {
         }
     }
 
-    pub fn find_global(&self, identifier: &Identifier) -> Option<Definition> {
+    pub fn find_definition(&self, identifier: &Identifier) -> Option<Definition> {
+        // TODO: only check local, global and stdlib scopes
         self.scope_stack
             .iter()
             .rev()
             .filter_map(|s| s.definitions.get(&identifier))
             .cloned()
             .next()
-    }
-    pub fn find_local(&self, identifier: &Identifier) -> Option<Definition> {
-        self.scope_stack
-            .last()
-            .unwrap()
-            .definitions
-            .get(&identifier)
-            .cloned()
     }
 }
 
