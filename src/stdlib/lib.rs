@@ -1,7 +1,7 @@
 use std::cell::RefMut;
 use std::collections::HashMap;
 
-use crate::ast::ast::{AstPair, Identifier};
+use crate::ast::ast::{Identifier, Span};
 use crate::interpret::context::{Context, Definition};
 use crate::stdlib::{binary_operator, io};
 
@@ -15,12 +15,6 @@ pub fn stdlib() -> Vec<Package> {
     vec![io::package(), binary_operator::package()]
 }
 
-pub fn callee(assert_id: &Identifier, ctx: &mut RefMut<Context>) -> Option<AstPair<Identifier>> {
-    ctx.scope_stack
-        .last()
-        .unwrap()
-        .clone()
-        .1
-        .callee
-        .filter(|i| &i.1 == assert_id)
+pub fn callee(ctx: &mut RefMut<Context>) -> Option<Span> {
+    ctx.scope_stack.last().unwrap().clone().callee
 }

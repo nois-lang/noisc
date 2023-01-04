@@ -11,9 +11,9 @@ pub fn package() -> Package {
         definitions: HashMap::from([(
             Identifier::new("println"),
             Definition::System(|args, ctx| {
-                let id = callee(&Identifier::new("+"), ctx).expect("callee not found");
+                let c = callee(ctx).expect("callee not found");
                 println(&args[0]);
-                Ok(id.map(|_| Value::Unit))
+                Ok(AstPair::from_span(&c, Value::Unit))
             }),
         )]),
     }

@@ -39,12 +39,7 @@ impl Evaluate for AstPair<Statement> {
                 expression,
             } => {
                 let defs = assign_expression_definitions(assignee, expression.clone());
-                ctx.scope_stack
-                    .last_mut()
-                    .unwrap()
-                    .1
-                    .definitions
-                    .extend(defs);
+                ctx.scope_stack.last_mut().unwrap().definitions.extend(defs);
                 Ok(self.map(|_| Value::Unit))
             }
             Statement::Return(_) => todo!(),
@@ -63,7 +58,7 @@ impl Evaluate for AstPair<Expression> {
                 right_operand,
             } => {
                 let fc = FunctionCall {
-                    identifier: self.map(|_| Identifier(format!("{}", operator.1))),
+                    identifier: self.map(|_| Identifier(format!("{}", operator.deref().1))),
                     parameters: vec![left_operand, right_operand]
                         .into_iter()
                         .map(|p| p.deref())
@@ -92,16 +87,14 @@ pub fn function_call(
         .1
         .parameters
         .iter()
-        .map(|a| -> Result<AstPair<Value>, _> { a.eval(ctx) })
+        .map(|a| a.eval(ctx))
         .collect::<Result<_, _>>()?;
-    ctx.scope_stack.push((
-        function_call.1.identifier.clone().1,
-        Scope {
-            definitions: HashMap::new(),
-            callee: Some(function_call.1.identifier.clone()),
-            params: params.clone(),
-        },
-    ));
+    ctx.scope_stack.push(Scope {
+        name: function_call.1.clone().identifier.1.0,
+        definitions: HashMap::new(),
+        callee: Some(function_call.1.clone().identifier.0),
+        params: params.clone(),
+    });
 
     let id = &function_call.1.identifier;
     let res = match ctx.find_global(&id.1) {
@@ -130,9 +123,9 @@ impl Evaluate for AstPair<Operand> {
             Operand::FunctionCall(fc) => function_call(&self.map(|_| fc.clone()), ctx),
             Operand::FunctionInit(FunctionInit { arguments, block }) => {
                 let scope = &mut ctx.scope_stack.last_mut().unwrap();
-                let x = scope.1.params.clone();
+                let x = scope.params.clone();
                 for (arg, v) in arguments.iter().zip(x) {
-                    scope.1.definitions.extend(assign_value_definitions(arg, v));
+                    scope.definitions.extend(assign_value_definitions(arg, v));
                 }
                 block.eval(ctx)
             }
@@ -163,7 +156,7 @@ impl Evaluate for Definition {
     fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>> {
         match self {
             Definition::User(_, exp) => exp.eval(ctx),
-            Definition::System(f) => f(ctx.scope_stack.last().unwrap().clone().1.params, ctx),
+            Definition::System(f) => f(ctx.scope_stack.last().unwrap().clone().params, ctx),
             Definition::Value(v) => Ok(v.clone()),
         }
     }

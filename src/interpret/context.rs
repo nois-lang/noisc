@@ -4,7 +4,7 @@ use std::fmt::{Debug, Formatter};
 
 use pest::error::Error;
 
-use crate::ast::ast::{Assignee, AstContext, AstPair, Expression, Identifier, Statement};
+use crate::ast::ast::{Assignee, AstContext, AstPair, Expression, Identifier, Span, Statement};
 use crate::interpret::value::Value;
 use crate::parser::Rule;
 use crate::stdlib::lib::stdlib;
@@ -12,24 +12,15 @@ use crate::stdlib::lib::stdlib;
 #[derive(Debug, Clone)]
 pub struct Context {
     pub ast_context: AstContext,
-    pub scope_stack: Vec<(Identifier, Scope)>,
+    pub scope_stack: Vec<Scope>,
 }
 
 #[derive(Debug, Clone)]
 pub struct Scope {
+    pub name: String,
     pub definitions: HashMap<Identifier, Definition>,
-    pub callee: Option<AstPair<Identifier>>,
+    pub callee: Option<Span>,
     pub params: Vec<AstPair<Value>>,
-}
-
-impl Default for Scope {
-    fn default() -> Self {
-        Scope {
-            definitions: HashMap::new(),
-            callee: None,
-            params: vec![],
-        }
-    }
 }
 
 #[derive(Clone)]
@@ -55,14 +46,12 @@ impl Context {
         let stdlib = stdlib();
         Context {
             ast_context: a_ctx,
-            scope_stack: vec![(
-                Identifier::new("stdlib"),
-                Scope {
-                    definitions: stdlib.into_iter().flat_map(|p| p.definitions).collect(),
-                    callee: None,
-                    params: vec![],
-                },
-            )],
+            scope_stack: vec![Scope {
+                name: "stdlib".to_string(),
+                definitions: stdlib.into_iter().flat_map(|p| p.definitions).collect(),
+                callee: None,
+                params: vec![],
+            }],
         }
     }
 
@@ -70,7 +59,7 @@ impl Context {
         self.scope_stack
             .iter()
             .rev()
-            .filter_map(|(_, s)| s.definitions.get(&identifier))
+            .filter_map(|s| s.definitions.get(&identifier))
             .cloned()
             .next()
     }
@@ -78,7 +67,6 @@ impl Context {
         self.scope_stack
             .last()
             .unwrap()
-            .1
             .definitions
             .get(&identifier)
             .cloned()

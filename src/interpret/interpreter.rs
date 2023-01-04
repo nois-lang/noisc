@@ -18,16 +18,18 @@ pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
         .flat_map(|s| s.1.as_definitions())
         .collect::<HashMap<_, _>>();
     let identifier = Identifier::new("main");
-    ctx.scope_stack.push((
-        Identifier::new("global"),
-        Scope {
-            definitions: block_defs,
-            callee: None,
-            params: vec![],
-        },
-    ));
-    ctx.scope_stack.push((identifier.clone(), Scope::default()));
-    // TODO: assert that main is a function
+    ctx.scope_stack.push(Scope {
+        name: "global".to_string(),
+        definitions: block_defs,
+        callee: None,
+        params: vec![],
+    });
+    ctx.scope_stack.push(Scope {
+        name: "main".to_string(),
+        definitions: HashMap::new(),
+        callee: None,
+        params: vec![],
+    });
     let (main_id, main) = match ctx.find_global(&identifier) {
         Some(Definition::User(id, exp)) => (id, exp),
         _ => {
@@ -36,7 +38,7 @@ pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
         }
     };
     let mut a = ctx.scope_stack.last_mut().unwrap();
-    a.1.callee = Some(main_id);
+    a.callee = Some(main_id.0);
     match main.eval(ctx) {
         Ok(_) => {}
         Err(e) => {
