@@ -5,11 +5,13 @@ extern crate pest;
 extern crate pest_derive;
 
 use std::fs::read_to_string;
+use std::path::PathBuf;
 use std::process::exit;
 
 use clap::Parser as p;
 use colored::Colorize;
 use pest::Parser;
+use shellexpand::tilde;
 
 use crate::ast::ast::{AstContext, AstPair, Block};
 use crate::ast::ast_parser::parse_block;
@@ -52,11 +54,16 @@ pub fn parse_ast(a_ctx: &AstContext) -> AstPair<Block> {
     }
 }
 
-pub fn read_source(source: &String) -> String {
-    match read_to_string(&source) {
+pub fn read_source(path: &String) -> String {
+    let source = PathBuf::from(tilde(path).to_string())
+        .canonicalize()
+        .map(|s| s.into_os_string())
+        .map_err(|e| e.to_string())
+        .and_then(|p| read_to_string(&p).map_err(|e| e.to_string()));
+    match source {
         Ok(s) => s,
         Err(e) => {
-            eprintln!("{}", format!("Unable to read file {}: {}", source, e).red());
+            eprintln!("{}", format!("Unable to read file {}: {}", path, e).red());
             exit(1)
         }
     }
