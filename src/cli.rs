@@ -14,10 +14,28 @@ pub enum Commands {
     Parse {
         #[clap(value_parser, help = "Path to source file")]
         source: String,
+
+        #[clap(
+        short,
+        long,
+        required = false,
+        takes_value = false,
+        help = "Detailed output"
+        )]
+        verbose: bool,
     },
     #[clap(about = "Run source file")]
     Run {
         #[clap(value_parser, help = "Path to source file")]
         source: String,
+
+        #[clap(
+        short,
+        long,
+        required = false,
+        takes_value = false,
+        help = "Detailed output"
+        )]
+        verbose: bool,
     },
 }

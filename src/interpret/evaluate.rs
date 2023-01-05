@@ -2,6 +2,7 @@ use std::cell::RefMut;
 use std::collections::HashMap;
 use std::ops::Deref;
 
+use log::debug;
 use pest::error::Error;
 
 use crate::ast::ast::{
@@ -21,7 +22,7 @@ pub trait Evaluate {
 
 impl Evaluate for AstPair<Block> {
     fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
-        println!("eval block {:?}, eager: {}", &self, eager);
+        debug!("eval {:?}, eager: {}", &self, eager);
         let mut last_res = self.map(|_| Value::Unit);
         for statement in &self.1.statements {
             last_res = statement.eval(ctx, eager)?;
@@ -32,7 +33,7 @@ impl Evaluate for AstPair<Block> {
 
 impl Evaluate for AstPair<Statement> {
     fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
-        println!("eval statement {:?}, eager: {}", &self, eager);
+        debug!("eval {:?}, eager: {}", &self, eager);
         match &self.1 {
             Statement::Expression(exp) => exp.eval(ctx, eager),
             Statement::Assignment {
@@ -50,7 +51,7 @@ impl Evaluate for AstPair<Statement> {
 
 impl Evaluate for AstPair<Expression> {
     fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
-        println!("eval expression {:?}, eager: {}", &self, eager);
+        debug!("eval {:?}, eager: {}", &self, eager);
         match &self.1 {
             Expression::Operand(op) => op.eval(ctx, eager),
             Expression::Unary { .. } => todo!(),
@@ -121,7 +122,7 @@ pub fn function_call(
 
 impl Evaluate for AstPair<Operand> {
     fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
-        println!("eval operand {:?}, eager: {}", &self, eager);
+        debug!("eval {:?}, eager: {}", &self, eager);
         match &self.1 {
             Operand::Integer(i) => Ok(self.map(|_| Value::I(*i))),
             Operand::Float(f) => Ok(self.map(|_| Value::F(*f))),
@@ -182,7 +183,7 @@ impl Evaluate for AstPair<FunctionInit> {
 
 impl Evaluate for AstPair<Identifier> {
     fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
-        println!("eval identifier {:?}, eager: {}", &self, eager);
+        debug!("eval {:?}, eager: {}", &self, eager);
         let res = match ctx.find_definition(&self.1) {
             Some(res) => res.eval(ctx, eager),
             None => Err(custom_error_span(
@@ -191,7 +192,7 @@ impl Evaluate for AstPair<Identifier> {
                 format!("Identifier '{}' not found", self.1),
             )),
         };
-        println!("result identifier {:?}, eager: {:?}", &self, res);
+        debug!("result {:?}: {:?}", &self, res);
         res
     }
 }
@@ -199,7 +200,7 @@ impl Evaluate for AstPair<Identifier> {
 /// Evaluate lazy values
 impl Evaluate for AstPair<Value> {
     fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
-        println!("eval value {:?}, eager: {}", &self, eager);
+        debug!("eval value {:?}, eager: {}", &self, eager);
         if !eager {
             return Ok(self.clone());
         }
@@ -212,7 +213,7 @@ impl Evaluate for AstPair<Value> {
 
 impl Evaluate for Definition {
     fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
-        println!("eval definition {:?}, eager: {}", &self, eager);
+        debug!("eval {:?}, eager: {}", &self, eager);
         match self {
             Definition::User(_, exp) => exp.eval(ctx, eager),
             Definition::System(f) => f(ctx.scope_stack.last().unwrap().clone().params, ctx),

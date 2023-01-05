@@ -10,6 +10,7 @@ use std::process::exit;
 
 use clap::Parser as p;
 use colored::Colorize;
+use log::LevelFilter::Trace;
 use pest::Parser;
 use shellexpand::tilde;
 
@@ -22,18 +23,32 @@ use crate::parser::{NoisParser, Rule};
 pub mod ast;
 pub mod cli;
 pub mod interpret;
+pub mod logger;
 pub mod parser;
 pub mod stdlib;
 
 fn main() {
+    let verbose_level = Trace;
     match &Cli::parse().command {
-        Commands::Parse { source: path } => {
+        Commands::Parse {
+            source: path,
+            verbose,
+        } => {
+            if *verbose {
+                logger::init(verbose_level).unwrap()
+            }
             let source = read_source(path);
             let a_ctx = AstContext { input: source };
             let ast = parse_ast(&a_ctx);
             println!("{:#?}", ast);
         }
-        Commands::Run { source: path } => {
+        Commands::Run {
+            source: path,
+            verbose,
+        } => {
+            if *verbose {
+                logger::init(verbose_level).unwrap()
+            }
             let source = read_source(path);
             let a_ctx = AstContext { input: source };
             let ast = parse_ast(&a_ctx);
