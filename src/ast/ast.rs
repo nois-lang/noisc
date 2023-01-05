@@ -206,7 +206,7 @@ pub struct MatchClause {
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum PredicateExpression {
     Expression(AstPair<Expression>),
-    Pattern(AstPair<Pattern>),
+    Assignee(AstPair<Assignee>),
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]

@@ -10,8 +10,9 @@ use crate::ast::ast::{
     Statement,
 };
 use crate::ast::util::custom_error_span;
-use crate::interpret::context::{
-    assign_expression_definitions, assign_value_definitions, Context, Definition, Scope,
+use crate::interpret::context::{Context, Definition, Scope};
+use crate::interpret::matcher::{
+    assign_expression_definitions, assign_value_definitions, match_expression,
 };
 use crate::interpret::value::Value;
 use crate::parser::Rule;
@@ -40,7 +41,7 @@ impl Evaluate for AstPair<Statement> {
                 assignee,
                 expression,
             } => {
-                let defs = assign_expression_definitions(assignee, expression.clone());
+                let defs = assign_expression_definitions(assignee.clone(), expression.clone())?;
                 ctx.scope_stack.last_mut().unwrap().definitions.extend(defs);
                 Ok(self.map(|_| Value::Unit))
             }
@@ -77,7 +78,28 @@ impl Evaluate for AstPair<Expression> {
                     function_call(&a, ctx)
                 }
             }
-            Expression::MatchExpression { .. } => todo!(),
+            Expression::MatchExpression { .. } => {
+                let p_match = match_expression(self.clone(), ctx)?;
+                if let Some((clause, pm)) = p_match {
+                    ctx.scope_stack.push(Scope {
+                        name: "<match_predicate>".to_string(),
+                        definitions: pm.into_iter().collect(),
+                        callee: Some(clause.0.clone()),
+                        params: vec![],
+                        method_callee: None,
+                    });
+
+                    let res = clause.1.block.eval(ctx, true);
+
+                    debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
+                    debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
+                    ctx.scope_stack.pop();
+
+                    res
+                } else {
+                    todo!()
+                }
+            }
         }
     }
 }
@@ -98,7 +120,7 @@ pub fn function_call(
         .collect::<Result<_, _>>()?;
     params.extend(ps);
     ctx.scope_stack.push(Scope {
-        name: function_call.1.identifier.clone().1.0,
+        name: function_call.1.identifier.clone().1 .0,
         definitions: HashMap::new(),
         callee: Some(function_call.1.clone().identifier.0),
         params: params.clone(),
@@ -173,7 +195,7 @@ impl Evaluate for AstPair<FunctionInit> {
             let scope = &mut ctx.scope_stack.last_mut().unwrap();
             let x = scope.params.clone();
             for (arg, v) in self.1.arguments.iter().zip(x) {
-                scope.definitions.extend(assign_value_definitions(arg, v));
+                scope.definitions.extend(assign_value_definitions(arg, v)?);
             }
             debug!(
                 "eval function init scope @{}: {:?}",
@@ -233,6 +255,7 @@ impl Evaluate for Definition {
 #[cfg(test)]
 mod tests {
     use std::cell::RefCell;
+    use std::vec;
 
     use pest::error::Error;
 
@@ -273,6 +296,19 @@ mod tests {
             evaluate_eager("[1, 2]"),
             Ok(Value::List(vec![Value::I(1), Value::I(2)]))
         );
+        assert_eq!(
+            evaluate_eager("'ab'"),
+            Ok(Value::List(vec![Value::C('a'), Value::C('b')]))
+        );
+        assert_eq!(
+            evaluate_eager("[1, 'b']"),
+            Ok(Value::List(vec![
+                Value::I(1),
+                Value::List(vec![Value::C('b')]),
+            ]))
+        );
         assert!(matches!(evaluate("a -> a", false), Ok(Value::Fn(..))));
     }
+
+    // TODO: more tests
 }

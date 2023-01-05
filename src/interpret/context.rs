@@ -5,7 +5,8 @@ use std::fmt::{Debug, Formatter};
 use log::error;
 use pest::error::Error;
 
-use crate::ast::ast::{Assignee, AstContext, AstPair, Expression, Identifier, Span, Statement};
+use crate::ast::ast::{AstContext, AstPair, Expression, Identifier, Span, Statement};
+use crate::interpret::matcher::assign_expression_definitions;
 use crate::interpret::value::Value;
 use crate::parser::Rule;
 use crate::stdlib::lib::stdlib;
@@ -77,39 +78,13 @@ impl Context {
 }
 
 impl Statement {
-    pub fn as_definitions(&self) -> Vec<(Identifier, Definition)> {
+    pub fn as_definitions(&self) -> Result<Vec<(Identifier, Definition)>, Error<Rule>> {
         match self.clone() {
             Statement::Assignment {
                 assignee,
                 expression,
-            } => assign_expression_definitions(&assignee, expression),
-            _ => vec![],
+            } => assign_expression_definitions(assignee, expression),
+            _ => Ok(vec![]),
         }
-    }
-}
-
-pub fn assign_expression_definitions(
-    assignee: &AstPair<Assignee>,
-    expression: AstPair<Expression>,
-) -> Vec<(Identifier, Definition)> {
-    match assignee.clone().1 {
-        Assignee::Identifier(i) => {
-            vec![(i.clone().1, Definition::User(i, expression))]
-        }
-        Assignee::Hole => vec![],
-        Assignee::Pattern(_) => todo!("patterns"),
-    }
-}
-
-pub fn assign_value_definitions(
-    assignee: &AstPair<Assignee>,
-    value: AstPair<Value>,
-) -> Vec<(Identifier, Definition)> {
-    match assignee.clone().1 {
-        Assignee::Identifier(i) => {
-            vec![(i.clone().1, Definition::Value(value))]
-        }
-        Assignee::Hole => vec![],
-        Assignee::Pattern(_) => todo!("patterns"),
     }
 }

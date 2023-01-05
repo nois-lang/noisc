@@ -199,8 +199,8 @@ pub fn parse_complex_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>
 }
 
 pub fn parse_operator<'a, T>(pair: &'a Pair<'_, Rule>) -> Result<AstPair<T>, Error<Rule>>
-where
-    T: TryFrom<Pair<'a, Rule>, Error = Error<Rule>>,
+    where
+        T: TryFrom<Pair<'a, Rule>, Error=Error<Rule>>,
 {
     let c = first_child(pair).unwrap();
     match pair.as_rule() {
@@ -449,7 +449,7 @@ fn parse_predicate_expression(
         Rule::predicate_expression => {
             let ch = &children(pair)[0];
             let exp = match ch.as_rule() {
-                Rule::pattern => PredicateExpression::Pattern(parse_pattern(ch)?),
+                Rule::assignee => PredicateExpression::Assignee(parse_assignee(ch)?),
                 Rule::expression => PredicateExpression::Expression(parse_expression(ch)?),
                 _ => unreachable!(),
             };
@@ -1079,7 +1079,7 @@ Block {
         let source = r#"
 match a {
   1 => x,
-  a != 4 => x,
+  a => x,
   _ => panic(),
 }
 "#;
@@ -1121,22 +1121,12 @@ Block {
                         },
                     },
                     MatchClause {
-                        predicate_expression: Expression(
-                            Binary {
-                                left_operand: Operand(
-                                    Identifier(
-                                        Identifier(
-                                            "a",
-                                        ),
-                                    ),
+                        predicate_expression: Assignee(
+                            Identifier(
+                                Identifier(
+                                    "a",
                                 ),
-                                operator: NotEquals,
-                                right_operand: Operand(
-                                    Integer(
-                                        4,
-                                    ),
-                                ),
-                            },
+                            ),
                         ),
                         block: Block {
                             statements: [
@@ -1153,8 +1143,10 @@ Block {
                         },
                     },
                     MatchClause {
-                        predicate_expression: Pattern(
-                            Hole,
+                        predicate_expression: Assignee(
+                            Pattern(
+                                Hole,
+                            ),
                         ),
                         block: Block {
                             statements: [
@@ -1189,7 +1181,6 @@ match a {
   [] => x,
   [a] => x,
   [a, _, ..t] => x,
-  a.len() == 10 => x,
   _ => panic(),
 }
 "#;
@@ -1209,9 +1200,11 @@ Block {
                 ),
                 match_clauses: [
                     MatchClause {
-                        predicate_expression: Pattern(
-                            List(
-                                [],
+                        predicate_expression: Assignee(
+                            Pattern(
+                                List(
+                                    [],
+                                ),
                             ),
                         ),
                         block: Block {
@@ -1229,96 +1222,19 @@ Block {
                         },
                     },
                     MatchClause {
-                        predicate_expression: Pattern(
-                            List(
-                                [
-                                    Identifier {
-                                        identifier: Identifier(
-                                            "a",
-                                        ),
-                                        spread: false,
-                                    },
-                                ],
-                            ),
-                        ),
-                        block: Block {
-                            statements: [
-                                Expression(
-                                    Operand(
-                                        Identifier(
-                                            Identifier(
-                                                "x",
-                                            ),
-                                        ),
-                                    ),
-                                ),
-                            ],
-                        },
-                    },
-                    MatchClause {
-                        predicate_expression: Pattern(
-                            List(
-                                [
-                                    Identifier {
-                                        identifier: Identifier(
-                                            "a",
-                                        ),
-                                        spread: false,
-                                    },
-                                    Hole,
-                                    Identifier {
-                                        identifier: Identifier(
-                                            "t",
-                                        ),
-                                        spread: true,
-                                    },
-                                ],
-                            ),
-                        ),
-                        block: Block {
-                            statements: [
-                                Expression(
-                                    Operand(
-                                        Identifier(
-                                            Identifier(
-                                                "x",
-                                            ),
-                                        ),
-                                    ),
-                                ),
-                            ],
-                        },
-                    },
-                    MatchClause {
-                        predicate_expression: Expression(
-                            Binary {
-                                left_operand: Binary {
-                                    left_operand: Operand(
-                                        Identifier(
-                                            Identifier(
+                        predicate_expression: Assignee(
+                            Pattern(
+                                List(
+                                    [
+                                        Identifier {
+                                            identifier: Identifier(
                                                 "a",
                                             ),
-                                        ),
-                                    ),
-                                    operator: Accessor,
-                                    right_operand: Operand(
-                                        FunctionCall(
-                                            FunctionCall {
-                                                identifier: Identifier(
-                                                    "len",
-                                                ),
-                                                parameters: [],
-                                            },
-                                        ),
-                                    ),
-                                },
-                                operator: Equals,
-                                right_operand: Operand(
-                                    Integer(
-                                        10,
-                                    ),
+                                            spread: false,
+                                        },
+                                    ],
                                 ),
-                            },
+                            ),
                         ),
                         block: Block {
                             statements: [
@@ -1335,8 +1251,46 @@ Block {
                         },
                     },
                     MatchClause {
-                        predicate_expression: Pattern(
-                            Hole,
+                        predicate_expression: Assignee(
+                            Pattern(
+                                List(
+                                    [
+                                        Identifier {
+                                            identifier: Identifier(
+                                                "a",
+                                            ),
+                                            spread: false,
+                                        },
+                                        Hole,
+                                        Identifier {
+                                            identifier: Identifier(
+                                                "t",
+                                            ),
+                                            spread: true,
+                                        },
+                                    ],
+                                ),
+                            ),
+                        ),
+                        block: Block {
+                            statements: [
+                                Expression(
+                                    Operand(
+                                        Identifier(
+                                            Identifier(
+                                                "x",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        },
+                    },
+                    MatchClause {
+                        predicate_expression: Assignee(
+                            Pattern(
+                                Hole,
+                            ),
                         ),
                         block: Block {
                             statements: [

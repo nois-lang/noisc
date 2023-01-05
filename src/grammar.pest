@@ -81,10 +81,11 @@ match_expression              =  {
   ~ BRACE_CLOSE
 }
   match_clause                =  { predicate_expression ~ MATCH_OP ~ block }
-    predicate_expression      =  { pattern | expression }
+    // TODO: guards
+    predicate_expression      =  { assignee | expression }
 
 /// #AA66CC
-identifier                    = @{ ASCII_ALPHANUMERIC+ }
+identifier                    = @{ !boolean ~ ASCII_ALPHA ~ ASCII_ALPHANUMERIC* }
 /// #A6D189
 string                        = @{string_single | string_double}
 string_single                 = _{ QUOTE ~ inner_string ~ QUOTE }

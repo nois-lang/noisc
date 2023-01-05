@@ -16,7 +16,8 @@ pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
         .1
         .statements
         .into_iter()
-        .flat_map(|s| s.1.as_definitions())
+        // TODO: proper handling
+        .flat_map(|s| s.1.as_definitions().unwrap())
         .collect::<HashMap<_, _>>();
     let identifier = Identifier::new("main");
     ctx.scope_stack.push(Scope {
