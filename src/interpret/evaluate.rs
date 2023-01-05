@@ -134,8 +134,7 @@ impl Evaluate for AstPair<Operand> {
             Operand::Boolean(b) => Ok(self.map(|_| Value::B(*b))),
             Operand::String(s) => {
                 // TODO: assign each list item correct span
-                Ok(self
-                    .map(|_| Value::List(s.chars().map(|c| self.map(|_| Value::C(c))).collect())))
+                Ok(self.map(|_| Value::List(s.chars().map(|c| Value::C(c)).collect())))
             }
             Operand::FunctionCall(fc) => function_call(&self.map(|_| fc.clone()), ctx),
             Operand::FunctionInit(fi) => self.map(|_| fi.clone()).eval(ctx, eager),
@@ -143,7 +142,7 @@ impl Evaluate for AstPair<Operand> {
                 let l = Value::List(
                     match items
                         .into_iter()
-                        .map(|i| i.eval(ctx, eager))
+                        .map(|i| i.eval(ctx, eager).map(|a| a.1))
                         .collect::<Result<Vec<_>, _>>()
                     {
                         Ok(r) => r,
@@ -228,5 +227,52 @@ impl Evaluate for Definition {
             Definition::System(f) => f(ctx.scope_stack.last().unwrap().clone().params, ctx),
             Definition::Value(v) => Ok(v.clone()),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::RefCell;
+
+    use pest::error::Error;
+
+    use crate::ast::ast::AstContext;
+    use crate::interpret::context::Context;
+    use crate::interpret::evaluate::Evaluate;
+    use crate::interpret::value::Value;
+    use crate::parse_ast;
+    use crate::parser::Rule;
+
+    fn evaluate(source: &str, eager: bool) -> Result<Value, Error<Rule>> {
+        let a_ctx = AstContext {
+            input: source.to_string(),
+        };
+        let ast = parse_ast(&a_ctx);
+        let ctx_cell = RefCell::new(Context::stdlib(a_ctx));
+        let ctx = &mut ctx_cell.borrow_mut();
+        ast.eval(ctx, eager).map(|a| a.1)
+    }
+
+    fn evaluate_eager(source: &str) -> Result<Value, Error<Rule>> {
+        evaluate(source, true)
+    }
+
+    #[test]
+    fn evaluate_literals() {
+        assert_eq!(evaluate_eager(""), Ok(Value::Unit));
+        assert_eq!(evaluate_eager("{}"), Ok(Value::Unit));
+        assert_eq!(evaluate_eager("4"), Ok(Value::I(4)));
+        assert_eq!(evaluate_eager("4.56"), Ok(Value::F(4.56)));
+        assert_eq!(evaluate_eager("1e12"), Ok(Value::F(1e12)));
+        assert_eq!(
+            evaluate_eager("'a'").map(|r| r.to_string()),
+            Ok("a".to_string())
+        );
+        assert_eq!(evaluate_eager("[]"), Ok(Value::List(vec![])));
+        assert_eq!(
+            evaluate_eager("[1, 2]"),
+            Ok(Value::List(vec![Value::I(1), Value::I(2)]))
+        );
+        assert!(matches!(evaluate("a -> a", false), Ok(Value::Fn(..))));
     }
 }

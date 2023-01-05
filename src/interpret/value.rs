@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display, Formatter};
 use std::ops;
 
-use crate::ast::ast::{AstPair, FunctionInit};
+use crate::ast::ast::FunctionInit;
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Value {
@@ -10,7 +10,7 @@ pub enum Value {
     F(f64),
     C(char),
     B(bool),
-    List(Vec<AstPair<Value>>),
+    List(Vec<Value>),
     // TODO: closures don't remember their scope
     Fn(Box<FunctionInit>),
 }
@@ -24,11 +24,8 @@ impl Display for Value {
             Value::C(c) => write!(f, "{c}"),
             Value::B(b) => write!(f, "{}", if *b { "True" } else { "False" }),
             Value::List(l) => {
-                let all_c = !l.is_empty() && l.iter().all(|e| matches!(e.1, Value::C(_)));
-                let is = l
-                    .into_iter()
-                    .map(|i| format!("{}", i.1))
-                    .collect::<Vec<_>>();
+                let all_c = !l.is_empty() && l.iter().all(|v| matches!(v, Value::C(_)));
+                let is = l.into_iter().map(|i| format!("{}", i)).collect::<Vec<_>>();
                 if all_c {
                     write!(f, "{}", is.join(""))
                 } else {
