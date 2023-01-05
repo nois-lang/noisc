@@ -11,6 +11,7 @@ pub enum Value {
     C(char),
     B(bool),
     List(Vec<AstPair<Value>>),
+    // TODO: closures don't remember their scope
     Fn(Box<FunctionInit>),
 }
 

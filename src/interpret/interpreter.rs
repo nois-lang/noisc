@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::process::exit;
 
 use colored::Colorize;
+use log::debug;
 
 use crate::ast::ast::{AstContext, AstPair, Block, Identifier};
 use crate::interpret::context::{Context, Definition, Scope};
@@ -25,6 +26,7 @@ pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
         params: vec![],
         method_callee: None,
     });
+    debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
     ctx.scope_stack.push(Scope {
         name: "main".to_string(),
         definitions: HashMap::new(),
@@ -32,6 +34,7 @@ pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
         params: vec![],
         method_callee: None,
     });
+    debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
     let (main_id, main) = match ctx.find_definition(&identifier) {
         Some(Definition::User(id, exp)) => (id, exp),
         _ => {
@@ -47,5 +50,6 @@ pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
             eprintln!("{}", format!("{}", e).red())
         }
     };
+    debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
     ctx.scope_stack.pop();
 }

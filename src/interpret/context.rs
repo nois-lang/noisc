@@ -2,6 +2,7 @@ use std::cell::RefMut;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
+use log::error;
 use pest::error::Error;
 
 use crate::ast::ast::{Assignee, AstContext, AstPair, Expression, Identifier, Span, Statement};
@@ -57,13 +58,21 @@ impl Context {
     }
 
     pub fn find_definition(&self, identifier: &Identifier) -> Option<Definition> {
-        // TODO: only check local, global and stdlib scopes
-        self.scope_stack
+        // TODO: only check local, closure-local, global and stdlib scopes
+        let r = self
+            .scope_stack
             .iter()
             .rev()
             .filter_map(|s| s.definitions.get(&identifier))
             .cloned()
-            .next()
+            .next();
+        if let None = r {
+            error!(
+                "definition {} not found in scope stack {:?}",
+                &identifier, &self.scope_stack
+            );
+        }
+        r
     }
 }
 

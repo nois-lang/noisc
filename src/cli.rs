@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 #[clap(version, about, long_about = None)]
 #[clap(propagate_version = true)]
 pub struct Cli {
@@ -8,7 +8,7 @@ pub struct Cli {
     pub command: Commands,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug)]
 pub enum Commands {
     #[clap(about = "Validate syntax and generate AST")]
     Parse {

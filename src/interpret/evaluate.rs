@@ -98,24 +98,29 @@ pub fn function_call(
         .collect::<Result<_, _>>()?;
     params.extend(ps);
     ctx.scope_stack.push(Scope {
-        name: function_call.1.clone().identifier.1.0,
+        name: function_call.1.identifier.clone().1.0,
         definitions: HashMap::new(),
         callee: Some(function_call.1.clone().identifier.0),
         params: params.clone(),
         method_callee: None,
     });
+    debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
 
     let id = &function_call.1.identifier;
+    debug!("function call {:?}, params: {:?}", &function_call, &params);
     let res = match ctx.find_definition(&id.1) {
         Some(Definition::User(_, exp)) => exp.eval(ctx, true),
         Some(Definition::System(f)) => f(params.clone(), ctx),
-        _ => Err(custom_error_span(
+        Some(Definition::Value(v)) => Ok(v),
+        None => Err(custom_error_span(
             &function_call.0,
             &ctx.ast_context,
             format!("'{}' function not found", id.1),
         )),
     }?;
+    debug!("function {:?} result {:?}", &id, &res);
 
+    debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
     ctx.scope_stack.pop();
     Ok(res)
 }
@@ -171,6 +176,10 @@ impl Evaluate for AstPair<FunctionInit> {
             for (arg, v) in self.1.arguments.iter().zip(x) {
                 scope.definitions.extend(assign_value_definitions(arg, v));
             }
+            debug!(
+                "eval function init scope @{}: {:?}",
+                &scope.name, &scope.definitions
+            );
             self.1.block.eval(ctx, eager)
         } else {
             Ok(AstPair::from_span(

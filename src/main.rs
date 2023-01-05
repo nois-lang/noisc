@@ -10,6 +10,7 @@ use std::process::exit;
 
 use clap::Parser as p;
 use colored::Colorize;
+use log::info;
 use log::LevelFilter::Trace;
 use pest::Parser;
 use shellexpand::tilde;
@@ -29,7 +30,8 @@ pub mod stdlib;
 
 fn main() {
     let verbose_level = Trace;
-    match &Cli::parse().command {
+    let command = Cli::parse().command;
+    match &command {
         Commands::Parse {
             source: path,
             verbose,
@@ -37,6 +39,7 @@ fn main() {
             if *verbose {
                 logger::init(verbose_level).unwrap()
             }
+            info!("executing command {:?}", &command);
             let source = read_source(path);
             let a_ctx = AstContext { input: source };
             let ast = parse_ast(&a_ctx);
@@ -49,6 +52,7 @@ fn main() {
             if *verbose {
                 logger::init(verbose_level).unwrap()
             }
+            info!("executing command {:?}", &command);
             let source = read_source(path);
             let a_ctx = AstContext { input: source };
             let ast = parse_ast(&a_ctx);
