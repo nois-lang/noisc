@@ -21,6 +21,7 @@ pub struct Scope {
     pub definitions: HashMap<Identifier, Definition>,
     pub callee: Option<Span>,
     pub params: Vec<AstPair<Value>>,
+    pub method_callee: Option<AstPair<Value>>,
 }
 
 #[derive(Clone)]
@@ -50,6 +51,7 @@ impl Context {
                 definitions: stdlib.into_iter().flat_map(|p| p.definitions).collect(),
                 callee: None,
                 params: vec![],
+                method_callee: None,
             }],
         }
     }

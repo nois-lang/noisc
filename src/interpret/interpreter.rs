@@ -23,12 +23,14 @@ pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
         definitions: block_defs,
         callee: None,
         params: vec![],
+        method_callee: None,
     });
     ctx.scope_stack.push(Scope {
         name: "main".to_string(),
         definitions: HashMap::new(),
         callee: None,
         params: vec![],
+        method_callee: None,
     });
     let (main_id, main) = match ctx.find_definition(&identifier) {
         Some(Definition::User(id, exp)) => (id, exp),
