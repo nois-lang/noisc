@@ -120,14 +120,15 @@ pub fn function_call(
         .map(|a| a.eval(ctx, false))
         .collect::<Result<_, _>>()?;
     params.extend(ps);
+    let name = function_call.1.identifier.1.clone().0;
     ctx.scope_stack.push(Scope {
-        name: function_call.1.identifier.clone().1.0,
+        name: name.clone(),
         definitions: HashMap::new(),
         callee: Some(function_call.1.clone().identifier.0),
         params: params.clone(),
         method_callee: None,
     });
-    debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
+    debug!("push scope @{}", name);
 
     let id = &function_call.1.identifier;
     debug!("function call {:?}, params: {:?}", &function_call, &params);

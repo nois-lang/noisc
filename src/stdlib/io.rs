@@ -21,7 +21,13 @@ impl LibFunction for Println {
     }
 
     fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, String> {
-        println!("{}", args[0].1);
+        println!(
+            "{}",
+            args.into_iter()
+                .map(|a| a.1.to_string())
+                .collect::<Vec<_>>()
+                .join(" ")
+        );
         Ok(Value::Unit)
     }
 }

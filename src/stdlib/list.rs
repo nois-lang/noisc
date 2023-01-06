@@ -27,7 +27,7 @@ impl LibFunction for Range {
         let range = match &args.into_iter().map(|a| a.1.clone()).collect::<Vec<_>>()[..] {
             [Value::I(s)] => 0..*s,
             [Value::I(s), Value::I(e)] => *s..*e,
-            l => return Err(format!("Expected (I, I), found {:?}", l)),
+            l => return Err(format!("Expected (I, I) or (I), found {:?}", l)),
         };
         Ok(Value::List(range.map(|i| Value::I(i)).collect::<Vec<_>>()))
     }
