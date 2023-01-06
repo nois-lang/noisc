@@ -65,24 +65,37 @@ operand                       = _{
   function_call               =  { identifier ~ PAREN_OPEN ~ N* ~ parameter_list ~ N* ~ PAREN_CLOSE }
     parameter_list            =  { expression? ~ N* ~ (COMMA ~ N* ~ expression)* ~ COMMA? }
 
-assignee                      =  { pattern | identifier }
-  pattern                     =  { HOLE_OP | list_pattern }
-  list_pattern                = _{
+assignee                      =  { HOLE_OP | destructure_list | identifier }
+  destructure_list            =  {
     BRACKET_OPEN ~ N*
-    ~ (N* ~ pattern_item? ~ (N* ~ COMMA ~ N* ~ pattern_item ~ N*)*)?
-    ~ COMMA? ~ N*
+    ~ (N* ~ destructure_item ~ (N* ~ COMMA ~ N* ~ destructure_item ~ N*)*)
     ~ BRACKET_CLOSE
   }
-    pattern_item              =  { HOLE_OP | SPREAD_OP? ~ identifier }
+    destructure_item          =  { HOLE_OP | SPREAD_OP? ~ identifier | destructure_list }
 
 match_expression              =  {
   MATCH_KEYWORD ~ expression ~ BRACE_OPEN ~ N*
     ~ match_clause ~ N* ~ (COMMA ~ N* ~ match_clause)* ~ COMMA? ~ N*
   ~ BRACE_CLOSE
 }
+  // TODO: guards
   match_clause                =  { predicate_expression ~ MATCH_OP ~ block }
-    // TODO: guards
     predicate_expression      =  { assignee | expression }
+    pattern_list              =  {
+      BRACKET_OPEN ~ N*
+        ~ (N* ~ pattern_item ~ (N* ~ COMMA ~ N* ~ pattern_item ~ N*)*)?
+        ~ COMMA? ~ N*
+      ~ BRACKET_CLOSE
+    }
+      pattern_item            = _{
+        float
+        | integer
+        | boolean
+        | string
+        | HOLE_OP
+        | pattern_list
+      }
+
 
 /// #AA66CC
 identifier                    = @{ !boolean ~ ASCII_ALPHA ~ ASCII_ALPHANUMERIC* }

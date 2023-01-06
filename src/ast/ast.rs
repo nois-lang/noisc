@@ -212,23 +212,21 @@ pub enum PredicateExpression {
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Assignee {
     Hole,
+    DestructureList(DestructureList),
     Identifier(AstPair<Identifier>),
-    Pattern(AstPair<Pattern>),
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
-pub enum Pattern {
-    Hole,
-    List(Vec<AstPair<PatternItem>>),
-}
+pub struct DestructureList(pub Vec<AstPair<DestructureItem>>);
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
-pub enum PatternItem {
+pub enum DestructureItem {
     Hole,
     Identifier {
         identifier: AstPair<Identifier>,
         spread: bool,
     },
+    List(DestructureList),
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]

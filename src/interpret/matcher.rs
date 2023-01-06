@@ -4,7 +4,7 @@ use log::debug;
 use pest::error::Error;
 
 use crate::ast::ast::{
-    Assignee, AstPair, Expression, Identifier, MatchClause, Pattern, PredicateExpression,
+    Assignee, AstPair, DestructureList, Expression, Identifier, MatchClause, PredicateExpression,
 };
 use crate::interpret::context::{Context, Definition};
 use crate::interpret::evaluate::Evaluate;
@@ -52,10 +52,7 @@ pub fn match_predicate(
         PredicateExpression::Assignee(assignee) => match assignee.1 {
             Assignee::Hole => Ok(Some(vec![])),
             Assignee::Identifier(_) => assign_value_definitions(&assignee, value).map(|r| Some(r)),
-            Assignee::Pattern(p) => match p.1 {
-                Pattern::Hole => Ok(Some(vec![])),
-                Pattern::List(_) => todo!("patterns"),
-            },
+            Assignee::DestructureList(DestructureList(..)) => todo!(),
         },
     }
 }
@@ -67,7 +64,7 @@ pub fn assign_expression_definitions(
     match assignee.clone().1 {
         Assignee::Identifier(i) => Ok(vec![(i.clone().1, Definition::User(i, expression))]),
         Assignee::Hole => Ok(vec![]),
-        Assignee::Pattern(_) => todo!("patterns"),
+        Assignee::DestructureList(_) => todo!("destructuring"),
     }
 }
 
@@ -78,6 +75,6 @@ pub fn assign_value_definitions(
     match assignee.clone().1 {
         Assignee::Identifier(i) => Ok(vec![(i.clone().1, Definition::Value(value))]),
         Assignee::Hole => Ok(vec![]),
-        Assignee::Pattern(_) => todo!("patterns"),
+        Assignee::DestructureList(_) => todo!("destructuring"),
     }
 }

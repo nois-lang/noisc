@@ -428,10 +428,9 @@ a - (a / 12).foo(boo() / 6) * c
     fn parse_assignee() {
         let source = r#"
 a = []
-[] = []
 [a] = []
 [..as] = []
-[a, b,] = []
+[a, b] = []
 [a, b, ..cs] = []
 "#;
         parses_to! {
@@ -439,46 +438,49 @@ a = []
             input: source,
             rule: Rule::program,
             tokens: [
-                block(0, 68, [
+                block(0, 59, [
                     assignment(1, 7, [
                         assignee(1, 2, [identifier(1, 2)]),
                         expression(5, 7, [list_init(5, 7)])
                     ]),
-                    assignment(8, 15, [
-                        assignee(8, 10, [pattern(8, 10)]),
-                        expression(13, 15, [list_init(13, 15)])
-                    ]),
-                    assignment(16, 24, [
-                        assignee(16, 19, [pattern(16, 19, [
-                            pattern_item(17, 18, [identifier(17, 18)])
+                    assignment(8, 16, [
+                        assignee(8, 11, [destructure_list(8, 11, [
+                            destructure_item(9, 10, [identifier(9, 10)])
                         ])]),
-                        expression(22, 24, [list_init(22, 24)]),
+                        expression(14, 16, [list_init(14, 16)]),
                     ]),
-                    assignment(25, 36, [
-                        assignee(25, 31, [pattern(25, 31, [
-                            pattern_item(26, 30, [
-                                SPREAD_OP(26, 28),
-                                identifier(28, 30)
+                    assignment(17, 28, [
+                        assignee(17, 23, [destructure_list(17, 23, [
+                            destructure_item(18, 22, [
+                                SPREAD_OP(18, 20),
+                                identifier(20, 22)
                             ])
                         ])]),
-                        expression(34, 36, [list_init(34, 36)])
+                        expression(26, 28, [list_init(26, 28)])
                     ]),
-                    assignment(37, 49, [
-                        assignee(37, 44, [pattern(37, 44, [
-                            pattern_item(38, 39, [identifier(38, 39)]),
-                            pattern_item(41, 42, [identifier(41, 42)])
-                        ])]),
-                        expression(47, 49, [list_init(47, 49)])
+                    assignment(29, 40, [
+                        assignee(29, 35, [
+                            destructure_list(29, 35, [
+                                destructure_item(30, 31, [identifier(30, 31)]),
+                                destructure_item(33, 34, [identifier(33, 34)])
+                            ])
+                        ]),
+                        expression(38, 40, [list_init(38, 40)])
                     ]),
-                    assignment(50, 67, [
-                        assignee(50, 62, [pattern(50, 62, [
-                            pattern_item(51, 52, [identifier(51, 52)]),
-                            pattern_item(54, 55, [identifier(54, 55)]),
-                            pattern_item(57, 61, [SPREAD_OP(57, 59), identifier(59, 61)])
-                        ])]),
-                        expression(65, 67, [list_init(65, 67)])
+                    assignment(41, 58, [
+                        assignee(41, 53, [
+                            destructure_list(41, 53, [
+                                destructure_item(42, 43, [identifier(42, 43)]),
+                                destructure_item(45, 46, [identifier(45, 46)]),
+                                destructure_item(48, 52, [
+                                    SPREAD_OP(48, 50),
+                                    identifier(50, 52)
+                                ])
+                            ])
+                        ]),
+                        expression(56, 58, [list_init(56, 58)])
                     ])
-                ])
+                ]),
             ]
         }
     }
@@ -499,8 +501,8 @@ a = []
                     expression(1, 9, [
                         function_init(1, 9, [
                             argument_list(1, 6, [
-                                assignee(2, 5, [pattern(2, 5, [
-                                    pattern_item(3, 4, [identifier(3, 4)])
+                                assignee(2, 5, [destructure_list(2, 5, [
+                                    destructure_item(3, 4, [identifier(3, 4)])
                                 ])])
                             ]),
                             block(8, 8)
@@ -509,9 +511,9 @@ a = []
                     expression(10, 23, [
                         function_init(10, 23, [
                             argument_list(10, 20, [
-                                assignee(11, 19, [pattern(11, 19, [
-                                    pattern_item(12, 13, [identifier(12, 13)]),
-                                    pattern_item( 15, 18, [
+                                assignee(11, 19, [destructure_list(11, 19, [
+                                    destructure_item(12, 13, [identifier(12, 13)]),
+                                    destructure_item( 15, 18, [
                                         SPREAD_OP(15, 17), identifier(17, 18)
                                     ])
                                 ])])
@@ -522,9 +524,9 @@ a = []
                     expression(24, 35, [
                         function_init(24, 35, [
                             argument_list(24, 32, [
-                                assignee( 25, 31, [pattern(25, 31, [
-                                    pattern_item(26, 27, [HOLE_OP(26, 27)]),
-                                    pattern_item(29, 30, [identifier(29, 30)])
+                                assignee( 25, 31, [destructure_list(25, 31, [
+                                    destructure_item(26, 27, [HOLE_OP(26, 27)]),
+                                    destructure_item(29, 30, [identifier(29, 30)])
                                 ])])
                             ]),
                             block(34, 34)
