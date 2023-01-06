@@ -4,7 +4,7 @@ use pest::iterators::{Pair, Pairs};
 
 use crate::ast::ast::{
     Assignee, AstPair, BinaryOperator, Block, DestructureItem, DestructureList, Expression,
-    FunctionCall, FunctionInit, Identifier, MatchClause, Operand, PredicateExpression, Statement,
+    FunctionCall, FunctionInit, Identifier, MatchClause, Operand, PatternItem, Statement,
 };
 use crate::ast::expression::{Associativity, OperatorAssociativity, OperatorPrecedence};
 use crate::ast::util::{children, custom_error, first_child, parse_children};
@@ -73,7 +73,7 @@ pub fn parse_statement(pair: &Pair<Rule>) -> Result<AstPair<Statement>, Error<Ru
 
 pub fn parse_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error<Rule>> {
     match pair.as_rule() {
-        Rule::expression | Rule::predicate_expression => {
+        Rule::expression => {
             let ch = children(pair);
             if ch.len() == 1 {
                 Ok(parse_expression(ch.first().unwrap())?)
@@ -216,10 +216,14 @@ pub fn parse_operator<'a, T>(pair: &'a Pair<'_, Rule>) -> Result<AstPair<T>, Err
 
 pub fn parse_operand(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
     match pair.as_rule() {
-        Rule::integer => parse_integer(pair),
-        Rule::float => parse_float(pair),
-        Rule::boolean => parse_boolean(pair),
-        Rule::string => parse_string(pair),
+        Rule::integer => {
+            parse_integer(pair).map(|i| AstPair::from_pair(&pair, Operand::Integer(i)))
+        }
+        Rule::float => parse_float(pair).map(|f| AstPair::from_pair(&pair, Operand::Float(f))),
+        Rule::boolean => {
+            parse_boolean(pair).map(|b| AstPair::from_pair(&pair, Operand::Boolean(b)))
+        }
+        Rule::string => parse_string(pair).map(|s| AstPair::from_pair(&pair, Operand::String(s))),
         Rule::HOLE_OP => Ok(AstPair::from_pair(pair, Operand::Hole)),
         Rule::function_call => parse_function_call(pair),
         Rule::function_init => parse_function_init(pair),
@@ -240,40 +244,36 @@ pub fn parse_operand(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>>
     }
 }
 
-pub fn parse_integer(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
+pub fn parse_integer(pair: &Pair<Rule>) -> Result<i128, Error<Rule>> {
     let num_s = pair.as_str();
-    let num = match num_s.parse::<i128>() {
+    match num_s.parse::<i128>() {
         Ok(n) => Ok(n),
         Err(_) => Err(custom_error(pair, format!("unable to parse I {num_s}"))),
-    }?;
-    Ok(AstPair::from_pair(pair, Operand::Integer(num)))
+    }
 }
 
-pub fn parse_float(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
+pub fn parse_float(pair: &Pair<Rule>) -> Result<f64, Error<Rule>> {
     let num_s = pair.as_str();
-    let num = match num_s.parse::<f64>() {
+    match num_s.parse::<f64>() {
         Ok(n) => Ok(n),
         Err(_) => Err(custom_error(pair, format!("unable to parse F {num_s}"))),
-    }?;
-    Ok(AstPair::from_pair(pair, Operand::Float(num)))
+    }
 }
 
-pub fn parse_boolean(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
+pub fn parse_boolean(pair: &Pair<Rule>) -> Result<bool, Error<Rule>> {
     let bool_s = pair.as_str();
-    let boolean = match bool_s.to_lowercase().parse::<bool>() {
+    match bool_s.to_lowercase().parse::<bool>() {
         Ok(b) => Ok(b),
         Err(_) => Err(custom_error(pair, format!("unable to parse B {bool_s}"))),
-    }?;
-    Ok(AstPair::from_pair(pair, Operand::Boolean(boolean)))
+    }
 }
 
-pub fn parse_string(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
+pub fn parse_string(pair: &Pair<Rule>) -> Result<String, Error<Rule>> {
     let raw_str = pair.as_str();
-    let str = match unquote(raw_str) {
+    match unquote(raw_str) {
         Ok(s) => Ok(s),
         Err(_) => Err(custom_error(pair, format!("unable to parse C[] {raw_str}"))),
-    }?;
-    Ok(AstPair::from_pair(pair, Operand::String(str)))
+    }
 }
 
 pub fn parse_function_call(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
@@ -413,15 +413,9 @@ fn parse_match_clause(pair: &Pair<Rule>) -> Result<AstPair<MatchClause>, Error<R
     match pair.as_rule() {
         Rule::match_clause => {
             let ch = children(pair);
-            let exp = parse_predicate_expression(&ch[0])?;
+            let pattern = parse_pattern_item(&ch[0])?;
             let block = parse_block(&ch[1])?;
-            Ok(AstPair::from_pair(
-                pair,
-                MatchClause {
-                    predicate_expression: Box::new(exp),
-                    block: Box::new(block),
-                },
-            ))
+            Ok(AstPair::from_pair(&pair, MatchClause { pattern, block }))
         }
         _ => Err(custom_error(
             pair,
@@ -434,24 +428,54 @@ fn parse_match_clause(pair: &Pair<Rule>) -> Result<AstPair<MatchClause>, Error<R
     }
 }
 
-fn parse_predicate_expression(
-    pair: &Pair<Rule>,
-) -> Result<AstPair<PredicateExpression>, Error<Rule>> {
+fn parse_pattern_item(pair: &Pair<Rule>) -> Result<AstPair<PatternItem>, Error<Rule>> {
     match pair.as_rule() {
-        Rule::predicate_expression => {
-            let ch = &children(pair)[0];
-            let exp = match ch.as_rule() {
-                Rule::assignee => PredicateExpression::Assignee(parse_assignee(ch)?),
-                Rule::expression => PredicateExpression::Expression(parse_expression(ch)?),
-                _ => unreachable!(),
+        Rule::pattern_item => {
+            let ch = children(pair);
+            let item: PatternItem = match &ch[0].as_rule() {
+                Rule::HOLE_OP => PatternItem::Hole,
+                Rule::integer => PatternItem::Integer(parse_integer(&ch[0])?),
+                Rule::float => PatternItem::Float(parse_float(&ch[0])?),
+                Rule::boolean => PatternItem::Boolean(parse_boolean(&ch[0])?),
+                Rule::string => PatternItem::String(parse_string(&ch[0])?),
+                Rule::SPREAD_OP => PatternItem::Identifier {
+                    identifier: parse_identifier(&ch[1])?,
+                    spread: true,
+                },
+                Rule::identifier => PatternItem::Identifier {
+                    identifier: parse_identifier(&ch[0])?,
+                    spread: false,
+                },
+                Rule::pattern_list => return parse_pattern_list(&ch[0]),
+                r => unreachable!("{:?}", r),
             };
-            Ok(AstPair::from_pair(ch, exp))
+            Ok(AstPair::from_pair(&pair, item))
         }
         _ => Err(custom_error(
             pair,
             format!(
                 "expected {:?}, found {:?}",
-                Rule::predicate_expression,
+                Rule::pattern_item,
+                pair.as_rule()
+            ),
+        )),
+    }
+}
+
+fn parse_pattern_list(pair: &Pair<Rule>) -> Result<AstPair<PatternItem>, Error<Rule>> {
+    match pair.as_rule() {
+        Rule::pattern_list => {
+            let is = children(pair)
+                .iter()
+                .map(|i| parse_pattern_item(i))
+                .collect::<Result<_, _>>()?;
+            Ok(AstPair::from_pair(&pair, PatternItem::PatternList(is)))
+        }
+        _ => Err(custom_error(
+            pair,
+            format!(
+                "expected {:?}, found {:?}",
+                Rule::pattern_list,
                 pair.as_rule()
             ),
         )),
@@ -1241,7 +1265,6 @@ Block {
     }
 
     #[test]
-    #[ignore]
     fn build_ast_match_expression_basic() {
         let source = r#"
 match a {
@@ -1266,12 +1289,8 @@ Block {
                 ),
                 match_clauses: [
                     MatchClause {
-                        predicate_expression: Expression(
-                            Operand(
-                                Integer(
-                                    1,
-                                ),
-                            ),
+                        pattern: Integer(
+                            1,
                         ),
                         block: Block {
                             statements: [
@@ -1288,13 +1307,12 @@ Block {
                         },
                     },
                     MatchClause {
-                        predicate_expression: Assignee(
-                            Identifier(
-                                Identifier(
-                                    "a",
-                                ),
+                        pattern: Identifier {
+                            identifier: Identifier(
+                                "a",
                             ),
-                        ),
+                            spread: false,
+                        },
                         block: Block {
                             statements: [
                                 Expression(
@@ -1310,11 +1328,7 @@ Block {
                         },
                     },
                     MatchClause {
-                        predicate_expression: Assignee(
-                            Pattern(
-                                Hole,
-                            ),
-                        ),
+                        pattern: Hole,
                         block: Block {
                             statements: [
                                 Expression(
@@ -1342,14 +1356,14 @@ Block {
     }
 
     #[test]
-    #[ignore]
     fn build_ast_match_expression_list() {
         let source = r#"
 match a {
   [] => x,
-  [a] => x,
+  [a, True, _, 4] => x,
   [a, _, ..t] => x,
-  _ => panic(),
+  "" => x,
+  _ => x,
 }
 "#;
         let file = &NoisParser::parse(Rule::program, source).unwrap();
@@ -1368,12 +1382,8 @@ Block {
                 ),
                 match_clauses: [
                     MatchClause {
-                        predicate_expression: Assignee(
-                            Pattern(
-                                List(
-                                    [],
-                                ),
-                            ),
+                        pattern: PatternList(
+                            [],
                         ),
                         block: Block {
                             statements: [
@@ -1390,87 +1400,97 @@ Block {
                         },
                     },
                     MatchClause {
-                        predicate_expression: Assignee(
-                            Pattern(
-                                List(
-                                    [
-                                        Identifier {
-                                            identifier: Identifier(
-                                                "a",
-                                            ),
-                                            spread: false,
-                                        },
-                                    ],
-                                ),
-                            ),
-                        ),
-                        block: Block {
-                            statements: [
-                                Expression(
-                                    Operand(
-                                        Identifier(
-                                            Identifier(
-                                                "x",
-                                            ),
-                                        ),
+                        pattern: PatternList(
+                            [
+                                Identifier {
+                                    identifier: Identifier(
+                                        "a",
                                     ),
+                                    spread: false,
+                                },
+                                Boolean(
+                                    true,
                                 ),
-                            ],
-                        },
-                    },
-                    MatchClause {
-                        predicate_expression: Assignee(
-                            Pattern(
-                                List(
-                                    [
-                                        Identifier {
-                                            identifier: Identifier(
-                                                "a",
-                                            ),
-                                            spread: false,
-                                        },
-                                        Hole,
-                                        Identifier {
-                                            identifier: Identifier(
-                                                "t",
-                                            ),
-                                            spread: true,
-                                        },
-                                    ],
-                                ),
-                            ),
-                        ),
-                        block: Block {
-                            statements: [
-                                Expression(
-                                    Operand(
-                                        Identifier(
-                                            Identifier(
-                                                "x",
-                                            ),
-                                        ),
-                                    ),
-                                ),
-                            ],
-                        },
-                    },
-                    MatchClause {
-                        predicate_expression: Assignee(
-                            Pattern(
                                 Hole,
-                            ),
+                                Integer(
+                                    4,
+                                ),
+                            ],
                         ),
                         block: Block {
                             statements: [
                                 Expression(
                                     Operand(
-                                        FunctionCall(
-                                            FunctionCall {
-                                                identifier: Identifier(
-                                                    "panic",
-                                                ),
-                                                parameters: [],
-                                            },
+                                        Identifier(
+                                            Identifier(
+                                                "x",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        },
+                    },
+                    MatchClause {
+                        pattern: PatternList(
+                            [
+                                Identifier {
+                                    identifier: Identifier(
+                                        "a",
+                                    ),
+                                    spread: false,
+                                },
+                                Hole,
+                                Identifier {
+                                    identifier: Identifier(
+                                        "t",
+                                    ),
+                                    spread: true,
+                                },
+                            ],
+                        ),
+                        block: Block {
+                            statements: [
+                                Expression(
+                                    Operand(
+                                        Identifier(
+                                            Identifier(
+                                                "x",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        },
+                    },
+                    MatchClause {
+                        pattern: String(
+                            "",
+                        ),
+                        block: Block {
+                            statements: [
+                                Expression(
+                                    Operand(
+                                        Identifier(
+                                            Identifier(
+                                                "x",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        },
+                    },
+                    MatchClause {
+                        pattern: Hole,
+                        block: Block {
+                            statements: [
+                                Expression(
+                                    Operand(
+                                        Identifier(
+                                            Identifier(
+                                                "x",
+                                            ),
                                         ),
                                     ),
                                 ),

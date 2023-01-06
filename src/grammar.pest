@@ -65,13 +65,13 @@ operand                       = _{
   function_call               =  { identifier ~ PAREN_OPEN ~ N* ~ parameter_list ~ N* ~ PAREN_CLOSE }
     parameter_list            =  { expression? ~ N* ~ (COMMA ~ N* ~ expression)* ~ COMMA? }
 
-assignee                      =  { HOLE_OP | destructure_list | identifier }
+assignee                      =  { HOLE_OP | identifier | destructure_list }
+  destructure_item            =  { HOLE_OP | SPREAD_OP? ~ identifier | destructure_list }
   destructure_list            =  {
     BRACKET_OPEN ~ N*
     ~ (N* ~ destructure_item ~ (N* ~ COMMA ~ N* ~ destructure_item ~ N*)*)
     ~ BRACKET_CLOSE
   }
-    destructure_item          =  { HOLE_OP | SPREAD_OP? ~ identifier | destructure_list }
 
 match_expression              =  {
   MATCH_KEYWORD ~ expression ~ BRACE_OPEN ~ N*
@@ -79,22 +79,22 @@ match_expression              =  {
   ~ BRACE_CLOSE
 }
   // TODO: guards
-  match_clause                =  { predicate_expression ~ MATCH_OP ~ block }
-    predicate_expression      =  { assignee | expression }
-    pattern_list              =  {
+  match_clause                =  { pattern_item ~ MATCH_OP ~ block }
+    pattern_item            =  {
+      float
+      | integer
+      | boolean
+      | string
+      | HOLE_OP
+      | pattern_list
+      | SPREAD_OP? ~ identifier
+    }
+    pattern_list            =  {
       BRACKET_OPEN ~ N*
         ~ (N* ~ pattern_item ~ (N* ~ COMMA ~ N* ~ pattern_item ~ N*)*)?
         ~ COMMA? ~ N*
       ~ BRACKET_CLOSE
     }
-      pattern_item            = _{
-        float
-        | integer
-        | boolean
-        | string
-        | HOLE_OP
-        | pattern_list
-      }
 
 
 /// #AA66CC

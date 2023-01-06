@@ -199,14 +199,22 @@ impl Display for Identifier {
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub struct MatchClause {
-    pub predicate_expression: Box<AstPair<PredicateExpression>>,
-    pub block: Box<AstPair<Block>>,
+    pub pattern: AstPair<PatternItem>,
+    pub block: AstPair<Block>,
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
-pub enum PredicateExpression {
-    Expression(AstPair<Expression>),
-    Assignee(AstPair<Assignee>),
+pub enum PatternItem {
+    Hole,
+    Integer(i128),
+    Float(f64),
+    Boolean(bool),
+    String(String),
+    Identifier {
+        identifier: AstPair<Identifier>,
+        spread: bool,
+    },
+    PatternList(Vec<AstPair<PatternItem>>),
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
