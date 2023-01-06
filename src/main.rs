@@ -5,9 +5,11 @@ extern crate pest;
 extern crate pest_derive;
 
 use std::fs::read_to_string;
+use std::io;
 use std::path::PathBuf;
 use std::process::exit;
 
+use atty::Stream;
 use clap::Parser as p;
 use colored::Colorize;
 use log::info;
@@ -29,7 +31,15 @@ pub mod parser;
 pub mod stdlib;
 
 fn main() {
+    if let Some(source) = piped_input() {
+        let a_ctx = AstContext { input: source };
+        let ast = parse_ast(&a_ctx);
+        execute(ast, a_ctx);
+        return;
+    }
+
     let verbose_level = Trace;
+
     let command = Cli::parse().command;
     match &command {
         Commands::Parse {
@@ -86,4 +96,17 @@ pub fn read_source(path: &String) -> String {
             exit(1)
         }
     }
+}
+
+pub fn piped_input() -> Option<String> {
+    if atty::is(Stream::Stdin) {
+        return None;
+    }
+    Some(
+        io::stdin()
+            .lines()
+            .map(|l| l.unwrap())
+            .collect::<Vec<_>>()
+            .join("\n"),
+    )
 }

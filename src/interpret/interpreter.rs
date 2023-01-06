@@ -39,7 +39,7 @@ pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
     let (main_id, main) = match ctx.find_definition(&identifier) {
         Some(Definition::User(id, exp)) => (id, exp),
         _ => {
-            eprintln!("{}", format!("'{}' function not found", identifier).red());
+            eprintln!("{}", format!("'{}' not found", identifier).red());
             exit(1)
         }
     };

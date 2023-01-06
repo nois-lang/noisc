@@ -16,11 +16,11 @@ pub enum Commands {
         source: String,
 
         #[clap(
-        short,
-        long,
-        required = false,
-        takes_value = false,
-        help = "Detailed output"
+            short,
+            long,
+            required = false,
+            takes_value = false,
+            help = "Detailed output"
         )]
         verbose: bool,
     },
@@ -30,11 +30,11 @@ pub enum Commands {
         source: String,
 
         #[clap(
-        short,
-        long,
-        required = false,
-        takes_value = false,
-        help = "Detailed output"
+            short,
+            long,
+            required = false,
+            takes_value = false,
+            help = "Detailed output"
         )]
         verbose: bool,
     },
