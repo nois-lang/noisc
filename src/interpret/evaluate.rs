@@ -172,7 +172,7 @@ impl Evaluate for AstPair<Operand> {
                             return Err(custom_error_span(
                                 &self.0,
                                 &ctx.ast_context,
-                                format!("Error constructing list\n{}", e),
+                                format!("Error constructing list:\n{}", e),
                             ));
                         }
                     },

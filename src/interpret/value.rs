@@ -37,14 +37,6 @@ impl Display for Value {
     }
 }
 
-impl ops::Add for &Value {
-    type Output = Result<Value, String>;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        self.clone() + rhs.clone()
-    }
-}
-
 impl ops::Add for Value {
     type Output = Result<Value, String>;
 
@@ -54,6 +46,7 @@ impl ops::Add for Value {
                 (Value::I(i1), Value::I(i2)) => Some(Value::I(i1 + i2)),
                 (Value::F(f1), Value::F(f2)) => Some(Value::F(f1 + f2)),
                 (Value::I(i1), Value::F(f2)) => Some(Value::F(*i1 as f64 + f2)),
+                // TODO: list push & concat
                 _ => None,
             }
         }
@@ -61,6 +54,50 @@ impl ops::Add for Value {
             Some(r) => Ok(r),
             None => Err(format!(
                 "incompatible operands for '+': [{:?}, {:?}]",
+                self, rhs
+            )),
+        }
+    }
+}
+
+impl ops::Sub for Value {
+    type Output = Result<Value, String>;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        fn _sub(a: &Value, b: &Value) -> Option<Value> {
+            match (a, b) {
+                (Value::I(i1), Value::I(i2)) => Some(Value::I(i1 - i2)),
+                (Value::F(f1), Value::F(f2)) => Some(Value::F(f1 - f2)),
+                (Value::I(i1), Value::F(f2)) => Some(Value::F(*i1 as f64 - f2)),
+                _ => None,
+            }
+        }
+        match _sub(&self, &rhs).or(_sub(&rhs, &self)) {
+            Some(r) => Ok(r),
+            None => Err(format!(
+                "incompatible operands for '-': [{:?}, {:?}]",
+                self, rhs
+            )),
+        }
+    }
+}
+
+impl ops::Rem for Value {
+    type Output = Result<Value, String>;
+
+    fn rem(self, rhs: Self) -> Self::Output {
+        fn _rem(a: &Value, b: &Value) -> Option<Value> {
+            match (a, b) {
+                (Value::I(i1), Value::I(i2)) => Some(Value::I(i1 % i2)),
+                (Value::F(f1), Value::F(f2)) => Some(Value::F(f1 % f2)),
+                (Value::I(i1), Value::F(f2)) => Some(Value::F(*i1 as f64 % f2)),
+                _ => None,
+            }
+        }
+        match _rem(&self, &rhs).or(_rem(&rhs, &self)) {
+            Some(r) => Ok(r),
+            None => Err(format!(
+                "incompatible operands for '-': [{:?}, {:?}]",
                 self, rhs
             )),
         }

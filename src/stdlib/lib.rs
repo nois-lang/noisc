@@ -44,15 +44,20 @@ pub trait LibFunction {
             &res
         );
 
-        let callee = &ctx
-            .scope_stack
-            .last()
-            .unwrap()
+        let scope = ctx.scope_stack.last().unwrap();
+        let callee = scope
+            .method_callee
             .clone()
-            .callee
+            .map(|c| c.0)
+            .or(scope.callee.clone())
             .expect("callee not found");
-        res.map(|v| AstPair::from_span(callee, v))
-            .map_err(|s| custom_error_span(callee, &ctx.ast_context, s))
+        res.map(|v| AstPair::from_span(&callee, v)).map_err(|s| {
+            custom_error_span(
+                &callee,
+                &ctx.ast_context,
+                format!("Error calling {}:\n{}", Self::name(), s),
+            )
+        })
     }
 
     fn definition() -> (Identifier, Definition) {
