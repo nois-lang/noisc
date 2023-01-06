@@ -37,7 +37,7 @@ fn main() {
             verbose,
         } => {
             if *verbose {
-                logger::init(verbose_level).unwrap()
+                logger::init(verbose_level);
             }
             info!("executing command {:?}", &command);
             let source = read_source(path);
@@ -50,7 +50,7 @@ fn main() {
             verbose,
         } => {
             if *verbose {
-                logger::init(verbose_level).unwrap()
+                logger::init(verbose_level);
             }
             info!("executing command {:?}", &command);
             let source = read_source(path);

@@ -6,7 +6,7 @@ use log::error;
 use pest::error::Error;
 
 use crate::ast::ast::{AstContext, AstPair, Expression, Identifier, Span, Statement};
-use crate::interpret::matcher::assign_expression_definitions;
+use crate::interpret::matcher::assign_definitions;
 use crate::interpret::value::Value;
 use crate::parser::Rule;
 use crate::stdlib::lib::stdlib;
@@ -78,12 +78,15 @@ impl Context {
 }
 
 impl Statement {
-    pub fn as_definitions(&self) -> Result<Vec<(Identifier, Definition)>, Error<Rule>> {
+    pub fn as_definitions(
+        &self,
+        ctx: &mut RefMut<Context>,
+    ) -> Result<Vec<(Identifier, Definition)>, Error<Rule>> {
         match self.clone() {
             Statement::Assignment {
                 assignee,
                 expression,
-            } => assign_expression_definitions(assignee, expression),
+            } => assign_definitions(assignee, expression, ctx, |i, e| Definition::User(i, e)),
             _ => Ok(vec![]),
         }
     }

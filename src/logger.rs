@@ -1,5 +1,5 @@
 use colored::Colorize;
-use log::{Level, LevelFilter, Metadata, Record, SetLoggerError};
+use log::{Level, LevelFilter, Metadata, Record};
 
 struct Logger;
 
@@ -43,6 +43,8 @@ impl log::Log for Logger {
 
 static LOGGER: Logger = Logger;
 
-pub fn init(level: LevelFilter) -> Result<(), SetLoggerError> {
-    log::set_logger(&LOGGER).map(|_| log::set_max_level(level))
+pub fn init(level: LevelFilter) {
+    log::set_logger(&LOGGER)
+        .map(|_| log::set_max_level(level))
+        .ok();
 }

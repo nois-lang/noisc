@@ -11,9 +11,7 @@ use crate::ast::ast::{
 };
 use crate::ast::util::custom_error_span;
 use crate::interpret::context::{Context, Definition, Scope};
-use crate::interpret::matcher::{
-    assign_expression_definitions, assign_value_definitions, match_expression,
-};
+use crate::interpret::matcher::{assign_definitions, match_expression};
 use crate::interpret::value::Value;
 use crate::parser::Rule;
 
@@ -41,7 +39,10 @@ impl Evaluate for AstPair<Statement> {
                 assignee,
                 expression,
             } => {
-                let defs = assign_expression_definitions(assignee.clone(), expression.clone())?;
+                let defs =
+                    assign_definitions(assignee.clone(), expression.clone(), ctx, |i, e| {
+                        Definition::User(i, e)
+                    })?;
                 ctx.scope_stack.last_mut().unwrap().definitions.extend(defs);
                 Ok(self.map(|_| Value::Unit))
             }
@@ -120,7 +121,7 @@ pub fn function_call(
         .collect::<Result<_, _>>()?;
     params.extend(ps);
     ctx.scope_stack.push(Scope {
-        name: function_call.1.identifier.clone().1 .0,
+        name: function_call.1.identifier.clone().1.0,
         definitions: HashMap::new(),
         callee: Some(function_call.1.clone().identifier.0),
         params: params.clone(),
@@ -192,14 +193,15 @@ impl Evaluate for AstPair<Operand> {
 impl Evaluate for AstPair<FunctionInit> {
     fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
         if eager {
-            let scope = &mut ctx.scope_stack.last_mut().unwrap();
-            let x = scope.params.clone();
-            for (arg, v) in self.1.arguments.iter().zip(x) {
-                scope.definitions.extend(assign_value_definitions(arg, v)?);
+            let scope = ctx.scope_stack.last().unwrap().clone();
+            for (arg, v) in self.1.arguments.iter().zip(scope.params.clone()) {
+                let defs = assign_definitions(arg.clone(), v, ctx, |_, e| Definition::Value(e))?;
+                ctx.scope_stack.last_mut().unwrap().definitions.extend(defs);
             }
             debug!(
                 "eval function init scope @{}: {:?}",
-                &scope.name, &scope.definitions
+                &scope.clone().name,
+                &scope.clone().definitions
             );
             self.1.block.eval(ctx, eager)
         } else {
@@ -258,19 +260,21 @@ mod tests {
     use std::vec;
 
     use pest::error::Error;
+    use pest::Parser;
 
     use crate::ast::ast::AstContext;
+    use crate::ast::ast_parser::parse_block;
     use crate::interpret::context::Context;
     use crate::interpret::evaluate::Evaluate;
     use crate::interpret::value::Value;
-    use crate::parse_ast;
-    use crate::parser::Rule;
+    use crate::parser::{NoisParser, Rule};
 
     fn evaluate(source: &str, eager: bool) -> Result<Value, Error<Rule>> {
         let a_ctx = AstContext {
             input: source.to_string(),
         };
-        let ast = parse_ast(&a_ctx);
+        let pt = NoisParser::parse(Rule::program, a_ctx.input.as_str());
+        let ast = pt.and_then(|parsed| parse_block(&parsed.into_iter().next().unwrap()))?;
         let ctx_cell = RefCell::new(Context::stdlib(a_ctx));
         let ctx = &mut ctx_cell.borrow_mut();
         ast.eval(ctx, eager).map(|a| a.1)
@@ -308,6 +312,20 @@ mod tests {
             ]))
         );
         assert!(matches!(evaluate("a -> a", false), Ok(Value::Fn(..))));
+    }
+
+    #[test]
+    fn evaluate_assignee_basic() {
+        assert_eq!(evaluate_eager("a = 4\na"), Ok(Value::I(4)));
+        assert_eq!(evaluate_eager("_ = 4"), Ok(Value::Unit));
+        assert_eq!(evaluate_eager("[a, b] = [1, 2]\na"), Ok(Value::I(1)));
+        assert_eq!(evaluate_eager("[a, b] = [1, 2]\nb"), Ok(Value::I(2)));
+        assert_eq!(evaluate_eager("[a, b] = [1, 2, 3]\na").is_err(), true);
+        assert_eq!(evaluate_eager("[a, _, c] = [1, 2, 3]\nc"), Ok(Value::I(3)));
+        assert_eq!(
+            evaluate_eager("[_, [c, _]] = [[1, 2], [3, 4]]\nc"),
+            Ok(Value::I(3))
+        );
     }
 
     // TODO: more tests
