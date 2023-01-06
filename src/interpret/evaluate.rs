@@ -88,10 +88,10 @@ impl Evaluate for AstPair<Expression> {
                         params: vec![],
                         method_callee: None,
                     });
+                    debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
 
                     let res = clause.1.block.eval(ctx, true);
 
-                    debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
                     debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
                     ctx.scope_stack.pop();
 
@@ -120,7 +120,7 @@ pub fn function_call(
         .collect::<Result<_, _>>()?;
     params.extend(ps);
     ctx.scope_stack.push(Scope {
-        name: function_call.1.identifier.clone().1 .0,
+        name: function_call.1.identifier.clone().1.0,
         definitions: HashMap::new(),
         callee: Some(function_call.1.clone().identifier.0),
         params: params.clone(),

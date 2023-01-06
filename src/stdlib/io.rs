@@ -1,26 +1,27 @@
+use std::cell::RefMut;
 use std::collections::HashMap;
 
-use crate::ast::ast::{AstPair, Identifier};
-use crate::interpret::context::Definition;
-use crate::interpret::evaluate::Evaluate;
+use crate::ast::ast::AstPair;
+use crate::interpret::context::Context;
 use crate::interpret::value::Value;
-use crate::stdlib::lib::{callee, Package};
+use crate::stdlib::lib::{LibFunction, Package};
 
 pub fn package() -> Package {
     Package {
         name: "io".to_string(),
-        definitions: HashMap::from([(
-            Identifier::new("println"),
-            Definition::System(|args, ctx| {
-                let c = callee(ctx).expect("callee not found");
-                let a = args[0].eval(ctx, true)?;
-                println(&a);
-                Ok(AstPair::from_span(&c, Value::Unit))
-            }),
-        )]),
+        definitions: HashMap::from([Println::definition()]),
     }
 }
 
-pub fn println(value: &AstPair<Value>) -> () {
-    println!("{}", value.1);
+pub struct Println;
+
+impl LibFunction for Println {
+    fn name() -> String {
+        "println".to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, String> {
+        println!("{}", args[0].1);
+        Ok(Value::Unit)
+    }
 }

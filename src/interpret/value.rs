@@ -40,7 +40,15 @@ impl Display for Value {
 impl ops::Add for &Value {
     type Output = Result<Value, String>;
 
-    fn add(self, rhs: Self) -> Result<Value, String> {
+    fn add(self, rhs: Self) -> Self::Output {
+        self.clone() + rhs.clone()
+    }
+}
+
+impl ops::Add for Value {
+    type Output = Result<Value, String>;
+
+    fn add(self, rhs: Self) -> Self::Output {
         fn _add(a: &Value, b: &Value) -> Option<Value> {
             match (a, b) {
                 (Value::I(i1), Value::I(i2)) => Some(Value::I(i1 + i2)),
@@ -49,7 +57,7 @@ impl ops::Add for &Value {
                 _ => None,
             }
         }
-        match _add(self, rhs).or(_add(rhs, self)) {
+        match _add(&self, &rhs).or(_add(&rhs, &self)) {
             Some(r) => Ok(r),
             None => Err(format!(
                 "incompatible operands for '+': [{:?}, {:?}]",
