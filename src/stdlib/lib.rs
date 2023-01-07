@@ -29,6 +29,7 @@ pub fn stdlib() -> Vec<Package> {
 pub trait LibFunction {
     fn name() -> String;
 
+    // TODO: use patterns to validate call params
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error<Rule>>;
 
     fn call_fn(

@@ -1,0 +1,14 @@
+fizzBuzz = {
+    range(0, 100)
+        .map(i -> i + 1)
+        .map(i -> match [i % 3 == 0, i % 5 == 0] {
+            [True, True] => "FizzBuzz",
+            [True, _   ] => "Fizz",
+            [_   , True] => "Buzz",
+            _ => i
+        })
+}
+
+main = {
+    println(fizzBuzz())
+}

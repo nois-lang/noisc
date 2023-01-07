@@ -3,6 +3,9 @@ use std::ops;
 
 use crate::ast::ast::{AstPair, FunctionInit, PatternItem, UnaryOperator};
 
+// TODO: type literals
+// TODO: type casting
+// TODO: value into its type conversion
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Value {
     Unit,
