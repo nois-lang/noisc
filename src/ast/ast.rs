@@ -57,7 +57,7 @@ pub enum Operand {
     ValueType(ValueType),
 }
 
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(Debug, PartialOrd, Clone, Eq, Hash)]
 pub enum ValueType {
     Unit,
     Integer,
@@ -66,6 +66,16 @@ pub enum ValueType {
     Boolean,
     Function,
     Any,
+    Type,
+}
+
+impl PartialEq for ValueType {
+    fn eq(&self, other: &Self) -> bool {
+        if matches!(self, Self::Any) || matches!(other, Self::Any) {
+            return true;
+        }
+        format!("{}", self) == format!("{}", other)
+    }
 }
 
 impl Display for ValueType {
@@ -74,13 +84,14 @@ impl Display for ValueType {
             f,
             "{}",
             match self {
-                ValueType::Unit => "()",
-                ValueType::Integer => "I",
-                ValueType::Float => "F",
-                ValueType::Char => "C",
-                ValueType::Boolean => "B",
-                ValueType::Function => "Fn",
-                ValueType::Any => "*",
+                ValueType::Unit => "()".to_string(),
+                ValueType::Integer => "I".to_string(),
+                ValueType::Float => "F".to_string(),
+                ValueType::Char => "C".to_string(),
+                ValueType::Boolean => "B".to_string(),
+                ValueType::Function => "Fn".to_string(),
+                ValueType::Any => "*".to_string(),
+                ValueType::Type => "T".to_string(),
             }
         )
     }

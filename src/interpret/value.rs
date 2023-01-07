@@ -1,11 +1,12 @@
+use std::collections::HashSet;
 use std::fmt::{Debug, Display, Formatter};
+use std::hash::{Hash, Hasher};
 use std::ops;
 
 use crate::ast::ast::{AstPair, FunctionInit, PatternItem, UnaryOperator, ValueType};
 
 // TODO: type casting
-// TODO: value into its type conversion
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(Debug, PartialOrd, Clone)]
 pub enum Value {
     Unit,
     I(i128),
@@ -17,6 +18,71 @@ pub enum Value {
     Fn(FunctionInit),
     Type(ValueType),
 }
+
+impl Value {
+    pub fn value_type(&self) -> Value {
+        let vt = match self {
+            Value::Unit => ValueType::Unit,
+            Value::I(_) => ValueType::Integer,
+            Value::F(_) => ValueType::Float,
+            Value::C(_) => ValueType::Char,
+            Value::B(_) => ValueType::Boolean,
+            Value::Fn(_) => ValueType::Function,
+            Value::Type(_) => ValueType::Type,
+            Value::List { items, .. } => {
+                if items.is_empty() {
+                    return Value::List {
+                        items: vec![Value::Type(ValueType::Any)],
+                        spread: false,
+                    };
+                }
+                let types: Vec<Value> = items.into_iter().map(|v| v.value_type()).collect();
+                return if types.iter().collect::<HashSet<_>>().len() == 1 {
+                    Value::List {
+                        items: vec![types[0].clone()],
+                        spread: false,
+                    }
+                } else {
+                    Value::List {
+                        items: types.clone(),
+                        spread: false,
+                    }
+                };
+            }
+        };
+        Value::Type(vt)
+    }
+}
+
+impl Hash for Value {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        format!("{:?}", self).hash(state);
+    }
+}
+
+impl PartialEq for Value {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Type(ValueType::Any), Self::Type(_) | Self::List { .. }) => true,
+            (Self::Type(_) | Self::List { .. }, Self::Type(ValueType::Any)) => true,
+            (Self::Type(a), Self::Type(b)) => a == b,
+            (
+                Self::List {
+                    items: ia,
+                    spread: sa,
+                },
+                Self::List {
+                    items: ib,
+                    spread: sb,
+                },
+            ) => ia == ib && sa == sb,
+            (Self::Fn(a), Self::Fn(b)) => a == b,
+            _ => format!("{:?}", self) == format!("{:?}", other),
+        }
+    }
+}
+
+impl Eq for Value {}
 
 impl Display for Value {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

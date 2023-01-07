@@ -388,5 +388,114 @@ mod tests {
         );
     }
 
+    #[test]
+    fn evaluate_value_equality() {
+        assert_eq!(evaluate_eager("1 == 1"), Ok(Value::B(true)));
+        assert_eq!(evaluate_eager("'foo' == 'foo'"), Ok(Value::B(true)));
+        assert_eq!(evaluate_eager("'' == ''"), Ok(Value::B(true)));
+        assert_eq!(evaluate_eager("[] == ''"), Ok(Value::B(true)));
+        assert_eq!(evaluate_eager("[] == []"), Ok(Value::B(true)));
+        assert_eq!(evaluate_eager("() == ()"), Ok(Value::B(true)));
+        assert_eq!(evaluate_eager("f = a -> {}\n f == f"), Ok(Value::B(true)));
+
+        assert_eq!(evaluate_eager("a -> {} == a -> {}"), Ok(Value::B(false)));
+        assert_eq!(evaluate_eager("1 == 2"), Ok(Value::B(false)));
+        assert_eq!(evaluate_eager("1 == '1'"), Ok(Value::B(false)));
+        assert_eq!(evaluate_eager("1 == [1]"), Ok(Value::B(false)));
+    }
+
+    #[test]
+    fn evaluate_value_type() {
+        assert_eq!(
+            evaluate_eager("type(1)"),
+            Ok(Value::Type(ValueType::Integer))
+        );
+        assert_eq!(
+            evaluate_eager("type(1.5)"),
+            Ok(Value::Type(ValueType::Float))
+        );
+        assert_eq!(
+            evaluate_eager("type(True)"),
+            Ok(Value::Type(ValueType::Boolean))
+        );
+        assert_eq!(
+            evaluate_eager("type([])"),
+            Ok(Value::List {
+                items: vec![Value::Type(ValueType::Any)],
+                spread: false,
+            })
+        );
+        assert_eq!(
+            evaluate_eager("type('')"),
+            Ok(Value::List {
+                items: vec![Value::Type(ValueType::Any)],
+                spread: false,
+            })
+        );
+        assert_eq!(
+            evaluate_eager("type('abc')"),
+            Ok(Value::List {
+                items: vec![Value::Type(ValueType::Char)],
+                spread: false,
+            })
+        );
+        assert_eq!(
+            evaluate_eager("type(-> 1)"),
+            Ok(Value::Type(ValueType::Function))
+        );
+        assert_eq!(
+            evaluate_eager("type([1, 2, 3])"),
+            Ok(Value::List {
+                items: vec![Value::Type(ValueType::Integer)],
+                spread: false,
+            })
+        );
+        assert_eq!(
+            evaluate_eager("type([1, 'abc', 1.5])"),
+            Ok(Value::List {
+                items: vec![
+                    Value::Type(ValueType::Integer),
+                    Value::List {
+                        items: vec![Value::Type(ValueType::Char)],
+                        spread: false,
+                    },
+                    Value::Type(ValueType::Float),
+                ],
+                spread: false,
+            })
+        );
+        assert_eq!(evaluate_eager("type(C)"), Ok(Value::Type(ValueType::Type)));
+        assert_eq!(
+            evaluate_eager("type(['abc'])"),
+            Ok(Value::List {
+                items: vec![Value::List {
+                    items: vec![Value::Type(ValueType::Char)],
+                    spread: false,
+                },],
+                spread: false,
+            })
+        );
+    }
+
+    #[test]
+    fn evaluate_value_type_equality() {
+        assert_eq!(evaluate_eager("type(1) == I"), Ok(Value::B(true)));
+        assert_eq!(evaluate_eager("type([]) == [*]"), Ok(Value::B(true)));
+        assert_eq!(evaluate_eager("type('') == [*]"), Ok(Value::B(true)));
+        assert_eq!(evaluate_eager("type('a') == [C]"), Ok(Value::B(true)));
+        assert_eq!(evaluate_eager("type(['a']) == [[C]]"), Ok(Value::B(true)));
+        assert_eq!(evaluate_eager("type([[]]) == [[*]]"), Ok(Value::B(true)));
+        assert_eq!(evaluate_eager("* == ()"), Ok(Value::B(true)));
+        assert_eq!(evaluate_eager("I == *"), Ok(Value::B(true)));
+        assert_eq!(evaluate_eager("[I] == *"), Ok(Value::B(true)));
+        assert_eq!(evaluate_eager("[I] == [*]"), Ok(Value::B(true)));
+
+        assert_eq!(evaluate_eager("type(1) == C"), Ok(Value::B(false)));
+        assert_eq!(evaluate_eager("type('a') == [I]"), Ok(Value::B(false)));
+        assert_eq!(evaluate_eager("type(['a']) == [C]"), Ok(Value::B(false)));
+        assert_eq!(evaluate_eager("[C] == [[*]]"), Ok(Value::B(false)));
+        assert_eq!(evaluate_eager("I == [*]"), Ok(Value::B(false)));
+    }
+
     // TODO: more tests
 }

@@ -33,8 +33,8 @@ impl LibFunction for Range {
             l => {
                 return Err(custom_error_callee(
                     ctx,
-                    format!("Expected (I, I) or (I), found {:?}", l),
-                ))
+                    format!("Expected (I, I?), found {:?}", l),
+                ));
             }
         };
         Ok(Value::List {
@@ -58,7 +58,7 @@ impl LibFunction for Map {
                 return Err(custom_error_callee(
                     ctx,
                     format!("Expected (List, Fn), found {:?}", l),
-                ))
+                ));
             }
         };
         let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee.clone();

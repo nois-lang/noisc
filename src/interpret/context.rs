@@ -59,7 +59,6 @@ impl Context {
     }
 
     pub fn find_definition(&self, identifier: &Identifier) -> Option<Definition> {
-        // TODO: only check local, closure-local, global and stdlib scopes
         let r = self
             .scope_stack
             .iter()

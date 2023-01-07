@@ -9,7 +9,7 @@ use crate::interpret::context::{Context, Definition};
 use crate::interpret::evaluate::Evaluate;
 use crate::interpret::value::Value;
 use crate::parser::Rule;
-use crate::stdlib::{binary_operator, io, list, unary_operator};
+use crate::stdlib::{binary_operator, io, list, unary_operator, value};
 
 #[derive(Debug)]
 pub struct Package {
@@ -23,6 +23,7 @@ pub fn stdlib() -> Vec<Package> {
         binary_operator::package(),
         unary_operator::package(),
         list::package(),
+        value::package(),
     ]
 }
 
