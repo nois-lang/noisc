@@ -14,8 +14,7 @@ program                       = _{ SOI ~ block ~ EOI }
         unary_operator        =  { ADD_OP | SUBTRACT_OP | NOT_OP | SPREAD_OP }
 
 operand                       = _{
-    HOLE_OP
-  | float
+  float
   | integer
   | boolean
   | match_expression
@@ -26,6 +25,7 @@ operand                       = _{
   | function_call
   | string
   | identifier
+  | HOLE_OP
 }
   /// #EF9F76
   integer                     = @{

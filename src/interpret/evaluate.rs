@@ -163,7 +163,7 @@ pub fn function_call(
         custom_error_span(
             &function_call.0,
             &ctx.ast_context,
-            format!("in function call {}:\n{}", id.1, e),
+            format!("in function call '{}':\n{}", id.1, e),
         )
     })
 }
