@@ -12,7 +12,7 @@ pub enum Value {
     B(bool),
     List { items: Vec<Value>, spread: bool },
     // TODO: closures don't remember their scope
-    Fn(Box<FunctionInit>),
+    Fn(FunctionInit),
 }
 
 impl Display for Value {

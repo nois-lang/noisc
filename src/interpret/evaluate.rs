@@ -96,14 +96,20 @@ impl Evaluate for AstPair<Expression> {
                         params: vec![],
                         method_callee: None,
                     });
-                    debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
+                    debug!("push scope {:?}", &ctx.scope_stack.last().unwrap());
 
                     let res = clause.1.block.eval(ctx, true);
 
                     debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
                     ctx.scope_stack.pop();
 
-                    res
+                    res.map_err(|e| {
+                        custom_error_span(
+                            &clause.1.block.0,
+                            &ctx.ast_context,
+                            format!("in match clause:\n{}", e),
+                        )
+                    })
                 } else {
                     todo!()
                 }
@@ -131,7 +137,7 @@ pub fn function_call(
     ctx.scope_stack.push(Scope {
         name: name.clone(),
         definitions: HashMap::new(),
-        callee: Some(function_call.1.clone().identifier.0),
+        callee: Some(function_call.0.clone()),
         params: params.clone(),
         method_callee: None,
     });
@@ -146,14 +152,20 @@ pub fn function_call(
         None => Err(custom_error_span(
             &function_call.0,
             &ctx.ast_context,
-            format!("'{}' function not found", id.1),
+            format!("Function '{}' not found", id.1),
         )),
-    }?;
+    };
     debug!("function {:?} result {:?}", &id, &res);
 
     debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
     ctx.scope_stack.pop();
-    Ok(res)
+    res.map_err(|e| {
+        custom_error_span(
+            &function_call.0,
+            &ctx.ast_context,
+            format!("in function call {}:\n{}", id.1, e),
+        )
+    })
 }
 
 impl Evaluate for AstPair<Operand> {
@@ -229,10 +241,7 @@ impl Evaluate for AstPair<FunctionInit> {
             );
             self.1.block.eval(ctx, eager)
         } else {
-            Ok(AstPair::from_span(
-                &self.0,
-                Value::Fn(Box::new(self.1.clone())),
-            ))
+            Ok(AstPair::from_span(&self.0, Value::Fn(self.1.clone())))
         }
     }
 }
@@ -272,6 +281,7 @@ impl Evaluate for Definition {
         debug!("eval {:?}, eager: {}", &self, eager);
         match self {
             Definition::User(_, exp) => exp.eval(ctx, eager),
+            // TODO: check if it's ok to clone params
             Definition::System(f) => f(ctx.scope_stack.last().unwrap().clone().params, ctx),
             Definition::Value(v) => Ok(v.clone()),
         }

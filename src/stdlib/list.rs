@@ -48,19 +48,13 @@ impl LibFunction for Map {
             [Value::List { items: l, .. }, Value::Fn(..)] => l.clone(),
             l => return Err(format!("Expected (List, Fn), found {:?}", l)),
         };
-        let callee: Option<Span> = ctx
-            .scope_stack
-            .last()
-            .unwrap()
-            .method_callee
-            .clone()
-            .map(|a| a.0);
+        let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee.clone();
 
         let res = list
             .into_iter()
             .map(|li| {
                 ctx.scope_stack.push(Scope {
-                    name: Self::name(),
+                    name: "map closure".to_string(),
                     definitions: HashMap::new(),
                     callee: callee.clone(),
                     params: vec![args[0].map(|_| li.clone())],

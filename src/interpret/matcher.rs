@@ -26,7 +26,8 @@ pub fn match_expression(
         } => {
             let value = condition.eval(ctx, true)?;
             for (i, clause) in match_clauses.into_iter().enumerate() {
-                let p_match = match_clause(value.clone(), clause.clone(), ctx)?;
+                debug!("matching {:?} against {:?}", &value, &clause);
+                let p_match = match_pattern_item(value.clone(), clause.1.pattern.clone(), ctx)?;
                 if let Some(pm) = p_match {
                     debug!("matched pattern #{i}: {:?}", clause.1);
                     return Ok(Some((clause, pm)));
@@ -38,31 +39,69 @@ pub fn match_expression(
     }
 }
 
-pub fn match_clause(
+pub fn match_pattern_item(
     value: AstPair<Value>,
-    clause: AstPair<MatchClause>,
+    pattern_item: AstPair<PatternItem>,
     ctx: &mut RefMut<Context>,
 ) -> Result<Option<Vec<(Identifier, Definition)>>, Error<Rule>> {
-    debug!("matching {:?} against {:?}", &value, &clause);
-    let pattern_item = clause.1.pattern;
     let defs = match pattern_item.1 {
         PatternItem::Hole => Some(vec![]),
         PatternItem::Integer(_)
         | PatternItem::Float(_)
         | PatternItem::Boolean(_)
         | PatternItem::String(_) => Value::try_from(pattern_item.clone())
-            .map_err(|e| custom_error_span(&pattern_item.0, &ctx.ast_context, e))?
+            .map_err(|e| {
+                custom_error_span(
+                    &pattern_item.0,
+                    &ctx.ast_context,
+                    format!("in pattern:\n{}", e),
+                )
+            })?
             .eq(&value.1)
             .then(|| vec![]),
+        PatternItem::Identifier {
+            identifier: id,
+            spread: false,
+        } => Some(vec![(id.1, Definition::Value(value))]),
         PatternItem::Identifier {
             identifier: _,
             spread: true,
         } => todo!("pattern matching"),
-        PatternItem::Identifier {
-            identifier: _,
-            spread: false,
-        } => todo!("pattern matching"),
-        PatternItem::PatternList(_) => todo!("pattern matching"),
+        PatternItem::PatternList(items) => match &value.1 {
+            Value::List { items: vs, .. } => {
+                if let PatternItem::Identifier { spread: true, .. } = &items.first().unwrap().1 {
+                    todo!("spread matching")
+                } else if let PatternItem::Identifier { spread: true, .. } =
+                    &items.last().unwrap().1
+                {
+                    todo!("spread matching")
+                } else {
+                    if items.len() == vs.len() {
+                        zip(items, vs)
+                            .map(|(i, v)| match_pattern_item(value.map(|_| v.clone()), i, ctx))
+                            .collect::<Result<Option<Vec<_>>, _>>()?
+                            .map(|o| o.into_iter().flatten().collect::<Vec<_>>())
+                    } else {
+                        return Err(custom_error_span(
+                            &value.0,
+                            &ctx.ast_context,
+                            format!(
+                                "Incompatible deconstruction length: expected {}, got {}",
+                                items.len(),
+                                vs.len()
+                            ),
+                        ));
+                    }
+                }
+            }
+            _ => {
+                return Err(custom_error_span(
+                    &value.0,
+                    &ctx.ast_context,
+                    format!("Expected List to deconstruct, got {:?}", value.1),
+                ))
+            }
+        },
     };
     Ok(defs)
 }
@@ -73,9 +112,9 @@ pub fn assign_definitions<T, F>(
     ctx: &mut RefMut<Context>,
     f: F,
 ) -> Result<Vec<(Identifier, Definition)>, Error<Rule>>
-    where
-        T: Evaluate + Debug,
-        F: Fn(AstPair<Identifier>, T) -> Definition,
+where
+    T: Evaluate + Debug,
+    F: Fn(AstPair<Identifier>, T) -> Definition,
 {
     match assignee.clone().1 {
         Assignee::Identifier(i) => Ok(vec![(i.clone().1, f(i, expression))]),

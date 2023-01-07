@@ -56,13 +56,8 @@ pub trait LibFunction {
             .map(|c| c.0)
             .or(scope.callee.clone())
             .expect("callee not found");
-        res.map(|v| AstPair::from_span(&callee, v)).map_err(|s| {
-            custom_error_span(
-                &callee,
-                &ctx.ast_context,
-                format!("Error calling {}:\n{}", Self::name(), s),
-            )
-        })
+        res.map(|v| AstPair::from_span(&callee, v))
+            .map_err(|s| custom_error_span(&callee, &ctx.ast_context, s))
     }
 
     fn definition() -> (Identifier, Definition) {
