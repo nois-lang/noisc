@@ -1,9 +1,8 @@
 use std::fmt::{Debug, Display, Formatter};
 use std::ops;
 
-use crate::ast::ast::{AstPair, FunctionInit, PatternItem, UnaryOperator};
+use crate::ast::ast::{AstPair, FunctionInit, PatternItem, UnaryOperator, ValueType};
 
-// TODO: type literals
 // TODO: type casting
 // TODO: value into its type conversion
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
@@ -16,6 +15,7 @@ pub enum Value {
     List { items: Vec<Value>, spread: bool },
     // TODO: closures don't remember their scope
     Fn(FunctionInit),
+    Type(ValueType),
 }
 
 impl Display for Value {
@@ -41,6 +41,7 @@ impl Display for Value {
                 }
             }
             Value::Fn(_) => write!(f, "<fn>"),
+            Value::Type(vt) => write!(f, "{vt}"),
         }
     }
 }

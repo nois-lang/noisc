@@ -182,6 +182,7 @@ impl Evaluate for AstPair<Operand> {
                     spread: false,
                 }))
             }
+            Operand::ValueType(vt) => Ok(self.map(|_| Value::Type(vt.clone()))),
             Operand::FunctionCall(fc) => function_call(&self.map(|_| fc.clone()), ctx),
             Operand::FunctionInit(fi) => self.map(|_| fi.clone()).eval(ctx, eager),
             Operand::ListInit { items } => {
@@ -296,7 +297,7 @@ mod tests {
     use pest::error::Error;
     use pest::Parser;
 
-    use crate::ast::ast::AstContext;
+    use crate::ast::ast::{AstContext, ValueType};
     use crate::ast::ast_parser::parse_block;
     use crate::interpret::context::Context;
     use crate::interpret::evaluate::Evaluate;
@@ -364,6 +365,13 @@ mod tests {
             })
         );
         assert!(matches!(evaluate("a -> a", false), Ok(Value::Fn(..))));
+        assert_eq!(
+            evaluate_eager("[C]"),
+            Ok(Value::List {
+                items: vec![Value::Type(ValueType::Char)],
+                spread: false,
+            })
+        );
     }
 
     #[test]

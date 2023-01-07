@@ -54,6 +54,36 @@ pub enum Operand {
     FunctionCall(FunctionCall),
     String(String),
     Identifier(AstPair<Identifier>),
+    ValueType(ValueType),
+}
+
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
+pub enum ValueType {
+    Unit,
+    Integer,
+    Float,
+    Char,
+    Boolean,
+    Function,
+    Any,
+}
+
+impl Display for ValueType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                ValueType::Unit => "()",
+                ValueType::Integer => "I",
+                ValueType::Float => "F",
+                ValueType::Char => "C",
+                ValueType::Boolean => "B",
+                ValueType::Function => "Fn",
+                ValueType::Any => "*",
+            }
+        )
+    }
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]

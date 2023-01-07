@@ -24,6 +24,7 @@ operand                       = _{
   | list_init
   | function_call
   | string
+  | value_type
   | identifier
   | HOLE_OP
 }
@@ -34,7 +35,23 @@ operand                       = _{
   float                       = @{
     integer ~ ("." ~ ASCII_DIGIT+) | integer ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)
   }
-  boolean                       = @{ "True" | "False" }
+  boolean                     = @{ "True" | "False" }
+  value_type                  =  {
+    unit_type
+    | integer_type
+    | float_type
+    | char_type
+    | boolean_type
+    | function_type
+    | any_type
+  }
+    unit_type                 =  { "()" }
+    integer_type              =  { "I" }
+    float_type                =  { !function_type ~ "F" }
+    char_type                 =  { "C" }
+    boolean_type              =  { "B" }
+    function_type             =  { "Fn" }
+    any_type                  =  { "*" }
   struct_define               =  {
     STRUCT_OP ~ BRACE_OPEN ~ N*
       ~ identifier? ~ N*
@@ -80,7 +97,7 @@ match_expression              =  {
 }
   // TODO: guards
   match_clause                =  { pattern_item ~ MATCH_OP ~ block }
-    pattern_item            =  {
+    pattern_item              =  {
       float
       | integer
       | boolean
@@ -89,7 +106,7 @@ match_expression              =  {
       | pattern_list
       | SPREAD_OP? ~ identifier
     }
-    pattern_list            =  {
+    pattern_list              =  {
       BRACKET_OPEN ~ N*
         ~ (N* ~ pattern_item ~ (N* ~ COMMA ~ N* ~ pattern_item ~ N*)*)?
         ~ COMMA? ~ N*

@@ -5,6 +5,7 @@ use pest::iterators::{Pair, Pairs};
 use crate::ast::ast::{
     Assignee, AstPair, BinaryOperator, Block, DestructureItem, DestructureList, Expression,
     FunctionCall, FunctionInit, Identifier, MatchClause, Operand, PatternItem, Statement,
+    ValueType,
 };
 use crate::ast::expression::{Associativity, OperatorAssociativity, OperatorPrecedence};
 use crate::ast::util::{children, custom_error, first_child, parse_children};
@@ -237,6 +238,10 @@ pub fn parse_operand(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>>
                 Operand::Identifier(AstPair::from_span(&id.0, id.1)),
             ))
         }
+        Rule::value_type => Ok(AstPair::from_pair(
+            pair,
+            Operand::ValueType(parse_value_type(&children(pair)[0])?),
+        )),
         _ => Err(custom_error(
             pair,
             format!("expected {:?}, found {:?}", Rule::operand, pair.as_rule()),
@@ -327,6 +332,28 @@ fn parse_identifier(pair: &Pair<Rule>) -> Result<AstPair<Identifier>, Error<Rule
             ),
         )),
     }
+}
+
+pub fn parse_value_type(pair: &Pair<Rule>) -> Result<ValueType, Error<Rule>> {
+    Ok(match pair.as_rule() {
+        Rule::unit_type => ValueType::Unit,
+        Rule::integer_type => ValueType::Integer,
+        Rule::float_type => ValueType::Float,
+        Rule::char_type => ValueType::Char,
+        Rule::boolean_type => ValueType::Boolean,
+        Rule::function_type => ValueType::Function,
+        Rule::any_type => ValueType::Any,
+        _ => {
+            return Err(custom_error(
+                pair,
+                format!(
+                    "expected {:?}, found {:?}",
+                    Rule::value_type,
+                    pair.as_rule()
+                ),
+            ));
+        }
+    })
 }
 
 pub fn parse_parameter_list(pair: &Pair<Rule>) -> Result<Vec<AstPair<Expression>>, Error<Rule>> {
@@ -586,6 +613,91 @@ False
         assert_eq!(strings[5], "a\\\n\r\tb");
         assert_eq!(strings[6], "a\u{1234}bc");
         assert_eq!(strings[7], "hey 😎");
+    }
+
+    #[test]
+    fn build_ast_type_value() {
+        let source = "[(), I, F, C, B, [C], [[C], I], Fn]";
+        let file = &NoisParser::parse(Rule::program, source).unwrap();
+        let block: AstPair<Block> = parse_file(file).unwrap();
+        let expect = r#"
+Block {
+    statements: [
+        Expression(
+            Operand(
+                ListInit {
+                    items: [
+                        Operand(
+                            ValueType(
+                                Unit,
+                            ),
+                        ),
+                        Operand(
+                            ValueType(
+                                Integer,
+                            ),
+                        ),
+                        Operand(
+                            ValueType(
+                                Float,
+                            ),
+                        ),
+                        Operand(
+                            ValueType(
+                                Char,
+                            ),
+                        ),
+                        Operand(
+                            ValueType(
+                                Boolean,
+                            ),
+                        ),
+                        Operand(
+                            ListInit {
+                                items: [
+                                    Operand(
+                                        ValueType(
+                                            Char,
+                                        ),
+                                    ),
+                                ],
+                            },
+                        ),
+                        Operand(
+                            ListInit {
+                                items: [
+                                    Operand(
+                                        ListInit {
+                                            items: [
+                                                Operand(
+                                                    ValueType(
+                                                        Char,
+                                                    ),
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                    Operand(
+                                        ValueType(
+                                            Integer,
+                                        ),
+                                    ),
+                                ],
+                            },
+                        ),
+                        Operand(
+                            ValueType(
+                                Function,
+                            ),
+                        ),
+                    ],
+                },
+            ),
+        ),
+    ],
+}
+"#;
+        assert_eq!(format!("{:#?}", block), expect.trim())
     }
 
     #[test]
