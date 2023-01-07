@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display, Formatter};
 use std::ops;
 
-use crate::ast::ast::FunctionInit;
+use crate::ast::ast::{AstPair, FunctionInit, PatternItem, UnaryOperator};
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Value {
@@ -10,7 +10,7 @@ pub enum Value {
     F(f64),
     C(char),
     B(bool),
-    List(Vec<Value>),
+    List { items: Vec<Value>, spread: bool },
     // TODO: closures don't remember their scope
     Fn(Box<FunctionInit>),
 }
@@ -23,16 +23,41 @@ impl Display for Value {
             Value::F(fl) => write!(f, "{fl}"),
             Value::C(c) => write!(f, "{c}"),
             Value::B(b) => write!(f, "{}", if *b { "True" } else { "False" }),
-            Value::List(l) => {
+            Value::List { items: l, spread } => {
                 let all_c = !l.is_empty() && l.iter().all(|v| matches!(v, Value::C(_)));
                 let is = l.into_iter().map(|i| format!("{}", i)).collect::<Vec<_>>();
-                if all_c {
+                let spread_s = if *spread {
+                    UnaryOperator::Spread.to_string()
+                } else {
+                    "".to_string()
+                };
+                if all_c && !*spread {
                     write!(f, "{}", is.join(""))
                 } else {
-                    write!(f, "[{}]", is.join(", "))
+                    write!(f, "{}[{}]", spread_s, is.join(", "))
                 }
             }
             Value::Fn(_) => write!(f, "<fn>"),
+        }
+    }
+}
+
+impl TryFrom<AstPair<PatternItem>> for Value {
+    type Error = String;
+
+    fn try_from(a: AstPair<PatternItem>) -> Result<Self, Self::Error> {
+        match a.1 {
+            PatternItem::Integer(i) => Ok(Value::I(i)),
+            PatternItem::Float(f) => Ok(Value::F(f)),
+            PatternItem::Boolean(b) => Ok(Value::B(b)),
+            PatternItem::String(s) => Ok(Value::List {
+                items: s.chars().map(|c| Value::C(c)).collect(),
+                spread: false,
+            }),
+            _ => Err(format!(
+                "Unable to convert pattern item {:?} into value",
+                a.1
+            )),
         }
     }
 }

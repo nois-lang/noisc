@@ -7,6 +7,7 @@ use pest::error::Error;
 
 use crate::ast::ast::{
     Assignee, AstPair, DestructureItem, DestructureList, Expression, Identifier, MatchClause,
+    PatternItem,
 };
 use crate::ast::util::custom_error_span;
 use crate::interpret::context::{Context, Definition};
@@ -25,7 +26,7 @@ pub fn match_expression(
         } => {
             let value = condition.eval(ctx, true)?;
             for (i, clause) in match_clauses.into_iter().enumerate() {
-                let p_match = match_predicate(value.clone(), clause.clone(), ctx)?;
+                let p_match = match_clause(value.clone(), clause.clone(), ctx)?;
                 if let Some(pm) = p_match {
                     debug!("matched pattern #{i}: {:?}", clause.1);
                     return Ok(Some((clause, pm)));
@@ -37,13 +38,33 @@ pub fn match_expression(
     }
 }
 
-pub fn match_predicate(
+pub fn match_clause(
     value: AstPair<Value>,
     clause: AstPair<MatchClause>,
-    _ctx: &mut RefMut<Context>,
+    ctx: &mut RefMut<Context>,
 ) -> Result<Option<Vec<(Identifier, Definition)>>, Error<Rule>> {
     debug!("matching {:?} against {:?}", &value, &clause);
-    todo!("pattern matching")
+    let pattern_item = clause.1.pattern;
+    let defs = match pattern_item.1 {
+        PatternItem::Hole => Some(vec![]),
+        PatternItem::Integer(_)
+        | PatternItem::Float(_)
+        | PatternItem::Boolean(_)
+        | PatternItem::String(_) => Value::try_from(pattern_item.clone())
+            .map_err(|e| custom_error_span(&pattern_item.0, &ctx.ast_context, e))?
+            .eq(&value.1)
+            .then(|| vec![]),
+        PatternItem::Identifier {
+            identifier: _,
+            spread: true,
+        } => todo!("pattern matching"),
+        PatternItem::Identifier {
+            identifier: _,
+            spread: false,
+        } => todo!("pattern matching"),
+        PatternItem::PatternList(_) => todo!("pattern matching"),
+    };
+    Ok(defs)
 }
 
 pub fn assign_definitions<T, F>(
@@ -71,7 +92,7 @@ pub fn destructure_list<T: Evaluate + Debug>(
     let e = expression.eval(ctx, true)?;
     debug!("destructuring list {:?} into {:?}", &e, &destructure_list);
     match &e.1 {
-        Value::List(vs) => {
+        Value::List { items: vs, .. } => {
             if let DestructureItem::Identifier { spread: true, .. } =
                 &destructure_list.0.first().unwrap().1
             {

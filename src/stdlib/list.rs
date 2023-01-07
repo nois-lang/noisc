@@ -29,7 +29,10 @@ impl LibFunction for Range {
             [Value::I(s), Value::I(e)] => *s..*e,
             l => return Err(format!("Expected (I, I) or (I), found {:?}", l)),
         };
-        Ok(Value::List(range.map(|i| Value::I(i)).collect::<Vec<_>>()))
+        Ok(Value::List {
+            items: range.map(|i| Value::I(i)).collect::<Vec<_>>(),
+            spread: false,
+        })
     }
 }
 
@@ -42,7 +45,7 @@ impl LibFunction for Map {
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, String> {
         let list = match &args.into_iter().map(|a| a.1.clone()).collect::<Vec<_>>()[..] {
-            [Value::List(l), Value::Fn(..)] => l.clone(),
+            [Value::List { items: l, .. }, Value::Fn(..)] => l.clone(),
             l => return Err(format!("Expected (List, Fn), found {:?}", l)),
         };
         let callee: Option<Span> = ctx
@@ -74,6 +77,9 @@ impl LibFunction for Map {
             })
             .collect::<Result<Vec<_>, _>>();
 
-        res.map(|l| Value::List(l))
+        res.map(|l| Value::List {
+            items: l,
+            spread: false,
+        })
     }
 }

@@ -56,7 +56,14 @@ impl Evaluate for AstPair<Expression> {
         debug!("eval {:?}, eager: {}", &self, eager);
         match &self.1 {
             Expression::Operand(op) => op.eval(ctx, eager),
-            Expression::Unary { .. } => todo!(),
+            Expression::Unary { operator, operand } => {
+                let fc = FunctionCall {
+                    identifier: operator.map(|o| Identifier(format!("{}", o))),
+                    parameters: vec![operand.deref().clone()],
+                };
+                let a = self.map(|_| fc.clone());
+                function_call(&a, ctx)
+            }
             Expression::Binary {
                 left_operand,
                 operator,
@@ -68,7 +75,7 @@ impl Evaluate for AstPair<Expression> {
                     right_operand.eval(ctx, eager)
                 } else {
                     let fc = FunctionCall {
-                        identifier: self.map(|_| Identifier(format!("{}", operator.deref().1))),
+                        identifier: operator.map(|o| Identifier(format!("{}", o))),
                         parameters: vec![left_operand, right_operand]
                             .into_iter()
                             .map(|p| p.deref())
@@ -158,18 +165,33 @@ impl Evaluate for AstPair<Operand> {
             Operand::Boolean(b) => Ok(self.map(|_| Value::B(*b))),
             Operand::String(s) => {
                 // TODO: assign each list item correct span
-                Ok(self.map(|_| Value::List(s.chars().map(|c| Value::C(c)).collect())))
+                Ok(self.map(|_| Value::List {
+                    items: s.chars().map(|c| Value::C(c)).collect(),
+                    spread: false,
+                }))
             }
             Operand::FunctionCall(fc) => function_call(&self.map(|_| fc.clone()), ctx),
             Operand::FunctionInit(fi) => self.map(|_| fi.clone()).eval(ctx, eager),
             Operand::ListInit { items } => {
-                let l = Value::List(
-                    match items
+                let l = Value::List {
+                    items: match items
                         .into_iter()
-                        .map(|i| i.eval(ctx, eager).map(|a| a.1))
+                        .map(|i| {
+                            let v = i.eval(ctx, eager).map(|a| a.1);
+                            v
+                        })
                         .collect::<Result<Vec<_>, _>>()
                     {
-                        Ok(r) => r,
+                        Ok(r) => r
+                            .into_iter()
+                            .flat_map(|i| match i {
+                                Value::List {
+                                    items,
+                                    spread: true,
+                                } => items,
+                                _ => vec![i],
+                            })
+                            .collect(),
                         Err(e) => {
                             return Err(custom_error_span(
                                 &self.0,
@@ -178,7 +200,8 @@ impl Evaluate for AstPair<Operand> {
                             ));
                         }
                     },
-                );
+                    spread: false,
+                };
                 Ok(self.map(|_| l.clone()))
             }
             Operand::Identifier(i) => i.eval(ctx, eager),
@@ -296,21 +319,39 @@ mod tests {
             evaluate_eager("'a'").map(|r| r.to_string()),
             Ok("a".to_string())
         );
-        assert_eq!(evaluate_eager("[]"), Ok(Value::List(vec![])));
+        assert_eq!(
+            evaluate_eager("[]"),
+            Ok(Value::List {
+                items: vec![],
+                spread: false,
+            })
+        );
         assert_eq!(
             evaluate_eager("[1, 2]"),
-            Ok(Value::List(vec![Value::I(1), Value::I(2)]))
+            Ok(Value::List {
+                items: vec![Value::I(1), Value::I(2)],
+                spread: false,
+            })
         );
         assert_eq!(
             evaluate_eager("'ab'"),
-            Ok(Value::List(vec![Value::C('a'), Value::C('b')]))
+            Ok(Value::List {
+                items: vec![Value::C('a'), Value::C('b')],
+                spread: false,
+            })
         );
         assert_eq!(
             evaluate_eager("[1, 'b']"),
-            Ok(Value::List(vec![
-                Value::I(1),
-                Value::List(vec![Value::C('b')]),
-            ]))
+            Ok(Value::List {
+                items: vec![
+                    Value::I(1),
+                    Value::List {
+                        items: vec![Value::C('b')],
+                        spread: false,
+                    },
+                ],
+                spread: false,
+            })
         );
         assert!(matches!(evaluate("a -> a", false), Ok(Value::Fn(..))));
     }
