@@ -69,18 +69,18 @@ operand                       = _{
       ~ COMMA? ~ N*
     ~ BRACKET_CLOSE }
   function_init               =  { block_function_init | arrow_function_init }
-    block_function_init       = _{ argument_list ~ BRACE_OPEN ~ block ~ BRACE_CLOSE }
-    arrow_function_init       = _{ argument_list ~ ARROW_OP ~ N* ~ statement }
-      argument_list      	  =  { _argument_list? }
-      // required to always include argument_list in parse tree, even if it's not specified
-      _argument_list          = _{
+    block_function_init       = _{ parameter_list ~ BRACE_OPEN ~ block ~ BRACE_CLOSE }
+    arrow_function_init       = _{ parameter_list ~ ARROW_OP ~ N* ~ statement }
+      parameter_list      	  =  { _parameter_list? }
+      // required to always include parameter_list in parse tree, even if it's not specified
+      _parameter_list         = _{
         assignee ~ N*
         | (PAREN_OPEN ~ N*
           ~ assignee? ~ N* ~ (COMMA ~ N* ~ assignee ~ N*)* ~ COMMA? ~ N*
         ~ PAREN_CLOSE)
       }
-  function_call               =  { identifier ~ PAREN_OPEN ~ N* ~ parameter_list ~ N* ~ PAREN_CLOSE }
-    parameter_list            =  { expression? ~ N* ~ (COMMA ~ N* ~ expression)* ~ COMMA? }
+  function_call               =  { identifier ~ PAREN_OPEN ~ N* ~ argument_list ~ N* ~ PAREN_CLOSE }
+    argument_list             =  { expression? ~ N* ~ (COMMA ~ N* ~ expression)* ~ COMMA? }
 
 assignee                      =  { HOLE_OP | identifier | destructure_list }
   destructure_item            =  { HOLE_OP | SPREAD_OP? ~ identifier | destructure_list }

@@ -235,26 +235,26 @@ a {}
                 block(0, 60, [
                     expression(1, 6, [
                         function_init(1, 6, [
-                            argument_list(1, 3),
+                            parameter_list(1, 3),
                             block(5, 5)
                         ])
                     ]),
                     expression(7, 11, [
                         function_init(7, 11, [
-                            argument_list(7, 9, [assignee(7, 8, [identifier(7, 8)])]),
+                            parameter_list(7, 9, [assignee(7, 8, [identifier(7, 8)])]),
                             block(10, 10),
                         ])
                     ]),
                     expression(12, 18, [
                         function_init(12, 18, [
-                                argument_list(12, 15, [assignee(13, 14, [identifier(13, 14)])]),
+                                parameter_list(12, 15, [assignee(13, 14, [identifier(13, 14)])]),
                                 block(17, 17)
                             ]
                         )
                     ]),
                     expression(19, 31, [
                         function_init(19, 31, [
-                                argument_list(19, 28, [
+                                parameter_list(19, 28, [
                                         assignee(20, 21, [identifier(20, 21)]),
                                         assignee(23, 24, [identifier(23, 24)]),
                                         assignee(26, 27, [identifier(26, 27)])
@@ -264,7 +264,7 @@ a {}
                     ]),
                     expression(32, 59, [
                         function_init(32, 59, [
-                            argument_list( 32, 56, [
+                            parameter_list( 32, 56, [
                                 assignee(38, 39, [identifier(38, 39)]),
                                 assignee(45, 46, [identifier(45, 46)]),
                                 assignee(52, 53, [identifier(52, 53)]),
@@ -298,25 +298,25 @@ a -> a
                 block(0, 63, [
                     expression(1, 5, [
                         function_init(1, 5, [
-                            argument_list(1, 1, []),
+                            parameter_list(1, 1, []),
                             expression(4, 5, [identifier(4, 5)])
                         ])
                     ]),
                     expression(6, 12, [
                         function_init(6, 12, [
-                            argument_list(6, 8, [assignee(6, 7, [identifier(6, 7)])]),
+                            parameter_list(6, 8, [assignee(6, 7, [identifier(6, 7)])]),
                             expression(11, 12, [identifier(11, 12)])
                         ])
                     ]),
                     expression(13, 20, [
                         function_init(13, 20, [
-                            argument_list(13, 15),
+                            parameter_list(13, 15),
                             expression(19, 20, [identifier(19, 20)])
                         ])
                     ]),
                     expression(21, 32, [
                         function_init(21, 32, [
-                            argument_list(21, 27, [
+                            parameter_list(21, 27, [
                                 assignee(22, 23, [identifier(22, 23)]),
                                 assignee(25, 26, [identifier(25, 26)])
                             ]),
@@ -325,7 +325,7 @@ a -> a
                     ]),
                     expression(33, 62, [
                         function_init(33, 62, [
-                            argument_list(33, 57, [
+                            parameter_list(33, 57, [
                                 assignee(39, 40, [identifier(39, 40)]),
                                 assignee(46, 47, [identifier(46, 47)]),
                                 assignee(53, 54, [identifier(53, 54)])
@@ -391,11 +391,11 @@ a - (a / 12).foo(boo() / 6) * c
                         binary_operator(69, 70, [ACCESSOR_OP(69, 70)]),
                         function_call(70, 84, [
                             identifier(70, 73),
-                            parameter_list(74, 83, [
+                            argument_list(74, 83, [
                                 expression( 74, 83, [
                                     function_call( 74, 79, [
                                         identifier(74, 77),
-                                        parameter_list(78, 78)
+                                        argument_list(78, 78)
                                     ]),
                                     binary_operator(80, 81, [DIVIDE_OP(80, 81)]),
                                     integer(82, 83)
@@ -500,7 +500,7 @@ a = []
                 block(0, 36, [
                     expression(1, 9, [
                         function_init(1, 9, [
-                            argument_list(1, 6, [
+                            parameter_list(1, 6, [
                                 assignee(2, 5, [destructure_list(2, 5, [
                                     destructure_item(3, 4, [identifier(3, 4)])
                                 ])])
@@ -510,7 +510,7 @@ a = []
                     ]),
                     expression(10, 23, [
                         function_init(10, 23, [
-                            argument_list(10, 20, [
+                            parameter_list(10, 20, [
                                 assignee(11, 19, [destructure_list(11, 19, [
                                     destructure_item(12, 13, [identifier(12, 13)]),
                                     destructure_item( 15, 18, [
@@ -523,7 +523,7 @@ a = []
                     ]),
                     expression(24, 35, [
                         function_init(24, 35, [
-                            argument_list(24, 32, [
+                            parameter_list(24, 32, [
                                 assignee( 25, 31, [destructure_list(25, 31, [
                                     destructure_item(26, 27, [HOLE_OP(26, 27)]),
                                     destructure_item(29, 30, [identifier(29, 30)])

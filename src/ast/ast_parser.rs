@@ -287,18 +287,18 @@ pub fn parse_function_call(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<
         pair,
         Operand::FunctionCall(FunctionCall {
             identifier: parse_identifier(&ch[0])?,
-            parameters: parse_parameter_list(&ch[1])?,
+            arguments: parse_argument_list(&ch[1])?,
         }),
     ))
 }
 
 pub fn parse_function_init(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error<Rule>> {
     let ch = children(pair);
-    let arguments: Vec<AstPair<Assignee>> = parse_children(&ch[0], parse_assignee)?;
+    let parameters: Vec<AstPair<Assignee>> = parse_children(&ch[0], parse_assignee)?;
     let block = parse_block(&ch[1])?;
     Ok(AstPair::from_pair(
         pair,
-        Operand::FunctionInit(FunctionInit { arguments, block }),
+        Operand::FunctionInit(FunctionInit { parameters, block }),
     ))
 }
 
@@ -356,14 +356,14 @@ pub fn parse_value_type(pair: &Pair<Rule>) -> Result<ValueType, Error<Rule>> {
     })
 }
 
-pub fn parse_parameter_list(pair: &Pair<Rule>) -> Result<Vec<AstPair<Expression>>, Error<Rule>> {
+pub fn parse_argument_list(pair: &Pair<Rule>) -> Result<Vec<AstPair<Expression>>, Error<Rule>> {
     match pair.as_rule() {
-        Rule::parameter_list => parse_children(pair, parse_expression),
+        Rule::argument_list => parse_children(pair, parse_expression),
         _ => Err(custom_error(
             pair,
             format!(
                 "expected {:?}, found {:?}",
-                Rule::parameter_list,
+                Rule::argument_list,
                 pair.as_rule()
             ),
         )),
@@ -985,7 +985,7 @@ Block {
                                         identifier: Identifier(
                                             "len",
                                         ),
-                                        parameters: [],
+                                        arguments: [],
                                     },
                                 ),
                             ),
@@ -1013,7 +1013,7 @@ Block {
                             identifier: Identifier(
                                 "foo",
                             ),
-                            parameters: [
+                            arguments: [
                                 Operand(
                                     Identifier(
                                         Identifier(
@@ -1058,7 +1058,7 @@ Block {
                                 identifier: Identifier(
                                     "foo",
                                 ),
-                                parameters: [],
+                                arguments: [],
                             },
                         ),
                     ),
@@ -1070,7 +1070,7 @@ Block {
                             identifier: Identifier(
                                 "bar",
                             ),
-                            parameters: [
+                            arguments: [
                                 Operand(
                                     Identifier(
                                         Identifier(
@@ -1450,7 +1450,7 @@ Block {
                                                 identifier: Identifier(
                                                     "panic",
                                                 ),
-                                                parameters: [],
+                                                arguments: [],
                                             },
                                         ),
                                     ),

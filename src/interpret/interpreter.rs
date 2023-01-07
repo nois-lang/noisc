@@ -24,7 +24,7 @@ pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
         name: "global".to_string(),
         definitions: block_defs,
         callee: None,
-        params: vec![],
+        arguments: vec![],
         method_callee: None,
     });
     debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
@@ -32,7 +32,7 @@ pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
         name: "main".to_string(),
         definitions: HashMap::new(),
         callee: None,
-        params: vec![],
+        arguments: vec![],
         method_callee: None,
     });
     debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);

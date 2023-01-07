@@ -22,7 +22,7 @@ pub struct Scope {
     pub name: String,
     pub definitions: HashMap<Identifier, Definition>,
     pub callee: Option<Span>,
-    pub params: Vec<AstPair<Value>>,
+    pub arguments: Vec<AstPair<Value>>,
     pub method_callee: Option<AstPair<Value>>,
 }
 
@@ -52,7 +52,7 @@ impl Context {
                 name: "stdlib".to_string(),
                 definitions: stdlib.into_iter().flat_map(|p| p.definitions).collect(),
                 callee: None,
-                params: vec![],
+                arguments: vec![],
                 method_callee: None,
             }],
         }

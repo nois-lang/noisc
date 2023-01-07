@@ -59,7 +59,7 @@ impl Evaluate for AstPair<Expression> {
             Expression::Unary { operator, operand } => {
                 let fc = FunctionCall {
                     identifier: operator.map(|o| Identifier(format!("{}", o))),
-                    parameters: vec![operand.deref().clone()],
+                    arguments: vec![operand.deref().clone()],
                 };
                 let a = self.map(|_| fc.clone());
                 function_call(&a, ctx)
@@ -76,7 +76,7 @@ impl Evaluate for AstPair<Expression> {
                 } else {
                     let fc = FunctionCall {
                         identifier: operator.map(|o| Identifier(format!("{}", o))),
-                        parameters: vec![left_operand, right_operand]
+                        arguments: vec![left_operand, right_operand]
                             .into_iter()
                             .map(|p| p.deref())
                             .cloned()
@@ -93,7 +93,7 @@ impl Evaluate for AstPair<Expression> {
                         name: "<match_predicate>".to_string(),
                         definitions: pm.into_iter().collect(),
                         callee: Some(clause.0.clone()),
-                        params: vec![],
+                        arguments: vec![],
                         method_callee: None,
                     });
                     debug!("push scope {:?}", &ctx.scope_stack.last().unwrap());
@@ -122,32 +122,33 @@ pub fn function_call(
     function_call: &AstPair<FunctionCall>,
     ctx: &mut RefMut<Context>,
 ) -> Result<AstPair<Value>, Error<Rule>> {
-    let mut params: Vec<AstPair<Value>> = vec![];
+    let mut args: Vec<AstPair<Value>> = vec![];
     if let Some(mc) = ctx.scope_stack.last().unwrap().method_callee.clone() {
-        params.push(mc);
+        args.push(mc);
     }
-    let ps: Vec<AstPair<Value>> = function_call
-        .1
-        .parameters
-        .iter()
-        .map(|a| a.eval(ctx, false))
-        .collect::<Result<_, _>>()?;
-    params.extend(ps);
+    args.extend(
+        function_call
+            .1
+            .arguments
+            .iter()
+            .map(|a| a.eval(ctx, false))
+            .collect::<Result<Vec<_>, _>>()?,
+    );
     let name = function_call.1.identifier.1.clone().0;
     ctx.scope_stack.push(Scope {
         name: name.clone(),
         definitions: HashMap::new(),
         callee: Some(function_call.0.clone()),
-        params: params.clone(),
+        arguments: args.clone(),
         method_callee: None,
     });
     debug!("push scope @{}", name);
 
     let id = &function_call.1.identifier;
-    debug!("function call {:?}, params: {:?}", &function_call, &params);
+    debug!("function call {:?}, args: {:?}", &function_call, &args);
     let res = match ctx.find_definition(&id.1) {
         Some(Definition::User(_, exp)) => exp.eval(ctx, true),
-        Some(Definition::System(f)) => f(params.clone(), ctx),
+        Some(Definition::System(f)) => f(args.clone(), ctx),
         Some(Definition::Value(v)) => Ok(v),
         None => Err(custom_error_span(
             &function_call.0,
@@ -231,8 +232,8 @@ impl Evaluate for AstPair<FunctionInit> {
     fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
         if eager {
             let scope = ctx.scope_stack.last().unwrap().clone();
-            for (arg, v) in self.1.arguments.iter().zip(scope.params.clone()) {
-                let defs = assign_definitions(arg.clone(), v, ctx, |_, e| Definition::Value(e))?;
+            for (param, v) in self.1.parameters.iter().zip(scope.arguments.clone()) {
+                let defs = assign_definitions(param.clone(), v, ctx, |_, e| Definition::Value(e))?;
                 ctx.scope_stack.last_mut().unwrap().definitions.extend(defs);
             }
             debug!(
@@ -282,8 +283,8 @@ impl Evaluate for Definition {
         debug!("eval {:?}, eager: {}", &self, eager);
         match self {
             Definition::User(_, exp) => exp.eval(ctx, eager),
-            // TODO: check if it's ok to clone params
-            Definition::System(f) => f(ctx.scope_stack.last().unwrap().clone().params, ctx),
+            // TODO: check if it's ok to clone args
+            Definition::System(f) => f(ctx.scope_stack.last().unwrap().clone().arguments, ctx),
             Definition::Value(v) => Ok(v.clone()),
         }
     }
@@ -471,7 +472,7 @@ mod tests {
                 items: vec![Value::List {
                     items: vec![Value::Type(ValueType::Char)],
                     spread: false,
-                },],
+                }, ],
                 spread: false,
             })
         );

@@ -70,7 +70,7 @@ impl LibFunction for Map {
                     name: "map closure".to_string(),
                     definitions: HashMap::new(),
                     callee: callee.clone(),
-                    params: vec![args[0].map(|_| li.clone())],
+                    arguments: vec![args[0].map(|_| li.clone())],
                     method_callee: None,
                 });
                 debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);

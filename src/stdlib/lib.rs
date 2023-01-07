@@ -30,7 +30,7 @@ pub fn stdlib() -> Vec<Package> {
 pub trait LibFunction {
     fn name() -> String;
 
-    // TODO: use patterns to validate call params
+    // TODO: use patterns to validate call args
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error<Rule>>;
 
     fn call_fn(
@@ -44,7 +44,7 @@ pub trait LibFunction {
 
         let res = Self::call(&arguments, ctx);
         debug!(
-            "stdlib function call {:?}, params: {:?}, result: {:?}",
+            "stdlib function call {:?}, args: {:?}, result: {:?}",
             Self::name(),
             &arguments,
             &res

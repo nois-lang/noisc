@@ -100,12 +100,12 @@ impl Display for ValueType {
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub struct FunctionCall {
     pub identifier: AstPair<Identifier>,
-    pub parameters: Vec<AstPair<Expression>>,
+    pub arguments: Vec<AstPair<Expression>>,
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub struct FunctionInit {
-    pub arguments: Vec<AstPair<Assignee>>,
+    pub parameters: Vec<AstPair<Assignee>>,
     pub block: AstPair<Block>,
 }
 
