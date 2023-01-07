@@ -3,9 +3,10 @@ use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops;
 
+use num::NumCast;
+
 use crate::ast::ast::{AstPair, FunctionInit, PatternItem, UnaryOperator, ValueType};
 
-// TODO: type casting
 #[derive(Debug, PartialOrd, Clone)]
 pub enum Value {
     Unit,
@@ -51,6 +52,74 @@ impl Value {
             }
         };
         Value::Type(vt)
+    }
+
+    pub fn to(&self, vt: &Value) -> Option<Self> {
+        let arg_type = self.value_type();
+        if &arg_type == vt {
+            return Some(self.clone());
+        }
+        match (self, vt) {
+            // cast to [C]
+            (arg, Value::List { items, .. }) => match &items[0] {
+                Value::Type(t) => {
+                    let str = match t {
+                        ValueType::Char => match arg {
+                            Value::I(a) => Some(format!("{a}")),
+                            Value::F(a) => Some(format!("{a}")),
+                            Value::C(a) => Some(format!("{a}")),
+                            _ => None,
+                        },
+                        _ => None,
+                    };
+                    str.map(|s| Value::List {
+                        items: s.chars().into_iter().map(|c| Value::C(c)).collect(),
+                        spread: false,
+                    })
+                }
+                _ => None,
+            },
+            (arg, Value::Type(t)) => match (arg, t) {
+                // cast from [C]
+                (Value::List { .. }, t)
+                if arg_type
+                    == Value::List {
+                    items: vec![Value::Type(ValueType::Char)],
+                    spread: false,
+                } =>
+                    {
+                        let s = arg.to_string();
+                        match t {
+                            ValueType::Unit => Some(Value::Unit),
+                            ValueType::Integer => s.parse().map(|i| Value::I(i)).ok(),
+                            ValueType::Float => s.parse().map(|f| Value::F(f)).ok(),
+                            ValueType::Char => s.parse().map(|c| Value::C(c)).ok(),
+                            ValueType::Boolean => match s.as_str() {
+                                "True" => Some(Value::B(true)),
+                                "False" => Some(Value::B(false)),
+                                _ => None,
+                            },
+                            _ => None,
+                        }
+                    }
+                // mono-type casts
+                _ => match (arg, t) {
+                    (Value::I(i), ValueType::Float) => {
+                        <f64 as NumCast>::from(*i).map(|f| Value::F(f))
+                    }
+                    (Value::F(f), ValueType::Integer) => {
+                        <i128 as NumCast>::from(*f).map(|i| Value::I(i))
+                    }
+                    (Value::I(i), ValueType::Char) => <u32 as NumCast>::from(*i)
+                        .and_then(|u| char::try_from(u).map(|c| Value::C(c)).ok()),
+                    (Value::C(c), ValueType::Integer) => {
+                        <u32>::try_from(*c).ok().map(|u| Value::I(u as i128))
+                    }
+                    _ => None,
+                },
+            },
+            (_, _) => None,
+        }
     }
 }
 

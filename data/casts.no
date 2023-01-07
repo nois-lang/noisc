@@ -1,0 +1,19 @@
+check = (v, t) {
+    res = v.to(t)
+    println('res:', res, 'type:', res.type())
+}
+
+main = {
+    check(12, [C])
+    check(12.5, [C])
+    check('haha', [C])
+    check('', [C])
+    check('12', I)
+    check('12.5', F)
+    check('True', B)
+    check('z', C)
+    check('lalala', ())
+    check(12.5, I)
+    check(45, C)
+    check('a'.to(C), I)
+}

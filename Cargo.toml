@@ -14,3 +14,4 @@ clap = { version = "3.2.23", features = ["derive"] }
 shellexpand = "3.0.0"
 fs_extra = "1.2.0"
 atty = "0.2.14"
+num = "0.4.0"

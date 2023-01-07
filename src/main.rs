@@ -29,6 +29,7 @@ pub mod interpret;
 pub mod logger;
 pub mod parser;
 pub mod stdlib;
+pub mod util;
 
 fn main() {
     if let Some(source) = piped_input() {
