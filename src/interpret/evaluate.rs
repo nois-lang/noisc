@@ -106,31 +106,35 @@ impl Evaluate for AstPair<Expression> {
             }
             Expression::MatchExpression { .. } => {
                 let p_match = match_expression(self.clone(), ctx)?;
-                if let Some((clause, pm)) = p_match {
-                    ctx.scope_stack.push(Scope {
-                        name: "<match_predicate>".to_string(),
-                        definitions: pm.into_iter().collect(),
-                        callee: Some(clause.0.clone()),
-                        arguments: vec![],
-                        method_callee: None,
-                    });
-                    debug!("push scope {:?}", &ctx.scope_stack.last().unwrap());
+                match p_match {
+                    Some((clause, pm)) => {
+                        ctx.scope_stack.push(Scope {
+                            name: "<match_predicate>".to_string(),
+                            definitions: pm.into_iter().collect(),
+                            callee: Some(clause.0.clone()),
+                            arguments: vec![],
+                            method_callee: None,
+                        });
+                        debug!("push scope {:?}", &ctx.scope_stack.last().unwrap());
 
-                    let res = clause.1.block.eval(ctx, true);
+                        let res = clause.1.block.eval(ctx, true);
 
-                    debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
-                    ctx.scope_stack.pop();
+                        debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
+                        ctx.scope_stack.pop();
 
-                    res.map_err(|e| {
-                        Error::new_cause(
-                            e,
-                            "<match clause>".to_string(),
-                            &clause.1.block.0,
-                            &ctx.ast_context,
-                        )
-                    })
-                } else {
-                    todo!()
+                        res.map_err(|e| {
+                            Error::new_cause(
+                                e,
+                                "<match clause>".to_string(),
+                                &clause.1.block.0,
+                                &ctx.ast_context,
+                            )
+                        })
+                    }
+                    None => {
+                        debug!("no matches in match expression {:?}", &self);
+                        Ok(self.map(|_| Value::Unit))
+                    }
                 }
             }
         }

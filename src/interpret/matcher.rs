@@ -31,7 +31,7 @@ pub fn match_expression(
                     return Ok(Some((clause, pm)));
                 }
             }
-            return Ok(None);
+            Ok(None)
         }
         _ => unreachable!(),
     }
@@ -104,9 +104,9 @@ pub fn assign_definitions<T, F>(
     ctx: &mut RefMut<Context>,
     f: F,
 ) -> Result<Vec<(Identifier, Definition)>, Error>
-    where
-        T: Evaluate + Debug,
-        F: Fn(AstPair<Identifier>, T) -> Definition,
+where
+    T: Evaluate + Debug,
+    F: Fn(AstPair<Identifier>, T) -> Definition,
 {
     match assignee.clone().1 {
         Assignee::Identifier(i) => Ok(vec![(i.clone().1, f(i, expression))]),
