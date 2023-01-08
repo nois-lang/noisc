@@ -6,6 +6,7 @@ use colored::Colorize;
 use log::debug;
 
 use crate::ast::ast::{AstContext, AstPair, Block, Identifier};
+use crate::error::Error;
 use crate::interpret::context::{Context, Definition, Scope};
 use crate::interpret::evaluate::Evaluate;
 
@@ -44,11 +45,12 @@ pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
         }
     };
     let mut a = ctx.scope_stack.last_mut().unwrap();
-    a.callee = Some(main_id.0);
+    a.callee = Some(main_id.clone().0);
     match main.eval(ctx, true) {
         Ok(_) => {}
         Err(e) => {
-            eprintln!("{}", format!("{}", e).red())
+            let err = Error::new_cause(e, main_id.1 .0, &main_id.0, &ctx.ast_context);
+            eprintln!("{}", format!("{}", err).red())
         }
     };
     debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);

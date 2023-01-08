@@ -1,8 +1,8 @@
 use std::cell::RefMut;
 use std::fmt::{Display, Formatter};
 
-use pest::error::{Error as PError, LineColLocation};
 use pest::error::ErrorVariant;
+use pest::error::{Error as PError, LineColLocation};
 use pest::iterators::Pair;
 
 use crate::ast::ast::{AstContext, Span};

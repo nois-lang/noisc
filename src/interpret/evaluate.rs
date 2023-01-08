@@ -124,7 +124,7 @@ impl Evaluate for AstPair<Expression> {
                     res.map_err(|e| {
                         Error::new_cause(
                             e,
-                            "match clause".to_string(),
+                            "<match clause>".to_string(),
                             &clause.1.block.0,
                             &ctx.ast_context,
                         )
@@ -487,7 +487,7 @@ mod tests {
                 items: vec![Value::List {
                     items: vec![Value::Type(ValueType::Char)],
                     spread: false,
-                }, ],
+                },],
                 spread: false,
             })
         );
