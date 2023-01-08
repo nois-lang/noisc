@@ -82,26 +82,26 @@ impl Value {
             (arg, Value::Type(t)) => match (arg, t) {
                 // cast from [C]
                 (Value::List { .. }, t)
-                if arg_type
-                    == Value::List {
-                    items: vec![Value::Type(ValueType::Char)],
-                    spread: false,
-                } =>
-                    {
-                        let s = arg.to_string();
-                        match t {
-                            ValueType::Unit => Some(Value::Unit),
-                            ValueType::Integer => s.parse().map(|i| Value::I(i)).ok(),
-                            ValueType::Float => s.parse().map(|f| Value::F(f)).ok(),
-                            ValueType::Char => s.parse().map(|c| Value::C(c)).ok(),
-                            ValueType::Boolean => match s.as_str() {
-                                "True" => Some(Value::B(true)),
-                                "False" => Some(Value::B(false)),
-                                _ => None,
-                            },
+                    if arg_type
+                        == Value::List {
+                            items: vec![Value::Type(ValueType::Char)],
+                            spread: false,
+                        } =>
+                {
+                    let s = arg.to_string();
+                    match t {
+                        ValueType::Unit => Some(Value::Unit),
+                        ValueType::Integer => s.parse().map(|i| Value::I(i)).ok(),
+                        ValueType::Float => s.parse().map(|f| Value::F(f)).ok(),
+                        ValueType::Char => s.parse().map(|c| Value::C(c)).ok(),
+                        ValueType::Boolean => match s.as_str() {
+                            "True" => Some(Value::B(true)),
+                            "False" => Some(Value::B(false)),
                             _ => None,
-                        }
+                        },
+                        _ => None,
                     }
+                }
                 // mono-type casts
                 _ => match (arg, t) {
                     (Value::I(i), ValueType::Float) => {

@@ -2,10 +2,9 @@ use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use std::string::ToString;
 
-use pest::error::Error;
 use pest::iterators::Pair;
 
-use crate::ast::util::custom_error;
+use crate::error::Error;
 use crate::parser::Rule;
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
@@ -133,7 +132,7 @@ impl Display for UnaryOperator {
 }
 
 impl TryFrom<Pair<'_, Rule>> for UnaryOperator {
-    type Error = Error<Rule>;
+    type Error = Error;
 
     fn try_from(pair: Pair<Rule>) -> Result<Self, Self::Error> {
         match pair.as_rule() {
@@ -142,7 +141,7 @@ impl TryFrom<Pair<'_, Rule>> for UnaryOperator {
             Rule::NOT_OP => Ok(Self::Not),
             Rule::SPREAD_OP => Ok(Self::Spread),
 
-            _ => Err(custom_error(
+            _ => Err(Error::from_pair(
                 &pair,
                 format!("unknown unary operator {:?}", pair.as_rule()),
             )),
@@ -196,7 +195,7 @@ impl Display for BinaryOperator {
 }
 
 impl TryFrom<Pair<'_, Rule>> for BinaryOperator {
-    type Error = Error<Rule>;
+    type Error = Error;
 
     fn try_from(pair: Pair<Rule>) -> Result<Self, Self::Error> {
         match pair.as_rule() {
@@ -215,7 +214,7 @@ impl TryFrom<Pair<'_, Rule>> for BinaryOperator {
             Rule::LESS_OR_EQUALS_OP => Ok(Self::LessOrEquals),
             Rule::AND_OP => Ok(Self::And),
             Rule::OR_OP => Ok(Self::Or),
-            r => Err(custom_error(
+            r => Err(Error::from_pair(
                 &pair,
                 format!("expected binary operator, found {:?}", r),
             )),

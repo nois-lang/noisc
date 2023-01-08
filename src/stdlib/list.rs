@@ -2,14 +2,12 @@ use std::cell::RefMut;
 use std::collections::HashMap;
 
 use log::debug;
-use pest::error::Error;
 
 use crate::ast::ast::{AstPair, Span};
-use crate::ast::util::custom_error_callee;
+use crate::error::Error;
 use crate::interpret::context::{Context, Scope};
 use crate::interpret::evaluate::Evaluate;
 use crate::interpret::value::Value;
-use crate::parser::Rule;
 use crate::stdlib::lib::{LibFunction, Package};
 
 pub fn package() -> Package {
@@ -26,12 +24,12 @@ impl LibFunction for Range {
         "range".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error<Rule>> {
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let range = match &args.into_iter().map(|a| a.1.clone()).collect::<Vec<_>>()[..] {
             [Value::I(s)] => 0..*s,
             [Value::I(s), Value::I(e)] => *s..*e,
             l => {
-                return Err(custom_error_callee(
+                return Err(Error::from_callee(
                     ctx,
                     format!("Expected (I, I?), found {:?}", l),
                 ));
@@ -51,11 +49,11 @@ impl LibFunction for Map {
         "map".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error<Rule>> {
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let list = match &args.into_iter().map(|a| a.1.clone()).collect::<Vec<_>>()[..] {
             [Value::List { items: l, .. }, Value::Fn(..)] => l.clone(),
             l => {
-                return Err(custom_error_callee(
+                return Err(Error::from_callee(
                     ctx,
                     format!("Expected (List, Fn), found {:?}", l),
                 ));

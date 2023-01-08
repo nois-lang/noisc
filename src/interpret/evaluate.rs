@@ -1,26 +1,44 @@
 use std::cell::RefMut;
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 use std::ops::Deref;
 
 use log::debug;
-use pest::error::Error;
 
 use crate::ast::ast::{
     AstPair, BinaryOperator, Block, Expression, FunctionCall, FunctionInit, Identifier, Operand,
     Statement,
 };
-use crate::ast::util::custom_error_span;
+use crate::error::Error;
 use crate::interpret::context::{Context, Definition, Scope};
 use crate::interpret::matcher::{assign_definitions, match_expression};
 use crate::interpret::value::Value;
-use crate::parser::Rule;
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum FunctionCallType {
+    Function,
+    Operator,
+}
+
+impl Display for FunctionCallType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                FunctionCallType::Function => "Function",
+                FunctionCallType::Operator => "Operator",
+            }
+        )
+    }
+}
 
 pub trait Evaluate {
-    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>>;
+    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error>;
 }
 
 impl Evaluate for AstPair<Block> {
-    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
+    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
         debug!("eval {:?}, eager: {}", &self, eager);
         let mut last_res = self.map(|_| Value::Unit);
         for statement in &self.1.statements {
@@ -31,7 +49,7 @@ impl Evaluate for AstPair<Block> {
 }
 
 impl Evaluate for AstPair<Statement> {
-    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
+    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
         debug!("eval {:?}, eager: {}", &self, eager);
         match &self.1 {
             Statement::Expression(exp) => exp.eval(ctx, eager),
@@ -52,7 +70,7 @@ impl Evaluate for AstPair<Statement> {
 }
 
 impl Evaluate for AstPair<Expression> {
-    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
+    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
         debug!("eval {:?}, eager: {}", &self, eager);
         match &self.1 {
             Expression::Operand(op) => op.eval(ctx, eager),
@@ -62,7 +80,7 @@ impl Evaluate for AstPair<Expression> {
                     arguments: vec![operand.deref().clone()],
                 };
                 let a = self.map(|_| fc.clone());
-                function_call(&a, ctx)
+                function_call(&a, ctx, FunctionCallType::Operator)
             }
             Expression::Binary {
                 left_operand,
@@ -83,7 +101,7 @@ impl Evaluate for AstPair<Expression> {
                             .collect(),
                     };
                     let a = self.map(|_| fc.clone());
-                    function_call(&a, ctx)
+                    function_call(&a, ctx, FunctionCallType::Function)
                 }
             }
             Expression::MatchExpression { .. } => {
@@ -104,10 +122,11 @@ impl Evaluate for AstPair<Expression> {
                     ctx.scope_stack.pop();
 
                     res.map_err(|e| {
-                        custom_error_span(
+                        Error::new_cause(
+                            e,
+                            "match clause".to_string(),
                             &clause.1.block.0,
                             &ctx.ast_context,
-                            format!("in match clause:\n{}", e),
                         )
                     })
                 } else {
@@ -121,7 +140,8 @@ impl Evaluate for AstPair<Expression> {
 pub fn function_call(
     function_call: &AstPair<FunctionCall>,
     ctx: &mut RefMut<Context>,
-) -> Result<AstPair<Value>, Error<Rule>> {
+    call_type: FunctionCallType,
+) -> Result<AstPair<Value>, Error> {
     let mut args: Vec<AstPair<Value>> = vec![];
     if let Some(mc) = ctx.scope_stack.last().unwrap().method_callee.clone() {
         args.push(mc);
@@ -150,27 +170,21 @@ pub fn function_call(
         Some(Definition::User(_, exp)) => exp.eval(ctx, true),
         Some(Definition::System(f)) => f(args.clone(), ctx),
         Some(Definition::Value(v)) => Ok(v),
-        None => Err(custom_error_span(
+        None => Err(Error::from_span(
             &function_call.0,
             &ctx.ast_context,
-            format!("Function '{}' not found", id.1),
+            format!("{} '{}' not found", call_type, id.1),
         )),
     };
     debug!("function {:?} result {:?}", &id, &res);
 
     debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
     ctx.scope_stack.pop();
-    res.map_err(|e| {
-        custom_error_span(
-            &function_call.0,
-            &ctx.ast_context,
-            format!("in function call '{}':\n{}", id.1, e),
-        )
-    })
+    res.map_err(|e| Error::new_cause(e, id.1.to_string(), &function_call.0, &ctx.ast_context))
 }
 
 impl Evaluate for AstPair<Operand> {
-    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
+    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
         debug!("eval {:?}, eager: {}", &self, eager);
         match &self.1 {
             Operand::Integer(i) => Ok(self.map(|_| Value::I(*i))),
@@ -184,7 +198,9 @@ impl Evaluate for AstPair<Operand> {
                 }))
             }
             Operand::ValueType(vt) => Ok(self.map(|_| Value::Type(vt.clone()))),
-            Operand::FunctionCall(fc) => function_call(&self.map(|_| fc.clone()), ctx),
+            Operand::FunctionCall(fc) => {
+                function_call(&self.map(|_| fc.clone()), ctx, FunctionCallType::Function)
+            }
             Operand::FunctionInit(fi) => self.map(|_| fi.clone()).eval(ctx, eager),
             Operand::ListInit { items } => {
                 let l = Value::List {
@@ -207,10 +223,11 @@ impl Evaluate for AstPair<Operand> {
                             })
                             .collect(),
                         Err(e) => {
-                            return Err(custom_error_span(
+                            return Err(Error::new_cause(
+                                e,
+                                "list construction".to_string(),
                                 &self.0,
                                 &ctx.ast_context,
-                                format!("Error constructing list:\n{}", e),
                             ));
                         }
                     },
@@ -219,7 +236,7 @@ impl Evaluate for AstPair<Operand> {
                 Ok(self.map(|_| l.clone()))
             }
             Operand::Identifier(i) => i.eval(ctx, eager),
-            _ => Err(custom_error_span(
+            _ => Err(Error::from_span(
                 &self.0,
                 &ctx.ast_context,
                 format!("Operand {:?} cannot be evaluated", self.1),
@@ -229,7 +246,7 @@ impl Evaluate for AstPair<Operand> {
 }
 
 impl Evaluate for AstPair<FunctionInit> {
-    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
+    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
         if eager {
             let scope = ctx.scope_stack.last().unwrap().clone();
             for (param, v) in self.1.parameters.iter().zip(scope.arguments.clone()) {
@@ -249,11 +266,11 @@ impl Evaluate for AstPair<FunctionInit> {
 }
 
 impl Evaluate for AstPair<Identifier> {
-    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
+    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
         debug!("eval {:?}, eager: {}", &self, eager);
         let res = match ctx.find_definition(&self.1) {
             Some(res) => res.eval(ctx, eager),
-            None => Err(custom_error_span(
+            None => Err(Error::from_span(
                 &self.0,
                 &ctx.ast_context,
                 format!("Identifier '{}' not found", self.1),
@@ -266,7 +283,7 @@ impl Evaluate for AstPair<Identifier> {
 
 /// Evaluate lazy values
 impl Evaluate for AstPair<Value> {
-    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
+    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
         debug!("eval value {:?}, eager: {}", &self, eager);
         if !eager {
             return Ok(self.clone());
@@ -279,7 +296,7 @@ impl Evaluate for AstPair<Value> {
 }
 
 impl Evaluate for Definition {
-    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error<Rule>> {
+    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
         debug!("eval {:?}, eager: {}", &self, eager);
         match self {
             Definition::User(_, exp) => exp.eval(ctx, eager),
@@ -295,28 +312,26 @@ mod tests {
     use std::cell::RefCell;
     use std::vec;
 
-    use pest::error::Error;
-    use pest::Parser;
-
     use crate::ast::ast::{AstContext, ValueType};
     use crate::ast::ast_parser::parse_block;
+    use crate::error::Error;
     use crate::interpret::context::Context;
     use crate::interpret::evaluate::Evaluate;
     use crate::interpret::value::Value;
-    use crate::parser::{NoisParser, Rule};
+    use crate::parser::NoisParser;
 
-    fn evaluate(source: &str, eager: bool) -> Result<Value, Error<Rule>> {
+    fn evaluate(source: &str, eager: bool) -> Result<Value, Error> {
         let a_ctx = AstContext {
             input: source.to_string(),
         };
-        let pt = NoisParser::parse(Rule::program, a_ctx.input.as_str());
-        let ast = pt.and_then(|parsed| parse_block(&parsed.into_iter().next().unwrap()))?;
+        let pt = NoisParser::parse_program(a_ctx.input.as_str());
+        let ast = pt.and_then(|parsed| parse_block(&parsed))?;
         let ctx_cell = RefCell::new(Context::stdlib(a_ctx));
         let ctx = &mut ctx_cell.borrow_mut();
         ast.eval(ctx, eager).map(|a| a.1)
     }
 
-    fn evaluate_eager(source: &str) -> Result<Value, Error<Rule>> {
+    fn evaluate_eager(source: &str) -> Result<Value, Error> {
         evaluate(source, true)
     }
 

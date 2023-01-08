@@ -2,13 +2,12 @@ use std::cell::RefMut;
 use std::collections::HashMap;
 
 use log::debug;
-use pest::error::Error;
 
 use crate::ast::ast::{AstPair, Identifier};
+use crate::error::Error;
 use crate::interpret::context::{Context, Definition};
 use crate::interpret::evaluate::Evaluate;
 use crate::interpret::value::Value;
-use crate::parser::Rule;
 use crate::stdlib::{binary_operator, io, list, unary_operator, value};
 
 #[derive(Debug)]
@@ -31,12 +30,12 @@ pub trait LibFunction {
     fn name() -> String;
 
     // TODO: use patterns to validate call args
-    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error<Rule>>;
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error>;
 
     fn call_fn(
         args: Vec<AstPair<Value>>,
         ctx: &mut RefMut<Context>,
-    ) -> Result<AstPair<Value>, Error<Rule>> {
+    ) -> Result<AstPair<Value>, Error> {
         let arguments: Vec<AstPair<Value>> = args
             .iter()
             .map(|a| a.eval(ctx, false))

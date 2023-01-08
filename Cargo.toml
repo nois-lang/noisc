@@ -2,6 +2,12 @@
 name = "nois"
 version = "0.1.0"
 edition = "2021"
+description = "Dynamically typed interpreted programming language with Rust runtime"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/nois-lang/nois"
+homepage = "https://github.com/nois-lang/nois"
+keywords = ["language", "programming-language", "rust"]
 
 [dependencies]
 log = "0.4.17"

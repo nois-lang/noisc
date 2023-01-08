@@ -1,12 +1,10 @@
 use std::cell::RefMut;
 use std::collections::HashMap;
 
-use pest::error::Error;
-
 use crate::ast::ast::AstPair;
+use crate::error::Error;
 use crate::interpret::context::Context;
 use crate::interpret::value::Value;
-use crate::parser::Rule;
 use crate::stdlib::lib::{LibFunction, Package};
 
 pub fn package() -> Package {
@@ -23,7 +21,7 @@ impl LibFunction for Println {
         "println".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error<Rule>> {
+    fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         println!(
             "{}",
             args.into_iter()

@@ -1,6 +1,19 @@
+use pest::iterators::Pair;
+use pest::Parser;
+
+use crate::error::Error;
+
 #[derive(Parser)]
 #[grammar = "grammar.pest"]
 pub struct NoisParser;
+
+impl NoisParser {
+    pub fn parse_program(input: &str) -> Result<Pair<Rule>, Error> {
+        Self::parse(Rule::program, input)
+            .map(|ps| ps.into_iter().next().unwrap())
+            .map_err(|e| Error::Error(e))
+    }
+}
 
 #[cfg(test)]
 mod tests {

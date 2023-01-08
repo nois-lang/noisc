@@ -14,17 +14,17 @@ use clap::Parser as p;
 use colored::Colorize;
 use log::info;
 use log::LevelFilter::Trace;
-use pest::Parser;
 use shellexpand::tilde;
 
 use crate::ast::ast::{AstContext, AstPair, Block};
 use crate::ast::ast_parser::parse_block;
 use crate::cli::{Cli, Commands};
 use crate::interpret::interpreter::execute;
-use crate::parser::{NoisParser, Rule};
+use crate::parser::NoisParser;
 
 pub mod ast;
 pub mod cli;
+pub mod error;
 pub mod interpret;
 pub mod logger;
 pub mod parser;
@@ -73,8 +73,8 @@ fn main() {
 }
 
 pub fn parse_ast(a_ctx: &AstContext) -> AstPair<Block> {
-    let pt = NoisParser::parse(Rule::program, a_ctx.input.as_str());
-    let ast = pt.and_then(|parsed| parse_block(&parsed.into_iter().next().unwrap()));
+    let pt = NoisParser::parse_program(a_ctx.input.as_str());
+    let ast = pt.and_then(|parsed| parse_block(&parsed));
     match ast {
         Ok(a) => a,
         Err(e) => {

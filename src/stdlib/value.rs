@@ -1,13 +1,10 @@
 use std::cell::RefMut;
 use std::collections::HashMap;
 
-use pest::error::Error;
-
 use crate::ast::ast::AstPair;
-use crate::ast::util::custom_error_callee;
+use crate::error::Error;
 use crate::interpret::context::Context;
 use crate::interpret::value::Value;
-use crate::parser::Rule;
 use crate::stdlib::lib::{LibFunction, Package};
 use crate::util::vec_to_string;
 
@@ -25,12 +22,12 @@ impl LibFunction for Type {
         "type".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error<Rule>> {
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let a = args.into_iter().cloned().map(|a| a.1).collect::<Vec<_>>();
         let arg = match &a[..] {
             [a] => a,
             l => {
-                return Err(custom_error_callee(
+                return Err(Error::from_callee(
                     ctx,
                     format!(
                         "Expected (*), found {:?}",
@@ -50,7 +47,7 @@ impl LibFunction for To {
         "to".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error<Rule>> {
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let is_type_list = |l: &Vec<Value>| match l[..] {
             [Value::Type(..)] => true,
             _ => false,
@@ -60,7 +57,7 @@ impl LibFunction for To {
             [a, vt @ Value::Type(..)] => (a, vt),
             [a, vt @ Value::List { items, .. }] if is_type_list(&items) => (a, vt),
             l => {
-                return Err(custom_error_callee(
+                return Err(Error::from_callee(
                     ctx,
                     format!(
                         "Expected (*, T), found {}",
@@ -69,9 +66,14 @@ impl LibFunction for To {
                 ));
             }
         };
-        arg.to(vt).ok_or(custom_error_callee(
+        arg.to(vt).ok_or(Error::from_callee(
             ctx,
-            format!("Unable to cast value {} from {} to {}", arg, arg.value_type(), vt),
+            format!(
+                "Unable to cast value {} from {} to {}",
+                arg,
+                arg.value_type(),
+                vt
+            ),
         ))
     }
 }

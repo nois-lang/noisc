@@ -3,22 +3,20 @@ use std::fmt::Debug;
 use std::iter::zip;
 
 use log::debug;
-use pest::error::Error;
 
 use crate::ast::ast::{
     Assignee, AstPair, DestructureItem, DestructureList, Expression, Identifier, MatchClause,
     PatternItem,
 };
-use crate::ast::util::custom_error_span;
+use crate::error::Error;
 use crate::interpret::context::{Context, Definition};
 use crate::interpret::evaluate::Evaluate;
 use crate::interpret::value::Value;
-use crate::parser::Rule;
 
 pub fn match_expression(
     expression: AstPair<Expression>,
     ctx: &mut RefMut<Context>,
-) -> Result<Option<(AstPair<MatchClause>, Vec<(Identifier, Definition)>)>, Error<Rule>> {
+) -> Result<Option<(AstPair<MatchClause>, Vec<(Identifier, Definition)>)>, Error> {
     match expression.1 {
         Expression::MatchExpression {
             condition,
@@ -43,20 +41,14 @@ pub fn match_pattern_item(
     value: AstPair<Value>,
     pattern_item: AstPair<PatternItem>,
     ctx: &mut RefMut<Context>,
-) -> Result<Option<Vec<(Identifier, Definition)>>, Error<Rule>> {
+) -> Result<Option<Vec<(Identifier, Definition)>>, Error> {
     let defs = match pattern_item.1 {
         PatternItem::Hole => Some(vec![]),
         PatternItem::Integer(_)
         | PatternItem::Float(_)
         | PatternItem::Boolean(_)
         | PatternItem::String(_) => Value::try_from(pattern_item.clone())
-            .map_err(|e| {
-                custom_error_span(
-                    &pattern_item.0,
-                    &ctx.ast_context,
-                    format!("in pattern:\n{}", e),
-                )
-            })?
+            .map_err(|e| Error::from_span(&pattern_item.0, &ctx.ast_context, e))?
             .eq(&value.1)
             .then(|| vec![]),
         PatternItem::Identifier {
@@ -82,7 +74,7 @@ pub fn match_pattern_item(
                             .collect::<Result<Option<Vec<_>>, _>>()?
                             .map(|o| o.into_iter().flatten().collect::<Vec<_>>())
                     } else {
-                        return Err(custom_error_span(
+                        return Err(Error::from_span(
                             &value.0,
                             &ctx.ast_context,
                             format!(
@@ -95,11 +87,11 @@ pub fn match_pattern_item(
                 }
             }
             _ => {
-                return Err(custom_error_span(
+                return Err(Error::from_span(
                     &value.0,
                     &ctx.ast_context,
                     format!("Expected List to deconstruct, got {:?}", value.1),
-                ))
+                ));
             }
         },
     };
@@ -111,10 +103,10 @@ pub fn assign_definitions<T, F>(
     expression: T,
     ctx: &mut RefMut<Context>,
     f: F,
-) -> Result<Vec<(Identifier, Definition)>, Error<Rule>>
-where
-    T: Evaluate + Debug,
-    F: Fn(AstPair<Identifier>, T) -> Definition,
+) -> Result<Vec<(Identifier, Definition)>, Error>
+    where
+        T: Evaluate + Debug,
+        F: Fn(AstPair<Identifier>, T) -> Definition,
 {
     match assignee.clone().1 {
         Assignee::Identifier(i) => Ok(vec![(i.clone().1, f(i, expression))]),
@@ -127,7 +119,7 @@ pub fn destructure_list<T: Evaluate + Debug>(
     destructure_list: DestructureList,
     expression: T,
     ctx: &mut RefMut<Context>,
-) -> Result<Vec<(Identifier, Definition)>, Error<Rule>> {
+) -> Result<Vec<(Identifier, Definition)>, Error> {
     let e = expression.eval(ctx, true)?;
     debug!("destructuring list {:?} into {:?}", &e, &destructure_list);
     match &e.1 {
@@ -151,7 +143,7 @@ pub fn destructure_list<T: Evaluate + Debug>(
                         .collect::<Vec<_>>();
                     Ok(a)
                 } else {
-                    return Err(custom_error_span(
+                    return Err(Error::from_span(
                         &e.0,
                         &ctx.ast_context,
                         format!(
@@ -163,7 +155,7 @@ pub fn destructure_list<T: Evaluate + Debug>(
                 }
             }
         }
-        _ => Err(custom_error_span(
+        _ => Err(Error::from_span(
             &e.0,
             &ctx.ast_context,
             format!("Expected List to deconstruct, got {:?}", e.1),
@@ -175,7 +167,7 @@ pub fn destructure_item(
     destructure_item: AstPair<DestructureItem>,
     value: AstPair<Value>,
     ctx: &mut RefMut<Context>,
-) -> Result<Vec<(Identifier, Definition)>, Error<Rule>> {
+) -> Result<Vec<(Identifier, Definition)>, Error> {
     debug!(
         "destructuring item {:?} into {:?}",
         &value, &destructure_item

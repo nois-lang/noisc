@@ -1,13 +1,10 @@
 use std::cell::RefMut;
 use std::collections::HashMap;
 
-use pest::error::Error;
-
 use crate::ast::ast::{AstPair, UnaryOperator};
-use crate::ast::util::custom_error_callee;
+use crate::error::Error;
 use crate::interpret::context::Context;
 use crate::interpret::value::Value;
-use crate::parser::Rule;
 use crate::stdlib::lib::{LibFunction, Package};
 
 pub fn package() -> Package {
@@ -24,12 +21,12 @@ impl LibFunction for Spread {
         UnaryOperator::Spread.to_string()
     }
 
-    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error<Rule>> {
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let arg = &args[0];
         match &arg.1 {
             Value::List { items: l, spread } => {
                 if *spread {
-                    Err(custom_error_callee(
+                    Err(Error::from_callee(
                         ctx,
                         format!("List is already spread {}", arg.1),
                     ))
@@ -40,9 +37,9 @@ impl LibFunction for Spread {
                     })
                 }
             }
-            a => Err(custom_error_callee(
+            a => Err(Error::from_callee(
                 ctx,
-                format!("{} cannot be applied to {}, not a List", Self::name(), a),
+                format!("{} cannot be applied to {}: not a List", Self::name(), a),
             )),
         }
     }

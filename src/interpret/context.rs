@@ -3,12 +3,11 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
 use log::error;
-use pest::error::Error;
 
 use crate::ast::ast::{AstContext, AstPair, Expression, Identifier, Span, Statement};
+use crate::error::Error;
 use crate::interpret::matcher::assign_definitions;
 use crate::interpret::value::Value;
-use crate::parser::Rule;
 use crate::stdlib::lib::stdlib;
 
 #[derive(Debug, Clone)]
@@ -29,7 +28,7 @@ pub struct Scope {
 #[derive(Clone)]
 pub enum Definition {
     User(AstPair<Identifier>, AstPair<Expression>),
-    System(fn(Vec<AstPair<Value>>, &mut RefMut<Context>) -> Result<AstPair<Value>, Error<Rule>>),
+    System(fn(Vec<AstPair<Value>>, &mut RefMut<Context>) -> Result<AstPair<Value>, Error>),
     Value(AstPair<Value>),
 }
 
@@ -80,7 +79,7 @@ impl Statement {
     pub fn as_definitions(
         &self,
         ctx: &mut RefMut<Context>,
-    ) -> Result<Vec<(Identifier, Definition)>, Error<Rule>> {
+    ) -> Result<Vec<(Identifier, Definition)>, Error> {
         match self.clone() {
             Statement::Assignment {
                 assignee,
