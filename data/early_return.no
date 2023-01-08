@@ -1,0 +1,28 @@
+bar = a {
+    match a {
+        5 => return 200
+    }
+    a
+}
+
+foo = a {
+    match a {
+        5 => {
+            return bar(a)
+            // unreachable statement
+            panic()
+        },
+        6 => {
+            // result is not returned from foo
+            // not a return statement
+            bar(a)
+        }
+    }
+    // only reached when a != 5
+    a
+}
+
+main = {
+    // will out 4 200 6
+    println(foo(4), foo(5), foo(6))
+}

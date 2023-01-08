@@ -21,21 +21,10 @@ pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
         .flat_map(|s| s.1.as_definitions(ctx).unwrap())
         .collect::<HashMap<_, _>>();
     let identifier = Identifier::new("main");
-    ctx.scope_stack.push(Scope {
-        name: "global".to_string(),
-        definitions: block_defs,
-        callee: None,
-        arguments: vec![],
-        method_callee: None,
-    });
+    ctx.scope_stack
+        .push(Scope::new("global".to_string()).with_definitions(block_defs));
     debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
-    ctx.scope_stack.push(Scope {
-        name: "main".to_string(),
-        definitions: HashMap::new(),
-        callee: None,
-        arguments: vec![],
-        method_callee: None,
-    });
+    ctx.scope_stack.push(Scope::new(identifier.to_string()));
     debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
     let (main_id, main) = match ctx.find_definition(&identifier) {
         Some(Definition::User(id, exp)) => (id, exp),

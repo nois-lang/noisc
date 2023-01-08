@@ -64,13 +64,11 @@ impl LibFunction for Map {
         let res = list
             .into_iter()
             .map(|li| {
-                ctx.scope_stack.push(Scope {
-                    name: "map closure".to_string(),
-                    definitions: HashMap::new(),
-                    callee: callee.clone(),
-                    arguments: vec![args[0].map(|_| li.clone())],
-                    method_callee: None,
-                });
+                ctx.scope_stack.push(
+                    Scope::new("<closure>".to_string())
+                        .with_callee(callee.clone())
+                        .with_arguments(vec![args[0].map(|_| li.clone())]),
+                );
                 debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
 
                 let next = args[1].eval(ctx, true).map_err(|e| e)?;

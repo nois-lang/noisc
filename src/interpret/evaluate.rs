@@ -1,5 +1,4 @@
 use std::cell::RefMut;
-use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::ops::Deref;
 
@@ -43,6 +42,11 @@ impl Evaluate for AstPair<Block> {
         let mut last_res = self.map(|_| Value::Unit);
         for statement in &self.1.statements {
             last_res = statement.eval(ctx, eager)?;
+            let scope = ctx.scope_stack.last().unwrap();
+            if let Some(rv) = scope.return_value.clone() {
+                debug!("block interrupt - return, value: {:?}", &rv);
+                return Ok(statement.map(|_| rv.clone()));
+            }
         }
         Ok(last_res)
     }
@@ -50,6 +54,7 @@ impl Evaluate for AstPair<Block> {
 
 impl Evaluate for AstPair<Statement> {
     fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
+        let unit = Ok(self.map(|_| Value::Unit));
         debug!("eval {:?}, eager: {}", &self, eager);
         match &self.1 {
             Statement::Expression(exp) => exp.eval(ctx, eager),
@@ -62,9 +67,17 @@ impl Evaluate for AstPair<Statement> {
                         Definition::User(i, e)
                     })?;
                 ctx.scope_stack.last_mut().unwrap().definitions.extend(defs);
-                Ok(self.map(|_| Value::Unit))
+                unit
             }
-            Statement::Return(_) => todo!(),
+            Statement::Return(v) => {
+                let return_value = match v {
+                    Some(a) => a.eval(ctx, true)?.1,
+                    None => Value::Unit,
+                };
+                ctx.scope_stack.last_mut().unwrap().return_value = Some(return_value.clone());
+                debug!("return value: {:?}", &return_value);
+                unit
+            }
         }
     }
 }
@@ -108,19 +121,23 @@ impl Evaluate for AstPair<Expression> {
                 let p_match = match_expression(self.clone(), ctx)?;
                 match p_match {
                     Some((clause, pm)) => {
-                        ctx.scope_stack.push(Scope {
-                            name: "<match_predicate>".to_string(),
-                            definitions: pm.into_iter().collect(),
-                            callee: Some(clause.0.clone()),
-                            arguments: vec![],
-                            method_callee: None,
-                        });
+                        ctx.scope_stack.push(
+                            Scope::new("<match_predicate>".to_string())
+                                .with_definitions(pm.into_iter().collect())
+                                .with_callee(Some(clause.0.clone())),
+                        );
                         debug!("push scope {:?}", &ctx.scope_stack.last().unwrap());
 
                         let res = clause.1.block.eval(ctx, true);
+                        let rv = &ctx.scope_stack.last().unwrap().return_value.clone();
 
                         debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
                         ctx.scope_stack.pop();
+
+                        if let Some(v) = rv {
+                            debug!("propagating return from match clause, value: {:?}", v);
+                            ctx.scope_stack.last_mut().unwrap().return_value = rv.clone();
+                        }
 
                         res.map_err(|e| {
                             Error::new_cause(
@@ -159,13 +176,11 @@ pub fn function_call(
             .collect::<Result<Vec<_>, _>>()?,
     );
     let name = function_call.1.identifier.1.clone().0;
-    ctx.scope_stack.push(Scope {
-        name: name.clone(),
-        definitions: HashMap::new(),
-        callee: Some(function_call.0.clone()),
-        arguments: args.clone(),
-        method_callee: None,
-    });
+    ctx.scope_stack.push(
+        Scope::new(name.clone())
+            .with_callee(Some(function_call.0.clone()))
+            .with_arguments(args.clone()),
+    );
     debug!("push scope @{}", name);
 
     let id = &function_call.1.identifier;

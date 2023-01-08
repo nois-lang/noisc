@@ -23,6 +23,50 @@ pub struct Scope {
     pub callee: Option<Span>,
     pub arguments: Vec<AstPair<Value>>,
     pub method_callee: Option<AstPair<Value>>,
+    pub return_value: Option<Value>,
+}
+
+impl Scope {
+    pub fn new(name: String) -> Scope {
+        Scope {
+            name,
+            definitions: HashMap::default(),
+            callee: None,
+            arguments: vec![],
+            method_callee: None,
+            return_value: None,
+        }
+    }
+
+    pub fn with_definitions(&self, definitions: HashMap<Identifier, Definition>) -> Self {
+        let mut new = self.clone();
+        new.definitions = definitions;
+        new
+    }
+
+    pub fn with_callee(&self, callee: Option<Span>) -> Self {
+        let mut new = self.clone();
+        new.callee = callee;
+        new
+    }
+
+    pub fn with_arguments(&self, arguments: Vec<AstPair<Value>>) -> Self {
+        let mut new = self.clone();
+        new.arguments = arguments;
+        new
+    }
+
+    pub fn with_method_callee(&self, method_callee: Option<AstPair<Value>>) -> Self {
+        let mut new = self.clone();
+        new.method_callee = method_callee;
+        new
+    }
+
+    pub fn with_return_value(&self, return_value: Option<Value>) -> Self {
+        let mut new = self.clone();
+        new.return_value = return_value;
+        new
+    }
 }
 
 #[derive(Clone)]
@@ -44,16 +88,10 @@ impl Debug for Definition {
 
 impl Context {
     pub fn stdlib(a_ctx: AstContext) -> Context {
-        let stdlib = stdlib();
+        let defs = stdlib().into_iter().flat_map(|p| p.definitions).collect();
         Context {
             ast_context: a_ctx,
-            scope_stack: vec![Scope {
-                name: "stdlib".to_string(),
-                definitions: stdlib.into_iter().flat_map(|p| p.definitions).collect(),
-                callee: None,
-                arguments: vec![],
-                method_callee: None,
-            }],
+            scope_stack: vec![Scope::new("stdlib".to_string()).with_definitions(defs)],
         }
     }
 
