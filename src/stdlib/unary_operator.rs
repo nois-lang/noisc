@@ -39,7 +39,7 @@ impl LibFunction for Spread {
             }
             a => Err(Error::from_callee(
                 ctx,
-                format!("{} cannot be applied to {}: not a List", Self::name(), a),
+                format!("Incompatible operand: {}{}", Self::name(), a.value_type()),
             )),
         }
     }

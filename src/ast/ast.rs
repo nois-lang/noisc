@@ -58,6 +58,7 @@ pub enum Operand {
 
 #[derive(Debug, PartialOrd, Clone, Eq, Hash)]
 pub enum ValueType {
+    // TODO: differentiation between unit type and unit value initialization
     Unit,
     Integer,
     Float,

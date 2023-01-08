@@ -244,7 +244,7 @@ impl Evaluate for AstPair<Operand> {
                         Err(e) => {
                             return Err(Error::new_cause(
                                 e,
-                                "list construction".to_string(),
+                                "<list construction>".to_string(),
                                 &self.0,
                                 &ctx.ast_context,
                             ));
@@ -319,7 +319,7 @@ impl Evaluate for Definition {
         debug!("eval {:?}, eager: {}", &self, eager);
         match self {
             Definition::User(_, exp) => exp.eval(ctx, eager),
-            // TODO: check if it's ok to clone args
+            // TODO: check if it's ok to clone args since fn might want to modify them
             Definition::System(f) => f(ctx.scope_stack.last().unwrap().clone().arguments, ctx),
             Definition::Value(v) => Ok(v.clone()),
         }

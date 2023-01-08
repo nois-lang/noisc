@@ -82,26 +82,26 @@ impl Value {
             (arg, Value::Type(t)) => match (arg, t) {
                 // cast from [C]
                 (Value::List { .. }, t)
-                    if arg_type
-                        == Value::List {
-                            items: vec![Value::Type(ValueType::Char)],
-                            spread: false,
-                        } =>
-                {
-                    let s = arg.to_string();
-                    match t {
-                        ValueType::Unit => Some(Value::Unit),
-                        ValueType::Integer => s.parse().map(|i| Value::I(i)).ok(),
-                        ValueType::Float => s.parse().map(|f| Value::F(f)).ok(),
-                        ValueType::Char => s.parse().map(|c| Value::C(c)).ok(),
-                        ValueType::Boolean => match s.as_str() {
-                            "True" => Some(Value::B(true)),
-                            "False" => Some(Value::B(false)),
+                if arg_type
+                    == Value::List {
+                    items: vec![Value::Type(ValueType::Char)],
+                    spread: false,
+                } =>
+                    {
+                        let s = arg.to_string();
+                        match t {
+                            ValueType::Unit => Some(Value::Unit),
+                            ValueType::Integer => s.parse().map(|i| Value::I(i)).ok(),
+                            ValueType::Float => s.parse().map(|f| Value::F(f)).ok(),
+                            ValueType::Char => s.parse().map(|c| Value::C(c)).ok(),
+                            ValueType::Boolean => match s.as_str() {
+                                "True" => Some(Value::B(true)),
+                                "False" => Some(Value::B(false)),
+                                _ => None,
+                            },
                             _ => None,
-                        },
-                        _ => None,
+                        }
                     }
-                }
                 // mono-type casts
                 _ => match (arg, t) {
                     (Value::I(i), ValueType::Float) => {
@@ -205,20 +205,63 @@ impl ops::Add for Value {
     type Output = Result<Value, String>;
 
     fn add(self, rhs: Self) -> Self::Output {
+        fn push_end(a: &Vec<Value>, b: &Value) -> Value {
+            Value::List {
+                items: a
+                    .into_iter()
+                    .cloned()
+                    .chain(vec![b.clone()].into_iter())
+                    .collect(),
+                spread: false,
+            }
+        }
+        fn push_start(a: &Value, b: &Vec<Value>) -> Value {
+            Value::List {
+                items: vec![a.clone()]
+                    .into_iter()
+                    .chain(b.clone().into_iter())
+                    .collect(),
+                spread: false,
+            }
+        }
         fn _add(a: &Value, b: &Value) -> Option<Value> {
             match (a, b) {
                 (Value::I(i1), Value::I(i2)) => Some(Value::I(i1 + i2)),
                 (Value::F(f1), Value::F(f2)) => Some(Value::F(f1 + f2)),
                 (Value::I(i1), Value::F(f2)) => Some(Value::F(*i1 as f64 + f2)),
-                // TODO: list push & concat
+                (
+                    Value::List {
+                        items: l1,
+                        spread: s1,
+                    },
+                    Value::List {
+                        items: l2,
+                        spread: s2,
+                    },
+                ) => match (s1, s2) {
+                    _ if s1 == s2 => Some(Value::List {
+                        items: l1
+                            .clone()
+                            .into_iter()
+                            .chain(l2.clone().into_iter())
+                            .collect(),
+                        spread: false,
+                    }),
+                    (true, false) => Some(push_end(l1, b)),
+                    (false, true) => Some(push_start(a, l2)),
+                    _ => todo!(),
+                },
+                (Value::List { items: l1, .. }, _) => Some(push_end(l1, b)),
+                (_, Value::List { items: l2, .. }) => Some(push_start(a, l2)),
                 _ => None,
             }
         }
         match _add(&self, &rhs).or(_add(&rhs, &self)) {
             Some(r) => Ok(r),
             None => Err(format!(
-                "incompatible operands for '+': [{:?}, {:?}]",
-                self, rhs
+                "Incompatible operands: {} + {}",
+                self.value_type(),
+                rhs.value_type()
             )),
         }
     }
@@ -239,8 +282,9 @@ impl ops::Sub for Value {
         match _sub(&self, &rhs).or(_sub(&rhs, &self)) {
             Some(r) => Ok(r),
             None => Err(format!(
-                "incompatible operands for '-': [{:?}, {:?}]",
-                self, rhs
+                "Incompatible operands: {} - {}",
+                self.value_type(),
+                rhs.value_type()
             )),
         }
     }
@@ -261,8 +305,9 @@ impl ops::Rem for Value {
         match _rem(&self, &rhs).or(_rem(&rhs, &self)) {
             Some(r) => Ok(r),
             None => Err(format!(
-                "incompatible operands for '-': [{:?}, {:?}]",
-                self, rhs
+                "Incompatible operands: {} % {}",
+                self.value_type(),
+                rhs.value_type()
             )),
         }
     }

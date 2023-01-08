@@ -10,7 +10,7 @@ use crate::stdlib::lib::{LibFunction, Package};
 pub fn package() -> Package {
     Package {
         name: "io".to_string(),
-        definitions: HashMap::from([Println::definition()]),
+        definitions: HashMap::from([Println::definition(), Debug::definition()]),
     }
 }
 
@@ -26,6 +26,25 @@ impl LibFunction for Println {
             "{}",
             args.into_iter()
                 .map(|a| a.1.to_string())
+                .collect::<Vec<_>>()
+                .join(" ")
+        );
+        Ok(Value::Unit)
+    }
+}
+
+pub struct Debug;
+
+impl LibFunction for Debug {
+    fn name() -> String {
+        "debug".to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        println!(
+            "{}",
+            args.into_iter()
+                .map(|a| format!("{:?}", a.1))
                 .collect::<Vec<_>>()
                 .join(" ")
         );

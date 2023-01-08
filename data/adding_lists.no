@@ -1,0 +1,28 @@
+main = {
+    // + on List and List acts as concatenating lists
+    println([1] + [2])
+    println([1] + [2, ..[3, 4]])
+    
+    // + on I and F operands acts as addition
+    println(1 + 2)
+    
+    // + on List and !List acts as appending list to the end
+    println([1] + 2)
+    
+    // + on !List and List acts as appending list to the start
+    println(1 + [2])
+    println([0, 1] + [2, 3])
+    
+    // + on List and ..List acts as adding whole list at the start
+    println([0, 1] + ..[2, 3])
+    
+    // + on ..List and List acts as adding whole list at the end
+    println(..[0, 1] + [2, 3])
+    
+    // + on two spread Lists acts as contact
+    println(..[0, 1] + ..[2, 3])
+    
+    // + on other types is not defined
+    //println((a -> a) + (a -> a))
+    //println(() + ())
+}
