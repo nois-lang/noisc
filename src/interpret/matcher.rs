@@ -66,7 +66,7 @@ pub fn match_pattern_item(
         PatternItem::Identifier {
             identifier: _,
             spread: true,
-        } => todo!("pattern matching"),
+        } => todo!("spread matching"),
         PatternItem::PatternList(items) => match &value.1 {
             Value::List { items: vs, .. } => {
                 if let PatternItem::Identifier { spread: true, .. } = &items.first().unwrap().1 {
