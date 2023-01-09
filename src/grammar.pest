@@ -122,8 +122,8 @@ string_single                 = _{ QUOTE ~ inner_string ~ QUOTE }
 string_double                 = _{ DOUBLE_QUOTE ~ inner_string ~ DOUBLE_QUOTE }
 inner_string                  = @{ char* }
 char                          = _{
-  !("\"" | "\\" | "'" | "'") ~ ANY
-  | "\\" ~ ("\"" | "\\" | "/" | "n" | "r" | "t")
+  !("\"" | "\'" | "\\" | "'") ~ ANY
+  | "\\" ~ ("\"" | "\'" | "\\" | "/" | "n" | "r" | "t")
   | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
 }
 RETURN_KEYWORD                = _{ "return" }
