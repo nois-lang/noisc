@@ -8,7 +8,8 @@ use crate::error::Error;
 use crate::interpret::context::{Context, Definition};
 use crate::interpret::evaluate::Evaluate;
 use crate::interpret::value::Value;
-use crate::stdlib::{binary_operator, io, list, unary_operator, value};
+use crate::stdlib::*;
+use crate::util::vec_to_string_paren;
 
 #[derive(Debug)]
 pub struct Package {
@@ -23,6 +24,7 @@ pub fn stdlib() -> Vec<Package> {
         unary_operator::package(),
         list::package(),
         value::package(),
+        option::package(),
     ]
 }
 
@@ -65,4 +67,19 @@ pub trait LibFunction {
             Definition::System(|args, ctx| Self::call_fn(args, ctx)),
         )
     }
+}
+
+pub fn arg_error(
+    expected_type: &str,
+    args: &Vec<AstPair<Value>>,
+    ctx: &mut RefMut<Context>,
+) -> Error {
+    Error::from_callee(
+        ctx,
+        format!(
+            "Expected {}, found {}",
+            expected_type,
+            vec_to_string_paren(args.into_iter().map(|l| l.1.value_type()).collect())
+        ),
+    )
 }

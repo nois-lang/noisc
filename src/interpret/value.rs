@@ -121,6 +121,13 @@ impl Value {
             (_, _) => None,
         }
     }
+
+    pub fn list(vec: Vec<Value>) -> Value {
+        Self::List {
+            items: vec,
+            spread: false,
+        }
+    }
 }
 
 impl Hash for Value {
@@ -249,7 +256,7 @@ impl ops::Add for Value {
                     }),
                     (true, false) => Some(push_end(l1, b)),
                     (false, true) => Some(push_start(a, l2)),
-                    _ => todo!(),
+                    _ => unreachable!(),
                 },
                 (Value::List { items: l1, .. }, _) => Some(push_end(l1, b)),
                 (_, Value::List { items: l2, .. }) => Some(push_start(a, l2)),

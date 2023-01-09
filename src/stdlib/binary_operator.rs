@@ -7,6 +7,7 @@ use crate::interpret::context::Context;
 use crate::interpret::value::Value;
 use crate::stdlib::lib::{LibFunction, Package};
 
+// TODO: dub every operator as callable function e.g. add() and eq()
 pub fn package() -> Package {
     Package {
         name: "binary_operator".to_string(),

@@ -5,8 +5,7 @@ use crate::ast::ast::AstPair;
 use crate::error::Error;
 use crate::interpret::context::Context;
 use crate::interpret::value::Value;
-use crate::stdlib::lib::{LibFunction, Package};
-use crate::util::vec_to_string;
+use crate::stdlib::lib::{arg_error, LibFunction, Package};
 
 pub fn package() -> Package {
     Package {
@@ -26,15 +25,7 @@ impl LibFunction for Type {
         let a = args.into_iter().cloned().map(|a| a.1).collect::<Vec<_>>();
         let arg = match &a[..] {
             [a] => a,
-            l => {
-                return Err(Error::from_callee(
-                    ctx,
-                    format!(
-                        "Expected (*), found {:?}",
-                        l.iter().map(|a| a.value_type()).collect::<Vec<_>>()
-                    ),
-                ));
-            }
+            _ => return Err(arg_error("(*)", args, ctx)),
         };
         Ok(arg.value_type())
     }
@@ -56,15 +47,7 @@ impl LibFunction for To {
         let (arg, vt) = match &a[..] {
             [a, vt @ Value::Type(..)] => (a, vt),
             [a, vt @ Value::List { items, .. }] if is_type_list(&items) => (a, vt),
-            l => {
-                return Err(Error::from_callee(
-                    ctx,
-                    format!(
-                        "Expected (*, T), found {}",
-                        vec_to_string(l.iter().map(|a| a.value_type()).collect::<Vec<_>>())
-                    ),
-                ));
-            }
+            _ => return Err(arg_error("(*, T)", args, ctx)),
         };
         arg.to(vt).ok_or(Error::from_callee(
             ctx,
