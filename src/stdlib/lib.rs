@@ -77,7 +77,7 @@ pub fn arg_error(
     Error::from_callee(
         ctx,
         format!(
-            "Expected {}, found {}",
+            "expected {}, found {}",
             expected_type,
             vec_to_string_paren(args.into_iter().map(|l| l.1.value_type()).collect())
         ),

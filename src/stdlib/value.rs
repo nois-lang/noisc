@@ -52,7 +52,7 @@ impl LibFunction for To {
         arg.to(vt).ok_or(Error::from_callee(
             ctx,
             format!(
-                "Unable to cast value {} from {} to {}",
+                "unable to cast value {} from {} to {}",
                 arg,
                 arg.value_type(),
                 vt

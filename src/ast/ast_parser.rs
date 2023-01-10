@@ -146,7 +146,7 @@ pub fn parse_complex_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>
                     {
                         return Err(Error::from_pair(
                             pair,
-                            format!("Operators {} and {} cannot be chained", o1.1, o2.1),
+                            format!("operators {} and {} cannot be chained", o1.1, o2.1),
                         ));
                     }
                     if (o1.1.associativity() != Associativity::Right

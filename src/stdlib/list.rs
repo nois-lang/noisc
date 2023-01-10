@@ -138,7 +138,7 @@ impl LibFunction for Filter {
                     Value::B(b) => Ok(b),
                     v => Err(Error::from_callee(
                         ctx,
-                        format!("Expected B, found {}", v.value_type()),
+                        format!("expected B, found {}", v.value_type()),
                     )),
                 }?;
                 Ok((li, b))

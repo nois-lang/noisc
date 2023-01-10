@@ -82,26 +82,26 @@ impl Value {
             (arg, Value::Type(t)) => match (arg, t) {
                 // cast from [C]
                 (Value::List { .. }, t)
-                if arg_type
-                    == Value::List {
-                    items: vec![Value::Type(ValueType::Char)],
-                    spread: false,
-                } =>
-                    {
-                        let s = arg.to_string();
-                        match t {
-                            ValueType::Unit => Some(Value::Unit),
-                            ValueType::Integer => s.parse().map(|i| Value::I(i)).ok(),
-                            ValueType::Float => s.parse().map(|f| Value::F(f)).ok(),
-                            ValueType::Char => s.parse().map(|c| Value::C(c)).ok(),
-                            ValueType::Boolean => match s.as_str() {
-                                "True" => Some(Value::B(true)),
-                                "False" => Some(Value::B(false)),
-                                _ => None,
-                            },
+                    if arg_type
+                        == Value::List {
+                            items: vec![Value::Type(ValueType::Char)],
+                            spread: false,
+                        } =>
+                {
+                    let s = arg.to_string();
+                    match t {
+                        ValueType::Unit => Some(Value::Unit),
+                        ValueType::Integer => s.parse().map(|i| Value::I(i)).ok(),
+                        ValueType::Float => s.parse().map(|f| Value::F(f)).ok(),
+                        ValueType::Char => s.parse().map(|c| Value::C(c)).ok(),
+                        ValueType::Boolean => match s.as_str() {
+                            "True" => Some(Value::B(true)),
+                            "False" => Some(Value::B(false)),
                             _ => None,
-                        }
+                        },
+                        _ => None,
                     }
+                }
                 // mono-type casts
                 _ => match (arg, t) {
                     (Value::I(i), ValueType::Float) => {
@@ -201,7 +201,7 @@ impl TryFrom<AstPair<PatternItem>> for Value {
                 spread: false,
             }),
             _ => Err(format!(
-                "Unable to convert pattern item {:?} into value",
+                "unable to convert pattern item {:?} into value",
                 a.1
             )),
         }
@@ -266,7 +266,7 @@ impl ops::Add for Value {
         match _add(&self, &rhs).or(_add(&rhs, &self)) {
             Some(r) => Ok(r),
             None => Err(format!(
-                "Incompatible operands: {} + {}",
+                "incompatible operands: {} + {}",
                 self.value_type(),
                 rhs.value_type()
             )),
@@ -289,7 +289,7 @@ impl ops::Sub for Value {
         match _sub(&self, &rhs).or(_sub(&rhs, &self)) {
             Some(r) => Ok(r),
             None => Err(format!(
-                "Incompatible operands: {} - {}",
+                "incompatible operands: {} - {}",
                 self.value_type(),
                 rhs.value_type()
             )),
@@ -312,7 +312,7 @@ impl ops::Rem for Value {
         match _rem(&self, &rhs).or(_rem(&rhs, &self)) {
             Some(r) => Ok(r),
             None => Err(format!(
-                "Incompatible operands: {} % {}",
+                "incompatible operands: {} % {}",
                 self.value_type(),
                 rhs.value_type()
             )),

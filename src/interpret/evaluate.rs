@@ -25,8 +25,8 @@ impl Display for FunctionCallType {
             f,
             "{}",
             match self {
-                FunctionCallType::Function => "Function",
-                FunctionCallType::Operator => "Operator",
+                FunctionCallType::Function => "function",
+                FunctionCallType::Operator => "operator",
             }
         )
     }
@@ -258,7 +258,7 @@ impl Evaluate for AstPair<Operand> {
             _ => Err(Error::from_span(
                 &self.0,
                 &ctx.ast_context,
-                format!("Operand {:?} cannot be evaluated", self.1),
+                format!("operand {:?} cannot be evaluated", self.1),
             )),
         }
     }
@@ -292,7 +292,7 @@ impl Evaluate for AstPair<Identifier> {
             None => Err(Error::from_span(
                 &self.0,
                 &ctx.ast_context,
-                format!("Identifier '{}' not found", self.1),
+                format!("identifier '{}' not found", self.1),
             )),
         };
         debug!("result {:?}: {:?}", &self, res);
@@ -506,7 +506,7 @@ mod tests {
                 items: vec![Value::List {
                     items: vec![Value::Type(ValueType::Char)],
                     spread: false,
-                },],
+                }, ],
                 spread: false,
             })
         );

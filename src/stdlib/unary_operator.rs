@@ -28,7 +28,7 @@ impl LibFunction for Spread {
                 if *spread {
                     Err(Error::from_callee(
                         ctx,
-                        format!("List is already spread {}", arg.1),
+                        format!("list is already spread {}", arg.1),
                     ))
                 } else {
                     Ok(Value::List {
@@ -39,7 +39,7 @@ impl LibFunction for Spread {
             }
             a => Err(Error::from_callee(
                 ctx,
-                format!("Incompatible operand: {}{}", Self::name(), a.value_type()),
+                format!("incompatible operand: {}{}", Self::name(), a.value_type()),
             )),
         }
     }

@@ -56,9 +56,15 @@ pub fn match_pattern_item(
             spread: false,
         } => Some(vec![(id.1, Definition::Value(value))]),
         PatternItem::Identifier {
-            identifier: _,
+            identifier: id,
             spread: true,
-        } => todo!("spread matching"),
+        } => {
+            return Err(Error::from_span(
+                &pattern_item.0,
+                &ctx.ast_context,
+                format!("unexpected spread operator"),
+            ));
+        }
         PatternItem::PatternList(items) => match &value.1 {
             Value::List { items: vs, .. } => {
                 if let PatternItem::Identifier { spread: true, .. } = &items.first().unwrap().1 {
@@ -78,7 +84,7 @@ pub fn match_pattern_item(
                             &value.0,
                             &ctx.ast_context,
                             format!(
-                                "Incompatible deconstruction length: expected {}, got {}",
+                                "incompatible deconstruction length: expected {}, got {}",
                                 items.len(),
                                 vs.len()
                             ),
@@ -90,7 +96,7 @@ pub fn match_pattern_item(
                 return Err(Error::from_span(
                     &value.0,
                     &ctx.ast_context,
-                    format!("Expected List to deconstruct, got {:?}", value.1),
+                    format!("expected List to deconstruct, got {:?}", value.1),
                 ));
             }
         },
@@ -104,9 +110,9 @@ pub fn assign_definitions<T, F>(
     ctx: &mut RefMut<Context>,
     f: F,
 ) -> Result<Vec<(Identifier, Definition)>, Error>
-where
-    T: Evaluate + Debug,
-    F: Fn(AstPair<Identifier>, T) -> Definition,
+    where
+        T: Evaluate + Debug,
+        F: Fn(AstPair<Identifier>, T) -> Definition,
 {
     match assignee.clone().1 {
         Assignee::Identifier(i) => Ok(vec![(i.clone().1, f(i, expression))]),
@@ -147,7 +153,7 @@ pub fn destructure_list<T: Evaluate + Debug>(
                         &e.0,
                         &ctx.ast_context,
                         format!(
-                            "Incompatible deconstruction length: expected {}, got {}",
+                            "incompatible deconstruction length: expected {}, got {}",
                             destructure_list.0.len(),
                             vs.len()
                         ),
@@ -158,7 +164,7 @@ pub fn destructure_list<T: Evaluate + Debug>(
         _ => Err(Error::from_span(
             &e.0,
             &ctx.ast_context,
-            format!("Expected List to deconstruct, got {:?}", e.1),
+            format!("expected List to deconstruct, got {:?}", e.1),
         )),
     }
 }
