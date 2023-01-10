@@ -6,7 +6,7 @@ use log::error;
 
 use crate::ast::ast::{AstContext, AstPair, Expression, Identifier, Span, Statement};
 use crate::error::Error;
-use crate::interpret::matcher::assign_definitions;
+use crate::interpret::destructure::assign_definitions;
 use crate::interpret::value::Value;
 use crate::stdlib::lib::stdlib;
 

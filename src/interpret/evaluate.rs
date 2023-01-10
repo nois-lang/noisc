@@ -10,7 +10,8 @@ use crate::ast::ast::{
 };
 use crate::error::Error;
 use crate::interpret::context::{Context, Definition, Scope};
-use crate::interpret::matcher::{assign_definitions, match_expression};
+use crate::interpret::destructure::assign_definitions;
+use crate::interpret::matcher::match_expression;
 use crate::interpret::value::Value;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -506,7 +507,7 @@ mod tests {
                 items: vec![Value::List {
                     items: vec![Value::Type(ValueType::Char)],
                     spread: false,
-                }, ],
+                },],
                 spread: false,
             })
         );

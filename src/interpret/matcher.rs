@@ -1,13 +1,9 @@
 use std::cell::RefMut;
-use std::fmt::Debug;
 use std::iter::zip;
 
 use log::debug;
 
-use crate::ast::ast::{
-    Assignee, AstPair, DestructureItem, DestructureList, Expression, Identifier, MatchClause,
-    PatternItem,
-};
+use crate::ast::ast::{AstPair, Expression, Identifier, MatchClause, PatternItem};
 use crate::error::Error;
 use crate::interpret::context::{Context, Definition};
 use crate::interpret::evaluate::Evaluate;
@@ -56,7 +52,7 @@ pub fn match_pattern_item(
             spread: false,
         } => Some(vec![(id.1, Definition::Value(value))]),
         PatternItem::Identifier {
-            identifier: id,
+            identifier: _,
             spread: true,
         } => {
             return Err(Error::from_span(
@@ -65,131 +61,102 @@ pub fn match_pattern_item(
                 format!("unexpected spread operator"),
             ));
         }
-        PatternItem::PatternList(items) => match &value.1 {
-            Value::List { items: vs, .. } => {
-                if let PatternItem::Identifier { spread: true, .. } = &items.first().unwrap().1 {
-                    todo!("spread matching")
-                } else if let PatternItem::Identifier { spread: true, .. } =
-                    &items.last().unwrap().1
-                {
-                    todo!("spread matching")
-                } else {
-                    if items.len() == vs.len() {
-                        zip(items, vs)
-                            .map(|(i, v)| match_pattern_item(value.map(|_| v.clone()), i, ctx))
-                            .collect::<Result<Option<Vec<_>>, _>>()?
-                            .map(|o| o.into_iter().flatten().collect::<Vec<_>>())
-                    } else {
-                        return Err(Error::from_span(
-                            &value.0,
+        PatternItem::PatternList(items) => {
+            return match &value.1 {
+                Value::List { items: vs, .. } => {
+                    let spread_items = items
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(i, id)| match &id.1 {
+                            PatternItem::Identifier {
+                                identifier,
+                                spread: true,
+                            } => Some((i, identifier)),
+                            _ => None,
+                        })
+                        .collect::<Vec<_>>();
+                    match spread_items.len() {
+                        0 => match_list(&value, ctx, items, vs),
+                        1 => match_list_with_spread(&value, ctx, items.clone(), vs, spread_items),
+                        _ => Err(Error::from_span(
+                            &pattern_item.0,
                             &ctx.ast_context,
-                            format!(
-                                "incompatible deconstruction length: expected {}, got {}",
-                                items.len(),
-                                vs.len()
-                            ),
-                        ));
+                            format!("ambiguous spreading logic: single spread identifier allowed"),
+                        )),
                     }
                 }
-            }
-            _ => {
-                return Err(Error::from_span(
+                _ => Err(Error::from_span(
                     &value.0,
                     &ctx.ast_context,
-                    format!("expected List to deconstruct, got {:?}", value.1),
-                ));
-            }
-        },
+                    format!("expected [*] to deconstruct, got {:?}", value.1),
+                )),
+            };
+        }
     };
     Ok(defs)
 }
 
-pub fn assign_definitions<T, F>(
-    assignee: AstPair<Assignee>,
-    expression: T,
+fn match_list(
+    value: &AstPair<Value>,
     ctx: &mut RefMut<Context>,
-    f: F,
-) -> Result<Vec<(Identifier, Definition)>, Error>
-    where
-        T: Evaluate + Debug,
-        F: Fn(AstPair<Identifier>, T) -> Definition,
-{
-    match assignee.clone().1 {
-        Assignee::Identifier(i) => Ok(vec![(i.clone().1, f(i, expression))]),
-        Assignee::Hole => Ok(vec![]),
-        Assignee::DestructureList(dl) => destructure_list(dl, expression, ctx),
-    }
-}
-
-pub fn destructure_list<T: Evaluate + Debug>(
-    destructure_list: DestructureList,
-    expression: T,
-    ctx: &mut RefMut<Context>,
-) -> Result<Vec<(Identifier, Definition)>, Error> {
-    let e = expression.eval(ctx, true)?;
-    debug!("destructuring list {:?} into {:?}", &e, &destructure_list);
-    match &e.1 {
-        Value::List { items: vs, .. } => {
-            if let DestructureItem::Identifier { spread: true, .. } =
-                &destructure_list.0.first().unwrap().1
-            {
-                todo!("spread destructuring")
-            } else if let DestructureItem::Identifier { spread: true, .. } =
-                &destructure_list.0.last().unwrap().1
-            {
-                todo!("spread destructuring")
-            } else {
-                if destructure_list.0.len() == vs.len() {
-                    let a = zip(destructure_list.0, vs)
-                        .map(|(i, v)| destructure_item(i, e.map(|_| v.clone()), ctx))
-                        .collect::<Result<Vec<_>, _>>()?
-                        .iter()
-                        .flatten()
-                        .cloned()
-                        .collect::<Vec<_>>();
-                    Ok(a)
-                } else {
-                    return Err(Error::from_span(
-                        &e.0,
-                        &ctx.ast_context,
-                        format!(
-                            "incompatible deconstruction length: expected {}, got {}",
-                            destructure_list.0.len(),
-                            vs.len()
-                        ),
-                    ));
-                }
-            }
-        }
-        _ => Err(Error::from_span(
-            &e.0,
+    items: Vec<AstPair<PatternItem>>,
+    vs: &Vec<Value>,
+) -> Result<Option<Vec<(Identifier, Definition)>>, Error> {
+    if items.len() == vs.len() {
+        Ok(zip(items, vs)
+            .map(|(i, v)| match_pattern_item(value.map(|_| v.clone()), i, ctx))
+            .collect::<Result<Option<Vec<_>>, _>>()?
+            .map(|o| o.into_iter().flatten().collect::<Vec<_>>()))
+    } else {
+        Err(Error::from_span(
+            &value.0,
             &ctx.ast_context,
-            format!("expected List to deconstruct, got {:?}", e.1),
-        )),
+            format!(
+                "incompatible deconstruction length: expected {}, got {}",
+                items.len(),
+                vs.len()
+            ),
+        ))
     }
 }
 
-pub fn destructure_item(
-    destructure_item: AstPair<DestructureItem>,
-    value: AstPair<Value>,
+fn match_list_with_spread(
+    value: &AstPair<Value>,
     ctx: &mut RefMut<Context>,
-) -> Result<Vec<(Identifier, Definition)>, Error> {
-    debug!(
-        "destructuring item {:?} into {:?}",
-        &value, &destructure_item
-    );
-    match destructure_item.1 {
-        DestructureItem::Hole => Ok(vec![]),
-        DestructureItem::Identifier {
-            identifier,
-            spread: false,
-        } => Ok(vec![(identifier.1, Definition::Value(value))]),
-        DestructureItem::Identifier {
-            identifier: _,
-            spread: true,
-        } => {
-            todo!("spread destructuring")
-        }
-        DestructureItem::List(ls) => destructure_list(ls, value, ctx),
-    }
+    items: Vec<AstPair<PatternItem>>,
+    vs: &Vec<Value>,
+    spread_items: Vec<(usize, &AstPair<Identifier>)>,
+) -> Result<Option<Vec<(Identifier, Definition)>>, Error> {
+    let spread_item = *spread_items.first().unwrap();
+    let before_pairs = items
+        .iter()
+        .take(spread_item.0)
+        .cloned()
+        .zip(vs.iter().take(spread_item.0))
+        .map(|(i, v)| match_pattern_item(value.map(|_| v.clone()), i, ctx))
+        .collect::<Result<Option<Vec<_>>, _>>()?
+        .map(|o| o.into_iter().flatten().collect::<Vec<_>>());
+    let spread_value_count = vs.len() - (items.len() - 1);
+    let spread_values = vs
+        .iter()
+        .skip(spread_item.0)
+        .take(spread_value_count)
+        .cloned()
+        .collect::<Vec<_>>();
+    let spread_pair = Some(vec![(
+        spread_item.1.clone().1,
+        Definition::Value(value.map(|_| Value::list(spread_values.clone()))),
+    )]);
+    let after_pairs = items
+        .iter()
+        .skip(spread_item.0 + 1)
+        .cloned()
+        .zip(vs.iter().skip(spread_value_count + spread_item.0))
+        .map(|(i, v)| match_pattern_item(value.map(|_| v.clone()), i, ctx))
+        .collect::<Result<Option<Vec<_>>, _>>()?
+        .map(|o| o.into_iter().flatten().collect::<Vec<_>>());
+    Ok(vec![before_pairs, spread_pair, after_pairs]
+        .into_iter()
+        .collect::<Option<Vec<_>>>()
+        .map(|l| l.into_iter().flatten().collect()))
 }

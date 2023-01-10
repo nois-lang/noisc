@@ -200,8 +200,8 @@ pub fn parse_complex_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>
 }
 
 pub fn parse_operator<'a, T>(pair: &'a Pair<'_, Rule>) -> Result<AstPair<T>, Error>
-    where
-        T: TryFrom<Pair<'a, Rule>, Error=Error>,
+where
+    T: TryFrom<Pair<'a, Rule>, Error = Error>,
 {
     let c = first_child(pair).unwrap();
     match pair.as_rule() {
@@ -1101,7 +1101,7 @@ Block {
         let source = r#"a == b <= c"#;
         let file = &NoisParser::parse(Rule::program, source).unwrap();
         let err = parse_file(file).unwrap_err();
-        assert_eq!(err.message(), "Operators <= and == cannot be chained");
+        assert_eq!(err.message(), "operators <= and == cannot be chained");
     }
 
     #[test]
