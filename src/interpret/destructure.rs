@@ -4,7 +4,7 @@ use std::iter::zip;
 
 use log::debug;
 
-use crate::ast::ast::{Assignee, AstPair, DestructureItem, DestructureList, Identifier};
+use crate::ast::ast::{Assignee, AstPair, DestructureItem, DestructureList, Identifier, Span};
 use crate::error::Error;
 use crate::interpret::context::{Context, Definition};
 use crate::interpret::evaluate::Evaluate;
@@ -23,47 +23,65 @@ where
     match assignee.clone().1 {
         Assignee::Identifier(i) => Ok(vec![(i.clone().1, f(i, expression))]),
         Assignee::Hole => Ok(vec![]),
-        Assignee::DestructureList(dl) => destructure_list(dl, expression, ctx),
+        Assignee::DestructureList(dl) => destructure_list(dl, expression, assignee.clone().0, ctx),
     }
 }
 
 pub fn destructure_list<T: Evaluate + Debug>(
     destructure_list: DestructureList,
     expression: T,
+    span: Span,
     ctx: &mut RefMut<Context>,
 ) -> Result<Vec<(Identifier, Definition)>, Error> {
     let e = expression.eval(ctx, true)?;
     debug!("destructuring list {:?} into {:?}", &e, &destructure_list);
     match &e.1 {
         Value::List { items: vs, .. } => {
-            if let DestructureItem::Identifier { spread: true, .. } =
-                &destructure_list.0.first().unwrap().1
-            {
-                todo!("spread destructuring")
-            } else if let DestructureItem::Identifier { spread: true, .. } =
-                &destructure_list.0.last().unwrap().1
-            {
-                todo!("spread destructuring")
-            } else {
-                if destructure_list.0.len() == vs.len() {
-                    let a = zip(destructure_list.0, vs)
-                        .map(|(i, v)| destructure_item(i, e.map(|_| v.clone()), ctx))
-                        .collect::<Result<Vec<_>, _>>()?
-                        .into_iter()
-                        .flatten()
-                        .collect::<Vec<_>>();
-                    Ok(a)
-                } else {
-                    return Err(Error::from_span(
-                        &e.0,
-                        &ctx.ast_context,
-                        format!(
-                            "incompatible deconstruction length: expected {}, got {}",
-                            destructure_list.0.len(),
-                            vs.len()
-                        ),
-                    ));
+            let spread_items = destructure_list
+                .0
+                .iter()
+                .enumerate()
+                .filter_map(|(i, id)| match &id.1 {
+                    DestructureItem::Identifier {
+                        identifier,
+                        spread: true,
+                    } => Some((i, identifier)),
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
+            match spread_items.len() {
+                0 => {
+                    if destructure_list.0.len() == vs.len() {
+                        Ok(zip(destructure_list.0, vs)
+                            .map(|(i, v)| destructure_item(i, e.map(|_| v.clone()), ctx))
+                            .collect::<Result<Vec<_>, _>>()?
+                            .into_iter()
+                            .flatten()
+                            .collect::<Vec<_>>())
+                    } else {
+                        return Err(Error::from_span(
+                            &e.0,
+                            &ctx.ast_context,
+                            format!(
+                                "incompatible deconstruction length: expected {}, got {}",
+                                destructure_list.0.len(),
+                                vs.len()
+                            ),
+                        ));
+                    }
                 }
+                1 => destructure_with_spread(
+                    span,
+                    ctx,
+                    destructure_list.clone(),
+                    vs,
+                    *spread_items.first().unwrap(),
+                ),
+                _ => Err(Error::from_span(
+                    &span,
+                    &ctx.ast_context,
+                    format!("ambiguous spreading logic: single spread identifier allowed"),
+                )),
             }
         }
         _ => Err(Error::from_span(
@@ -74,7 +92,7 @@ pub fn destructure_list<T: Evaluate + Debug>(
     }
 }
 
-pub fn destructure_item(
+fn destructure_item(
     destructure_item: AstPair<DestructureItem>,
     value: AstPair<Value>,
     ctx: &mut RefMut<Context>,
@@ -88,6 +106,55 @@ pub fn destructure_item(
         DestructureItem::Identifier { identifier, .. } => {
             Ok(vec![(identifier.1, Definition::Value(value))])
         }
-        DestructureItem::List(ls) => destructure_list(ls, value, ctx),
+        DestructureItem::List(ls) => destructure_list(ls, value.clone(), value.0, ctx),
     }
+}
+
+fn destructure_with_spread(
+    span: Span,
+    ctx: &mut RefMut<Context>,
+    destructure_list: DestructureList,
+    vs: &Vec<Value>,
+    spread_item: (usize, &AstPair<Identifier>),
+) -> Result<Vec<(Identifier, Definition)>, Error> {
+    let before_pairs = destructure_list
+        .0
+        .iter()
+        .take(spread_item.0)
+        .cloned()
+        .zip(vs.iter().take(spread_item.0))
+        .map(|(i, v)| destructure_item(i, AstPair::from_span(&span, v.clone()), ctx))
+        .collect::<Result<Vec<_>, _>>()?
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>();
+    let spread_value_count = vs.len() - (destructure_list.0.len() - 1);
+    let spread_values = vs
+        .iter()
+        .skip(spread_item.0)
+        .take(spread_value_count)
+        .cloned()
+        .collect::<Vec<_>>();
+    let spread_pair = vec![(
+        spread_item.1.clone().1,
+        Definition::Value(AstPair::from_span(
+            &span,
+            Value::list(spread_values.clone()),
+        )),
+    )];
+    let after_pairs = destructure_list
+        .0
+        .iter()
+        .skip(spread_item.0 + 1)
+        .cloned()
+        .zip(vs.iter().skip(spread_value_count + spread_item.0))
+        .map(|(i, v)| destructure_item(i, AstPair::from_span(&span, v.clone()), ctx))
+        .collect::<Result<Vec<_>, _>>()?
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>();
+    Ok(vec![before_pairs, spread_pair, after_pairs]
+        .into_iter()
+        .flatten()
+        .collect())
 }

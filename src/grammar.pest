@@ -83,6 +83,7 @@ operand                       = _{
     argument_list             =  { expression? ~ N* ~ (COMMA ~ N* ~ expression)* ~ COMMA? }
 
 assignee                      =  { HOLE_OP | identifier | destructure_list }
+  // TODO: spread hole [a, ..]
   destructure_item            =  { HOLE_OP | SPREAD_OP? ~ identifier | destructure_list }
   destructure_list            =  {
     BRACKET_OPEN ~ N*
@@ -97,6 +98,7 @@ match_expression              =  {
 }
   // TODO: guards
   match_clause                =  { pattern_item ~ MATCH_OP ~ block }
+    // TODO: spread hole [a, ..]
     pattern_item              =  {
       float
       | integer

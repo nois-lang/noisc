@@ -77,7 +77,13 @@ pub fn match_pattern_item(
                         .collect::<Vec<_>>();
                     match spread_items.len() {
                         0 => match_list(&value, ctx, items, vs),
-                        1 => match_list_with_spread(&value, ctx, items.clone(), vs, spread_items),
+                        1 => match_list_with_spread(
+                            &value,
+                            ctx,
+                            items.clone(),
+                            vs,
+                            *spread_items.first().unwrap(),
+                        ),
                         _ => Err(Error::from_span(
                             &pattern_item.0,
                             &ctx.ast_context,
@@ -125,9 +131,8 @@ fn match_list_with_spread(
     ctx: &mut RefMut<Context>,
     items: Vec<AstPair<PatternItem>>,
     vs: &Vec<Value>,
-    spread_items: Vec<(usize, &AstPair<Identifier>)>,
+    spread_item: (usize, &AstPair<Identifier>),
 ) -> Result<Option<Vec<(Identifier, Definition)>>, Error> {
-    let spread_item = *spread_items.first().unwrap();
     let before_pairs = items
         .iter()
         .take(spread_item.0)
