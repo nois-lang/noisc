@@ -42,10 +42,12 @@ pub fn destructure_list<T: Evaluate + Debug>(
                 .iter()
                 .enumerate()
                 .filter_map(|(i, id)| match &id.1 {
+                    // hole identifier will be inaccessible since it's invalid identifier
+                    DestructureItem::SpreadHole => Some((i, id.map(|_| Identifier::new("_")))),
                     DestructureItem::Identifier {
                         identifier,
                         spread: true,
-                    } => Some((i, identifier)),
+                    } => Some((i, identifier.clone())),
                     _ => None,
                 })
                 .collect::<Vec<_>>();
@@ -75,7 +77,7 @@ pub fn destructure_list<T: Evaluate + Debug>(
                     ctx,
                     destructure_list.clone(),
                     vs,
-                    *spread_items.first().unwrap(),
+                    spread_items.first().unwrap().clone(),
                 ),
                 _ => Err(Error::from_span(
                     &span,
@@ -102,7 +104,7 @@ fn destructure_item(
         &value, &destructure_item
     );
     match destructure_item.1 {
-        DestructureItem::Hole => Ok(vec![]),
+        DestructureItem::Hole | DestructureItem::SpreadHole => Ok(vec![]),
         DestructureItem::Identifier { identifier, .. } => {
             Ok(vec![(identifier.1, Definition::Value(value))])
         }
@@ -115,7 +117,7 @@ fn destructure_with_spread(
     ctx: &mut RefMut<Context>,
     destructure_list: DestructureList,
     vs: &Vec<Value>,
-    spread_item: (usize, &AstPair<Identifier>),
+    spread_item: (usize, AstPair<Identifier>),
 ) -> Result<Vec<(Identifier, Definition)>, Error> {
     let before_pairs = destructure_list
         .0

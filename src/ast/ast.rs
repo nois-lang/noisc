@@ -247,6 +247,7 @@ pub struct MatchClause {
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum PatternItem {
     Hole,
+    SpreadHole,
     Integer(i128),
     Float(f64),
     Boolean(bool),
@@ -271,6 +272,7 @@ pub struct DestructureList(pub Vec<AstPair<DestructureItem>>);
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum DestructureItem {
     Hole,
+    SpreadHole,
     Identifier {
         identifier: AstPair<Identifier>,
         spread: bool,

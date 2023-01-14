@@ -507,7 +507,7 @@ mod tests {
                 items: vec![Value::List {
                     items: vec![Value::Type(ValueType::Char)],
                     spread: false,
-                },],
+                }, ],
                 spread: false,
             })
         );
@@ -531,6 +531,34 @@ mod tests {
         assert_eq!(evaluate_eager("type(['a']) == [C]"), Ok(Value::B(false)));
         assert_eq!(evaluate_eager("[C] == [[*]]"), Ok(Value::B(false)));
         assert_eq!(evaluate_eager("I == [*]"), Ok(Value::B(false)));
+    }
+
+    #[test]
+    fn evaluate_assignee_spread_hole() {
+        assert_eq!(evaluate_eager("[..] = [1, 2, 3]"), Ok(Value::Unit));
+        assert_eq!(evaluate_eager("[a, ..] = [1, 2, 3]\na"), Ok(Value::I(1)));
+        assert_eq!(evaluate_eager("[.., a] = [1, 2, 3]\na"), Ok(Value::I(3)));
+        assert_eq!(evaluate_eager("[_, a, ..] = [1, 2, 3]\na"), Ok(Value::I(2)));
+        assert_eq!(
+            evaluate_eager("[_, a, ..] = range(100)\na"),
+            Ok(Value::I(1))
+        );
+    }
+
+    #[test]
+    fn evaluate_match_spread_hole() {
+        assert_eq!(
+            evaluate_eager("match [1, 2, 3] { [..] => 5 }"),
+            Ok(Value::I(5))
+        );
+        assert_eq!(
+            evaluate_eager("match [1, 2, 3] { [a, ..] => a }"),
+            Ok(Value::I(1))
+        );
+        assert_eq!(
+            evaluate_eager("match range(100) { [_, .., a] => a }"),
+            Ok(Value::I(99))
+        );
     }
 
     // TODO: more tests

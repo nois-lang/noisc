@@ -39,7 +39,7 @@ pub fn match_pattern_item(
     ctx: &mut RefMut<Context>,
 ) -> Result<Option<Vec<(Identifier, Definition)>>, Error> {
     let defs = match pattern_item.1 {
-        PatternItem::Hole => Some(vec![]),
+        PatternItem::Hole | PatternItem::SpreadHole => Some(vec![]),
         PatternItem::Integer(_)
         | PatternItem::Float(_)
         | PatternItem::Boolean(_)
@@ -68,10 +68,12 @@ pub fn match_pattern_item(
                         .iter()
                         .enumerate()
                         .filter_map(|(i, id)| match &id.1 {
+                            // hole identifier will be inaccessible since it's invalid identifier
+                            PatternItem::SpreadHole => Some((i, id.map(|_| Identifier::new("_")))),
                             PatternItem::Identifier {
                                 identifier,
                                 spread: true,
-                            } => Some((i, identifier)),
+                            } => Some((i, identifier.clone())),
                             _ => None,
                         })
                         .collect::<Vec<_>>();
@@ -82,7 +84,7 @@ pub fn match_pattern_item(
                             ctx,
                             items.clone(),
                             vs,
-                            *spread_items.first().unwrap(),
+                            spread_items.first().unwrap().clone(),
                         ),
                         _ => Err(Error::from_span(
                             &pattern_item.0,
@@ -131,7 +133,7 @@ fn match_list_with_spread(
     ctx: &mut RefMut<Context>,
     items: Vec<AstPair<PatternItem>>,
     vs: &Vec<Value>,
-    spread_item: (usize, &AstPair<Identifier>),
+    spread_item: (usize, AstPair<Identifier>),
 ) -> Result<Option<Vec<(Identifier, Definition)>>, Error> {
     let before_pairs = items
         .iter()

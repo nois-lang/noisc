@@ -412,7 +412,8 @@ fn parse_destructure_item(pair: &Pair<Rule>) -> Result<AstPair<DestructureItem>,
             let ch = children(pair);
             let item = match ch[0].as_rule() {
                 Rule::HOLE_OP => DestructureItem::Hole,
-                Rule::SPREAD_OP => DestructureItem::Identifier {
+                Rule::SPREAD_OP if ch.len() == 1 => DestructureItem::SpreadHole,
+                Rule::SPREAD_OP if ch.len() == 2 => DestructureItem::Identifier {
                     identifier: parse_identifier(&ch[1])?,
                     spread: true,
                 },
@@ -471,7 +472,8 @@ fn parse_pattern_item(pair: &Pair<Rule>) -> Result<AstPair<PatternItem>, Error> 
                 Rule::float => PatternItem::Float(parse_float(&ch[0])?),
                 Rule::boolean => PatternItem::Boolean(parse_boolean(&ch[0])?),
                 Rule::string => PatternItem::String(parse_string(&ch[0])?),
-                Rule::SPREAD_OP => PatternItem::Identifier {
+                Rule::SPREAD_OP if ch.len() == 1 => PatternItem::SpreadHole,
+                Rule::SPREAD_OP if ch.len() == 2 => PatternItem::Identifier {
                     identifier: parse_identifier(&ch[1])?,
                     spread: true,
                 },
