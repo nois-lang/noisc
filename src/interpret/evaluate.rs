@@ -165,8 +165,12 @@ pub fn function_call(
     call_type: FunctionCallType,
 ) -> Result<AstPair<Value>, Error> {
     let mut args: Vec<AstPair<Value>> = vec![];
+    debug!("{:#?}", ctx.scope_stack.last().unwrap());
     if let Some(mc) = ctx.scope_stack.last().unwrap().method_callee.clone() {
+        debug!("method call on {:?}", mc);
         args.push(mc);
+        debug!("consuming method callee");
+        ctx.scope_stack.last_mut().unwrap().method_callee = None;
     }
     args.extend(
         function_call
@@ -507,7 +511,7 @@ mod tests {
                 items: vec![Value::List {
                     items: vec![Value::Type(ValueType::Char)],
                     spread: false,
-                }, ],
+                }],
                 spread: false,
             })
         );

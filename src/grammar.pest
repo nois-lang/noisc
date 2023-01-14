@@ -8,8 +8,8 @@ program                       = _{ SOI ~ block ~ EOI }
         unary_expression      =  { unary_operator ~ braced_expression }
         braced_expression     = _{ (operand | (PAREN_OPEN ~ N* ~ expression ~ N* ~ PAREN_CLOSE)) }
         binary_operator       =  {
-          ADD_OP | SUBTRACT_OP | MULTIPLY_OP | DIVIDE_OP | EXPONENT_OP | REMAINDER_OP
-          | ACCESSOR_OP | EQUALS_OP | NOT_EQUALS_OP | GREATER_OP | GREATER_OR_EQUALS_OP | LESS_OP | LESS_OR_EQUALS_OP | AND_OP | OR_OP
+          ADD_OP | SUBTRACT_OP | MULTIPLY_OP | DIVIDE_OP | EXPONENT_OP | REMAINDER_OP | ACCESSOR_OP | EQUALS_OP
+          | NOT_EQUALS_OP | GREATER_OP | GREATER_OR_EQUALS_OP | LESS_OP | LESS_OR_EQUALS_OP | AND_OP | OR_OP
         }
         unary_operator        =  { ADD_OP | SUBTRACT_OP | NOT_OP | SPREAD_OP }
 
@@ -118,7 +118,7 @@ match_expression              =  {
 /// #AA66CC
 identifier                    = @{ !boolean ~ ASCII_ALPHA ~ ASCII_ALPHANUMERIC* }
 /// #A6D189
-string                        = @{string_single | string_double}
+string                        = @{ string_single | string_double }
 string_single                 = _{ QUOTE ~ inner_string ~ QUOTE }
 string_double                 = _{ DOUBLE_QUOTE ~ inner_string ~ DOUBLE_QUOTE }
 inner_string                  = @{ char* }
