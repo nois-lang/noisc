@@ -13,13 +13,19 @@ use crate::interpret::evaluate::Evaluate;
 pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
     let ctx_cell = RefCell::new(Context::stdlib(a_ctx));
     let ctx = &mut ctx_cell.borrow_mut();
-    let block_defs = block
+    let r_defs = block
         .1
         .statements
         .into_iter()
-        // TODO: proper handling
-        .flat_map(|s| s.1.as_definitions(ctx).unwrap())
-        .collect::<HashMap<_, _>>();
+        .map(|s| s.1.as_definitions(ctx))
+        .collect::<Result<Vec<_>, _>>();
+    let block_defs = match r_defs {
+        Ok(ds) => ds.into_iter().flatten().collect::<HashMap<_, _>>(),
+        Err(e) => {
+            eprintln!("{}", format!("{}", e).red());
+            exit(1);
+        }
+    };
     let identifier = Identifier::new("main");
     ctx.scope_stack
         .push(Scope::new("global".to_string()).with_definitions(block_defs));
@@ -39,7 +45,8 @@ pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
         Ok(_) => {}
         Err(e) => {
             let err = Error::new_cause(e, main_id.1 .0, &main_id.0, &ctx.ast_context);
-            eprintln!("{}", format!("{}", err).red())
+            eprintln!("{}", format!("{}", err).red());
+            exit(1);
         }
     };
     debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);

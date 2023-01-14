@@ -61,7 +61,12 @@ impl Error {
 
     fn custom_error_callee(ctx: &mut RefMut<Context>, message: String) -> PError<Rule> {
         Self::custom_error_span(
-            &ctx.scope_stack.last().unwrap().callee.clone().unwrap(),
+            &ctx.scope_stack
+                .last()
+                .expect("call stack is empty")
+                .callee
+                .clone()
+                .expect("no callee"),
             &ctx.ast_context,
             message,
         )
