@@ -20,8 +20,7 @@ pub struct Package {
 pub fn stdlib() -> Vec<Package> {
     vec![
         io::package(),
-        binary_operator::package(),
-        unary_operator::package(),
+        operator::package(),
         list::package(),
         value::package(),
         option::package(),

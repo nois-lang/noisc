@@ -1,7 +1,7 @@
 use std::cell::RefMut;
 use std::collections::HashMap;
 
-use crate::ast::ast::{AstPair, BinaryOperator};
+use crate::ast::ast::{AstPair, BinaryOperator, UnaryOperator};
 use crate::error::Error;
 use crate::interpret::context::Context;
 use crate::interpret::value::Value;
@@ -10,12 +10,13 @@ use crate::stdlib::lib::{LibFunction, Package};
 // TODO: dub every operator as callable function e.g. add() and eq()
 pub fn package() -> Package {
     Package {
-        name: "binary_operator".to_string(),
+        name: "operator".to_string(),
         definitions: HashMap::from([
             Add::definition(),
             Subtract::definition(),
             Remainder::definition(),
             Equals::definition(),
+            Spread::definition(),
         ]),
     }
 }
@@ -40,7 +41,12 @@ impl LibFunction for Subtract {
     }
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        (args[0].1.clone() - args[1].1.clone()).map_err(|s| Error::from_callee(ctx, s))
+        match &args[..] {
+            [a, b] => a.1.clone() - b.1.clone(),
+            [a] => -a.1.clone(),
+            _ => unreachable!(),
+        }
+        .map_err(|s| Error::from_callee(ctx, s))
     }
 }
 
@@ -65,5 +71,36 @@ impl LibFunction for Equals {
 
     fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         Ok(Value::B(args[0].1 == args[1].1))
+    }
+}
+
+pub struct Spread;
+
+impl LibFunction for Spread {
+    fn name() -> String {
+        UnaryOperator::Spread.to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        let arg = &args[0];
+        match &arg.1 {
+            Value::List { items: l, spread } => {
+                if *spread {
+                    Err(Error::from_callee(
+                        ctx,
+                        format!("list is already spread {}", arg.1),
+                    ))
+                } else {
+                    Ok(Value::List {
+                        items: l.clone(),
+                        spread: true,
+                    })
+                }
+            }
+            a => Err(Error::from_callee(
+                ctx,
+                format!("incompatible operand: {}{}", Self::name(), a.value_type()),
+            )),
+        }
     }
 }

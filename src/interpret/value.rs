@@ -319,3 +319,19 @@ impl ops::Rem for Value {
         }
     }
 }
+
+impl ops::Neg for Value {
+    type Output = Result<Value, String>;
+
+    fn neg(self) -> Self::Output {
+        match self {
+            Value::I(i) => Ok(Value::I(-i)),
+            Value::F(f) => Ok(Value::F(-f)),
+            Value::B(_) => Err(format!(
+                "incompatible operands: -{}, use !",
+                self.value_type()
+            )),
+            op => Err(format!("incompatible operands: -{}", op.value_type())),
+        }
+    }
+}

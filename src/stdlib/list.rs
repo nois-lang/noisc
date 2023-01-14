@@ -13,7 +13,12 @@ use crate::stdlib::lib::{arg_error, LibFunction, Package};
 pub fn package() -> Package {
     Package {
         name: "list".to_string(),
-        definitions: HashMap::from([Range::definition(), Map::definition(), Filter::definition()]),
+        definitions: HashMap::from([
+            Range::definition(),
+            Map::definition(),
+            Filter::definition(),
+            At::definition(),
+        ]),
     }
 }
 
@@ -152,5 +157,54 @@ impl LibFunction for Filter {
             items: res,
             spread: false,
         })
+    }
+}
+
+// TODO: element index as second argument
+/// Access element by index, error if not found
+/// Negative index count from the end
+///
+///     at([*], I) -> *
+///
+/// Examples:
+///
+///     at([1, 2, 3], 0) -> 1
+///     at([1, 2, 3], 2) -> 3
+///     at([1, 2, 3], -1) -> 3
+///     at([1, 2, 3], 100) -> panic
+///
+pub struct At;
+
+impl LibFunction for At {
+    fn name() -> String {
+        "at".to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        let (list, i) = match &args.into_iter().map(|a| a.1.clone()).collect::<Vec<_>>()[..] {
+            [Value::List { items: l, .. }, Value::I(i)] => (l.clone(), *i),
+            _ => return Err(arg_error("([*], I)", args, ctx)),
+        };
+
+        return if i >= 0 {
+            if (i as usize) < list.len() {
+                Ok(list[i as usize].clone())
+            } else {
+                Err(Error::from_callee(
+                    ctx,
+                    format!("Index out of bounds: {}, size is {}", i, list.len()),
+                ))
+            }
+        } else {
+            let ni = list.len() as i128 + i;
+            if ni >= 0 {
+                Ok(list[ni as usize].clone())
+            } else {
+                Err(Error::from_callee(
+                    ctx,
+                    format!("Negative index out of bounds: {}", ni),
+                ))
+            }
+        };
     }
 }
