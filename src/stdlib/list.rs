@@ -192,7 +192,7 @@ impl LibFunction for At {
             } else {
                 Err(Error::from_callee(
                     ctx,
-                    format!("Index out of bounds: {}, size is {}", i, list.len()),
+                    format!("index out of bounds: {}, size is {}", i, list.len()),
                 ))
             }
         } else {
@@ -202,7 +202,7 @@ impl LibFunction for At {
             } else {
                 Err(Error::from_callee(
                     ctx,
-                    format!("Negative index out of bounds: {}", ni),
+                    format!("negative index out of bounds: {}", ni),
                 ))
             }
         };

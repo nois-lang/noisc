@@ -93,7 +93,7 @@ pub fn read_source(path: &String) -> String {
     match source {
         Ok(s) => s,
         Err(e) => {
-            eprintln!("{}", format!("Unable to read file {}: {}", path, e).red());
+            eprintln!("{}", format!("unable to read file {}: {}", path, e).red());
             exit(1)
         }
     }

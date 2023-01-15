@@ -294,7 +294,7 @@ pub struct Span {
 impl Span {
     pub fn as_span<'a>(&self, ctx: &'a AstContext) -> pest::Span<'a> {
         pest::Span::new(&ctx.input, self.start, self.end)
-            .expect(format!("Failed to convert {:?}", self).as_str())
+            .expect(format!("failed to convert {:?}", self).as_str())
     }
 }
 
@@ -320,16 +320,16 @@ impl<A> AstPair<A> {
     }
 
     pub fn map<T, F>(&self, f: F) -> AstPair<T>
-        where
-            F: Fn(&A) -> T,
+    where
+        F: Fn(&A) -> T,
     {
         let t = f(&(self).1);
         AstPair((&self.0).clone(), t)
     }
 
     pub fn flat_map<T, E, F>(&self, f: F) -> Result<AstPair<T>, E>
-        where
-            F: Fn(&A) -> Result<T, E>,
+    where
+        F: Fn(&A) -> Result<T, E>,
     {
         let r = f(&self.1);
         r.map(|t| AstPair((&self.0).clone(), t))
