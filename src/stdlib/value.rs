@@ -5,7 +5,7 @@ use crate::ast::ast::AstPair;
 use crate::error::Error;
 use crate::interpret::context::Context;
 use crate::interpret::value::Value;
-use crate::stdlib::lib::{arg_error, LibFunction, Package};
+use crate::stdlib::lib::{arg_error, arg_values, LibFunction, Package};
 
 pub fn package() -> Package {
     Package {
@@ -22,9 +22,8 @@ impl LibFunction for Type {
     }
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        let a = args.into_iter().cloned().map(|a| a.1).collect::<Vec<_>>();
-        let arg = match &a[..] {
-            [a] => a,
+        let arg = match &arg_values(args)[..] {
+            [a] => a.clone(),
             _ => return Err(arg_error("(*)", args, ctx)),
         };
         Ok(arg.value_type())
@@ -43,13 +42,12 @@ impl LibFunction for To {
             [Value::Type(..)] => true,
             _ => false,
         };
-        let a = args.into_iter().cloned().map(|a| a.1).collect::<Vec<_>>();
-        let (arg, vt) = match &a[..] {
-            [a, vt @ Value::Type(..)] => (a, vt),
-            [a, vt @ Value::List { items, .. }] if is_type_list(&items) => (a, vt),
+        let (arg, vt) = match &arg_values(args)[..] {
+            [a, vt @ Value::Type(..)] => (a.clone(), vt.clone()),
+            [a, vt @ Value::List { items, .. }] if is_type_list(&items) => (a.clone(), vt.clone()),
             _ => return Err(arg_error("(*, T)", args, ctx)),
         };
-        arg.to(vt).ok_or(Error::from_callee(
+        arg.to(&vt).ok_or(Error::from_callee(
             ctx,
             format!(
                 "unable to cast value {} from {} to {}",

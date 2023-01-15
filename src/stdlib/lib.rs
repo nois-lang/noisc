@@ -30,7 +30,6 @@ pub fn stdlib() -> Vec<Package> {
 pub trait LibFunction {
     fn name() -> String;
 
-    // TODO: use patterns to validate call args
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error>;
 
     fn call_fn(
@@ -81,4 +80,8 @@ pub fn arg_error(
             vec_to_string_paren(args.into_iter().map(|l| l.1.value_type()).collect())
         ),
     )
+}
+
+pub fn arg_values(args: &Vec<AstPair<Value>>) -> Vec<Value> {
+    args.into_iter().map(|a| a.1.clone()).collect::<Vec<_>>()
 }

@@ -5,7 +5,7 @@ use crate::ast::ast::{AstPair, BinaryOperator, UnaryOperator};
 use crate::error::Error;
 use crate::interpret::context::Context;
 use crate::interpret::value::Value;
-use crate::stdlib::lib::{LibFunction, Package};
+use crate::stdlib::lib::{arg_values, LibFunction, Package};
 
 // TODO: dub every operator as callable function e.g. add() and eq()
 pub fn package() -> Package {
@@ -41,12 +41,12 @@ impl LibFunction for Subtract {
     }
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        match &args[..] {
-            [a, b] => a.1.clone() - b.1.clone(),
-            [a] => -a.1.clone(),
+        match &arg_values(args)[..] {
+            [a, b] => a.clone() - b.clone(),
+            [a] => -a.clone(),
             _ => unreachable!(),
         }
-        .map_err(|s| Error::from_callee(ctx, s))
+            .map_err(|s| Error::from_callee(ctx, s))
     }
 }
 

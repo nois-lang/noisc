@@ -5,7 +5,7 @@ use crate::ast::ast::AstPair;
 use crate::error::Error;
 use crate::interpret::context::Context;
 use crate::interpret::value::Value;
-use crate::stdlib::lib::{arg_error, LibFunction, Package};
+use crate::stdlib::lib::{arg_error, arg_values, LibFunction, Package};
 
 pub fn package() -> Package {
     Package {
@@ -30,7 +30,7 @@ impl LibFunction for Some {
     }
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        let arg = match &args.into_iter().map(|a| a.1.clone()).collect::<Vec<_>>()[..] {
+        let arg = match &arg_values(args)[..] {
             [a] => a.clone(),
             _ => return Err(arg_error("(*)", args, ctx)),
         };

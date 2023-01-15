@@ -8,7 +8,7 @@ use crate::error::Error;
 use crate::interpret::context::{Context, Scope};
 use crate::interpret::evaluate::Evaluate;
 use crate::interpret::value::Value;
-use crate::stdlib::lib::{arg_error, LibFunction, Package};
+use crate::stdlib::lib::{arg_error, arg_values, LibFunction, Package};
 
 pub fn package() -> Package {
     Package {
@@ -40,7 +40,7 @@ impl LibFunction for Range {
     }
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        let range = match &args.into_iter().map(|a| a.1.clone()).collect::<Vec<_>>()[..] {
+        let range = match &arg_values(args)[..] {
             [Value::I(s)] => 0..*s,
             [Value::I(s), Value::I(e)] => *s..*e,
             _ => return Err(arg_error("(I, I?)", args, ctx)),
@@ -69,7 +69,7 @@ impl LibFunction for Map {
     }
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        let list = match &args.into_iter().map(|a| a.1.clone()).collect::<Vec<_>>()[..] {
+        let list = match &arg_values(args)[..] {
             [Value::List { items: l, .. }, Value::Fn(..)] => l.clone(),
             _ => return Err(arg_error("([*], Fn)", args, ctx)),
         };
@@ -118,7 +118,7 @@ impl LibFunction for Filter {
     }
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        let list = match &args.into_iter().map(|a| a.1.clone()).collect::<Vec<_>>()[..] {
+        let list = match &arg_values(args)[..] {
             [Value::List { items: l, .. }, Value::Fn(..)] => l.clone(),
             _ => return Err(arg_error("([*], Fn)", args, ctx)),
         };
@@ -181,7 +181,7 @@ impl LibFunction for At {
     }
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        let (list, i) = match &args.into_iter().map(|a| a.1.clone()).collect::<Vec<_>>()[..] {
+        let (list, i) = match &arg_values(args)[..] {
             [Value::List { items: l, .. }, Value::I(i)] => (l.clone(), *i),
             _ => return Err(arg_error("([*], I)", args, ctx)),
         };
