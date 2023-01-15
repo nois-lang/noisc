@@ -1,4 +1,4 @@
-use std::cell::RefMut;
+use std::cell::{RefCell, RefMut};
 use std::fmt::{Display, Formatter};
 use std::ops::Deref;
 
@@ -165,7 +165,6 @@ pub fn function_call(
     call_type: FunctionCallType,
 ) -> Result<AstPair<Value>, Error> {
     let mut args: Vec<AstPair<Value>> = vec![];
-    debug!("{:#?}", ctx.scope_stack.last().unwrap());
     if let Some(mc) = ctx.scope_stack.last().unwrap().method_callee.clone() {
         debug!("method call on {:?}", mc);
         args.push(mc);
@@ -187,11 +186,18 @@ pub fn function_call(
             .with_arguments(args.clone()),
     );
     debug!("push scope @{}", name);
+    debug!("{:#?}", ctx.scope_stack.last().unwrap());
 
     let id = &function_call.1.identifier;
     debug!("function call {:?}, args: {:?}", &function_call, &args);
     let res = match ctx.find_definition(&id.1) {
-        Some(Definition::User(_, exp)) => exp.eval(ctx, true),
+        Some(Definition::User(_, exp)) => {
+            debug!("user function call: {:?}", exp);
+            exp.eval(ctx, true)
+        }
+        Some(Definition::Value(ref a @ AstPair(_, Value::Fn(_, ref fn_ctx)))) => {
+            a.eval(&mut RefCell::new(fn_ctx.clone()).borrow_mut(), true)
+        }
         Some(Definition::System(f)) => f(args.clone(), ctx),
         Some(Definition::Value(v)) => Ok(v),
         None => Err(Error::from_span(
@@ -214,13 +220,10 @@ impl Evaluate for AstPair<Operand> {
             Operand::Integer(i) => Ok(self.map(|_| Value::I(*i))),
             Operand::Float(f) => Ok(self.map(|_| Value::F(*f))),
             Operand::Boolean(b) => Ok(self.map(|_| Value::B(*b))),
-            Operand::String(s) => {
-                // TODO: assign each list item correct span
-                Ok(self.map(|_| Value::List {
-                    items: s.chars().map(|c| Value::C(c)).collect(),
-                    spread: false,
-                }))
-            }
+            Operand::String(s) => Ok(self.map(|_| Value::List {
+                items: s.chars().map(|c| Value::C(c)).collect(),
+                spread: false,
+            })),
             Operand::ValueType(vt) => Ok(self.map(|_| Value::Type(vt.clone()))),
             Operand::FunctionCall(fc) => {
                 function_call(&self.map(|_| fc.clone()), ctx, FunctionCallType::Function)
@@ -284,7 +287,10 @@ impl Evaluate for AstPair<FunctionInit> {
             );
             self.1.block.eval(ctx, eager)
         } else {
-            Ok(AstPair::from_span(&self.0, Value::Fn(self.1.clone())))
+            Ok(AstPair::from_span(
+                &self.0,
+                Value::Fn(self.1.clone(), ctx.clone()),
+            ))
         }
     }
 }
@@ -307,13 +313,15 @@ impl Evaluate for AstPair<Identifier> {
 
 /// Evaluate lazy values
 impl Evaluate for AstPair<Value> {
-    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
+    fn eval(&self, _ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
         debug!("eval value {:?}, eager: {}", &self, eager);
         if !eager {
             return Ok(self.clone());
         }
         match &self.1 {
-            Value::Fn(f) => self.map(|_| f.deref().clone()).eval(ctx, eager),
+            Value::Fn(f, f_ctx) => self
+                .map(|_| f.deref().clone())
+                .eval(&mut RefCell::new(f_ctx.clone()).borrow_mut(), eager),
             _ => Ok(self.clone()),
         }
     }
@@ -324,7 +332,6 @@ impl Evaluate for Definition {
         debug!("eval {:?}, eager: {}", &self, eager);
         match self {
             Definition::User(_, exp) => exp.eval(ctx, eager),
-            // TODO: check if it's ok to clone args since fn might want to modify them
             Definition::System(f) => f(ctx.scope_stack.last().unwrap().clone().arguments, ctx),
             Definition::Value(v) => Ok(v.clone()),
         }
