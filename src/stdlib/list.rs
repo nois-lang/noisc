@@ -18,6 +18,7 @@ pub fn package() -> Package {
             Map::definition(),
             Filter::definition(),
             At::definition(),
+            Slice::definition(),
         ]),
     }
 }
@@ -160,9 +161,9 @@ impl LibFunction for Filter {
     }
 }
 
-// TODO: element index as second argument
-/// Access element by index, error if not found
-/// Negative index count from the end
+/// Access element by index, error if not found.
+/// Negative index counts from the end
+/// Invalid index panics
 ///
 ///     at([*], I) -> *
 ///
@@ -186,25 +187,76 @@ impl LibFunction for At {
             _ => return Err(arg_error("([*], I)", args, ctx)),
         };
 
-        return if i >= 0 {
-            if (i as usize) < list.len() {
-                Ok(list[i as usize].clone())
-            } else {
-                Err(Error::from_callee(
-                    ctx,
-                    format!("index out of bounds: {}, size is {}", i, list.len()),
-                ))
-            }
-        } else {
-            let ni = list.len() as i128 + i;
-            if ni >= 0 {
-                Ok(list[ni as usize].clone())
-            } else {
-                Err(Error::from_callee(
-                    ctx,
-                    format!("negative index out of bounds: {}", ni),
-                ))
-            }
+        match from_relative_index(i, list.len()) {
+            Ok(idx) => Ok(list[idx].clone()),
+            Err(e) => Err(Error::from_callee(ctx, e)),
+        }
+    }
+}
+
+/// Take part of list specified by start (inclusive) and end (inclusive)
+/// Negative indices count from the end
+/// If end is greater than start take in reverse
+/// Any invalid index panics
+///
+///     slice([*], I, I) -> [*]
+///
+/// Examples
+///
+///     slice([1, 2, 3], 0, 2) -> [1, 2, 3]
+///     slice([1, 2, 3], 1, 2) -> [2, 3]
+///     slice([1, 2, 3], 2, 2) -> [3]
+///     slice([1, 2, 3], 2, 0) -> [3, 2, 1]
+///     slice([1, 2, 3], 0, -1) -> [1, 2, 3]
+///     slice([1, 2, 3], 0, 3) -> !
+///     slice([1, 2, 3], -4, 0) -> !
+///
+pub struct Slice;
+
+impl LibFunction for Slice {
+    fn name() -> String {
+        "slice".to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        let (list, from, to) = match &arg_values(args)[..] {
+            [Value::List { items: l, .. }, Value::I(f), Value::I(t)] => (l.clone(), *f, *t),
+            _ => return Err(arg_error("([*], I, I)", args, ctx)),
         };
+
+        match (
+            from_relative_index(from, list.len()),
+            from_relative_index(to, list.len()),
+        ) {
+            (Ok(f), Ok(t)) if f <= t => Ok(Value::list(list.as_slice()[f..=t].to_vec())),
+            (Ok(f), Ok(t)) => Ok(Value::list(
+                list.as_slice()[t..=f]
+                    .iter()
+                    .rev()
+                    .cloned()
+                    .collect::<Vec<_>>(),
+            )),
+            (Err(e), _) | (_, Err(e)) => Err(Error::from_callee(ctx, e)),
+        }
+    }
+}
+
+pub fn from_relative_index(i: i128, len: usize) -> Result<usize, String> {
+    if i >= 0 {
+        if i < len as i128 {
+            Ok(i as usize)
+        } else {
+            Err(format!("index out of bounds: {}, size is {}", i, len))
+        }
+    } else {
+        let ni = (len as i128) + i;
+        if ni >= 0 {
+            Ok(ni as usize)
+        } else {
+            Err(format!(
+                "negative index out of bounds: {}, size is {}",
+                ni, len
+            ))
+        }
     }
 }
