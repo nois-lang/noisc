@@ -313,15 +313,21 @@ impl Evaluate for AstPair<Identifier> {
 
 /// Evaluate lazy values
 impl Evaluate for AstPair<Value> {
-    fn eval(&self, _ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
+    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
         debug!("eval value {:?}, eager: {}", &self, eager);
         if !eager {
             return Ok(self.clone());
         }
         match &self.1 {
-            Value::Fn(f, f_ctx) => self
-                .map(|_| f.deref().clone())
-                .eval(&mut RefCell::new(f_ctx.clone()).borrow_mut(), eager),
+            Value::Fn(f, f_ctx) => {
+                let n_ctx_cell = RefCell::new(f_ctx.clone());
+                let n_ctx = &mut n_ctx_cell.borrow_mut();
+                // include last scope to include arg list
+                n_ctx
+                    .scope_stack
+                    .push(ctx.scope_stack.last().unwrap().clone());
+                self.map(|_| f.deref().clone()).eval(n_ctx, eager)
+            }
             _ => Ok(self.clone()),
         }
     }
