@@ -53,14 +53,14 @@ impl LibFunction for Range {
     }
 }
 
-// TODO: element index as second argument
 /// Convert one list to another calling function on each item
 ///
-///     map([*], (*) -> *) -> [*]
+///     map([*], (*, I) -> *) -> [*]
 ///
 /// Examples:
 ///
 ///     map([1, 2, 3], e -> e + 1) -> [2, 3, 4]
+///     map([1, 2, 3], (_, i) -> i) -> [0, 1, 2]
 ///
 pub struct Map;
 
@@ -72,17 +72,21 @@ impl LibFunction for Map {
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let list = match &arg_values(args)[..] {
             [Value::List { items: l, .. }, Value::Fn(..)] => l.clone(),
-            _ => return Err(arg_error("([*], Fn)", args, ctx)),
+            _ => return Err(arg_error("([*], (*, I) -> *))", args, ctx)),
         };
         let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee.clone();
 
         let res = list
             .into_iter()
-            .map(|li| {
+            .enumerate()
+            .map(|(i, li)| {
                 ctx.scope_stack.push(
                     Scope::new("<closure>".to_string())
                         .with_callee(callee.clone())
-                        .with_arguments(vec![args[0].map(|_| li.clone())]),
+                        .with_arguments(vec![
+                            args[0].map(|_| li.clone()),
+                            args[1].map(|_| Value::I(i as i128)),
+                        ]),
                 );
                 debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
 
@@ -102,14 +106,14 @@ impl LibFunction for Map {
     }
 }
 
-// TODO: element index as second argument
 /// Filter a list by predicate function
 ///
-///     filter([*], (*) -> B) -> [*]
+///     filter([*], (*, I) -> B) -> [*]
 ///
 /// Examples:
 ///
 ///     filter([1, 2, 3], e -> e != 2) -> [1, 3]
+///     filter([1, 2, 3], (_, i) -> i == 1) -> [2]
 ///
 pub struct Filter;
 
@@ -121,17 +125,21 @@ impl LibFunction for Filter {
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let list = match &arg_values(args)[..] {
             [Value::List { items: l, .. }, Value::Fn(..)] => l.clone(),
-            _ => return Err(arg_error("([*], Fn)", args, ctx)),
+            _ => return Err(arg_error("([*], (*, I) -> B)", args, ctx)),
         };
         let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee.clone();
 
         let res: Vec<Value> = list
             .into_iter()
-            .map(|li| {
+            .enumerate()
+            .map(|(i, li)| {
                 ctx.scope_stack.push(
                     Scope::new("<closure>".to_string())
                         .with_callee(callee.clone())
-                        .with_arguments(vec![args[0].map(|_| li.clone())]),
+                        .with_arguments(vec![
+                            args[0].map(|_| li.clone()),
+                            args[1].map(|_| Value::I(i as i128)),
+                        ]),
                 );
                 debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
 
