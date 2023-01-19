@@ -14,12 +14,44 @@ pub fn package() -> Package {
     Package {
         name: "list".to_string(),
         definitions: HashMap::from([
+            Spread::definition(),
             Range::definition(),
             Map::definition(),
             Filter::definition(),
             At::definition(),
             Slice::definition(),
         ]),
+    }
+}
+
+pub struct Spread;
+
+impl LibFunction for Spread {
+    fn name() -> String {
+        "spread".to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        let arg = &args[0];
+        match &arg.1 {
+            Value::List { items: l, spread } => {
+                if *spread {
+                    Err(Error::from_callee(
+                        ctx,
+                        format!("list is already spread {}", arg.1),
+                    ))
+                } else {
+                    Ok(Value::List {
+                        items: l.clone(),
+                        spread: true,
+                    })
+                }
+            }
+            a => Err(Error::from_callee(
+                ctx,
+                format!("incompatible operand: {}{}", Self::name(), a.value_type()),
+            )),
+        }
     }
 }
 

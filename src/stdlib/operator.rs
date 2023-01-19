@@ -5,102 +5,80 @@ use crate::ast::ast::{AstPair, BinaryOperator, UnaryOperator};
 use crate::error::Error;
 use crate::interpret::context::Context;
 use crate::interpret::value::Value;
-use crate::stdlib::lib::{arg_values, LibFunction, Package};
+use crate::stdlib::lib::{LibFunction, Package};
+use crate::stdlib::list::Spread;
+use crate::stdlib::math::*;
 
-// TODO: dub every operator as callable function e.g. add() and eq()
+// TODO: all operators
 pub fn package() -> Package {
     Package {
         name: "operator".to_string(),
         definitions: HashMap::from([
-            Add::definition(),
-            Subtract::definition(),
-            Remainder::definition(),
-            Equals::definition(),
-            Spread::definition(),
+            AddOp::definition(),
+            SubOp::definition(),
+            RemOp::definition(),
+            EqOp::definition(),
+            SpreadOp::definition(),
         ]),
     }
 }
 
-pub struct Add;
+pub struct AddOp;
 
-impl LibFunction for Add {
+impl LibFunction for AddOp {
     fn name() -> String {
         BinaryOperator::Add.to_string()
     }
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        (args[0].1.clone() + args[1].1.clone()).map_err(|s| Error::from_callee(ctx, s))
+        Add::call(args, ctx)
     }
 }
 
-pub struct Subtract;
+pub struct SubOp;
 
-impl LibFunction for Subtract {
+impl LibFunction for SubOp {
     fn name() -> String {
         BinaryOperator::Subtract.to_string()
     }
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        match &arg_values(args)[..] {
-            [a, b] => a.clone() - b.clone(),
-            [a] => -a.clone(),
-            _ => unreachable!(),
-        }
-            .map_err(|s| Error::from_callee(ctx, s))
+        Sub::call(args, ctx)
     }
 }
 
-pub struct Remainder;
+pub struct RemOp;
 
-impl LibFunction for Remainder {
+impl LibFunction for RemOp {
     fn name() -> String {
         BinaryOperator::Remainder.to_string()
     }
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        (args[0].1.clone() % args[1].1.clone()).map_err(|s| Error::from_callee(ctx, s))
+        Rem::call(args, ctx)
     }
 }
 
-pub struct Equals;
+pub struct EqOp;
 
-impl LibFunction for Equals {
+impl LibFunction for EqOp {
     fn name() -> String {
         BinaryOperator::Equals.to_string()
     }
 
-    fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        Ok(Value::B(args[0].1 == args[1].1))
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        Eq::call(args, ctx)
     }
 }
 
-pub struct Spread;
+pub struct SpreadOp;
 
-impl LibFunction for Spread {
+impl LibFunction for SpreadOp {
     fn name() -> String {
         UnaryOperator::Spread.to_string()
     }
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        let arg = &args[0];
-        match &arg.1 {
-            Value::List { items: l, spread } => {
-                if *spread {
-                    Err(Error::from_callee(
-                        ctx,
-                        format!("list is already spread {}", arg.1),
-                    ))
-                } else {
-                    Ok(Value::List {
-                        items: l.clone(),
-                        spread: true,
-                    })
-                }
-            }
-            a => Err(Error::from_callee(
-                ctx,
-                format!("incompatible operand: {}{}", Self::name(), a.value_type()),
-            )),
-        }
+        Spread::call(args, ctx)
     }
 }
