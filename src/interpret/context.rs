@@ -105,7 +105,7 @@ impl Context {
             .next();
         if let None = r {
             error!(
-                "definition {} not found in scope stack {:#?}",
+                "definition {} not found in scope stack {:?}",
                 &identifier, &self.scope_stack
             );
         }

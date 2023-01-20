@@ -4,6 +4,7 @@ use std::string::ToString;
 
 use pest::iterators::Pair;
 
+use crate::ast::ast_parser::parse_argument_list;
 use crate::error::Error;
 use crate::parser::Rule;
 
@@ -50,7 +51,6 @@ pub enum Operand {
     EnumDefinition { values: Vec<AstPair<Identifier>> },
     ListInit { items: Vec<AstPair<Expression>> },
     FunctionInit(FunctionInit),
-    FunctionCall(FunctionCall),
     String(String),
     Identifier(AstPair<Identifier>),
     ValueType(ValueType),
@@ -99,8 +99,31 @@ impl Display for ValueType {
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub struct FunctionCall {
-    pub identifier: AstPair<Identifier>,
+    pub callee: AstPair<Expression>,
     pub arguments: Vec<AstPair<Expression>>,
+}
+
+impl FunctionCall {
+    pub fn new_by_name(span: Span, name: &str, args: Vec<AstPair<Expression>>) -> FunctionCall {
+        let exp = Expression::Operand(Box::new(AstPair(
+            span,
+            Operand::Identifier(AstPair(span, Identifier::new(name))),
+        )));
+        FunctionCall {
+            callee: AstPair(span, exp),
+            arguments: args,
+        }
+    }
+
+    pub fn as_identifier(&self) -> Option<AstPair<Identifier>> {
+        match &self.callee.1 {
+            Expression::Operand(o) => match &o.1 {
+                Operand::Identifier(a @ AstPair(_, Identifier(_))) => Some(a.clone()),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
@@ -115,6 +138,7 @@ pub enum UnaryOperator {
     Minus,
     Not,
     Spread,
+    ArgumentList(Vec<AstPair<Expression>>),
 }
 
 impl Display for UnaryOperator {
@@ -127,6 +151,7 @@ impl Display for UnaryOperator {
                 UnaryOperator::Minus => "-",
                 UnaryOperator::Not => "!",
                 UnaryOperator::Spread => "..",
+                UnaryOperator::ArgumentList(..) => "()",
             }
         )
     }
@@ -141,7 +166,7 @@ impl TryFrom<Pair<'_, Rule>> for UnaryOperator {
             Rule::SUBTRACT_OP => Ok(Self::Minus),
             Rule::NOT_OP => Ok(Self::Not),
             Rule::SPREAD_OP => Ok(Self::Spread),
-
+            Rule::argument_list => Ok(Self::ArgumentList(parse_argument_list(&pair)?)),
             _ => Err(Error::from_pair(
                 &pair,
                 format!("unknown unary operator {:?}", pair.as_rule()),
@@ -285,7 +310,7 @@ pub struct AstContext {
     pub input: String,
 }
 
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(Debug, PartialOrd, PartialEq, Clone, Copy)]
 pub struct Span {
     pub start: usize,
     pub end: usize,

@@ -3,15 +3,16 @@ program                       = _{ SOI ~ block ~ EOI }
     statement                 = _{ return_statement | assignment | expression }
       return_statement        =  { RETURN_KEYWORD ~ expression? }
       assignment              =  { assignee ~ EQUALS ~ expression }
-      expression              =  { sub_expression ~ (N* ~ binary_operator ~ N* ~ sub_expression)* }
+      expression              =  { sub_expression ~ (N* ~ infix_operator ~ N* ~ sub_expression)* }
         sub_expression        = _{ unary_expression | operand | braced_expression }
-        unary_expression      =  { unary_operator ~ braced_expression }
+        unary_expression      =  { prefix_operator ~ braced_expression |  braced_expression ~ postfix_operator }
         braced_expression     = _{ (operand | (PAREN_OPEN ~ N* ~ expression ~ N* ~ PAREN_CLOSE)) }
-        binary_operator       =  {
+        infix_operator       =  {
           ADD_OP | SUBTRACT_OP | MULTIPLY_OP | DIVIDE_OP | EXPONENT_OP | REMAINDER_OP | ACCESSOR_OP | EQUALS_OP
           | NOT_EQUALS_OP | GREATER_OP | GREATER_OR_EQUALS_OP | LESS_OP | LESS_OR_EQUALS_OP | AND_OP | OR_OP
         }
-        unary_operator        =  { ADD_OP | SUBTRACT_OP | NOT_OP | SPREAD_OP }
+        prefix_operator       =  { ADD_OP | SUBTRACT_OP | NOT_OP | SPREAD_OP }
+        postfix_operator      =  { argument_list }
 
 operand                       = _{
   float
@@ -22,7 +23,6 @@ operand                       = _{
   | enum_define
   | function_init
   | list_init
-  | function_call
   | string
   | value_type
   | identifier
@@ -71,7 +71,7 @@ operand                       = _{
   function_init               =  { block_function_init | arrow_function_init }
     block_function_init       = _{ parameter_list ~ BRACE_OPEN ~ block ~ BRACE_CLOSE }
     arrow_function_init       = _{ parameter_list ~ ARROW_OP ~ N* ~ statement }
-      parameter_list      	  =  { _parameter_list? }
+      parameter_list          =  { _parameter_list? }
       // required to always include parameter_list in parse tree, even if it's not specified
       _parameter_list         = _{
         assignee ~ N*
@@ -79,8 +79,10 @@ operand                       = _{
           ~ assignee? ~ N* ~ (COMMA ~ N* ~ assignee ~ N*)* ~ COMMA? ~ N*
         ~ PAREN_CLOSE)
       }
-  function_call               =  { identifier ~ PAREN_OPEN ~ N* ~ argument_list ~ N* ~ PAREN_CLOSE }
-    argument_list             =  { expression? ~ N* ~ (COMMA ~ N* ~ expression)* ~ COMMA? }
+    argument_list             =  {
+      PAREN_OPEN ~ N* ~
+      expression? ~ N* ~ (COMMA ~ N* ~ expression)* ~ COMMA?
+      ~ N* ~ PAREN_CLOSE }
 
 assignee                      =  { HOLE_OP | identifier | destructure_list }
   destructure_item            =  { HOLE_OP | SPREAD_OP? ~ identifier | SPREAD_OP | destructure_list }

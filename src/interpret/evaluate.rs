@@ -6,7 +6,7 @@ use log::debug;
 
 use crate::ast::ast::{
     AstPair, BinaryOperator, Block, Expression, FunctionCall, FunctionInit, Identifier, Operand,
-    Statement,
+    Statement, UnaryOperator,
 };
 use crate::error::Error;
 use crate::interpret::context::{Context, Definition, Scope};
@@ -88,11 +88,25 @@ impl Evaluate for AstPair<Expression> {
         debug!("eval {:?}, eager: {}", &self, eager);
         match &self.1 {
             Expression::Operand(op) => op.eval(ctx, eager),
-            Expression::Unary { operator, operand } => {
-                let fc = FunctionCall {
-                    identifier: operator.map(|o| Identifier(format!("{}", o))),
-                    arguments: vec![operand.deref().clone()],
+            Expression::Unary { operator, operand }
+                if matches!(&operator.1, UnaryOperator::ArgumentList(..)) =>
+            {
+                let args = match &operator.1 {
+                    UnaryOperator::ArgumentList(args) => args.clone(),
+                    _ => unreachable!(),
                 };
+                let fc = FunctionCall {
+                    callee: self.map(|_| operand.deref().1.clone()),
+                    arguments: args,
+                };
+                function_call(&self.map(|_| fc.clone()), ctx, FunctionCallType::Function)
+            }
+            Expression::Unary { operator, operand } => {
+                let fc = FunctionCall::new_by_name(
+                    operator.deref().0,
+                    operator.1.to_string().as_str(),
+                    vec![operand.deref().clone()],
+                );
                 let a = self.map(|_| fc.clone());
                 function_call(&a, ctx, FunctionCallType::Operator)
             }
@@ -106,14 +120,15 @@ impl Evaluate for AstPair<Expression> {
                     ctx.scope_stack.last_mut().unwrap().method_callee = Some(l);
                     right_operand.eval(ctx, eager)
                 } else {
-                    let fc = FunctionCall {
-                        identifier: operator.map(|o| Identifier(format!("{}", o))),
-                        arguments: vec![left_operand, right_operand]
+                    let fc = FunctionCall::new_by_name(
+                        operator.deref().0,
+                        operator.1.to_string().as_str(),
+                        vec![left_operand, right_operand]
                             .into_iter()
                             .map(|p| p.deref())
                             .cloned()
                             .collect(),
-                    };
+                    );
                     let a = self.map(|_| fc.clone());
                     function_call(&a, ctx, FunctionCallType::Function)
                 }
@@ -125,7 +140,7 @@ impl Evaluate for AstPair<Expression> {
                         ctx.scope_stack.push(
                             Scope::new("<match_predicate>".to_string())
                                 .with_definitions(pm.into_iter().collect())
-                                .with_callee(Some(clause.0.clone())),
+                                .with_callee(Some(clause.0)),
                         );
                         debug!("push scope {:?}", &ctx.scope_stack.last().unwrap());
 
@@ -179,38 +194,48 @@ pub fn function_call(
             .map(|a| a.eval(ctx, false))
             .collect::<Result<Vec<_>, _>>()?,
     );
-    let name = function_call.1.identifier.1.clone().0;
+
+    let id = function_call.1.as_identifier();
+    let name = id.clone().map(|i| i.1 .0).unwrap_or("<anon>".to_string());
+
     ctx.scope_stack.push(
         Scope::new(name.clone())
-            .with_callee(Some(function_call.0.clone()))
+            .with_callee(Some(function_call.0))
             .with_arguments(args.clone()),
     );
-    debug!("push scope @{}", name);
-    debug!("{:#?}", ctx.scope_stack.last().unwrap());
+    debug!(
+        "push scope @{}: {:?}",
+        name,
+        ctx.scope_stack.last().unwrap()
+    );
 
-    let id = &function_call.1.identifier;
-    debug!("function call {:?}, args: {:?}", &function_call, &args);
-    let res = match ctx.find_definition(&id.1) {
-        Some(Definition::User(_, exp)) => {
-            debug!("user function call: {:?}", exp);
-            exp.eval(ctx, true)
+    let res = if let Some(i) = id {
+        match ctx.find_definition(&i.1) {
+            Some(d) => d.eval(ctx, true),
+            None => Err(Error::from_span(
+                &function_call.0,
+                &ctx.ast_context,
+                format!("{} '{}' not found", call_type, name),
+            )),
         }
-        Some(Definition::Value(ref a @ AstPair(_, Value::Fn(_, ref fn_ctx)))) => {
-            a.eval(&mut RefCell::new(fn_ctx.clone()).borrow_mut(), true)
-        }
-        Some(Definition::System(f)) => f(args.clone(), ctx),
-        Some(Definition::Value(v)) => Ok(v),
-        None => Err(Error::from_span(
-            &function_call.0,
-            &ctx.ast_context,
-            format!("{} '{}' not found", call_type, id.1),
-        )),
+    } else {
+        let callee = function_call.1.callee.eval(ctx, false)?;
+        let f_init = match callee.1 {
+            Value::Fn(fi, _) => Ok(fi),
+            _ => Err(Error::from_span(
+                &function_call.0,
+                &ctx.ast_context,
+                format!("expression not callable"),
+            )),
+        }?;
+        function_call.map(|_| f_init.clone()).eval(ctx, true)
     };
-    debug!("function {:?} result {:?}", &id, &res);
+    debug!("{} {:?} result {:?}", &call_type, &name, &res);
 
     debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
     ctx.scope_stack.pop();
-    res.map_err(|e| Error::new_cause(e, id.1.to_string(), &function_call.0, &ctx.ast_context))
+
+    res.map_err(|e| Error::new_cause(e, name, &function_call.0, &ctx.ast_context))
 }
 
 impl Evaluate for AstPair<Operand> {
@@ -225,9 +250,6 @@ impl Evaluate for AstPair<Operand> {
                 spread: false,
             })),
             Operand::ValueType(vt) => Ok(self.map(|_| Value::Type(vt.clone()))),
-            Operand::FunctionCall(fc) => {
-                function_call(&self.map(|_| fc.clone()), ctx, FunctionCallType::Function)
-            }
             Operand::FunctionInit(fi) => self.map(|_| fi.clone()).eval(ctx, eager),
             Operand::ListInit { items } => {
                 let l = Value::List {
@@ -337,8 +359,14 @@ impl Evaluate for Definition {
     fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
         debug!("eval {:?}, eager: {}", &self, eager);
         match self {
-            Definition::User(_, exp) => exp.eval(ctx, eager),
+            Definition::User(_, exp) => {
+                debug!("user function call: {:?}", exp);
+                exp.eval(ctx, eager)
+            }
             Definition::System(f) => f(ctx.scope_stack.last().unwrap().clone().arguments, ctx),
+            Definition::Value(ref a @ AstPair(_, Value::Fn(_, ref fn_ctx))) => {
+                a.eval(&mut RefCell::new(fn_ctx.clone()).borrow_mut(), true)
+            }
             Definition::Value(v) => Ok(v.clone()),
         }
     }

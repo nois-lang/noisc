@@ -373,62 +373,63 @@ a - (a / 12).foo(boo() / 6) * c
                     expression(1, 2, [identifier(1, 2)]),
                     expression(3, 8, [
                         identifier(3, 4),
-                        binary_operator(5, 6, [ADD_OP(5, 6)]),
+                        infix_operator(5, 6, [ADD_OP(5, 6)]),
                         identifier(7, 8),
                     ]),
                     expression(9, 56, [
                         identifier(9, 10),
-                        binary_operator(11, 13, [AND_OP(11, 13)]),
+                        infix_operator(11, 13, [AND_OP(11, 13)]),
                         expression(20, 54, [
                             identifier(20, 21),
-                            binary_operator(22, 24, [EQUALS_OP(22, 24)]),
+                            infix_operator(22, 24, [EQUALS_OP(22, 24)]),
                             integer(25, 26),
-                            binary_operator(31, 33, [OR_OP(31, 33)]),
+                            infix_operator(31, 33, [OR_OP(31, 33)]),
                             identifier(34, 35),
-                            binary_operator(36, 38, [EQUALS_OP(36, 38)]),
+                            infix_operator(36, 38, [EQUALS_OP(36, 38)]),
                             identifier(39, 40),
-                            binary_operator(45, 47, [OR_OP(45, 47)]),
+                            infix_operator(45, 47, [OR_OP(45, 47)]),
                             identifier(48, 49),
-                            binary_operator(50, 52, [NOT_EQUALS_OP(50, 52)]),
+                            infix_operator(50, 52, [NOT_EQUALS_OP(50, 52)]),
                             identifier(53, 54)
                         ])
                     ]),
                     expression(57, 88, [
                         identifier(57, 58),
-                        binary_operator(59, 60, [SUBTRACT_OP(59, 60)]),
+                        infix_operator(59, 60, [SUBTRACT_OP(59, 60)]),
                         expression(62, 68, [
                             identifier(62, 63),
-                            binary_operator(64, 65, [DIVIDE_OP(64, 65)]),
-                            integer(66, 68),
+                            infix_operator(64, 65, [DIVIDE_OP(64, 65)]),
+                            integer(66, 68)
                         ]),
-                        binary_operator(69, 70, [ACCESSOR_OP(69, 70)]),
-                        function_call(70, 84, [
+                        infix_operator(69, 70, [ACCESSOR_OP(69, 70)]),
+                        unary_expression(70, 84, [
                             identifier(70, 73),
-                            argument_list(74, 83, [
-                                expression( 74, 83, [
-                                    function_call( 74, 79, [
-                                        identifier(74, 77),
-                                        argument_list(78, 78)
-                                    ]),
-                                    binary_operator(80, 81, [DIVIDE_OP(80, 81)]),
-                                    integer(82, 83)
-                                ])
-                            ])
+                            postfix_operator(73, 84, [
+                                argument_list(73, 84, [
+                                    expression(74, 83, [
+                                        unary_expression(74, 79, [
+                                            identifier(74, 77),
+                                            postfix_operator(77, 79, [argument_list(77, 79)])
+                                        ]),
+                                        infix_operator(80, 81, [DIVIDE_OP(80, 81)]),
+                                        integer(82, 83)]
+                                    )]
+                                )]
+                            )
                         ]),
-                        binary_operator(85, 86, [MULTIPLY_OP(85, 86)]),
-                        identifier(87, 88)
-                    ]),
+                        infix_operator(85, 86, [MULTIPLY_OP(85, 86)]),
+                        identifier(87, 88)]),
                     expression(89, 103, [
                         expression(90, 102, [
                             unary_expression(90, 98, [
-                                unary_operator(90, 91, [SUBTRACT_OP(90, 91)]),
+                                prefix_operator(90, 91, [SUBTRACT_OP(90, 91)]),
                                 expression(92, 97, [
                                     integer(92, 93),
-                                    binary_operator(94, 95, [ADD_OP(94, 95)]),
+                                    infix_operator(94, 95, [ADD_OP(94, 95)]),
                                     identifier(96, 97)
                                 ])
                             ]),
-                            binary_operator(99, 100, [DIVIDE_OP(99, 100)]),
+                            infix_operator(99, 100, [DIVIDE_OP(99, 100)]),
                             integer(101, 102)
                         ])
                     ])

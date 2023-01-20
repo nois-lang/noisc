@@ -3,8 +3,7 @@ use pest::iterators::{Pair, Pairs};
 
 use crate::ast::ast::{
     Assignee, AstPair, BinaryOperator, Block, DestructureItem, DestructureList, Expression,
-    FunctionCall, FunctionInit, Identifier, MatchClause, Operand, PatternItem, Statement,
-    ValueType,
+    FunctionInit, Identifier, MatchClause, Operand, PatternItem, Statement, ValueType,
 };
 use crate::ast::expression::{Associativity, OperatorAssociativity, OperatorPrecedence};
 use crate::ast::util::{children, first_child, parse_children};
@@ -73,19 +72,31 @@ pub fn parse_statement(pair: &Pair<Rule>) -> Result<AstPair<Statement>, Error> {
 }
 
 pub fn parse_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error> {
+    let ch = children(pair);
     match pair.as_rule() {
         Rule::expression => {
-            let ch = children(pair);
             if ch.len() == 1 {
                 Ok(parse_expression(ch.first().unwrap())?)
             } else {
                 parse_complex_expression(pair)
             }
         }
-        Rule::unary_expression => {
-            let ch = children(pair);
+        // prefix operator expression
+        Rule::unary_expression if ch[0].as_rule() == Rule::prefix_operator => {
             let operator = parse_operator(&ch[0])?;
             let operand = parse_expression(&ch[1])?;
+            return Ok(AstPair::from_pair(
+                pair,
+                Expression::Unary {
+                    operator: Box::new(operator),
+                    operand: Box::new(operand),
+                },
+            ));
+        }
+        // postfix operator expression
+        Rule::unary_expression if ch[1].as_rule() == Rule::postfix_operator => {
+            let operand = parse_expression(&ch[0])?;
+            let operator = parse_operator(&ch[1])?;
             return Ok(AstPair::from_pair(
                 pair,
                 Expression::Unary {
@@ -135,7 +146,7 @@ pub fn parse_complex_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>
     let ch = children(pair);
     for c in ch {
         match c.as_rule() {
-            Rule::binary_operator => {
+            Rule::infix_operator => {
                 let o1: AstPair<BinaryOperator> = parse_operator(&c)?;
                 let mut o2;
                 while !operator_stack.is_empty() {
@@ -205,7 +216,7 @@ where
 {
     let c = first_child(pair).unwrap();
     match pair.as_rule() {
-        Rule::unary_operator | Rule::binary_operator => {
+        Rule::prefix_operator | Rule::postfix_operator | Rule::infix_operator => {
             c.try_into().map(|op| AstPair::from_pair(pair, op))
         }
         _ => Err(Error::from_pair(
@@ -226,7 +237,6 @@ pub fn parse_operand(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error> {
         }
         Rule::string => parse_string(pair).map(|s| AstPair::from_pair(&pair, Operand::String(s))),
         Rule::HOLE_OP => Ok(AstPair::from_pair(pair, Operand::Hole)),
-        Rule::function_call => parse_function_call(pair),
         Rule::function_init => parse_function_init(pair),
         Rule::list_init => parse_list_init(pair),
         Rule::struct_define => parse_struct_define(pair),
@@ -285,17 +295,6 @@ pub fn parse_string(pair: &Pair<Rule>) -> Result<String, Error> {
             format!("unable to parse C[] {raw_str}"),
         )),
     }
-}
-
-pub fn parse_function_call(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error> {
-    let ch = children(pair);
-    Ok(AstPair::from_pair(
-        pair,
-        Operand::FunctionCall(FunctionCall {
-            identifier: parse_identifier(&ch[0])?,
-            arguments: parse_argument_list(&ch[1])?,
-        }),
-    ))
 }
 
 pub fn parse_function_init(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error> {
@@ -987,16 +986,18 @@ Block {
                                 ),
                             ),
                             operator: Accessor,
-                            right_operand: Operand(
-                                FunctionCall(
-                                    FunctionCall {
-                                        identifier: Identifier(
+                            right_operand: Unary {
+                                operator: ArgumentList(
+                                    [],
+                                ),
+                                operand: Operand(
+                                    Identifier(
+                                        Identifier(
                                             "len",
                                         ),
-                                        arguments: [],
-                                    },
+                                    ),
                                 ),
-                            ),
+                            },
                         },
                         operator: Exponent,
                         right_operand: Binary {
@@ -1015,24 +1016,26 @@ Block {
                     },
                 },
                 operator: Subtract,
-                right_operand: Operand(
-                    FunctionCall(
-                        FunctionCall {
-                            identifier: Identifier(
-                                "foo",
-                            ),
-                            arguments: [
-                                Operand(
+                right_operand: Unary {
+                    operator: ArgumentList(
+                        [
+                            Operand(
+                                Identifier(
                                     Identifier(
-                                        Identifier(
-                                            "c",
-                                        ),
+                                        "c",
                                     ),
                                 ),
-                            ],
-                        },
+                            ),
+                        ],
                     ),
-                ),
+                    operand: Operand(
+                        Identifier(
+                            Identifier(
+                                "foo",
+                            ),
+                        ),
+                    ),
+                },
             },
         ),
     ],
@@ -1060,36 +1063,40 @@ Block {
                         ),
                     ),
                     operator: Accessor,
-                    right_operand: Operand(
-                        FunctionCall(
-                            FunctionCall {
-                                identifier: Identifier(
+                    right_operand: Unary {
+                        operator: ArgumentList(
+                            [],
+                        ),
+                        operand: Operand(
+                            Identifier(
+                                Identifier(
                                     "foo",
                                 ),
-                                arguments: [],
-                            },
+                            ),
+                        ),
+                    },
+                },
+                operator: Accessor,
+                right_operand: Unary {
+                    operator: ArgumentList(
+                        [
+                            Operand(
+                                Identifier(
+                                    Identifier(
+                                        "b",
+                                    ),
+                                ),
+                            ),
+                        ],
+                    ),
+                    operand: Operand(
+                        Identifier(
+                            Identifier(
+                                "bar",
+                            ),
                         ),
                     ),
                 },
-                operator: Accessor,
-                right_operand: Operand(
-                    FunctionCall(
-                        FunctionCall {
-                            identifier: Identifier(
-                                "bar",
-                            ),
-                            arguments: [
-                                Operand(
-                                    Identifier(
-                                        Identifier(
-                                            "b",
-                                        ),
-                                    ),
-                                ),
-                            ],
-                        },
-                    ),
-                ),
             },
         ),
     ],
@@ -1449,16 +1456,18 @@ Block {
                         block: Block {
                             statements: [
                                 Expression(
-                                    Operand(
-                                        FunctionCall(
-                                            FunctionCall {
-                                                identifier: Identifier(
+                                    Unary {
+                                        operator: ArgumentList(
+                                            [],
+                                        ),
+                                        operand: Operand(
+                                            Identifier(
+                                                Identifier(
                                                     "panic",
                                                 ),
-                                                arguments: [],
-                                            },
+                                            ),
                                         ),
-                                    ),
+                                    },
                                 ),
                             ],
                         },
