@@ -12,8 +12,7 @@ use std::process::exit;
 use atty::Stream;
 use clap::Parser as p;
 use colored::Colorize;
-use log::info;
-use log::LevelFilter::Trace;
+use log::{info, LevelFilter};
 use shellexpand::tilde;
 
 use crate::ast::ast::{AstContext, AstPair, Block};
@@ -39,7 +38,7 @@ fn main() {
         return;
     }
 
-    let verbose_level = Trace;
+    let verbose_level = LevelFilter::Trace;
 
     let command = Cli::parse().command;
     match &command {
