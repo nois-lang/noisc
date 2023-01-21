@@ -121,11 +121,17 @@ match_expression              =  {
 identifier                    = @{ !boolean ~ ASCII_ALPHA ~ ASCII_ALPHANUMERIC* }
 /// #A6D189
 string                        = @{ string_single | string_double }
-string_single                 = _{ QUOTE ~ inner_string ~ QUOTE }
-string_double                 = _{ DOUBLE_QUOTE ~ inner_string ~ DOUBLE_QUOTE }
-inner_string                  = @{ char* }
-char                          = _{
-  !("\"" | "\'" | "\\" | "'") ~ ANY
+string_single                 = _{ QUOTE ~ inner_string_single ~ QUOTE }
+inner_string_single           = @{ char_single* }
+char_single                   = _{
+  !( "\'" | "\\" | "'") ~ ANY
+  | "\\" ~ ("\"" | "\'" | "\\" | "/" | "n" | "r" | "t")
+  | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
+}
+string_double                 = _{ DOUBLE_QUOTE ~ inner_string_double ~ DOUBLE_QUOTE }
+inner_string_double           = @{ char_double* }
+char_double                   = _{
+  !("\"" | "\'" | "\\") ~ ANY
   | "\\" ~ ("\"" | "\'" | "\\" | "/" | "n" | "r" | "t")
   | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
 }
