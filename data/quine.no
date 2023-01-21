@@ -1,0 +1,19 @@
+main = {
+    q = 39
+    n = 10
+    l = [
+        'main = {',
+        '    q = 39',
+        '    n = 10',
+        '    l = [',
+        '    ',
+        '    ]',
+        '    println(l.slice(0, 3).join(n.to(C).to([C])).flat())',
+        '    println(l.map(i -> l.at(4) + l.at(4) + q.to(C) + i + q.to(C) + ",").join(n.to(C).to([C])).flat())',
+        '    println(l.slice(5, -1).join(n.to(C).to([C])).flat())',
+        '}',
+    ]
+    println(l.slice(0, 3).join(n.to(C).to([C])).flat())
+    println(l.map(i -> l.at(4) + l.at(4) + q.to(C) + i + q.to(C) + ",").join(n.to(C).to([C])).flat())
+    println(l.slice(5, -1).join(n.to(C).to([C])).flat())
+}
