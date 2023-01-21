@@ -1,6 +1,5 @@
 use std::cell::RefMut;
 use std::collections::HashMap;
-use std::process::exit;
 
 use colored::Colorize;
 
@@ -90,7 +89,7 @@ impl LibFunction for Debug {
     }
 }
 
-/// Eprint passed parameters and exit with code 1
+/// Throws error with message of specified args
 ///
 ///     println(**) -> !
 ///
@@ -102,9 +101,15 @@ impl LibFunction for Panic {
     }
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        if !args.is_empty() {
-            Eprintln::call(args, ctx).ok();
-        }
-        exit(1)
+        Err(Error::from_callee(
+            ctx,
+            format!(
+                "{}",
+                args.into_iter()
+                    .map(|a| a.1.to_string())
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            ),
+        ))
     }
 }
