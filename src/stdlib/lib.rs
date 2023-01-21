@@ -5,7 +5,7 @@ use log::debug;
 
 use crate::ast::ast::{AstPair, Identifier};
 use crate::error::Error;
-use crate::interpret::context::{Context, Definition};
+use crate::interpret::context::{Context, Definition, SysFunction};
 use crate::interpret::evaluate::Evaluate;
 use crate::interpret::value::Value;
 use crate::stdlib::*;
@@ -62,7 +62,7 @@ pub trait LibFunction {
     fn definition() -> (Identifier, Definition) {
         (
             Identifier(Self::name()),
-            Definition::System(|args, ctx| Self::call_fn(args, ctx)),
+            Definition::System(SysFunction(|args, ctx| Self::call_fn(args, ctx))),
         )
     }
 }

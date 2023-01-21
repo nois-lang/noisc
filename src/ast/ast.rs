@@ -74,7 +74,7 @@ impl PartialEq for ValueType {
         if matches!(self, Self::Any) || matches!(other, Self::Any) {
             return true;
         }
-        format!("{}", self) == format!("{}", other)
+        self.to_string() == other.to_string()
     }
 }
 

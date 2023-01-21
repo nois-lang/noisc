@@ -70,20 +70,21 @@ impl Scope {
 }
 
 #[derive(Clone)]
-pub enum Definition {
-    User(AstPair<Identifier>, AstPair<Expression>),
-    System(fn(Vec<AstPair<Value>>, &mut RefMut<Context>) -> Result<AstPair<Value>, Error>),
-    Value(AstPair<Value>),
+pub struct SysFunction(
+    pub fn(Vec<AstPair<Value>>, &mut RefMut<Context>) -> Result<AstPair<Value>, Error>,
+);
+
+impl Debug for SysFunction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<system function>")
+    }
 }
 
-impl Debug for Definition {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Definition::User(i, exp) => write!(f, "{:?} = {:?}", i, exp),
-            Definition::System(_) => write!(f, "<fn>"),
-            Definition::Value(v) => write!(f, "{:?}", v),
-        }
-    }
+#[derive(Debug, Clone)]
+pub enum Definition {
+    User(AstPair<Identifier>, AstPair<Expression>),
+    System(SysFunction),
+    Value(AstPair<Value>),
 }
 
 impl Context {

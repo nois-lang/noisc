@@ -1,6 +1,8 @@
 use std::cell::RefMut;
 use std::fmt::{Display, Formatter};
+use std::panic::set_hook;
 
+use colored::Colorize;
 use pest::error::ErrorVariant;
 use pest::error::{Error as PError, LineColLocation};
 use pest::iterators::Pair;
@@ -99,4 +101,10 @@ impl Display for Error {
             ),
         }
     }
+}
+
+pub fn terminate(message: String) -> ! {
+    eprintln!("{}", message.red());
+    set_hook(Box::new(|_| {}));
+    panic!();
 }

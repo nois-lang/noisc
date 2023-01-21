@@ -6,18 +6,17 @@ extern crate pest_derive;
 
 use std::fs::read_to_string;
 use std::io;
-use std::panic::set_hook;
 use std::path::PathBuf;
 
 use atty::Stream;
 use clap::Parser as p;
-use colored::Colorize;
 use log::{info, LevelFilter};
 use shellexpand::tilde;
 
 use crate::ast::ast::{AstContext, AstPair, Block};
 use crate::ast::ast_parser::parse_block;
 use crate::cli::{Cli, Commands};
+use crate::error::terminate;
 use crate::interpret::interpreter::execute;
 use crate::parser::NoisParser;
 
@@ -31,8 +30,6 @@ pub mod stdlib;
 pub mod util;
 
 fn main() {
-    set_hook(Box::new(|_| {}));
-
     if let Some(source) = piped_input() {
         let a_ctx = AstContext { input: source };
         let ast = parse_ast(&a_ctx);
@@ -78,10 +75,7 @@ pub fn parse_ast(a_ctx: &AstContext) -> AstPair<Block> {
     let ast = pt.and_then(|parsed| parse_block(&parsed));
     match ast {
         Ok(a) => a,
-        Err(e) => {
-            eprintln!("{}", format!("{}", e).red());
-            panic!()
-        }
+        Err(e) => terminate(e.to_string()),
     }
 }
 
@@ -93,10 +87,7 @@ pub fn read_source(path: &String) -> String {
         .and_then(|p| read_to_string(&p).map_err(|e| e.to_string()));
     match source {
         Ok(s) => s,
-        Err(e) => {
-            eprintln!("{}", format!("unable to read file {}: {}", path, e).red());
-            panic!()
-        }
+        Err(e) => terminate(format!("unable to read file {}: {}", path, e)),
     }
 }
 
@@ -199,6 +190,35 @@ mod tests {
 [[0, 1], 2, 3]
 [0, 1, [2, 3]]
 [0, 1, 2, 3]
+"#;
+        assert_eq!(res, exp.to_string().trim())
+    }
+
+    #[test]
+    fn run_early_return() {
+        let res = run_file("early_return");
+        let exp = r#"
+4 5 6
+"#;
+        assert_eq!(res, exp.to_string().trim())
+    }
+
+    #[test]
+    fn run_closure() {
+        let res = run_file("closure");
+        let exp = r#"
+foo: 2
+bar: 1
+1
+"#;
+        assert_eq!(res, exp.to_string().trim())
+    }
+
+    #[test]
+    fn run_higher_order_function() {
+        let res = run_file("higher_order_function");
+        let exp = r#"
+[10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
 "#;
         assert_eq!(res, exp.to_string().trim())
     }

@@ -6,7 +6,7 @@ use std::ops;
 use num::NumCast;
 
 use crate::ast::ast::{AstPair, FunctionInit, PatternItem, UnaryOperator, ValueType};
-use crate::interpret::context::Context;
+use crate::interpret::context::{Context, SysFunction};
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -18,6 +18,7 @@ pub enum Value {
     List { items: Vec<Value>, spread: bool },
     // closures use context "snapshot" for evaluation
     Fn(FunctionInit, Context),
+    System(SysFunction, Context),
     Type(ValueType),
 }
 
@@ -29,7 +30,7 @@ impl Value {
             Value::F(_) => ValueType::Float,
             Value::C(_) => ValueType::Char,
             Value::B(_) => ValueType::Boolean,
-            Value::Fn(..) => ValueType::Function,
+            Value::Fn(..) | Value::System(..) => ValueType::Function,
             Value::Type(_) => ValueType::Type,
             Value::List { items, .. } => {
                 if items.is_empty() {
@@ -83,26 +84,26 @@ impl Value {
             (arg, Value::Type(t)) => match (arg, t) {
                 // cast from [C]
                 (Value::List { .. }, t)
-                if arg_type
-                    == Value::List {
-                    items: vec![Value::Type(ValueType::Char)],
-                    spread: false,
-                } =>
-                    {
-                        let s = arg.to_string();
-                        match t {
-                            ValueType::Unit => Some(Value::Unit),
-                            ValueType::Integer => s.parse().map(|i| Value::I(i)).ok(),
-                            ValueType::Float => s.parse().map(|f| Value::F(f)).ok(),
-                            ValueType::Char => s.parse().map(|c| Value::C(c)).ok(),
-                            ValueType::Boolean => match s.as_str() {
-                                "True" => Some(Value::B(true)),
-                                "False" => Some(Value::B(false)),
-                                _ => None,
-                            },
+                    if arg_type
+                        == Value::List {
+                            items: vec![Value::Type(ValueType::Char)],
+                            spread: false,
+                        } =>
+                {
+                    let s = arg.to_string();
+                    match t {
+                        ValueType::Unit => Some(Value::Unit),
+                        ValueType::Integer => s.parse().map(|i| Value::I(i)).ok(),
+                        ValueType::Float => s.parse().map(|f| Value::F(f)).ok(),
+                        ValueType::Char => s.parse().map(|c| Value::C(c)).ok(),
+                        ValueType::Boolean => match s.as_str() {
+                            "True" => Some(Value::B(true)),
+                            "False" => Some(Value::B(false)),
                             _ => None,
-                        }
+                        },
+                        _ => None,
                     }
+                }
                 // mono-type casts
                 _ => match (arg, t) {
                     (Value::I(i), ValueType::Float) => {
@@ -171,7 +172,7 @@ impl Display for Value {
             Value::B(b) => write!(f, "{}", if *b { "True" } else { "False" }),
             Value::List { items: l, spread } => {
                 let all_c = !l.is_empty() && l.iter().all(|v| matches!(v, Value::C(_)));
-                let is = l.into_iter().map(|i| format!("{}", i)).collect::<Vec<_>>();
+                let is = l.into_iter().map(|i| i.to_string()).collect::<Vec<_>>();
                 let spread_s = if *spread {
                     UnaryOperator::Spread.to_string()
                 } else {
@@ -183,7 +184,7 @@ impl Display for Value {
                     write!(f, "{}[{}]", spread_s, is.join(", "))
                 }
             }
-            Value::Fn(..) => write!(f, "<fn>"),
+            Value::Fn(..) | Value::System(..) => write!(f, "<fn>"),
             Value::Type(vt) => write!(f, "{vt}"),
         }
     }

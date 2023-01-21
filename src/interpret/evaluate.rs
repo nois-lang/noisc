@@ -351,7 +351,6 @@ impl Evaluate for AstPair<Identifier> {
     }
 }
 
-/// Evaluate lazy values
 impl Evaluate for AstPair<Value> {
     fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
         debug!("eval value {:?}", &self);
@@ -361,11 +360,27 @@ impl Evaluate for AstPair<Value> {
                 let n_ctx_cell = RefCell::new(f_ctx.clone());
                 let n_ctx = &mut n_ctx_cell.borrow_mut();
                 // include last scope to capture arg list
+                let call_scope = ctx.scope_stack.last().unwrap().clone();
+                debug!(
+                    "appending call scope to function definition eval {:?}",
+                    call_scope
+                );
+                n_ctx.scope_stack.push(call_scope);
+                debug!("eval closure {:?}, constructed scope: {:?}", &self, n_ctx);
+                self.map(|_| f.deref().clone()).eval(n_ctx)
+            }
+            Value::System(sf, f_ctx) if ctx.scope_stack.last().unwrap().arguments.is_some() => {
+                // TODO: store sys function name
+                debug!("eval system function");
+                let n_ctx_cell = RefCell::new(f_ctx.clone());
+                let n_ctx = &mut n_ctx_cell.borrow_mut();
+                // include last scope to capture arg list
                 n_ctx
                     .scope_stack
                     .push(ctx.scope_stack.last().unwrap().clone());
                 debug!("eval closure {:?}, constructed scope: {:?}", &self, n_ctx);
-                self.map(|_| f.deref().clone()).eval(n_ctx)
+                let args = ctx.scope_stack.last().unwrap().arguments.clone().unwrap();
+                sf.0(args, n_ctx)
             }
             _ => Ok(self.clone()),
         }
@@ -378,30 +393,22 @@ impl Evaluate for Definition {
         match &self {
             Definition::User(_, exp) => exp.eval(ctx),
             Definition::System(f) => {
-                let args = ctx.scope_stack.last().unwrap().arguments.clone().unwrap();
+                let m_args = ctx.scope_stack.last().unwrap().arguments.clone();
+                if let Some(args) = m_args {
+                    debug!(
+                        "consuming scope @{} arguments: {:?}",
+                        &ctx.scope_stack.last_mut().unwrap().name.clone(),
+                        &ctx.scope_stack.last_mut().unwrap().arguments.clone()
+                    );
+                    ctx.scope_stack.last_mut().unwrap().arguments = None;
 
-                debug!(
-                    "consuming scope @{} arguments: {:?}",
-                    &ctx.scope_stack.last_mut().unwrap().name.clone(),
-                    &ctx.scope_stack.last_mut().unwrap().arguments.clone()
-                );
-                ctx.scope_stack.last_mut().unwrap().arguments = None;
-
-                f(args, ctx)
+                    f.0(args, ctx)
+                } else {
+                    let callee = ctx.scope_stack.last().unwrap().callee.unwrap();
+                    Ok(AstPair(callee, Value::System(f.clone(), ctx.clone())))
+                }
             }
-            Definition::Value(a @ AstPair(_, Value::Fn(fi, f_ctx))) => {
-                debug!("eval function definition {:?}", &a);
-                let f_ctx_rc = RefCell::new(f_ctx.clone());
-                let mut f_ctx_m = f_ctx_rc.borrow_mut();
-                let call_scope = ctx.scope_stack.last().unwrap().clone();
-                debug!(
-                    "appending call scope to function definition eval {:?}",
-                    call_scope
-                );
-                f_ctx_m.scope_stack.push(call_scope);
-                a.map(|_| fi.clone()).eval(&mut f_ctx_m)
-            }
-            Definition::Value(v) => Ok(v.clone()),
+            Definition::Value(v) => v.eval(ctx),
         }
     }
 }

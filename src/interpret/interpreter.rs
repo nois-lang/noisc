@@ -1,11 +1,10 @@
 use std::cell::{RefCell, RefMut};
 use std::collections::HashMap;
 
-use colored::Colorize;
 use log::debug;
 
 use crate::ast::ast::{AstContext, AstPair, Block, Identifier};
-use crate::error::Error;
+use crate::error::{terminate, Error};
 use crate::interpret::context::{Context, Definition, Scope};
 use crate::interpret::evaluate::Evaluate;
 
@@ -23,10 +22,7 @@ where
         .collect::<Result<Vec<_>, _>>();
     let block_defs = match r_defs {
         Ok(ds) => ds.into_iter().flatten().collect::<HashMap<_, _>>(),
-        Err(e) => {
-            eprintln!("{}", format!("{}", e).red());
-            panic!();
-        }
+        Err(e) => terminate(e.to_string()),
     };
     let identifier = Identifier::new("main");
     ctx.scope_stack
@@ -42,10 +38,7 @@ where
 
     let (main_id, main) = match ctx.find_definition(&identifier) {
         Some(Definition::User(id, exp)) => (id, exp),
-        _ => {
-            eprintln!("{}", format!("'{}' not found", identifier).red());
-            panic!()
-        }
+        _ => terminate(format!("'{}' not found", identifier)),
     };
     let mut a = ctx.scope_stack.last_mut().unwrap();
     a.callee = Some(main_id.clone().0);
@@ -53,8 +46,7 @@ where
         Ok(_) => {}
         Err(e) => {
             let err = Error::new_cause(e, main_id.1 .0, &main_id.0, &ctx.ast_context);
-            eprintln!("{}", format!("{}", err).red());
-            panic!()
+            terminate(err.to_string())
         }
     };
     debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);

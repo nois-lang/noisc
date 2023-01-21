@@ -32,7 +32,7 @@ impl log::Log for Logger {
             println!(
                 "{} [{:<12}:{:>3}] {}",
                 pretty_level,
-                format!("{}", format_target()),
+                format_target().to_string(),
                 record
                     .line()
                     .map(|i| i.to_string())
