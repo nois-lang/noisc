@@ -189,10 +189,7 @@ mod tests {
     #[test]
     fn run_adding_lists() {
         let res = run_file("adding_lists");
-        assert_eq!(
-            res,
-            format!(
-                r#"
+        let exp = r#"
 [1, 2]
 [1, 2, 3, 4]
 3
@@ -202,9 +199,15 @@ mod tests {
 [[0, 1], 2, 3]
 [0, 1, [2, 3]]
 [0, 1, 2, 3]
-"#
-            )
-                .trim()
-        )
+"#;
+        assert_eq!(res, exp.to_string().trim())
+    }
+
+    #[test]
+    fn run_quine() {
+        let name = "quine";
+        let source = read_to_string(format!("data/{name}.no")).unwrap();
+        let res = run_file(name);
+        assert_eq!(source, res)
     }
 }

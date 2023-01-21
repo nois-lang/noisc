@@ -9,9 +9,11 @@ main = {
         '    l.slice(0, 2).map(i -> println(i))',
         '    l.map(i -> l.at(3) + l.at(3) + q + i + q + ",").map(i -> println(i))',
         '    l.slice(4, -1).map(i -> println(i))',
+        '    println()',
         '}',
     ]
     l.slice(0, 2).map(i -> println(i))
     l.map(i -> l.at(3) + l.at(3) + q + i + q + ",").map(i -> println(i))
     l.slice(4, -1).map(i -> println(i))
+    println()
 }
