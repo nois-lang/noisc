@@ -34,31 +34,32 @@ impl Display for FunctionCallType {
 }
 
 pub trait Evaluate {
-    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error>;
+    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error>;
 }
 
 impl Evaluate for AstPair<Block> {
-    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
-        debug!("eval {:?}, eager: {}", &self, eager);
+    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
+        debug!("eval {:?}", &self);
         let mut last_res = self.map(|_| Value::Unit);
         for statement in &self.1.statements {
-            last_res = statement.eval(ctx, eager)?;
+            last_res = statement.eval(ctx)?;
             let scope = ctx.scope_stack.last().unwrap();
             if let Some(rv) = scope.return_value.clone() {
-                debug!("block interrupt - return, value: {:?}", &rv);
+                debug!("block interrupted by return, value: {:?}", &rv);
                 return Ok(statement.map(|_| rv.clone()));
             }
         }
+        debug!("block return value: {:?}", last_res);
         Ok(last_res)
     }
 }
 
 impl Evaluate for AstPair<Statement> {
-    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
+    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
         let unit = Ok(self.map(|_| Value::Unit));
-        debug!("eval {:?}, eager: {}", &self, eager);
+        debug!("eval {:?}", &self);
         match &self.1 {
-            Statement::Expression(exp) => exp.eval(ctx, eager),
+            Statement::Expression(exp) => exp.eval(ctx),
             Statement::Assignment {
                 assignee,
                 expression,
@@ -72,7 +73,7 @@ impl Evaluate for AstPair<Statement> {
             }
             Statement::Return(v) => {
                 let return_value = match v {
-                    Some(a) => a.eval(ctx, true)?.1,
+                    Some(a) => a.eval(ctx)?.1,
                     None => Value::Unit,
                 };
                 ctx.scope_stack.last_mut().unwrap().return_value = Some(return_value.clone());
@@ -84,10 +85,10 @@ impl Evaluate for AstPair<Statement> {
 }
 
 impl Evaluate for AstPair<Expression> {
-    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
-        debug!("eval {:?}, eager: {}", &self, eager);
+    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
+        debug!("eval {:?}", &self);
         match &self.1 {
-            Expression::Operand(op) => op.eval(ctx, eager),
+            Expression::Operand(op) => op.eval(ctx),
             Expression::Unary { operator, operand }
                 if matches!(&operator.1, UnaryOperator::ArgumentList(..)) =>
             {
@@ -116,9 +117,9 @@ impl Evaluate for AstPair<Expression> {
                 right_operand,
             } => {
                 if operator.1 == BinaryOperator::Accessor {
-                    let l = left_operand.eval(ctx, true)?;
+                    let l = left_operand.eval(ctx)?;
                     ctx.scope_stack.last_mut().unwrap().method_callee = Some(l);
-                    right_operand.eval(ctx, eager)
+                    right_operand.eval(ctx)
                 } else {
                     let fc = FunctionCall::new_by_name(
                         operator.deref().0,
@@ -144,7 +145,7 @@ impl Evaluate for AstPair<Expression> {
                         );
                         debug!("push scope {:?}", &ctx.scope_stack.last().unwrap());
 
-                        let res = clause.1.block.eval(ctx, true);
+                        let res = clause.1.block.eval(ctx);
                         let rv = &ctx.scope_stack.last().unwrap().return_value.clone();
 
                         debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
@@ -179,11 +180,12 @@ pub fn function_call(
     ctx: &mut RefMut<Context>,
     call_type: FunctionCallType,
 ) -> Result<AstPair<Value>, Error> {
+    debug!("function call {:?}", function_call);
     let mut args: Vec<AstPair<Value>> = vec![];
     if let Some(mc) = ctx.scope_stack.last().unwrap().method_callee.clone() {
         debug!("method call on {:?}", mc);
         args.push(mc);
-        debug!("consuming method callee");
+        debug!("consuming scope method callee");
         ctx.scope_stack.last_mut().unwrap().method_callee = None;
     }
     args.extend(
@@ -191,17 +193,22 @@ pub fn function_call(
             .1
             .arguments
             .iter()
-            .map(|a| a.eval(ctx, false))
+            .map(|a| a.eval(ctx))
             .collect::<Result<Vec<_>, _>>()?,
     );
 
     let id = function_call.1.as_identifier();
     let name = id.clone().map(|i| i.1 .0).unwrap_or("<anon>".to_string());
+    let mut callee = None;
+    if id.is_none() {
+        callee = Some(function_call.1.callee.eval(ctx)?);
+        debug!("function callee {:?}", callee);
+    }
 
     ctx.scope_stack.push(
         Scope::new(name.clone())
             .with_callee(Some(function_call.0))
-            .with_arguments(args.clone()),
+            .with_arguments(Some(args.clone())),
     );
     debug!(
         "push scope @{}: {:?}",
@@ -211,7 +218,7 @@ pub fn function_call(
 
     let res = if let Some(i) = id {
         match ctx.find_definition(&i.1) {
-            Some(d) => d.eval(ctx, true),
+            Some(d) => d.eval(ctx),
             None => Err(Error::from_span(
                 &function_call.0,
                 &ctx.ast_context,
@@ -219,16 +226,15 @@ pub fn function_call(
             )),
         }
     } else {
-        let callee = function_call.1.callee.eval(ctx, false)?;
-        let f_init = match callee.1 {
-            Value::Fn(fi, _) => Ok(fi),
-            _ => Err(Error::from_span(
+        let f = match callee.unwrap().1 {
+            f @ Value::Fn(..) => Ok(f),
+            v => Err(Error::from_span(
                 &function_call.0,
                 &ctx.ast_context,
-                format!("expression not callable"),
+                format!("expression not callable: {}", v),
             )),
         }?;
-        function_call.map(|_| f_init.clone()).eval(ctx, true)
+        function_call.map(|_| f.clone()).eval(ctx)
     };
     debug!("{} {:?} result {:?}", &call_type, &name, &res);
 
@@ -239,8 +245,8 @@ pub fn function_call(
 }
 
 impl Evaluate for AstPair<Operand> {
-    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
-        debug!("eval {:?}, eager: {}", &self, eager);
+    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
+        debug!("eval {:?}", &self);
         match &self.1 {
             Operand::Integer(i) => Ok(self.map(|_| Value::I(*i))),
             Operand::Float(f) => Ok(self.map(|_| Value::F(*f))),
@@ -250,13 +256,13 @@ impl Evaluate for AstPair<Operand> {
                 spread: false,
             })),
             Operand::ValueType(vt) => Ok(self.map(|_| Value::Type(vt.clone()))),
-            Operand::FunctionInit(fi) => self.map(|_| fi.clone()).eval(ctx, eager),
+            Operand::FunctionInit(fi) => self.map(|_| fi.clone()).eval(ctx),
             Operand::ListInit { items } => {
                 let l = Value::List {
                     items: match items
                         .into_iter()
                         .map(|i| {
-                            let v = i.eval(ctx, eager).map(|a| a.1);
+                            let v = i.eval(ctx).map(|a| a.1);
                             v
                         })
                         .collect::<Result<Vec<_>, _>>()
@@ -284,7 +290,7 @@ impl Evaluate for AstPair<Operand> {
                 };
                 Ok(self.map(|_| l.clone()))
             }
-            Operand::Identifier(i) => i.eval(ctx, eager),
+            Operand::Identifier(i) => i.eval(ctx),
             _ => Err(Error::from_span(
                 &self.0,
                 &ctx.ast_context,
@@ -295,20 +301,31 @@ impl Evaluate for AstPair<Operand> {
 }
 
 impl Evaluate for AstPair<FunctionInit> {
-    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
-        if eager {
-            let scope = ctx.scope_stack.last().unwrap().clone();
-            for (param, v) in self.1.parameters.iter().zip(scope.arguments.clone()) {
+    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
+        debug!("eval {:?}", &self);
+        let o_args = ctx.scope_stack.last().unwrap().arguments.clone();
+        // if scope has args, this is a function call and function init must be evaluated
+        if o_args.is_some() {
+            for (param, v) in self.1.parameters.iter().zip(o_args.unwrap().clone()) {
                 let defs = assign_definitions(param.clone(), v, ctx, |_, e| Definition::Value(e))?;
                 ctx.scope_stack.last_mut().unwrap().definitions.extend(defs);
             }
+
             debug!(
-                "eval function init scope @{}: {:?}",
-                &scope.clone().name,
-                &scope.clone().definitions
+                "consuming scope @{} arguments: {:?}",
+                &ctx.scope_stack.last_mut().unwrap().name.clone(),
+                &ctx.scope_stack.last_mut().unwrap().arguments.clone()
             );
-            self.1.block.eval(ctx, eager)
+            ctx.scope_stack.last_mut().unwrap().arguments = None;
+
+            let scope = ctx.scope_stack.last().unwrap().clone();
+            debug!(
+                "function init scope @{}: {:?}",
+                &scope.name, &scope.definitions
+            );
+            self.1.block.eval(ctx)
         } else {
+            debug!("lazy init function with context snapshot {:?}", &ctx);
             Ok(AstPair::from_span(
                 &self.0,
                 Value::Fn(self.1.clone(), ctx.clone()),
@@ -318,10 +335,10 @@ impl Evaluate for AstPair<FunctionInit> {
 }
 
 impl Evaluate for AstPair<Identifier> {
-    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
-        debug!("eval {:?}, eager: {}", &self, eager);
+    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
+        debug!("eval {:?}", &self);
         let res = match ctx.find_definition(&self.1) {
-            Some(res) => res.eval(ctx, eager),
+            Some(res) => res.eval(ctx),
             None => Err(Error::from_span(
                 &self.0,
                 &ctx.ast_context,
@@ -335,20 +352,17 @@ impl Evaluate for AstPair<Identifier> {
 
 /// Evaluate lazy values
 impl Evaluate for AstPair<Value> {
-    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
-        debug!("eval value {:?}, eager: {}", &self, eager);
-        if !eager {
-            return Ok(self.clone());
-        }
+    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
+        debug!("eval value {:?}", &self);
         match &self.1 {
-            Value::Fn(f, f_ctx) => {
+            Value::Fn(f, f_ctx) if ctx.scope_stack.last().unwrap().arguments.is_some() => {
                 let n_ctx_cell = RefCell::new(f_ctx.clone());
                 let n_ctx = &mut n_ctx_cell.borrow_mut();
-                // include last scope to include arg list
+                // include last scope to capture arg list
                 n_ctx
                     .scope_stack
                     .push(ctx.scope_stack.last().unwrap().clone());
-                self.map(|_| f.deref().clone()).eval(n_ctx, eager)
+                self.map(|_| f.deref().clone()).eval(n_ctx)
             }
             _ => Ok(self.clone()),
         }
@@ -356,16 +370,26 @@ impl Evaluate for AstPair<Value> {
 }
 
 impl Evaluate for Definition {
-    fn eval(&self, ctx: &mut RefMut<Context>, eager: bool) -> Result<AstPair<Value>, Error> {
-        debug!("eval {:?}, eager: {}", &self, eager);
-        match self {
-            Definition::User(_, exp) => {
-                debug!("user function call: {:?}", exp);
-                exp.eval(ctx, eager)
+    fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
+        debug!("eval definition {:?}", &self);
+        match &self {
+            Definition::User(_, exp) => exp.eval(ctx),
+            Definition::System(f) => {
+                let args = ctx.scope_stack.last().unwrap().arguments.clone().unwrap();
+
+                debug!(
+                    "consuming scope @{} arguments: {:?}",
+                    &ctx.scope_stack.last_mut().unwrap().name.clone(),
+                    &ctx.scope_stack.last_mut().unwrap().arguments.clone()
+                );
+                ctx.scope_stack.last_mut().unwrap().arguments = None;
+
+                f(args, ctx)
             }
-            Definition::System(f) => f(ctx.scope_stack.last().unwrap().clone().arguments, ctx),
-            Definition::Value(ref a @ AstPair(_, Value::Fn(_, ref fn_ctx))) => {
-                a.eval(&mut RefCell::new(fn_ctx.clone()).borrow_mut(), true)
+            Definition::Value(a @ AstPair(_, Value::Fn(fi, f_ctx))) => {
+                let f_ctx_rc = RefCell::new(f_ctx.clone());
+                let mut f_ctx_m = f_ctx_rc.borrow_mut();
+                a.map(|_| fi.clone()).eval(&mut f_ctx_m)
             }
             Definition::Value(v) => Ok(v.clone()),
         }
@@ -385,7 +409,7 @@ mod tests {
     use crate::interpret::value::Value;
     use crate::parser::NoisParser;
 
-    fn evaluate(source: &str, eager: bool) -> Result<Value, Error> {
+    fn evaluate(source: &str) -> Result<Value, Error> {
         let a_ctx = AstContext {
             input: source.to_string(),
         };
@@ -393,47 +417,39 @@ mod tests {
         let ast = pt.and_then(|parsed| parse_block(&parsed))?;
         let ctx_cell = RefCell::new(Context::stdlib(a_ctx));
         let ctx = &mut ctx_cell.borrow_mut();
-        ast.eval(ctx, eager).map(|a| a.1)
-    }
-
-    fn evaluate_eager(source: &str) -> Result<Value, Error> {
-        evaluate(source, true)
+        ast.eval(ctx).map(|a| a.1)
     }
 
     #[test]
     fn evaluate_literals() {
-        assert_eq!(evaluate_eager(""), Ok(Value::Unit));
-        assert_eq!(evaluate_eager("{}"), Ok(Value::Unit));
-        assert_eq!(evaluate_eager("4"), Ok(Value::I(4)));
-        assert_eq!(evaluate_eager("4.56"), Ok(Value::F(4.56)));
-        assert_eq!(evaluate_eager("1e12"), Ok(Value::F(1e12)));
+        assert_eq!(evaluate(""), Ok(Value::Unit));
+        assert_eq!(evaluate("4"), Ok(Value::I(4)));
+        assert_eq!(evaluate("4.56"), Ok(Value::F(4.56)));
+        assert_eq!(evaluate("1e12"), Ok(Value::F(1e12)));
+        assert_eq!(evaluate("'a'").map(|r| r.to_string()), Ok("a".to_string()));
         assert_eq!(
-            evaluate_eager("'a'").map(|r| r.to_string()),
-            Ok("a".to_string())
-        );
-        assert_eq!(
-            evaluate_eager("[]"),
+            evaluate("[]"),
             Ok(Value::List {
                 items: vec![],
                 spread: false,
             })
         );
         assert_eq!(
-            evaluate_eager("[1, 2]"),
+            evaluate("[1, 2]"),
             Ok(Value::List {
                 items: vec![Value::I(1), Value::I(2)],
                 spread: false,
             })
         );
         assert_eq!(
-            evaluate_eager("'ab'"),
+            evaluate("'ab'"),
             Ok(Value::List {
                 items: vec![Value::C('a'), Value::C('b')],
                 spread: false,
             })
         );
         assert_eq!(
-            evaluate_eager("[1, 'b']"),
+            evaluate("[1, 'b']"),
             Ok(Value::List {
                 items: vec![
                     Value::I(1),
@@ -445,9 +461,9 @@ mod tests {
                 spread: false,
             })
         );
-        assert!(matches!(evaluate("a -> a", false), Ok(Value::Fn(..))));
+        assert!(matches!(evaluate("a -> a"), Ok(Value::Fn(..))));
         assert_eq!(
-            evaluate_eager("[C]"),
+            evaluate("[C]"),
             Ok(Value::List {
                 items: vec![Value::Type(ValueType::Char)],
                 spread: false,
@@ -457,82 +473,70 @@ mod tests {
 
     #[test]
     fn evaluate_assignee_basic() {
-        assert_eq!(evaluate_eager("a = 4\na"), Ok(Value::I(4)));
-        assert_eq!(evaluate_eager("_ = 4"), Ok(Value::Unit));
-        assert_eq!(evaluate_eager("[a, b] = [1, 2]\na"), Ok(Value::I(1)));
-        assert_eq!(evaluate_eager("[a, b] = [1, 2]\nb"), Ok(Value::I(2)));
-        assert_eq!(evaluate_eager("[a, b] = [1, 2, 3]\na").is_err(), true);
-        assert_eq!(evaluate_eager("[a, _, c] = [1, 2, 3]\nc"), Ok(Value::I(3)));
+        assert_eq!(evaluate("a = 4\na"), Ok(Value::I(4)));
+        assert_eq!(evaluate("_ = 4"), Ok(Value::Unit));
+        assert_eq!(evaluate("[a, b] = [1, 2]\na"), Ok(Value::I(1)));
+        assert_eq!(evaluate("[a, b] = [1, 2]\nb"), Ok(Value::I(2)));
+        assert_eq!(evaluate("[a, b] = [1, 2, 3]\na").is_err(), true);
+        assert_eq!(evaluate("[a, _, c] = [1, 2, 3]\nc"), Ok(Value::I(3)));
         assert_eq!(
-            evaluate_eager("[_, [c, _]] = [[1, 2], [3, 4]]\nc"),
+            evaluate("[_, [c, _]] = [[1, 2], [3, 4]]\nc"),
             Ok(Value::I(3))
         );
     }
 
     #[test]
     fn evaluate_value_equality() {
-        assert_eq!(evaluate_eager("1 == 1"), Ok(Value::B(true)));
-        assert_eq!(evaluate_eager("'foo' == 'foo'"), Ok(Value::B(true)));
-        assert_eq!(evaluate_eager("'' == ''"), Ok(Value::B(true)));
-        assert_eq!(evaluate_eager("[] == ''"), Ok(Value::B(true)));
-        assert_eq!(evaluate_eager("[] == []"), Ok(Value::B(true)));
-        assert_eq!(evaluate_eager("() == ()"), Ok(Value::B(true)));
-        assert_eq!(evaluate_eager("f = a -> {}\n f == f"), Ok(Value::B(true)));
+        assert_eq!(evaluate("1 == 1"), Ok(Value::B(true)));
+        assert_eq!(evaluate("'foo' == 'foo'"), Ok(Value::B(true)));
+        assert_eq!(evaluate("'' == ''"), Ok(Value::B(true)));
+        assert_eq!(evaluate("[] == ''"), Ok(Value::B(true)));
+        assert_eq!(evaluate("[] == []"), Ok(Value::B(true)));
+        assert_eq!(evaluate("() == ()"), Ok(Value::B(true)));
+        assert_eq!(evaluate("f = a -> {}\n f == f"), Ok(Value::B(true)));
 
-        assert_eq!(evaluate_eager("a -> {} == a -> {}"), Ok(Value::B(false)));
-        assert_eq!(evaluate_eager("1 == 2"), Ok(Value::B(false)));
-        assert_eq!(evaluate_eager("1 == '1'"), Ok(Value::B(false)));
-        assert_eq!(evaluate_eager("1 == [1]"), Ok(Value::B(false)));
+        assert_eq!(evaluate("(a -> {}) == (a -> {})"), Ok(Value::B(false)));
+        assert_eq!(evaluate("1 == 2"), Ok(Value::B(false)));
+        assert_eq!(evaluate("1 == '1'"), Ok(Value::B(false)));
+        assert_eq!(evaluate("1 == [1]"), Ok(Value::B(false)));
     }
 
     #[test]
     fn evaluate_value_type() {
+        assert_eq!(evaluate("type(1)"), Ok(Value::Type(ValueType::Integer)));
+        assert_eq!(evaluate("type(1.5)"), Ok(Value::Type(ValueType::Float)));
+        assert_eq!(evaluate("type(True)"), Ok(Value::Type(ValueType::Boolean)));
         assert_eq!(
-            evaluate_eager("type(1)"),
-            Ok(Value::Type(ValueType::Integer))
-        );
-        assert_eq!(
-            evaluate_eager("type(1.5)"),
-            Ok(Value::Type(ValueType::Float))
-        );
-        assert_eq!(
-            evaluate_eager("type(True)"),
-            Ok(Value::Type(ValueType::Boolean))
-        );
-        assert_eq!(
-            evaluate_eager("type([])"),
+            evaluate("type([])"),
             Ok(Value::List {
                 items: vec![Value::Type(ValueType::Any)],
                 spread: false,
             })
         );
         assert_eq!(
-            evaluate_eager("type('')"),
+            evaluate("type('')"),
             Ok(Value::List {
                 items: vec![Value::Type(ValueType::Any)],
                 spread: false,
             })
         );
         assert_eq!(
-            evaluate_eager("type('abc')"),
+            evaluate("type('abc')"),
             Ok(Value::List {
                 items: vec![Value::Type(ValueType::Char)],
                 spread: false,
             })
         );
+        assert_eq!(evaluate("type(-> 1)"), Ok(Value::Type(ValueType::Function)));
         assert_eq!(
-            evaluate_eager("type(-> 1)"),
-            Ok(Value::Type(ValueType::Function))
-        );
-        assert_eq!(
-            evaluate_eager("type([1, 2, 3])"),
+            evaluate("type([1, 2, 3])"),
             Ok(Value::List {
                 items: vec![Value::Type(ValueType::Integer)],
                 spread: false,
             })
         );
         assert_eq!(
-            evaluate_eager("type([1, 'abc', 1.5])"),
+            evaluate("type([1, 'abc', 1.5])"),
             Ok(Value::List {
                 items: vec![
                     Value::Type(ValueType::Integer),
@@ -545,9 +549,9 @@ mod tests {
                 spread: false,
             })
         );
-        assert_eq!(evaluate_eager("type(C)"), Ok(Value::Type(ValueType::Type)));
+        assert_eq!(evaluate("type(C)"), Ok(Value::Type(ValueType::Type)));
         assert_eq!(
-            evaluate_eager("type(['abc'])"),
+            evaluate("type(['abc'])"),
             Ok(Value::List {
                 items: vec![Value::List {
                     items: vec![Value::Type(ValueType::Char)],
@@ -560,48 +564,42 @@ mod tests {
 
     #[test]
     fn evaluate_value_type_equality() {
-        assert_eq!(evaluate_eager("type(1) == I"), Ok(Value::B(true)));
-        assert_eq!(evaluate_eager("type([]) == [*]"), Ok(Value::B(true)));
-        assert_eq!(evaluate_eager("type('') == [*]"), Ok(Value::B(true)));
-        assert_eq!(evaluate_eager("type('a') == [C]"), Ok(Value::B(true)));
-        assert_eq!(evaluate_eager("type(['a']) == [[C]]"), Ok(Value::B(true)));
-        assert_eq!(evaluate_eager("type([[]]) == [[*]]"), Ok(Value::B(true)));
-        assert_eq!(evaluate_eager("* == ()"), Ok(Value::B(true)));
-        assert_eq!(evaluate_eager("I == *"), Ok(Value::B(true)));
-        assert_eq!(evaluate_eager("[I] == *"), Ok(Value::B(true)));
-        assert_eq!(evaluate_eager("[I] == [*]"), Ok(Value::B(true)));
+        assert_eq!(evaluate("type(1) == I"), Ok(Value::B(true)));
+        assert_eq!(evaluate("type([]) == [*]"), Ok(Value::B(true)));
+        assert_eq!(evaluate("type('') == [*]"), Ok(Value::B(true)));
+        assert_eq!(evaluate("type('a') == [C]"), Ok(Value::B(true)));
+        assert_eq!(evaluate("type(['a']) == [[C]]"), Ok(Value::B(true)));
+        assert_eq!(evaluate("type([[]]) == [[*]]"), Ok(Value::B(true)));
+        assert_eq!(evaluate("* == ()"), Ok(Value::B(true)));
+        assert_eq!(evaluate("I == *"), Ok(Value::B(true)));
+        assert_eq!(evaluate("[I] == *"), Ok(Value::B(true)));
+        assert_eq!(evaluate("[I] == [*]"), Ok(Value::B(true)));
 
-        assert_eq!(evaluate_eager("type(1) == C"), Ok(Value::B(false)));
-        assert_eq!(evaluate_eager("type('a') == [I]"), Ok(Value::B(false)));
-        assert_eq!(evaluate_eager("type(['a']) == [C]"), Ok(Value::B(false)));
-        assert_eq!(evaluate_eager("[C] == [[*]]"), Ok(Value::B(false)));
-        assert_eq!(evaluate_eager("I == [*]"), Ok(Value::B(false)));
+        assert_eq!(evaluate("type(1) == C"), Ok(Value::B(false)));
+        assert_eq!(evaluate("type('a') == [I]"), Ok(Value::B(false)));
+        assert_eq!(evaluate("type(['a']) == [C]"), Ok(Value::B(false)));
+        assert_eq!(evaluate("[C] == [[*]]"), Ok(Value::B(false)));
+        assert_eq!(evaluate("I == [*]"), Ok(Value::B(false)));
     }
 
     #[test]
     fn evaluate_assignee_spread_hole() {
-        assert_eq!(evaluate_eager("[..] = [1, 2, 3]"), Ok(Value::Unit));
-        assert_eq!(evaluate_eager("[a, ..] = [1, 2, 3]\na"), Ok(Value::I(1)));
-        assert_eq!(evaluate_eager("[.., a] = [1, 2, 3]\na"), Ok(Value::I(3)));
-        assert_eq!(evaluate_eager("[_, a, ..] = [1, 2, 3]\na"), Ok(Value::I(2)));
-        assert_eq!(
-            evaluate_eager("[_, a, ..] = range(100)\na"),
-            Ok(Value::I(1))
-        );
+        assert_eq!(evaluate("[..] = [1, 2, 3]"), Ok(Value::Unit));
+        assert_eq!(evaluate("[a, ..] = [1, 2, 3]\na"), Ok(Value::I(1)));
+        assert_eq!(evaluate("[.., a] = [1, 2, 3]\na"), Ok(Value::I(3)));
+        assert_eq!(evaluate("[_, a, ..] = [1, 2, 3]\na"), Ok(Value::I(2)));
+        assert_eq!(evaluate("[_, a, ..] = range(100)\na"), Ok(Value::I(1)));
     }
 
     #[test]
     fn evaluate_match_spread_hole() {
+        assert_eq!(evaluate("match [1, 2, 3] { [..] => 5 }"), Ok(Value::I(5)));
         assert_eq!(
-            evaluate_eager("match [1, 2, 3] { [..] => 5 }"),
-            Ok(Value::I(5))
-        );
-        assert_eq!(
-            evaluate_eager("match [1, 2, 3] { [a, ..] => a }"),
+            evaluate("match [1, 2, 3] { [a, ..] => a }"),
             Ok(Value::I(1))
         );
         assert_eq!(
-            evaluate_eager("match range(100) { [_, .., a] => a }"),
+            evaluate("match range(100) { [_, .., a] => a }"),
             Ok(Value::I(99))
         );
     }

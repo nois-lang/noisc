@@ -33,7 +33,7 @@ pub fn destructure_list<T: Evaluate + Debug>(
     span: Span,
     ctx: &mut RefMut<Context>,
 ) -> Result<Vec<(Identifier, Definition)>, Error> {
-    let e = expression.eval(ctx, true)?;
+    let e = expression.eval(ctx)?;
     debug!("destructuring list {:?} into {:?}", &e, &destructure_list);
     match &e.1 {
         Value::List { items: vs, .. } => {

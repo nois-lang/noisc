@@ -30,7 +30,10 @@ pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
     ctx.scope_stack
         .push(Scope::new("global".to_string()).with_definitions(block_defs));
     debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
-    ctx.scope_stack.push(Scope::new(identifier.to_string()));
+
+    // TODO: pass CLI args as main parameter, e.g. main = args {}
+    ctx.scope_stack
+        .push(Scope::new(identifier.to_string()).with_arguments(Some(vec![])));
     debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
     let (main_id, main) = match ctx.find_definition(&identifier) {
         Some(Definition::User(id, exp)) => (id, exp),
@@ -41,7 +44,7 @@ pub fn execute(block: AstPair<Block>, a_ctx: AstContext) {
     };
     let mut a = ctx.scope_stack.last_mut().unwrap();
     a.callee = Some(main_id.clone().0);
-    match main.eval(ctx, true) {
+    match main.eval(ctx) {
         Ok(_) => {}
         Err(e) => {
             let err = Error::new_cause(e, main_id.1 .0, &main_id.0, &ctx.ast_context);

@@ -21,7 +21,7 @@ pub struct Scope {
     pub name: String,
     pub definitions: HashMap<Identifier, Definition>,
     pub callee: Option<Span>,
-    pub arguments: Vec<AstPair<Value>>,
+    pub arguments: Option<Vec<AstPair<Value>>>,
     pub method_callee: Option<AstPair<Value>>,
     pub return_value: Option<Value>,
 }
@@ -32,7 +32,7 @@ impl Scope {
             name,
             definitions: HashMap::default(),
             callee: None,
-            arguments: vec![],
+            arguments: None,
             method_callee: None,
             return_value: None,
         }
@@ -50,7 +50,7 @@ impl Scope {
         new
     }
 
-    pub fn with_arguments(&self, arguments: Vec<AstPair<Value>>) -> Self {
+    pub fn with_arguments(&self, arguments: Option<Vec<AstPair<Value>>>) -> Self {
         let mut new = self.clone();
         new.arguments = arguments;
         new

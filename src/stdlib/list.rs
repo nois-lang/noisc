@@ -115,14 +115,14 @@ impl LibFunction for Map {
                 ctx.scope_stack.push(
                     Scope::new("<closure>".to_string())
                         .with_callee(callee.clone())
-                        .with_arguments(vec![
+                        .with_arguments(Some(vec![
                             args[0].map(|_| li.clone()),
                             args[1].map(|_| Value::I(i as i128)),
-                        ]),
+                        ])),
                 );
                 debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
 
-                let next = args[1].eval(ctx, true).map_err(|e| e)?;
+                let next = args[1].eval(ctx).map_err(|e| e)?;
 
                 debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
                 ctx.scope_stack.pop();
@@ -168,14 +168,14 @@ impl LibFunction for Filter {
                 ctx.scope_stack.push(
                     Scope::new("<closure>".to_string())
                         .with_callee(callee.clone())
-                        .with_arguments(vec![
+                        .with_arguments(Some(vec![
                             args[0].map(|_| li.clone()),
                             args[1].map(|_| Value::I(i as i128)),
-                        ]),
+                        ])),
                 );
                 debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
 
-                let next = args[1].eval(ctx, true).map_err(|e| e)?;
+                let next = args[1].eval(ctx).map_err(|e| e)?;
 
                 debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
                 ctx.scope_stack.pop();

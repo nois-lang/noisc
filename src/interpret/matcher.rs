@@ -18,7 +18,7 @@ pub fn match_expression(
             condition,
             match_clauses,
         } => {
-            let value = condition.eval(ctx, true)?;
+            let value = condition.eval(ctx)?;
             for (i, clause) in match_clauses.into_iter().enumerate() {
                 debug!("matching {:?} against {:?}", &value, &clause);
                 let p_match = match_pattern_item(value.clone(), clause.1.pattern.clone(), ctx)?;

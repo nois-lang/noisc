@@ -30,9 +30,13 @@ impl log::Log for Logger {
                 sl.to_string()
             };
             println!(
-                "{} {:<12} {}",
+                "{} [{:<12}:{:>3}] {}",
                 pretty_level,
-                format!("[{}]", format_target()),
+                format!("{}", format_target()),
+                record
+                    .line()
+                    .map(|i| i.to_string())
+                    .unwrap_or("?".to_string()),
                 record.args()
             );
         }

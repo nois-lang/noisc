@@ -37,10 +37,9 @@ pub trait LibFunction {
         args: Vec<AstPair<Value>>,
         ctx: &mut RefMut<Context>,
     ) -> Result<AstPair<Value>, Error> {
-        let arguments: Vec<AstPair<Value>> = args
-            .iter()
-            .map(|a| a.eval(ctx, false))
-            .collect::<Result<_, _>>()?;
+        debug!("stdlib function call {:?}", Self::name(),);
+        let arguments: Vec<AstPair<Value>> =
+            args.iter().map(|a| a.eval(ctx)).collect::<Result<_, _>>()?;
 
         let res = Self::call(&arguments, ctx);
         debug!(
