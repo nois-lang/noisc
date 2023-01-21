@@ -1,19 +1,17 @@
 main = {
-    q = 39
-    n = 10
+    q = 39.to(C)
     l = [
         'main = {',
-        '    q = 39',
-        '    n = 10',
+        '    q = 39.to(C)',
         '    l = [',
         '    ',
         '    ]',
-        '    println(l.slice(0, 3).join(n.to(C).to([C])).flat())',
-        '    println(l.map(i -> l.at(4) + l.at(4) + q.to(C) + i + q.to(C) + ",").join(n.to(C).to([C])).flat())',
-        '    println(l.slice(5, -1).join(n.to(C).to([C])).flat())',
+        '    l.slice(0, 2).map(i -> println(i))',
+        '    l.map(i -> l.at(3) + l.at(3) + q + i + q + ",").map(i -> println(i))',
+        '    l.slice(4, -1).map(i -> println(i))',
         '}',
     ]
-    println(l.slice(0, 3).join(n.to(C).to([C])).flat())
-    println(l.map(i -> l.at(4) + l.at(4) + q.to(C) + i + q.to(C) + ",").join(n.to(C).to([C])).flat())
-    println(l.slice(5, -1).join(n.to(C).to([C])).flat())
+    l.slice(0, 2).map(i -> println(i))
+    l.map(i -> l.at(3) + l.at(3) + q + i + q + ",").map(i -> println(i))
+    l.slice(4, -1).map(i -> println(i))
 }
