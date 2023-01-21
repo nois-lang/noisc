@@ -20,6 +20,8 @@ pub fn package() -> Package {
             Filter::definition(),
             At::definition(),
             Slice::definition(),
+            Join::definition(),
+            Flat::definition(),
         ]),
     }
 }
@@ -112,6 +114,7 @@ impl LibFunction for Map {
             .into_iter()
             .enumerate()
             .map(|(i, li)| {
+                // TODO: refactor to a common method of calling a closure from sys function
                 ctx.scope_stack.push(
                     Scope::new("<closure>".to_string())
                         .with_callee(callee.clone())
@@ -298,5 +301,52 @@ pub fn from_relative_index(i: i128, len: usize) -> Result<usize, String> {
                 ni, len
             ))
         }
+    }
+}
+
+pub struct Flat;
+
+impl LibFunction for Flat {
+    fn name() -> String {
+        "flat".to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        let res = match &arg_values(args)[..] {
+            [Value::List { items: is, .. }] => {
+                let vs = is
+                    .into_iter()
+                    .map(|i| match i {
+                        Value::List { items: l, .. } => Some(l.clone()),
+                        _ => None,
+                    })
+                    .collect::<Option<Vec<_>>>()
+                    .ok_or(arg_error("([[*]])", args, ctx))?;
+                vs.into_iter().flatten().collect::<Vec<_>>()
+            }
+            _ => return Err(arg_error("([[*]])", args, ctx)),
+        };
+
+        Ok(Value::list(res))
+    }
+}
+
+pub struct Join;
+
+impl LibFunction for Join {
+    fn name() -> String {
+        "join".to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        let res = match &arg_values(args)[..] {
+            [Value::List { items: is, .. }, v] => {
+                itertools::intersperse(is.into_iter().cloned(), v.clone()).collect::<Vec<_>>()
+            }
+            [Value::List { items: is, .. }] => is.clone(),
+            _ => return Err(arg_error("([*], *?)", args, ctx)),
+        };
+
+        Ok(Value::list(res))
     }
 }
