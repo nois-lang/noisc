@@ -1,0 +1,3 @@
+a = -> panic('oh no')
+
+main = -> a() // prints oh no and exits with code 1
