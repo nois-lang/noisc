@@ -50,7 +50,6 @@ pub enum Operand {
     EnumDefinition { values: Vec<AstPair<Identifier>> },
     ListInit { items: Vec<AstPair<Expression>> },
     FunctionInit(FunctionInit),
-    ClosureInit(FunctionInit, Vec<Identifier>),
     String(String),
     Identifier(AstPair<Identifier>),
     ValueType(ValueType),
@@ -246,6 +245,18 @@ pub enum Assignee {
     Identifier(AstPair<Identifier>),
 }
 
+impl Assignee {
+    pub fn flatten(&self) -> Vec<AstPair<Identifier>> {
+        match self {
+            Assignee::Hole => vec![],
+            Assignee::DestructureList(DestructureList(is)) => {
+                is.into_iter().flat_map(|di| di.1.flatten()).collect()
+            }
+            Assignee::Identifier(i) => vec![i.clone()],
+        }
+    }
+}
+
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub struct DestructureList(pub Vec<AstPair<DestructureItem>>);
 
@@ -260,17 +271,45 @@ pub enum DestructureItem {
     List(DestructureList),
 }
 
+impl DestructureItem {
+    pub fn flatten(&self) -> Vec<AstPair<Identifier>> {
+        match self {
+            DestructureItem::Hole => vec![],
+            DestructureItem::SpreadHole => vec![],
+            DestructureItem::Identifier { identifier: i, .. } => vec![i.clone()],
+            DestructureItem::List(DestructureList(is)) => {
+                is.into_iter().flat_map(|di| di.1.flatten()).collect()
+            }
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct AstContext {
     pub input: String,
-    pub scope_stack: Vec<HashMap<Identifier, Span>>,
+    pub scope_stack: Vec<AstScope>,
 }
 
 impl AstContext {
     pub fn new(input: String) -> AstContext {
         AstContext {
             input,
-            scope_stack: vec![],
+            scope_stack: vec![AstScope::new()],
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct AstScope {
+    pub definitions: HashMap<Identifier, Span>,
+    pub usage: HashMap<Identifier, Span>,
+}
+
+impl AstScope {
+    pub fn new() -> AstScope {
+        AstScope {
+            definitions: HashMap::new(),
+            usage: HashMap::new(),
         }
     }
 }

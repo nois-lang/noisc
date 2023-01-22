@@ -38,9 +38,8 @@ lazy_static! {
 
 fn main() {
     if let Some(source) = piped_input() {
-        let ast = parse_ast(source.clone());
-        let a_ctx = AstContext::new(source);
-        execute(ast, a_ctx, |_| {});
+        let (ast, a_ctx) = parse_ast(source.clone());
+        execute(ast, a_ctx.into_inner(), |_| {});
         return;
     }
 
@@ -71,20 +70,20 @@ fn main() {
             }
             info!("executing command {:?}", &command);
             let source = read_source(path);
-            let ast = parse_ast(source.clone());
-            let a_ctx = AstContext::new(source);
-            execute(ast, a_ctx, |_| {});
+            let (ast, a_ctx) = parse_ast(source.clone());
+            execute(ast, a_ctx.into_inner(), |_| {});
         }
     }
 }
 
-pub fn parse_ast(source: String) -> AstPair<Block> {
-    let ctx_cell = RefCell::new(AstContext::new(source.to_string()));
-    let ctx = &mut ctx_cell.borrow_mut();
+pub fn parse_ast(source: String) -> (AstPair<Block>, RefCell<AstContext>) {
+    let ctx = &AstContext::new(source.to_string());
+    let ctx_rc = &RefCell::new(ctx.clone());
+    let ctx_bm = &mut ctx_rc.borrow_mut();
     let pt = NoisParser::parse_program(source.as_str());
-    let ast = pt.and_then(|parsed| parse_block(&parsed, ctx));
+    let ast = pt.and_then(|parsed| parse_block(&parsed, ctx_bm));
     match ast {
-        Ok(a) => a,
+        Ok(a) => (a, RefCell::new(ctx.clone())),
         Err(e) => terminate(e.to_string()),
     }
 }
@@ -120,7 +119,7 @@ mod tests {
     use std::collections::HashMap;
     use std::fs::read_to_string;
 
-    use crate::ast::ast::{AstContext, AstPair};
+    use crate::ast::ast::AstPair;
     use crate::error::Error;
     use crate::interpret::context::{Context, Scope};
     use crate::interpret::interpreter::execute;
@@ -160,9 +159,8 @@ mod tests {
         }
 
         let source = read_to_string(format!("data/{name}.no")).unwrap();
-        let a_ctx = AstContext::new(source.to_string());
-        let ast = parse_ast(source);
-        execute(ast, a_ctx, |ctx| {
+        let (ast, a_ctx) = parse_ast(source);
+        execute(ast, a_ctx.into_inner(), |ctx| {
             ctx.scope_stack.push(
                 Scope::new("test".to_string())
                     .with_definitions(HashMap::from([TestPrintln::definition()])),

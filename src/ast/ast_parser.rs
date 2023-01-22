@@ -1,12 +1,14 @@
 use std::cell::RefMut;
+use std::collections::HashMap;
 
 use enquote::unquote;
+use log::debug;
 use pest::iterators::{Pair, Pairs};
 
 use crate::ast::ast::{
-    Assignee, AstContext, AstPair, BinaryOperator, Block, DestructureItem, DestructureList,
-    Expression, FunctionInit, Identifier, MatchClause, Operand, PatternItem, Statement,
-    UnaryOperator, ValueType,
+    Assignee, AstContext, AstPair, AstScope, BinaryOperator, Block, DestructureItem,
+    DestructureList, Expression, FunctionInit, Identifier, MatchClause, Operand, PatternItem,
+    Statement, UnaryOperator, ValueType,
 };
 use crate::ast::expression::{Associativity, OperatorAssociativity, OperatorPrecedence};
 use crate::ast::util::{children, first_child, parse_children};
@@ -310,6 +312,15 @@ pub fn parse_operand(
         Rule::enum_define => parse_enum_define(pair, ctx),
         Rule::identifier => {
             let id = parse_identifier(pair, ctx)?;
+
+            // definitions created by this assignee
+            debug!("usage: {:?}", id);
+            ctx.scope_stack
+                .last_mut()
+                .unwrap()
+                .usage
+                .insert(id.1.clone(), id.0.clone());
+
             Ok(AstPair::from_span(
                 &id.0,
                 Operand::Identifier(AstPair::from_span(&id.0, id.1)),
@@ -369,16 +380,20 @@ pub fn parse_function_init(
     ctx: &mut RefMut<AstContext>,
 ) -> Result<AstPair<Operand>, Error> {
     let ch = children(pair);
+    debug!("push ast scope");
+    ctx.scope_stack.push(AstScope::new());
     let parameters: Vec<AstPair<Assignee>> = parse_children(&ch[0], parse_assignee, ctx)?;
     let block = parse_block(&ch[1], ctx)?;
-    Ok(AstPair::from_pair(
-        pair,
-        Operand::FunctionInit(FunctionInit {
-            parameters,
-            block,
-            closure: vec![],
-        }),
-    ))
+    // TODO: detect if the function uses external definitions (is a closure)
+    // TODO: warn about unused definitions
+    let fi = FunctionInit {
+        parameters,
+        block,
+        closure: vec![],
+    };
+    debug!("pop ast scope");
+    ctx.scope_stack.pop();
+    Ok(AstPair::from_pair(pair, Operand::FunctionInit(fi)))
 }
 
 pub fn parse_list_init(
@@ -485,6 +500,14 @@ fn parse_assignee(
                 }
                 _ => unreachable!(),
             };
+            // definitions created by this assignee
+            let defs = assignee
+                .flatten()
+                .into_iter()
+                .map(|a| (a.1, a.0))
+                .collect::<HashMap<_, _>>();
+            defs.keys().for_each(|i| debug!("definition: {:?}", i));
+            ctx.scope_stack.last_mut().unwrap().definitions.extend(defs);
             Ok(AstPair::from_pair(ch, assignee))
         }
         _ => Err(Error::from_pair(
