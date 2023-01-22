@@ -1,27 +1,36 @@
+use std::cell::RefMut;
+
 use enquote::unquote;
 use pest::iterators::{Pair, Pairs};
 
 use crate::ast::ast::{
-    Assignee, AstPair, BinaryOperator, Block, DestructureItem, DestructureList, Expression,
-    FunctionInit, Identifier, MatchClause, Operand, PatternItem, Statement, ValueType,
+    Assignee, AstContext, AstPair, BinaryOperator, Block, DestructureItem, DestructureList,
+    Expression, FunctionInit, Identifier, MatchClause, Operand, PatternItem, Statement,
+    UnaryOperator, ValueType,
 };
 use crate::ast::expression::{Associativity, OperatorAssociativity, OperatorPrecedence};
 use crate::ast::util::{children, first_child, parse_children};
 use crate::error::Error;
 use crate::parser::Rule;
 
-pub fn parse_file(pairs: &Pairs<Rule>) -> Result<AstPair<Block>, Error> {
-    parse_block(&pairs.clone().into_iter().next().unwrap())
+pub fn parse_file(
+    pairs: &Pairs<Rule>,
+    ctx: &mut RefMut<AstContext>,
+) -> Result<AstPair<Block>, Error> {
+    parse_block(&pairs.clone().into_iter().next().unwrap(), ctx)
 }
 
-pub fn parse_block(pair: &Pair<Rule>) -> Result<AstPair<Block>, Error> {
+pub fn parse_block(
+    pair: &Pair<Rule>,
+    ctx: &mut RefMut<AstContext>,
+) -> Result<AstPair<Block>, Error> {
     match pair.as_rule() {
         Rule::block => {
-            let statements = parse_children(pair, parse_statement)?;
+            let statements = parse_children(pair, parse_statement, ctx)?;
             Ok(AstPair::from_pair(pair, Block { statements }))
         }
         Rule::expression => {
-            let expression = parse_expression(pair)?;
+            let expression = parse_expression(pair, ctx)?;
             Ok(AstPair::from_pair(
                 pair,
                 Block {
@@ -39,10 +48,13 @@ pub fn parse_block(pair: &Pair<Rule>) -> Result<AstPair<Block>, Error> {
     }
 }
 
-pub fn parse_statement(pair: &Pair<Rule>) -> Result<AstPair<Statement>, Error> {
+pub fn parse_statement(
+    pair: &Pair<Rule>,
+    ctx: &mut RefMut<AstContext>,
+) -> Result<AstPair<Statement>, Error> {
     match pair.as_rule() {
         Rule::return_statement => {
-            let m_exp = first_child(pair).map(|p| parse_expression(&p));
+            let m_exp = first_child(pair).map(|p| parse_expression(&p, ctx));
             let st = if let Some(p_exp) = m_exp {
                 Statement::Return(Some(p_exp?))
             } else {
@@ -55,13 +67,13 @@ pub fn parse_statement(pair: &Pair<Rule>) -> Result<AstPair<Statement>, Error> {
             Ok(AstPair::from_pair(
                 pair,
                 Statement::Assignment {
-                    assignee: parse_assignee(&ch[0])?,
-                    expression: parse_expression(&ch[1])?,
+                    assignee: parse_assignee(&ch[0], ctx)?,
+                    expression: parse_expression(&ch[1], ctx)?,
                 },
             ))
         }
         Rule::expression => {
-            let exp = parse_expression(pair)?;
+            let exp = parse_expression(pair, ctx)?;
             Ok(AstPair::from_pair(pair, Statement::Expression(exp)))
         }
         _ => Err(Error::from_pair(
@@ -71,20 +83,23 @@ pub fn parse_statement(pair: &Pair<Rule>) -> Result<AstPair<Statement>, Error> {
     }
 }
 
-pub fn parse_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error> {
+pub fn parse_expression(
+    pair: &Pair<Rule>,
+    ctx: &mut RefMut<AstContext>,
+) -> Result<AstPair<Expression>, Error> {
     let ch = children(pair);
     match pair.as_rule() {
         Rule::expression => {
             if ch.len() == 1 {
-                Ok(parse_expression(ch.first().unwrap())?)
+                Ok(parse_expression(ch.first().unwrap(), ctx)?)
             } else {
-                parse_complex_expression(pair)
+                parse_complex_expression(pair, ctx)
             }
         }
         // prefix operator expression
         Rule::unary_expression if ch[0].as_rule() == Rule::prefix_operator => {
-            let operator = parse_operator(&ch[0])?;
-            let operand = parse_expression(&ch[1])?;
+            let operator = parse_unary_operator(&ch[0], ctx)?;
+            let operand = parse_expression(&ch[1], ctx)?;
             return Ok(AstPair::from_pair(
                 pair,
                 Expression::Unary {
@@ -95,8 +110,8 @@ pub fn parse_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error>
         }
         // postfix operator expression
         Rule::unary_expression if ch[1].as_rule() == Rule::postfix_operator => {
-            let operand = parse_expression(&ch[0])?;
-            let operator = parse_operator(&ch[1])?;
+            let operand = parse_expression(&ch[0], ctx)?;
+            let operator = parse_unary_operator(&ch[1], ctx)?;
             return Ok(AstPair::from_pair(
                 pair,
                 Expression::Unary {
@@ -107,11 +122,11 @@ pub fn parse_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error>
         }
         Rule::match_expression => {
             let ch = children(pair);
-            let condition = parse_expression(&ch[0])?;
+            let condition = parse_expression(&ch[0], ctx)?;
             let match_clauses = ch
                 .iter()
                 .skip(1)
-                .map(|c| parse_match_clause(c))
+                .map(|c| parse_match_clause(c, ctx))
                 .collect::<Result<_, _>>()?;
             return Ok(AstPair::from_pair(
                 pair,
@@ -122,7 +137,7 @@ pub fn parse_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error>
             ));
         }
         _ => {
-            let operand = parse_operand(pair)?;
+            let operand = parse_operand(pair, ctx)?;
             Ok(AstPair::from_pair(
                 pair,
                 Expression::Operand(Box::from(operand)),
@@ -131,7 +146,10 @@ pub fn parse_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error>
     }
 }
 
-pub fn parse_complex_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>, Error> {
+pub fn parse_complex_expression(
+    pair: &Pair<Rule>,
+    ctx: &mut RefMut<AstContext>,
+) -> Result<AstPair<Expression>, Error> {
     #[derive(Debug, PartialOrd, PartialEq, Clone)]
     enum Node {
         ValueNode(ValueNode),
@@ -147,7 +165,7 @@ pub fn parse_complex_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>
     for c in ch {
         match c.as_rule() {
             Rule::infix_operator => {
-                let o1: AstPair<BinaryOperator> = parse_operator(&c)?;
+                let o1 = parse_binary_operator(&c, ctx)?;
                 let mut o2;
                 while !operator_stack.is_empty() {
                     o2 = operator_stack.iter().cloned().last().unwrap();
@@ -179,7 +197,7 @@ pub fn parse_complex_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>
                 operator_stack.push(o1.clone());
             }
             _ => {
-                let operand = parse_expression(&c)?;
+                let operand = parse_expression(&c, ctx)?;
                 operand_stack.push(Node::ValueNode(ValueNode(operand)));
             }
         }
@@ -210,39 +228,88 @@ pub fn parse_complex_expression(pair: &Pair<Rule>) -> Result<AstPair<Expression>
     Ok(exp)
 }
 
-pub fn parse_operator<'a, T>(pair: &'a Pair<'_, Rule>) -> Result<AstPair<T>, Error>
-where
-    T: TryFrom<Pair<'a, Rule>, Error = Error>,
-{
+pub fn parse_unary_operator(
+    pair: &Pair<Rule>,
+    ctx: &mut RefMut<AstContext>,
+) -> Result<AstPair<UnaryOperator>, Error> {
     let c = first_child(pair).unwrap();
-    match pair.as_rule() {
-        Rule::prefix_operator | Rule::postfix_operator | Rule::infix_operator => {
-            c.try_into().map(|op| AstPair::from_pair(pair, op))
-        }
+    let op = match pair.as_rule() {
+        Rule::prefix_operator | Rule::postfix_operator => match c.as_rule() {
+            Rule::ADD_OP => Ok(UnaryOperator::Plus),
+            Rule::SUBTRACT_OP => Ok(UnaryOperator::Minus),
+            Rule::NOT_OP => Ok(UnaryOperator::Not),
+            Rule::SPREAD_OP => Ok(UnaryOperator::Spread),
+            Rule::argument_list => Ok(UnaryOperator::ArgumentList(parse_argument_list(&c, ctx)?)),
+            r => Err(Error::from_pair(
+                pair,
+                format!("expected unary operator, found {:?}", r),
+            )),
+        },
         _ => Err(Error::from_pair(
             pair,
             format!("expected operator, found {:?}", pair.as_rule()),
         )),
-    }
+    };
+    op.map(|op| AstPair::from_pair(pair, op))
 }
 
-pub fn parse_operand(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error> {
+pub fn parse_binary_operator(
+    pair: &Pair<Rule>,
+    _ctx: &mut RefMut<AstContext>,
+) -> Result<AstPair<BinaryOperator>, Error> {
+    let c = first_child(pair).unwrap();
+    let op = match pair.as_rule() {
+        Rule::infix_operator => match c.as_rule() {
+            Rule::ADD_OP => Ok(BinaryOperator::Add),
+            Rule::SUBTRACT_OP => Ok(BinaryOperator::Subtract),
+            Rule::MULTIPLY_OP => Ok(BinaryOperator::Multiply),
+            Rule::DIVIDE_OP => Ok(BinaryOperator::Divide),
+            Rule::EXPONENT_OP => Ok(BinaryOperator::Exponent),
+            Rule::REMAINDER_OP => Ok(BinaryOperator::Remainder),
+            Rule::ACCESSOR_OP => Ok(BinaryOperator::Accessor),
+            Rule::EQUALS_OP => Ok(BinaryOperator::Equals),
+            Rule::NOT_EQUALS_OP => Ok(BinaryOperator::NotEquals),
+            Rule::GREATER_OP => Ok(BinaryOperator::Greater),
+            Rule::GREATER_OR_EQUALS_OP => Ok(BinaryOperator::GreaterOrEquals),
+            Rule::LESS_OP => Ok(BinaryOperator::Less),
+            Rule::LESS_OR_EQUALS_OP => Ok(BinaryOperator::LessOrEquals),
+            Rule::AND_OP => Ok(BinaryOperator::And),
+            Rule::OR_OP => Ok(BinaryOperator::Or),
+            r => Err(Error::from_pair(
+                pair,
+                format!("expected binary operator, found {:?}", r),
+            )),
+        },
+        _ => Err(Error::from_pair(
+            pair,
+            format!("expected operator, found {:?}", pair.as_rule()),
+        )),
+    };
+    op.map(|op| AstPair::from_pair(pair, op))
+}
+
+pub fn parse_operand(
+    pair: &Pair<Rule>,
+    ctx: &mut RefMut<AstContext>,
+) -> Result<AstPair<Operand>, Error> {
     match pair.as_rule() {
         Rule::integer => {
-            parse_integer(pair).map(|i| AstPair::from_pair(&pair, Operand::Integer(i)))
+            parse_integer(pair, ctx).map(|i| AstPair::from_pair(&pair, Operand::Integer(i)))
         }
-        Rule::float => parse_float(pair).map(|f| AstPair::from_pair(&pair, Operand::Float(f))),
+        Rule::float => parse_float(pair, ctx).map(|f| AstPair::from_pair(&pair, Operand::Float(f))),
         Rule::boolean => {
-            parse_boolean(pair).map(|b| AstPair::from_pair(&pair, Operand::Boolean(b)))
+            parse_boolean(pair, ctx).map(|b| AstPair::from_pair(&pair, Operand::Boolean(b)))
         }
-        Rule::string => parse_string(pair).map(|s| AstPair::from_pair(&pair, Operand::String(s))),
+        Rule::string => {
+            parse_string(pair, ctx).map(|s| AstPair::from_pair(&pair, Operand::String(s)))
+        }
         Rule::HOLE_OP => Ok(AstPair::from_pair(pair, Operand::Hole)),
-        Rule::function_init => parse_function_init(pair),
-        Rule::list_init => parse_list_init(pair),
-        Rule::struct_define => parse_struct_define(pair),
-        Rule::enum_define => parse_enum_define(pair),
+        Rule::function_init => parse_function_init(pair, ctx),
+        Rule::list_init => parse_list_init(pair, ctx),
+        Rule::struct_define => parse_struct_define(pair, ctx),
+        Rule::enum_define => parse_enum_define(pair, ctx),
         Rule::identifier => {
-            let id = parse_identifier(pair)?;
+            let id = parse_identifier(pair, ctx)?;
             Ok(AstPair::from_span(
                 &id.0,
                 Operand::Identifier(AstPair::from_span(&id.0, id.1)),
@@ -250,7 +317,7 @@ pub fn parse_operand(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error> {
         }
         Rule::value_type => Ok(AstPair::from_pair(
             pair,
-            Operand::ValueType(parse_value_type(&children(pair)[0])?),
+            Operand::ValueType(parse_value_type(&children(pair)[0], ctx)?),
         )),
         _ => Err(Error::from_pair(
             pair,
@@ -259,7 +326,7 @@ pub fn parse_operand(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error> {
     }
 }
 
-pub fn parse_integer(pair: &Pair<Rule>) -> Result<i128, Error> {
+pub fn parse_integer(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<i128, Error> {
     let num_s = pair.as_str();
     match num_s.parse::<i128>() {
         Ok(n) => Ok(n),
@@ -267,7 +334,7 @@ pub fn parse_integer(pair: &Pair<Rule>) -> Result<i128, Error> {
     }
 }
 
-pub fn parse_float(pair: &Pair<Rule>) -> Result<f64, Error> {
+pub fn parse_float(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<f64, Error> {
     let num_s = pair.as_str();
     match num_s.parse::<f64>() {
         Ok(n) => Ok(n),
@@ -275,7 +342,7 @@ pub fn parse_float(pair: &Pair<Rule>) -> Result<f64, Error> {
     }
 }
 
-pub fn parse_boolean(pair: &Pair<Rule>) -> Result<bool, Error> {
+pub fn parse_boolean(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<bool, Error> {
     let bool_s = pair.as_str();
     match bool_s.to_lowercase().parse::<bool>() {
         Ok(b) => Ok(b),
@@ -286,7 +353,7 @@ pub fn parse_boolean(pair: &Pair<Rule>) -> Result<bool, Error> {
     }
 }
 
-pub fn parse_string(pair: &Pair<Rule>) -> Result<String, Error> {
+pub fn parse_string(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<String, Error> {
     let raw_str = pair.as_str();
     match unquote(raw_str) {
         Ok(s) => Ok(s),
@@ -297,35 +364,54 @@ pub fn parse_string(pair: &Pair<Rule>) -> Result<String, Error> {
     }
 }
 
-pub fn parse_function_init(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error> {
+pub fn parse_function_init(
+    pair: &Pair<Rule>,
+    ctx: &mut RefMut<AstContext>,
+) -> Result<AstPair<Operand>, Error> {
     let ch = children(pair);
-    let parameters: Vec<AstPair<Assignee>> = parse_children(&ch[0], parse_assignee)?;
-    let block = parse_block(&ch[1])?;
+    let parameters: Vec<AstPair<Assignee>> = parse_children(&ch[0], parse_assignee, ctx)?;
+    let block = parse_block(&ch[1], ctx)?;
     Ok(AstPair::from_pair(
         pair,
-        Operand::FunctionInit(FunctionInit { parameters, block }),
+        Operand::FunctionInit(FunctionInit {
+            parameters,
+            block,
+            closure: vec![],
+        }),
     ))
 }
 
-pub fn parse_list_init(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error> {
-    let items = parse_children(pair, parse_expression)?;
+pub fn parse_list_init(
+    pair: &Pair<Rule>,
+    ctx: &mut RefMut<AstContext>,
+) -> Result<AstPair<Operand>, Error> {
+    let items = parse_children(pair, parse_expression, ctx)?;
     Ok(AstPair::from_pair(pair, Operand::ListInit { items }))
 }
 
-pub fn parse_struct_define(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error> {
-    let fields = parse_children(pair, parse_identifier)?;
+pub fn parse_struct_define(
+    pair: &Pair<Rule>,
+    ctx: &mut RefMut<AstContext>,
+) -> Result<AstPair<Operand>, Error> {
+    let fields = parse_children(pair, parse_identifier, ctx)?;
     Ok(AstPair::from_pair(
         pair,
         Operand::StructDefinition { fields },
     ))
 }
 
-pub fn parse_enum_define(pair: &Pair<Rule>) -> Result<AstPair<Operand>, Error> {
-    let values = parse_children(pair, parse_identifier)?;
+pub fn parse_enum_define(
+    pair: &Pair<Rule>,
+    ctx: &mut RefMut<AstContext>,
+) -> Result<AstPair<Operand>, Error> {
+    let values = parse_children(pair, parse_identifier, ctx)?;
     Ok(AstPair::from_pair(pair, Operand::EnumDefinition { values }))
 }
 
-fn parse_identifier(pair: &Pair<Rule>) -> Result<AstPair<Identifier>, Error> {
+fn parse_identifier(
+    pair: &Pair<Rule>,
+    _ctx: &mut RefMut<AstContext>,
+) -> Result<AstPair<Identifier>, Error> {
     match pair.as_rule() {
         Rule::identifier => Ok(AstPair::from_pair(pair, Identifier::new(pair.as_str()))),
         _ => Err(Error::from_pair(
@@ -339,7 +425,10 @@ fn parse_identifier(pair: &Pair<Rule>) -> Result<AstPair<Identifier>, Error> {
     }
 }
 
-pub fn parse_value_type(pair: &Pair<Rule>) -> Result<ValueType, Error> {
+pub fn parse_value_type(
+    pair: &Pair<Rule>,
+    _ctx: &mut RefMut<AstContext>,
+) -> Result<ValueType, Error> {
     Ok(match pair.as_rule() {
         Rule::unit_type => ValueType::Unit,
         Rule::integer_type => ValueType::Integer,
@@ -361,9 +450,12 @@ pub fn parse_value_type(pair: &Pair<Rule>) -> Result<ValueType, Error> {
     })
 }
 
-pub fn parse_argument_list(pair: &Pair<Rule>) -> Result<Vec<AstPair<Expression>>, Error> {
+pub fn parse_argument_list(
+    pair: &Pair<Rule>,
+    ctx: &mut RefMut<AstContext>,
+) -> Result<Vec<AstPair<Expression>>, Error> {
     match pair.as_rule() {
-        Rule::argument_list => parse_children(pair, parse_expression),
+        Rule::argument_list => parse_children(pair, parse_expression, ctx),
         _ => Err(Error::from_pair(
             pair,
             format!(
@@ -375,17 +467,22 @@ pub fn parse_argument_list(pair: &Pair<Rule>) -> Result<Vec<AstPair<Expression>>
     }
 }
 
-fn parse_assignee(pair: &Pair<Rule>) -> Result<AstPair<Assignee>, Error> {
+fn parse_assignee(
+    pair: &Pair<Rule>,
+    ctx: &mut RefMut<AstContext>,
+) -> Result<AstPair<Assignee>, Error> {
     match pair.as_rule() {
         Rule::assignee => {
             let ch = &first_child(pair).unwrap();
             let assignee = match ch.as_rule() {
                 Rule::identifier => {
-                    let id = parse_identifier(ch)?;
+                    let id = parse_identifier(ch, ctx)?;
                     Assignee::Identifier(id)
                 }
                 Rule::HOLE_OP => Assignee::Hole,
-                Rule::destructure_list => Assignee::DestructureList(parse_destructure_list(ch)?),
+                Rule::destructure_list => {
+                    Assignee::DestructureList(parse_destructure_list(ch, ctx)?)
+                }
                 _ => unreachable!(),
             };
             Ok(AstPair::from_pair(ch, assignee))
@@ -397,15 +494,21 @@ fn parse_assignee(pair: &Pair<Rule>) -> Result<AstPair<Assignee>, Error> {
     }
 }
 
-fn parse_destructure_list(pair: &Pair<Rule>) -> Result<DestructureList, Error> {
+fn parse_destructure_list(
+    pair: &Pair<Rule>,
+    ctx: &mut RefMut<AstContext>,
+) -> Result<DestructureList, Error> {
     let items = children(pair)
         .iter()
-        .map(|p| parse_destructure_item(p))
+        .map(|p| parse_destructure_item(p, ctx))
         .collect::<Result<_, _>>()?;
     Ok(DestructureList(items))
 }
 
-fn parse_destructure_item(pair: &Pair<Rule>) -> Result<AstPair<DestructureItem>, Error> {
+fn parse_destructure_item(
+    pair: &Pair<Rule>,
+    ctx: &mut RefMut<AstContext>,
+) -> Result<AstPair<DestructureItem>, Error> {
     match pair.as_rule() {
         Rule::destructure_item => {
             let ch = children(pair);
@@ -413,15 +516,17 @@ fn parse_destructure_item(pair: &Pair<Rule>) -> Result<AstPair<DestructureItem>,
                 Rule::HOLE_OP => DestructureItem::Hole,
                 Rule::SPREAD_OP if ch.len() == 1 => DestructureItem::SpreadHole,
                 Rule::SPREAD_OP if ch.len() == 2 => DestructureItem::Identifier {
-                    identifier: parse_identifier(&ch[1])?,
+                    identifier: parse_identifier(&ch[1], ctx)?,
                     spread: true,
                 },
                 Rule::identifier => DestructureItem::Identifier {
-                    identifier: parse_identifier(&ch[0])?,
+                    identifier: parse_identifier(&ch[0], ctx)?,
                     spread: false,
                 },
-                Rule::destructure_item => return parse_destructure_item(&ch[0]),
-                Rule::destructure_list => DestructureItem::List(parse_destructure_list(&ch[0])?),
+                Rule::destructure_item => return parse_destructure_item(&ch[0], ctx),
+                Rule::destructure_list => {
+                    DestructureItem::List(parse_destructure_list(&ch[0], ctx)?)
+                }
                 r => {
                     return Err(Error::from_pair(
                         pair,
@@ -442,12 +547,15 @@ fn parse_destructure_item(pair: &Pair<Rule>) -> Result<AstPair<DestructureItem>,
     }
 }
 
-fn parse_match_clause(pair: &Pair<Rule>) -> Result<AstPair<MatchClause>, Error> {
+fn parse_match_clause(
+    pair: &Pair<Rule>,
+    ctx: &mut RefMut<AstContext>,
+) -> Result<AstPair<MatchClause>, Error> {
     match pair.as_rule() {
         Rule::match_clause => {
             let ch = children(pair);
-            let pattern = parse_pattern_item(&ch[0])?;
-            let block = parse_block(&ch[1])?;
+            let pattern = parse_pattern_item(&ch[0], ctx)?;
+            let block = parse_block(&ch[1], ctx)?;
             Ok(AstPair::from_pair(&pair, MatchClause { pattern, block }))
         }
         _ => Err(Error::from_pair(
@@ -461,26 +569,29 @@ fn parse_match_clause(pair: &Pair<Rule>) -> Result<AstPair<MatchClause>, Error> 
     }
 }
 
-fn parse_pattern_item(pair: &Pair<Rule>) -> Result<AstPair<PatternItem>, Error> {
+fn parse_pattern_item(
+    pair: &Pair<Rule>,
+    ctx: &mut RefMut<AstContext>,
+) -> Result<AstPair<PatternItem>, Error> {
     match pair.as_rule() {
         Rule::pattern_item => {
             let ch = children(pair);
             let item: PatternItem = match &ch[0].as_rule() {
                 Rule::HOLE_OP => PatternItem::Hole,
-                Rule::integer => PatternItem::Integer(parse_integer(&ch[0])?),
-                Rule::float => PatternItem::Float(parse_float(&ch[0])?),
-                Rule::boolean => PatternItem::Boolean(parse_boolean(&ch[0])?),
-                Rule::string => PatternItem::String(parse_string(&ch[0])?),
+                Rule::integer => PatternItem::Integer(parse_integer(&ch[0], ctx)?),
+                Rule::float => PatternItem::Float(parse_float(&ch[0], ctx)?),
+                Rule::boolean => PatternItem::Boolean(parse_boolean(&ch[0], ctx)?),
+                Rule::string => PatternItem::String(parse_string(&ch[0], ctx)?),
                 Rule::SPREAD_OP if ch.len() == 1 => PatternItem::SpreadHole,
                 Rule::SPREAD_OP if ch.len() == 2 => PatternItem::Identifier {
-                    identifier: parse_identifier(&ch[1])?,
+                    identifier: parse_identifier(&ch[1], ctx)?,
                     spread: true,
                 },
                 Rule::identifier => PatternItem::Identifier {
-                    identifier: parse_identifier(&ch[0])?,
+                    identifier: parse_identifier(&ch[0], ctx)?,
                     spread: false,
                 },
-                Rule::pattern_list => return parse_pattern_list(&ch[0]),
+                Rule::pattern_list => return parse_pattern_list(&ch[0], ctx),
                 r => unreachable!("{:?}", r),
             };
             Ok(AstPair::from_pair(&pair, item))
@@ -496,12 +607,15 @@ fn parse_pattern_item(pair: &Pair<Rule>) -> Result<AstPair<PatternItem>, Error> 
     }
 }
 
-fn parse_pattern_list(pair: &Pair<Rule>) -> Result<AstPair<PatternItem>, Error> {
+fn parse_pattern_list(
+    pair: &Pair<Rule>,
+    ctx: &mut RefMut<AstContext>,
+) -> Result<AstPair<PatternItem>, Error> {
     match pair.as_rule() {
         Rule::pattern_list => {
             let is = children(pair)
                 .iter()
-                .map(|i| parse_pattern_item(i))
+                .map(|i| parse_pattern_item(i, ctx))
                 .collect::<Result<_, _>>()?;
             Ok(AstPair::from_pair(&pair, PatternItem::PatternList(is)))
         }
@@ -518,6 +632,8 @@ fn parse_pattern_list(pair: &Pair<Rule>) -> Result<AstPair<PatternItem>, Error> 
 
 #[cfg(test)]
 mod tests {
+    use std::cell::RefCell;
+
     use pest::Parser;
 
     use crate::parser::NoisParser;
@@ -534,11 +650,17 @@ mod tests {
         };
     }
 
+    fn parse_block(source: &str) -> Block {
+        let file = &NoisParser::parse(Rule::program, source).unwrap();
+        let ctx_cell = RefCell::new(AstContext::new(source.to_string()));
+        let ctx = &mut ctx_cell.borrow_mut();
+        parse_file(file, ctx).unwrap().1
+    }
+
     #[test]
     fn build_ast_empty_block() {
         let source = "";
-        let file = &NoisParser::parse(Rule::program, source).unwrap();
-        let block = parse_file(file).unwrap().1;
+        let block = parse_block(source);
         assert!(block.statements.is_empty());
     }
 
@@ -549,8 +671,7 @@ mod tests {
 12.5
 1e21
 "#;
-        let file = &NoisParser::parse(Rule::program, source).unwrap();
-        let block = parse_file(file).unwrap().1;
+        let block = parse_block(source);
         let numbers = block
             .statements
             .into_iter()
@@ -572,8 +693,7 @@ mod tests {
 True
 False
 "#;
-        let file = &NoisParser::parse(Rule::program, source).unwrap();
-        let block = parse_file(file).unwrap().1;
+        let block = parse_block(source);
         let bools = block
             .statements
             .into_iter()
@@ -600,8 +720,7 @@ False
 'a\u1234bc'
 'hey 😎'
 "#;
-        let file = &NoisParser::parse(Rule::program, source).unwrap();
-        let block = parse_file(file).unwrap().1;
+        let block = parse_block(source);
         let strings: Vec<String> = block
             .statements
             .into_iter()
@@ -625,8 +744,7 @@ False
     #[test]
     fn build_ast_type_value() {
         let source = "[(), I, F, C, B, [C], [[C], I], Fn]";
-        let file = &NoisParser::parse(Rule::program, source).unwrap();
-        let block: AstPair<Block> = parse_file(file).unwrap();
+        let block = parse_block(source);
         let expect = r#"
 Block {
     statements: [
@@ -723,8 +841,7 @@ Block {
     'abc',
 ]
 "#;
-        let file = &NoisParser::parse(Rule::program, source).unwrap();
-        let block = parse_file(file).unwrap().1;
+        let block = parse_block(source);
         let get_list_items = |p: &Operand| -> Vec<Operand> {
             let exps: Vec<AstPair<Expression>> =
                 match_enum!(p.clone(), Operand::ListInit{items: l} => l);
@@ -766,8 +883,7 @@ Block {
     c
 }
 "#;
-        let file = &NoisParser::parse(Rule::program, source).unwrap();
-        let block = parse_file(file).unwrap().1;
+        let block = parse_block(source);
         let get_struct_items = |p: &Operand| -> Vec<Identifier> {
             match_enum!(p.clone(), Operand::StructDefinition{fields: fs} => fs)
                 .into_iter()
@@ -798,8 +914,7 @@ Block {
     C
 }
 "#;
-        let file = &NoisParser::parse(Rule::program, source).unwrap();
-        let block = parse_file(file).unwrap().1;
+        let block = parse_block(source);
         let get_enum_items = |p: &Operand| -> Vec<Identifier> {
             match_enum!(p.clone(), Operand::EnumDefinition{values: vs} => vs)
                 .into_iter()
@@ -823,8 +938,7 @@ Block {
     #[test]
     fn build_ast_complex_expression_basic() {
         let source = r#"a + b * c"#;
-        let file = &NoisParser::parse(Rule::program, source).unwrap();
-        let block: AstPair<Block> = parse_file(file).unwrap();
+        let block = parse_block(source);
         let expect = r#"
 Block {
     statements: [
@@ -866,8 +980,7 @@ Block {
     #[test]
     fn build_ast_complex_expression_left_associative() {
         let source = r#"a + b - c"#;
-        let file = &NoisParser::parse(Rule::program, source).unwrap();
-        let block: AstPair<Block> = parse_file(file).unwrap();
+        let block = parse_block(source);
         let expect = r#"
 Block {
     statements: [
@@ -909,8 +1022,7 @@ Block {
     #[test]
     fn build_ast_complex_expression_right_associative() {
         let source = r#"a && b && c"#;
-        let file = &NoisParser::parse(Rule::program, source).unwrap();
-        let block: AstPair<Block> = parse_file(file).unwrap();
+        let block = parse_block(source);
         let expect = r#"
 Block {
     statements: [
@@ -952,8 +1064,7 @@ Block {
     #[test]
     fn build_ast_complex_expression_long() {
         let source = r#"(a + b) * "abc".len() ^ 12 ^ 3 - foo(c)"#;
-        let file = &NoisParser::parse(Rule::program, source).unwrap();
-        let block: AstPair<Block> = parse_file(file).unwrap();
+        let block = parse_block(source);
         let expect = r#"
 Block {
     statements: [
@@ -1047,8 +1158,7 @@ Block {
     #[test]
     fn build_ast_complex_expression_chain_methods() {
         let source = r#"a.foo().bar(b)"#;
-        let file = &NoisParser::parse(Rule::program, source).unwrap();
-        let block: AstPair<Block> = parse_file(file).unwrap();
+        let block = parse_block(source);
         let expect = r#"
 Block {
     statements: [
@@ -1106,11 +1216,10 @@ Block {
     }
 
     #[test]
+    #[should_panic]
     fn build_ast_complex_expression_non_associative_fail() {
         let source = r#"a == b <= c"#;
-        let file = &NoisParser::parse(Rule::program, source).unwrap();
-        let err = parse_file(file).unwrap_err();
-        assert_eq!(err.message(), "operators <= and == cannot be chained");
+        parse_block(source);
     }
 
     #[test]
@@ -1120,8 +1229,7 @@ Block {
 (+a + -b)
 (!a || !b) == !(a && b)
 "#;
-        let file = &NoisParser::parse(Rule::program, source).unwrap();
-        let block: AstPair<Block> = parse_file(file).unwrap();
+        let block = parse_block(source);
         let expect = r#"
 Block {
     statements: [
@@ -1225,8 +1333,7 @@ _ = []
 [a, b, ..cs] = []
 [a, _, [b, ..c]] = []
 "#;
-        let file = &NoisParser::parse(Rule::program, source).unwrap();
-        let block: AstPair<Block> = parse_file(file).unwrap();
+        let block = parse_block(source);
         let expect = r#"
 Block {
     statements: [
@@ -1397,8 +1504,7 @@ match a {
   _ => panic(),
 }
 "#;
-        let file = &NoisParser::parse(Rule::program, source).unwrap();
-        let block: AstPair<Block> = parse_file(file).unwrap();
+        let block = parse_block(source);
         let expect = r#"
 Block {
     statements: [
@@ -1492,8 +1598,7 @@ match a {
   _ => x,
 }
 "#;
-        let file = &NoisParser::parse(Rule::program, source).unwrap();
-        let block: AstPair<Block> = parse_file(file).unwrap();
+        let block = parse_block(source);
         let expect = r#"
 Block {
     statements: [

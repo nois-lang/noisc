@@ -1,4 +1,4 @@
-use std::cell::{RefCell, RefMut};
+use std::cell::RefMut;
 use std::fmt::{Display, Formatter};
 use std::ops::Deref;
 
@@ -224,7 +224,7 @@ pub fn function_call(
         }
     } else {
         let f = match callee.unwrap().1 {
-            f @ Value::Fn(..) => Ok(f),
+            f @ Value::Closure(..) => Ok(f),
             v => Err(Error::from_span(
                 &function_call.0,
                 &ctx.ast_context,
@@ -321,11 +321,24 @@ impl Evaluate for AstPair<FunctionInit> {
             );
             self.1.block.eval(ctx)
         } else {
-            debug!("lazy init function with context snapshot {:?}", &ctx);
-            Ok(AstPair::from_span(
-                &self.0,
-                Value::Fn(self.1.clone(), ctx.clone()),
-            ))
+            let closure = &self.1.closure;
+            let v = if closure.is_empty() {
+                Value::Fn(self.1.clone())
+            } else {
+                let defs = closure
+                    .into_iter()
+                    .map(|i| {
+                        (
+                            i.clone(),
+                            ctx.find_definition(i).expect("identifier for closure"),
+                        )
+                    })
+                    .collect();
+                debug!("lazy init function with context snapshot {:?}", &ctx);
+                // TODO: pass required definitions
+                Value::Closure(self.1.clone(), defs)
+            };
+            Ok(AstPair::from_span(&self.0, v))
         }
     }
 }
@@ -351,19 +364,19 @@ impl Evaluate for AstPair<Value> {
         debug!("eval value {:?}", &self);
         let scope = ctx.scope_stack.last().unwrap();
         match &self.1 {
-            Value::Fn(f, f_ctx) if scope.arguments.is_some() => {
+            Value::Fn(f) if scope.arguments.is_some() => {
+                debug!("eval function {:?}", &f);
+                self.map(|_| f.deref().clone()).eval(ctx)
+            }
+            Value::Closure(f, defs) if scope.arguments.is_some() => {
                 debug!("eval closure {:?}", &f);
-                let n_ctx_cell = RefCell::new(f_ctx.clone());
-                let n_ctx = &mut n_ctx_cell.borrow_mut();
-                // include last scope to capture arg list
-                let call_scope = scope.clone();
-                debug!(
-                    "appending call scope to function definition eval {:?}",
-                    call_scope
-                );
-                n_ctx.scope_stack.push(call_scope);
-                debug!("eval closure {:?}, constructed scope: {:?}", &self, n_ctx);
-                self.map(|_| f.deref().clone()).eval(n_ctx)
+                debug!("extending scope with captured definitions: {:?}", defs);
+                ctx.scope_stack
+                    .last_mut()
+                    .unwrap()
+                    .definitions
+                    .extend(defs.clone());
+                self.map(|_| f.deref().clone()).eval(ctx)
             }
             Value::System(sf) if scope.arguments.is_some() => {
                 // TODO: store sys function name
@@ -415,11 +428,12 @@ mod tests {
     use crate::parser::NoisParser;
 
     fn evaluate(source: &str) -> Result<Value, Error> {
-        let a_ctx = AstContext {
-            input: source.to_string(),
-        };
-        let pt = NoisParser::parse_program(a_ctx.input.as_str());
-        let ast = pt.and_then(|parsed| parse_block(&parsed))?;
+        let a_ctx = AstContext::new(source.to_string());
+        let a_ctx_cell = RefCell::new(a_ctx.clone());
+        let a_ctx_bm = &mut a_ctx_cell.borrow_mut();
+
+        let pt = NoisParser::parse_program(source)?;
+        let ast = parse_block(&pt, a_ctx_bm)?;
         let ctx_cell = RefCell::new(Context::stdlib(a_ctx));
         let ctx = &mut ctx_cell.borrow_mut();
         ast.eval(ctx).map(|a| a.1)

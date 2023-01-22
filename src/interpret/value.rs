@@ -1,13 +1,13 @@
 use std::cmp::Ordering;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops;
 
 use num::NumCast;
 
-use crate::ast::ast::{AstPair, FunctionInit, PatternItem, UnaryOperator, ValueType};
-use crate::interpret::context::{Context, SysFunction};
+use crate::ast::ast::{AstPair, FunctionInit, Identifier, PatternItem, UnaryOperator, ValueType};
+use crate::interpret::context::{Definition, SysFunction};
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -18,7 +18,8 @@ pub enum Value {
     B(bool),
     List { items: Vec<Value>, spread: bool },
     // closures use context "snapshot" for evaluation
-    Fn(FunctionInit, Context),
+    Fn(FunctionInit),
+    Closure(FunctionInit, HashMap<Identifier, Definition>),
     System(SysFunction),
     Type(ValueType),
 }
@@ -31,7 +32,7 @@ impl Value {
             Value::F(_) => ValueType::Float,
             Value::C(_) => ValueType::Char,
             Value::B(_) => ValueType::Boolean,
-            Value::Fn(..) | Value::System(..) => ValueType::Function,
+            Value::Fn(..) | Value::Closure(..) | Value::System(..) => ValueType::Function,
             Value::Type(_) => ValueType::Type,
             Value::List { items, .. } => {
                 if items.is_empty() {
@@ -177,7 +178,8 @@ impl PartialEq for Value {
                     spread: sb,
                 },
             ) => ia == ib && sa == sb,
-            (Self::Fn(a, _), Self::Fn(b, _)) => a == b,
+            (Self::Fn(a), Self::Fn(b)) => a == b,
+            (Self::Closure(a, _), Self::Closure(b, _)) => a == b,
             (Value::I(i1), Value::I(i2)) => i1 == i2,
             (Value::F(f1), Value::F(f2)) => f1 == f2,
             (Value::I(i1), Value::F(f2)) => (*i1 as f64) == *f2,
@@ -211,7 +213,9 @@ impl Display for Value {
                     write!(f, "{}[{}]", spread_s, is.join(", "))
                 }
             }
-            Value::Fn(..) | Value::System(..) => write!(f, "<fn>"),
+            Value::Fn(..) => write!(f, "<fn>"),
+            Value::Closure(..) => write!(f, "<closure>"),
+            Value::System(..) => write!(f, "<system>"),
             Value::Type(vt) => write!(f, "{vt}"),
         }
     }

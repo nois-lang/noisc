@@ -133,7 +133,7 @@ impl LibFunction for Map {
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let list = match &arg_values(args)[..] {
-            [Value::List { items: l, .. }, Value::Fn(..)] => l.clone(),
+            [Value::List { items: l, .. }, Value::Closure(..) | Value::Fn(..)] => l.clone(),
             _ => return Err(arg_error("([*], (*, I) -> *))", args, ctx)),
         };
         let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee.clone();
@@ -187,7 +187,7 @@ impl LibFunction for Filter {
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let list = match &arg_values(args)[..] {
-            [Value::List { items: l, .. }, Value::Fn(..)] => l.clone(),
+            [Value::List { items: l, .. }, Value::Closure(..) | Value::Fn(..)] => l.clone(),
             _ => return Err(arg_error("([*], (*, I) -> B)", args, ctx)),
         };
         let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee.clone();
@@ -245,7 +245,9 @@ impl LibFunction for Reduce {
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let (list, start) = match &arg_values(args)[..] {
-            [Value::List { items: l, .. }, s, Value::Fn(..)] => (l.clone(), s.clone()),
+            [Value::List { items: l, .. }, s, Value::Closure(..) | Value::Fn(..)] => {
+                (l.clone(), s.clone())
+            }
             _ => return Err(arg_error("([a], b, (b, a, I) -> b)", args, ctx)),
         };
         let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee.clone();

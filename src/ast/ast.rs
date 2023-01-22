@@ -1,11 +1,10 @@
+use std::collections::HashMap;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use std::string::ToString;
 
 use pest::iterators::Pair;
 
-use crate::ast::ast_parser::parse_argument_list;
-use crate::error::Error;
 use crate::parser::Rule;
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
@@ -51,6 +50,7 @@ pub enum Operand {
     EnumDefinition { values: Vec<AstPair<Identifier>> },
     ListInit { items: Vec<AstPair<Expression>> },
     FunctionInit(FunctionInit),
+    ClosureInit(FunctionInit, Vec<Identifier>),
     String(String),
     Identifier(AstPair<Identifier>),
     ValueType(ValueType),
@@ -130,6 +130,7 @@ impl FunctionCall {
 pub struct FunctionInit {
     pub parameters: Vec<AstPair<Assignee>>,
     pub block: AstPair<Block>,
+    pub closure: Vec<Identifier>,
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
@@ -154,24 +155,6 @@ impl Display for UnaryOperator {
                 UnaryOperator::ArgumentList(..) => "()",
             }
         )
-    }
-}
-
-impl TryFrom<Pair<'_, Rule>> for UnaryOperator {
-    type Error = Error;
-
-    fn try_from(pair: Pair<Rule>) -> Result<Self, Self::Error> {
-        match pair.as_rule() {
-            Rule::ADD_OP => Ok(Self::Plus),
-            Rule::SUBTRACT_OP => Ok(Self::Minus),
-            Rule::NOT_OP => Ok(Self::Not),
-            Rule::SPREAD_OP => Ok(Self::Spread),
-            Rule::argument_list => Ok(Self::ArgumentList(parse_argument_list(&pair)?)),
-            _ => Err(Error::from_pair(
-                &pair,
-                format!("unknown unary operator {:?}", pair.as_rule()),
-            )),
-        }
     }
 }
 
@@ -217,34 +200,6 @@ impl Display for BinaryOperator {
                 BinaryOperator::Or => "||",
             }
         )
-    }
-}
-
-impl TryFrom<Pair<'_, Rule>> for BinaryOperator {
-    type Error = Error;
-
-    fn try_from(pair: Pair<Rule>) -> Result<Self, Self::Error> {
-        match pair.as_rule() {
-            Rule::ADD_OP => Ok(Self::Add),
-            Rule::SUBTRACT_OP => Ok(Self::Subtract),
-            Rule::MULTIPLY_OP => Ok(Self::Multiply),
-            Rule::DIVIDE_OP => Ok(Self::Divide),
-            Rule::EXPONENT_OP => Ok(Self::Exponent),
-            Rule::REMAINDER_OP => Ok(Self::Remainder),
-            Rule::ACCESSOR_OP => Ok(Self::Accessor),
-            Rule::EQUALS_OP => Ok(Self::Equals),
-            Rule::NOT_EQUALS_OP => Ok(Self::NotEquals),
-            Rule::GREATER_OP => Ok(Self::Greater),
-            Rule::GREATER_OR_EQUALS_OP => Ok(Self::GreaterOrEquals),
-            Rule::LESS_OP => Ok(Self::Less),
-            Rule::LESS_OR_EQUALS_OP => Ok(Self::LessOrEquals),
-            Rule::AND_OP => Ok(Self::And),
-            Rule::OR_OP => Ok(Self::Or),
-            r => Err(Error::from_pair(
-                &pair,
-                format!("expected binary operator, found {:?}", r),
-            )),
-        }
     }
 }
 
@@ -305,9 +260,19 @@ pub enum DestructureItem {
     List(DestructureList),
 }
 
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct AstContext {
     pub input: String,
+    pub scope_stack: Vec<HashMap<Identifier, Span>>,
+}
+
+impl AstContext {
+    pub fn new(input: String) -> AstContext {
+        AstContext {
+            input,
+            scope_stack: vec![],
+        }
+    }
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone, Copy)]

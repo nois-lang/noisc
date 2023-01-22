@@ -4,6 +4,7 @@ extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 
+use std::cell::RefCell;
 use std::fs::read_to_string;
 use std::io;
 use std::path::PathBuf;
@@ -37,8 +38,8 @@ lazy_static! {
 
 fn main() {
     if let Some(source) = piped_input() {
-        let a_ctx = AstContext { input: source };
-        let ast = parse_ast(&a_ctx);
+        let ast = parse_ast(source.clone());
+        let a_ctx = AstContext::new(source);
         execute(ast, a_ctx, |_| {});
         return;
     }
@@ -56,8 +57,7 @@ fn main() {
             }
             info!("executing command {:?}", &command);
             let source = read_source(path);
-            let a_ctx = AstContext { input: source };
-            let ast = parse_ast(&a_ctx);
+            let ast = parse_ast(source);
             println!("{:#?}", ast);
         }
         Commands::Run {
@@ -71,16 +71,18 @@ fn main() {
             }
             info!("executing command {:?}", &command);
             let source = read_source(path);
-            let a_ctx = AstContext { input: source };
-            let ast = parse_ast(&a_ctx);
+            let ast = parse_ast(source.clone());
+            let a_ctx = AstContext::new(source);
             execute(ast, a_ctx, |_| {});
         }
     }
 }
 
-pub fn parse_ast(a_ctx: &AstContext) -> AstPair<Block> {
-    let pt = NoisParser::parse_program(a_ctx.input.as_str());
-    let ast = pt.and_then(|parsed| parse_block(&parsed));
+pub fn parse_ast(source: String) -> AstPair<Block> {
+    let ctx_cell = RefCell::new(AstContext::new(source.to_string()));
+    let ctx = &mut ctx_cell.borrow_mut();
+    let pt = NoisParser::parse_program(source.as_str());
+    let ast = pt.and_then(|parsed| parse_block(&parsed, ctx));
     match ast {
         Ok(a) => a,
         Err(e) => terminate(e.to_string()),
@@ -158,10 +160,8 @@ mod tests {
         }
 
         let source = read_to_string(format!("data/{name}.no")).unwrap();
-        let a_ctx = AstContext {
-            input: source.to_string(),
-        };
-        let ast = parse_ast(&a_ctx);
+        let a_ctx = AstContext::new(source.to_string());
+        let ast = parse_ast(source);
         execute(ast, a_ctx, |ctx| {
             ctx.scope_stack.push(
                 Scope::new("test".to_string())
