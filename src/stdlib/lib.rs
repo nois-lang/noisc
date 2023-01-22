@@ -52,9 +52,9 @@ pub trait LibFunction {
         let scope = ctx.scope_stack.last().unwrap();
         let callee = scope
             .method_callee
-            .clone()
+            .as_ref()
             .map(|c| c.0)
-            .or(scope.callee.clone())
+            .or(scope.callee)
             .expect("callee not found");
         res.map(|v| AstPair::from_span(&callee, v))
     }

@@ -365,16 +365,10 @@ impl Evaluate for AstPair<Value> {
                 debug!("eval closure {:?}, constructed scope: {:?}", &self, n_ctx);
                 self.map(|_| f.deref().clone()).eval(n_ctx)
             }
-            Value::System(sf, f_ctx) if scope.arguments.is_some() => {
+            Value::System(sf) if scope.arguments.is_some() => {
                 // TODO: store sys function name
                 debug!("eval system function");
-                let n_ctx_cell = RefCell::new(f_ctx.clone());
-                let n_ctx = &mut n_ctx_cell.borrow_mut();
-                // include last scope to capture arg list
-                n_ctx.scope_stack.push(scope.clone());
-                debug!("eval closure {:?}, constructed scope: {:?}", &self, n_ctx);
-                let args = scope.arguments.clone().unwrap();
-                sf.0(args, n_ctx)
+                sf.0(scope.arguments.clone().unwrap(), ctx)
             }
             _ => Ok(self.clone()),
         }
@@ -399,7 +393,7 @@ impl Evaluate for Definition {
                     f.0(args, ctx)
                 } else {
                     let callee = scope.callee.unwrap();
-                    Ok(AstPair(callee, Value::System(f.clone(), ctx.clone())))
+                    Ok(AstPair(callee, Value::System(f.clone())))
                 }
             }
             Definition::Value(v) => v.eval(ctx),

@@ -19,7 +19,7 @@ pub enum Value {
     List { items: Vec<Value>, spread: bool },
     // closures use context "snapshot" for evaluation
     Fn(FunctionInit, Context),
-    System(SysFunction, Context),
+    System(SysFunction),
     Type(ValueType),
 }
 
