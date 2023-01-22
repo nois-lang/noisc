@@ -397,7 +397,7 @@ impl LibFunction for Flat {
                         _ => None,
                     })
                     .collect::<Option<Vec<_>>>()
-                    .ok_or(arg_error("([[*]])", args, ctx))?;
+                    .ok_or_else(|| arg_error("([[*]])", args, ctx))?;
                 vs.into_iter().flatten().collect::<Vec<_>>()
             }
             _ => return Err(arg_error("([[*]])", args, ctx)),

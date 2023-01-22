@@ -34,7 +34,7 @@ impl LibFunction for Add {
     }
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        (args[0].1.clone() + args[1].1.clone()).map_err(|s| Error::from_callee(ctx, s))
+        (&args[0].1 + &args[1].1).map_err(|s| Error::from_callee(ctx, s))
     }
 }
 
@@ -47,8 +47,8 @@ impl LibFunction for Sub {
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         match &arg_values(args)[..] {
-            [a, b] => a.clone() - b.clone(),
-            [a] => -a.clone(),
+            [a, b] => a - b,
+            [a] => -a,
             _ => unreachable!(),
         }
         .map_err(|s| Error::from_callee(ctx, s))
@@ -63,7 +63,7 @@ impl LibFunction for Rem {
     }
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        (args[0].1.clone() % args[1].1.clone()).map_err(|s| Error::from_callee(ctx, s))
+        (&args[0].1 % &args[1].1).map_err(|s| Error::from_callee(ctx, s))
     }
 }
 
@@ -99,7 +99,7 @@ impl LibFunction for Gt {
     }
 
     fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        Ok(Value::B(args[0].1 > args[1].1))
+        Ok(Value::B(&args[0].1 > &args[1].1))
     }
 }
 
@@ -111,7 +111,7 @@ impl LibFunction for Ge {
     }
 
     fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        Ok(Value::B(args[0].1 >= args[1].1))
+        Ok(Value::B(&args[0].1 >= &args[1].1))
     }
 }
 
@@ -123,7 +123,7 @@ impl LibFunction for Lt {
     }
 
     fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        Ok(Value::B(args[0].1 < args[1].1))
+        Ok(Value::B(&args[0].1 < &args[1].1))
     }
 }
 
@@ -135,7 +135,7 @@ impl LibFunction for Le {
     }
 
     fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        Ok(Value::B(args[0].1 <= args[1].1))
+        Ok(Value::B(&args[0].1 <= &args[1].1))
     }
 }
 
@@ -147,7 +147,7 @@ impl LibFunction for Not {
     }
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        (!args[0].1.clone()).map_err(|s| Error::from_callee(ctx, s))
+        (!&args[0].1).map_err(|s| Error::from_callee(ctx, s))
     }
 }
 
@@ -162,8 +162,7 @@ impl LibFunction for And {
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         args[0]
             .1
-            .clone()
-            .and(args[1].1.clone())
+            .and(&args[1].1)
             .map_err(|s| Error::from_callee(ctx, s))
     }
 }
@@ -178,8 +177,7 @@ impl LibFunction for Or {
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         args[0]
             .1
-            .clone()
-            .or(args[1].1.clone())
+            .or(&args[1].1)
             .map_err(|s| Error::from_callee(ctx, s))
     }
 }

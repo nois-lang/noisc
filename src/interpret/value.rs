@@ -132,8 +132,8 @@ impl Value {
         }
     }
 
-    pub fn and(self, rhs: Self) -> Result<Value, String> {
-        match (&self, &rhs) {
+    pub fn and(&self, rhs: &Self) -> Result<Value, String> {
+        match (self, rhs) {
             (Value::B(b1), Value::B(b2)) => Ok(Value::B(b1.clone() && b2.clone())),
             _ => Err(format!(
                 "incompatible operands: {} && {}",
@@ -143,8 +143,8 @@ impl Value {
         }
     }
 
-    pub fn or(self, rhs: Self) -> Result<Value, String> {
-        match (&self, &rhs) {
+    pub fn or(&self, rhs: &Self) -> Result<Value, String> {
+        match (self, rhs) {
             (Value::B(b1), Value::B(b2)) => Ok(Value::B(b1.clone() || b2.clone())),
             _ => Err(format!(
                 "incompatible operands: {} || {}",
@@ -178,6 +178,10 @@ impl PartialEq for Value {
                 },
             ) => ia == ib && sa == sb,
             (Self::Fn(a, _), Self::Fn(b, _)) => a == b,
+            (Value::I(i1), Value::I(i2)) => i1 == i2,
+            (Value::F(f1), Value::F(f2)) => f1 == f2,
+            (Value::I(i1), Value::F(f2)) => (*i1 as f64) == *f2,
+            (Value::F(f1), Value::I(i2)) => *f1 == (*i2 as f64),
             _ => format!("{:?}", self) == format!("{:?}", other),
         }
     }
@@ -233,7 +237,7 @@ impl TryFrom<AstPair<PatternItem>> for Value {
     }
 }
 
-impl ops::Add for Value {
+impl ops::Add for &Value {
     type Output = Result<Value, String>;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -288,7 +292,7 @@ impl ops::Add for Value {
                 _ => None,
             }
         }
-        match _add(&self, &rhs).or(_add(&rhs, &self)) {
+        match _add(self, rhs).or(_add(rhs, self)) {
             Some(r) => Ok(r),
             None => Err(format!(
                 "incompatible operands: {} + {}",
@@ -299,7 +303,7 @@ impl ops::Add for Value {
     }
 }
 
-impl ops::Sub for Value {
+impl ops::Sub for &Value {
     type Output = Result<Value, String>;
 
     fn sub(self, rhs: Self) -> Self::Output {
@@ -311,7 +315,7 @@ impl ops::Sub for Value {
                 _ => None,
             }
         }
-        match _sub(&self, &rhs).or(_sub(&rhs, &self)) {
+        match _sub(self, rhs).or(_sub(rhs, self)) {
             Some(r) => Ok(r),
             None => Err(format!(
                 "incompatible operands: {} - {}",
@@ -322,7 +326,7 @@ impl ops::Sub for Value {
     }
 }
 
-impl ops::Rem for Value {
+impl ops::Rem for &Value {
     type Output = Result<Value, String>;
 
     fn rem(self, rhs: Self) -> Self::Output {
@@ -334,7 +338,7 @@ impl ops::Rem for Value {
                 _ => None,
             }
         }
-        match _rem(&self, &rhs).or(_rem(&rhs, &self)) {
+        match _rem(self, rhs).or(_rem(rhs, self)) {
             Some(r) => Ok(r),
             None => Err(format!(
                 "incompatible operands: {} % {}",
@@ -345,13 +349,13 @@ impl ops::Rem for Value {
     }
 }
 
-impl ops::Neg for Value {
+impl ops::Neg for &Value {
     type Output = Result<Value, String>;
 
     fn neg(self) -> Self::Output {
         match self {
-            Value::I(i) => Ok(Value::I(-i)),
-            Value::F(f) => Ok(Value::F(-f)),
+            Value::I(i) => Ok(Value::I(-*i)),
+            Value::F(f) => Ok(Value::F(-*f)),
             Value::B(_) => Err(format!(
                 "incompatible operands: -{}, use !",
                 self.value_type()
@@ -361,7 +365,7 @@ impl ops::Neg for Value {
     }
 }
 
-impl PartialOrd for Value {
+impl PartialOrd for &Value {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         fn _cmp(a: &Value, b: &Value) -> Option<Ordering> {
             match (a, b) {
@@ -372,16 +376,16 @@ impl PartialOrd for Value {
                 _ => None,
             }
         }
-        _cmp(&self, other).or(_cmp(other, &self))
+        _cmp(self, other).or(_cmp(other, self))
     }
 }
 
-impl ops::Not for Value {
+impl ops::Not for &Value {
     type Output = Result<Value, String>;
 
     fn not(self) -> Self::Output {
         match self {
-            Value::B(b) => Ok(Value::B(!b)),
+            Value::B(b) => Ok(Value::B(!*b)),
             op => Err(format!("incompatible operands: !{}", op.value_type())),
         }
     }

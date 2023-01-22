@@ -47,14 +47,16 @@ impl LibFunction for To {
             [a, vt @ Value::List { items, .. }] if is_type_list(&items) => (a.clone(), vt.clone()),
             _ => return Err(arg_error("(*, T)", args, ctx)),
         };
-        arg.to(&vt).ok_or(Error::from_callee(
-            ctx,
-            format!(
-                "unable to cast value {} from {} to {}",
-                arg,
-                arg.value_type(),
-                vt
-            ),
-        ))
+        arg.to(&vt).ok_or_else(|| {
+            Error::from_callee(
+                ctx,
+                format!(
+                    "unable to cast value {} from {} to {}",
+                    arg,
+                    arg.value_type(),
+                    vt
+                ),
+            )
+        })
     }
 }

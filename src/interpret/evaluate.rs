@@ -207,16 +207,11 @@ pub fn function_call(
         debug!("function callee {:?}", callee);
     }
 
-    ctx.scope_stack.push(
-        Scope::new(name.clone())
-            .with_callee(Some(function_call.0))
-            .with_arguments(Some(args.clone())),
-    );
-    debug!(
-        "push scope @{}: {:?}",
-        name,
-        ctx.scope_stack.last().unwrap()
-    );
+    let scope = Scope::new(name.clone())
+        .with_callee(Some(function_call.0))
+        .with_arguments(Some(args.clone()));
+    debug!("push scope @{}: {:?}", name, scope);
+    ctx.scope_stack.push(scope);
 
     let res = if let Some(i) = id {
         match ctx.find_definition(&i.1) {
@@ -304,7 +299,8 @@ impl Evaluate for AstPair<Operand> {
 
 impl Evaluate for AstPair<FunctionInit> {
     fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
-        let o_args = ctx.scope_stack.last().unwrap().arguments.clone();
+        let scope = ctx.scope_stack.last().unwrap().clone();
+        let o_args = scope.arguments.clone();
         // if scope has args, this is a function call and function init must be evaluated
         debug!("eval {:?}, args: {:?}", &self, &o_args);
         if o_args.is_some() {
@@ -315,15 +311,13 @@ impl Evaluate for AstPair<FunctionInit> {
 
             debug!(
                 "consuming scope @{} arguments: {:?}",
-                &ctx.scope_stack.last_mut().unwrap().name.clone(),
-                &ctx.scope_stack.last_mut().unwrap().arguments.clone()
+                scope.name, scope.arguments
             );
             ctx.scope_stack.last_mut().unwrap().arguments = None;
 
-            let scope = ctx.scope_stack.last().unwrap().clone();
             debug!(
                 "function init scope @{}: {:?}",
-                &scope.name, &scope.definitions
+                scope.name, scope.definitions
             );
             self.1.block.eval(ctx)
         } else {
@@ -355,13 +349,14 @@ impl Evaluate for AstPair<Identifier> {
 impl Evaluate for AstPair<Value> {
     fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
         debug!("eval value {:?}", &self);
+        let scope = ctx.scope_stack.last().unwrap();
         match &self.1 {
-            Value::Fn(f, f_ctx) if ctx.scope_stack.last().unwrap().arguments.is_some() => {
+            Value::Fn(f, f_ctx) if scope.arguments.is_some() => {
                 debug!("eval closure {:?}", &f);
                 let n_ctx_cell = RefCell::new(f_ctx.clone());
                 let n_ctx = &mut n_ctx_cell.borrow_mut();
                 // include last scope to capture arg list
-                let call_scope = ctx.scope_stack.last().unwrap().clone();
+                let call_scope = scope.clone();
                 debug!(
                     "appending call scope to function definition eval {:?}",
                     call_scope
@@ -370,17 +365,15 @@ impl Evaluate for AstPair<Value> {
                 debug!("eval closure {:?}, constructed scope: {:?}", &self, n_ctx);
                 self.map(|_| f.deref().clone()).eval(n_ctx)
             }
-            Value::System(sf, f_ctx) if ctx.scope_stack.last().unwrap().arguments.is_some() => {
+            Value::System(sf, f_ctx) if scope.arguments.is_some() => {
                 // TODO: store sys function name
                 debug!("eval system function");
                 let n_ctx_cell = RefCell::new(f_ctx.clone());
                 let n_ctx = &mut n_ctx_cell.borrow_mut();
                 // include last scope to capture arg list
-                n_ctx
-                    .scope_stack
-                    .push(ctx.scope_stack.last().unwrap().clone());
+                n_ctx.scope_stack.push(scope.clone());
                 debug!("eval closure {:?}, constructed scope: {:?}", &self, n_ctx);
-                let args = ctx.scope_stack.last().unwrap().arguments.clone().unwrap();
+                let args = scope.arguments.clone().unwrap();
                 sf.0(args, n_ctx)
             }
             _ => Ok(self.clone()),
@@ -391,21 +384,21 @@ impl Evaluate for AstPair<Value> {
 impl Evaluate for Definition {
     fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
         debug!("eval definition {:?}", &self);
+        let scope = ctx.scope_stack.last().unwrap();
         match &self {
             Definition::User(_, exp) => exp.eval(ctx),
             Definition::System(f) => {
-                let m_args = ctx.scope_stack.last().unwrap().arguments.clone();
+                let m_args = scope.arguments.clone();
                 if let Some(args) = m_args {
                     debug!(
                         "consuming scope @{} arguments: {:?}",
-                        &ctx.scope_stack.last_mut().unwrap().name.clone(),
-                        &ctx.scope_stack.last_mut().unwrap().arguments.clone()
+                        scope.name, scope.arguments
                     );
                     ctx.scope_stack.last_mut().unwrap().arguments = None;
 
                     f.0(args, ctx)
                 } else {
-                    let callee = ctx.scope_stack.last().unwrap().callee.unwrap();
+                    let callee = scope.callee.unwrap();
                     Ok(AstPair(callee, Value::System(f.clone(), ctx.clone())))
                 }
             }
