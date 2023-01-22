@@ -1,8 +1,7 @@
 use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]
-#[clap(version, about, long_about = None)]
-#[clap(propagate_version = true)]
+#[clap(version, about, long_about = None, propagate_version = true)]
 pub struct Cli {
     #[clap(subcommand)]
     pub command: Commands,
@@ -37,5 +36,8 @@ pub enum Commands {
             help = "Detailed output"
         )]
         verbose: bool,
+
+        #[clap(multiple = true)]
+        args: Vec<String>,
     },
 }

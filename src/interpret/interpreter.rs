@@ -31,7 +31,6 @@ where
 
     update_ctx(ctx);
 
-    // TODO: pass CLI args as main parameter, e.g. main = args {}
     ctx.scope_stack
         .push(Scope::new(identifier.to_string()).with_arguments(Some(vec![])));
     debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);

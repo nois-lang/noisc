@@ -7,9 +7,11 @@ extern crate pest_derive;
 use std::fs::read_to_string;
 use std::io;
 use std::path::PathBuf;
+use std::sync::Mutex;
 
 use atty::Stream;
 use clap::Parser as p;
+use lazy_static::lazy_static;
 use log::{info, LevelFilter};
 use shellexpand::tilde;
 
@@ -28,6 +30,10 @@ pub mod logger;
 pub mod parser;
 pub mod stdlib;
 pub mod util;
+
+lazy_static! {
+    static ref RUN_ARGS: Mutex<Vec<String>> = Mutex::new(vec![]);
+}
 
 fn main() {
     if let Some(source) = piped_input() {
@@ -57,7 +63,9 @@ fn main() {
         Commands::Run {
             source: path,
             verbose,
+            args,
         } => {
+            RUN_ARGS.lock().unwrap().extend(args.clone());
             if *verbose {
                 logger::init(verbose_level);
             }
@@ -106,7 +114,7 @@ pub fn piped_input() -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use std::cell::RefMut;
+    use std::cell::{RefCell, RefMut};
     use std::collections::HashMap;
     use std::fs::read_to_string;
 
@@ -119,7 +127,9 @@ mod tests {
     use crate::stdlib::lib::LibFunction;
 
     fn run_file(name: &str) -> String {
-        static mut OUT: Vec<String> = vec![];
+        thread_local! {
+            static OUT: RefCell<Vec<String>> = RefCell::new(vec![]);
+        }
 
         /// Override stdlib println function to collect all std output into a variable for further
         /// assertions
@@ -134,15 +144,15 @@ mod tests {
                 args: &Vec<AstPair<Value>>,
                 _ctx: &mut RefMut<Context>,
             ) -> Result<Value, Error> {
-                unsafe {
-                    OUT.push(format!(
+                OUT.with(|o| {
+                    o.borrow_mut().push(format!(
                         "{}",
                         args.into_iter()
                             .map(|a| a.1.to_string())
                             .collect::<Vec<_>>()
                             .join(" ")
-                    ));
-                }
+                    ))
+                });
                 Ok(Value::Unit)
             }
         }
@@ -158,11 +168,7 @@ mod tests {
                     .with_definitions(HashMap::from([TestPrintln::definition()])),
             );
         });
-        unsafe {
-            let res = OUT.clone().join("\n");
-            OUT = vec![];
-            res
-        }
+        OUT.with(|o| o.replace(vec![]).join("\n"))
     }
 
     #[test]

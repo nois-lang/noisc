@@ -267,6 +267,7 @@ dependencies = [
  "enquote",
  "fs_extra",
  "itertools",
+ "lazy_static",
  "log",
  "num",
  "pest",

@@ -7,7 +7,8 @@ use crate::ast::ast::AstPair;
 use crate::error::Error;
 use crate::interpret::context::Context;
 use crate::interpret::value::Value;
-use crate::stdlib::lib::{LibFunction, Package};
+use crate::stdlib::lib::{arg_error, LibFunction, Package};
+use crate::RUN_ARGS;
 
 pub fn package() -> Package {
     Package {
@@ -17,6 +18,7 @@ pub fn package() -> Package {
             Eprintln::definition(),
             Debug::definition(),
             Panic::definition(),
+            Args::definition(),
         ]),
     }
 }
@@ -111,5 +113,26 @@ impl LibFunction for Panic {
                     .join(" ")
             ),
         ))
+    }
+}
+
+pub struct Args;
+
+impl LibFunction for Args {
+    fn name() -> String {
+        "args".to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        if !args.is_empty() {
+            return Err(arg_error("()", args, ctx));
+        }
+        let args = RUN_ARGS
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|a| Value::list(a.chars().map(|c| Value::C(c)).collect::<Vec<_>>()))
+            .collect::<Vec<_>>();
+        Ok(Value::list(args))
     }
 }
