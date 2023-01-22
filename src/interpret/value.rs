@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
@@ -128,6 +129,28 @@ impl Value {
         Self::List {
             items: vec,
             spread: false,
+        }
+    }
+
+    pub fn and(self, rhs: Self) -> Result<Value, String> {
+        match (&self, &rhs) {
+            (Value::B(b1), Value::B(b2)) => Ok(Value::B(b1.clone() && b2.clone())),
+            _ => Err(format!(
+                "incompatible operands: {} && {}",
+                self.value_type(),
+                rhs.value_type()
+            )),
+        }
+    }
+
+    pub fn or(self, rhs: Self) -> Result<Value, String> {
+        match (&self, &rhs) {
+            (Value::B(b1), Value::B(b2)) => Ok(Value::B(b1.clone() || b2.clone())),
+            _ => Err(format!(
+                "incompatible operands: {} || {}",
+                self.value_type(),
+                rhs.value_type()
+            )),
         }
     }
 }
@@ -334,6 +357,32 @@ impl ops::Neg for Value {
                 self.value_type()
             )),
             op => Err(format!("incompatible operands: -{}", op.value_type())),
+        }
+    }
+}
+
+impl PartialOrd for Value {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        fn _cmp(a: &Value, b: &Value) -> Option<Ordering> {
+            match (a, b) {
+                (Value::I(i1), Value::I(i2)) => i1.partial_cmp(i2),
+                (Value::F(f1), Value::F(f2)) => f1.partial_cmp(f2),
+                (Value::I(i1), Value::F(f2)) => (*i1 as f64).partial_cmp(f2),
+                // TODO: other cases
+                _ => None,
+            }
+        }
+        _cmp(&self, other).or(_cmp(other, &self))
+    }
+}
+
+impl ops::Not for Value {
+    type Output = Result<Value, String>;
+
+    fn not(self) -> Self::Output {
+        match self {
+            Value::B(b) => Ok(Value::B(!b)),
+            op => Err(format!("incompatible operands: !{}", op.value_type())),
         }
     }
 }

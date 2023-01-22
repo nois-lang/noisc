@@ -16,12 +16,15 @@ pub fn package() -> Package {
         definitions: HashMap::from([
             Spread::definition(),
             Range::definition(),
+            Len::definition(),
             Map::definition(),
             Filter::definition(),
+            Reduce::definition(),
             At::definition(),
             Slice::definition(),
             Join::definition(),
             Flat::definition(),
+            Reverse::definition(),
         ]),
     }
 }
@@ -87,7 +90,32 @@ impl LibFunction for Range {
     }
 }
 
-/// Convert one list to another calling function on each item
+/// Return list length
+///
+///     len([*]) -> I
+///
+/// Examples:
+///
+///     len([]) -> 0
+///     len([1, 2, 3]) -> 3
+///
+pub struct Len;
+
+impl LibFunction for Len {
+    fn name() -> String {
+        "len".to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        let l = match &arg_values(args)[..] {
+            [Value::List { items: l, .. }] => l.clone(),
+            _ => return Err(arg_error("([*])", args, ctx)),
+        };
+        Ok(Value::I(l.len() as i128))
+    }
+}
+
+/// Convert one list to another calling function on each item and its index
 ///
 ///     map([*], (*, I) -> *) -> [*]
 ///
@@ -125,7 +153,7 @@ impl LibFunction for Map {
                 );
                 debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
 
-                let next = args[1].eval(ctx).map_err(|e| e)?;
+                let next = args[1].eval(ctx)?;
 
                 debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
                 ctx.scope_stack.pop();
@@ -141,7 +169,7 @@ impl LibFunction for Map {
     }
 }
 
-/// Filter a list by predicate function
+/// Filter a list by predicate function on each item and its index
 ///
 ///     filter([*], (*, I) -> B) -> [*]
 ///
@@ -178,7 +206,7 @@ impl LibFunction for Filter {
                 );
                 debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
 
-                let next = args[1].eval(ctx).map_err(|e| e)?;
+                let next = args[1].eval(ctx)?;
 
                 debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
                 ctx.scope_stack.pop();
@@ -201,6 +229,54 @@ impl LibFunction for Filter {
             items: res,
             spread: false,
         })
+    }
+}
+
+/// Transform list into a single accumulated value with reducing function
+///
+///     reduce([a], b, (b, a, I) -> b) -> b
+///
+pub struct Reduce;
+
+impl LibFunction for Reduce {
+    fn name() -> String {
+        "reduce".to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        let (list, start) = match &arg_values(args)[..] {
+            [Value::List { items: l, .. }, s, Value::Fn(..)] => (l.clone(), s.clone()),
+            _ => return Err(arg_error("([a], b, (b, a, I) -> b)", args, ctx)),
+        };
+        let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee.clone();
+
+        let mut acc = start;
+
+        list.into_iter()
+            .enumerate()
+            .map(|(i, li)| {
+                ctx.scope_stack.push(
+                    Scope::new("<closure>".to_string())
+                        .with_callee(callee.clone())
+                        .with_arguments(Some(vec![
+                            args[2].map(|_| acc.clone()),
+                            args[0].map(|_| li.clone()),
+                            args[2].map(|_| Value::I(i as i128)),
+                        ])),
+                );
+                debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
+
+                let next = args[2].eval(ctx)?;
+
+                debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
+                ctx.scope_stack.pop();
+
+                acc = next.1;
+                Ok(acc.clone())
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(acc.clone())
     }
 }
 
@@ -348,5 +424,23 @@ impl LibFunction for Join {
         };
 
         Ok(Value::list(res))
+    }
+}
+
+pub struct Reverse;
+
+impl LibFunction for Reverse {
+    fn name() -> String {
+        "reverse".to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        let mut l = match &arg_values(args)[..] {
+            [Value::List { items: is, .. }] => is.clone(),
+            _ => return Err(arg_error("([*])", args, ctx)),
+        };
+
+        l.reverse();
+        Ok(Value::list(l))
     }
 }

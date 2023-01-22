@@ -70,6 +70,7 @@ operand                       = _{
     ~ BRACKET_CLOSE }
   function_init               =  { block_function_init | arrow_function_init }
     block_function_init       = _{ parameter_list ~ BRACE_OPEN ~ block ~ BRACE_CLOSE }
+    // TODO: treat `() -> {} same as () {}`
     arrow_function_init       = _{ parameter_list ~ ARROW_OP ~ N* ~ statement }
       parameter_list          =  { _parameter_list? }
       // required to always include parameter_list in parse tree, even if it's not specified

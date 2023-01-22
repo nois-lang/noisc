@@ -18,6 +18,13 @@ pub fn package() -> Package {
             SubOp::definition(),
             RemOp::definition(),
             EqOp::definition(),
+            NeOp::definition(),
+            GtOp::definition(),
+            GeOp::definition(),
+            LtOp::definition(),
+            LeOp::definition(),
+            AndOp::definition(),
+            OrOp::definition(),
             SpreadOp::definition(),
         ]),
     }
@@ -68,6 +75,90 @@ impl LibFunction for EqOp {
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         Eq::call(args, ctx)
+    }
+}
+
+pub struct NeOp;
+
+impl LibFunction for NeOp {
+    fn name() -> String {
+        BinaryOperator::NotEquals.to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        Ne::call(args, ctx)
+    }
+}
+
+pub struct GtOp;
+
+impl LibFunction for GtOp {
+    fn name() -> String {
+        BinaryOperator::Greater.to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        Gt::call(args, ctx)
+    }
+}
+
+pub struct GeOp;
+
+impl LibFunction for GeOp {
+    fn name() -> String {
+        BinaryOperator::GreaterOrEquals.to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        Ge::call(args, ctx)
+    }
+}
+
+pub struct LtOp;
+
+impl LibFunction for LtOp {
+    fn name() -> String {
+        BinaryOperator::Less.to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        Lt::call(args, ctx)
+    }
+}
+
+pub struct LeOp;
+
+impl LibFunction for LeOp {
+    fn name() -> String {
+        BinaryOperator::LessOrEquals.to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        Le::call(args, ctx)
+    }
+}
+
+pub struct AndOp;
+
+impl LibFunction for AndOp {
+    fn name() -> String {
+        BinaryOperator::And.to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        And::call(args, ctx)
+    }
+}
+
+pub struct OrOp;
+
+impl LibFunction for OrOp {
+    fn name() -> String {
+        BinaryOperator::Or.to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        Or::call(args, ctx)
     }
 }
 

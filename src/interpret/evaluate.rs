@@ -60,6 +60,7 @@ impl Evaluate for AstPair<Statement> {
         debug!("eval {:?}", &self);
         match &self.1 {
             Statement::Expression(exp) => exp.eval(ctx),
+            // TODO: reassignment
             Statement::Assignment {
                 assignee,
                 expression,

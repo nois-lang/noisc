@@ -15,6 +15,13 @@ pub fn package() -> Package {
             Sub::definition(),
             Rem::definition(),
             Eq::definition(),
+            Ne::definition(),
+            Gt::definition(),
+            Ge::definition(),
+            Lt::definition(),
+            Le::definition(),
+            And::definition(),
+            Or::definition(),
         ]),
     }
 }
@@ -69,5 +76,110 @@ impl LibFunction for Eq {
 
     fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         Ok(Value::B(args[0].1 == args[1].1))
+    }
+}
+
+pub struct Ne;
+
+impl LibFunction for Ne {
+    fn name() -> String {
+        "ne".to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        Ok(Value::B(args[0].1 != args[1].1))
+    }
+}
+
+pub struct Gt;
+
+impl LibFunction for Gt {
+    fn name() -> String {
+        "gt".to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        Ok(Value::B(args[0].1 > args[1].1))
+    }
+}
+
+pub struct Ge;
+
+impl LibFunction for Ge {
+    fn name() -> String {
+        "ge".to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        Ok(Value::B(args[0].1 >= args[1].1))
+    }
+}
+
+pub struct Lt;
+
+impl LibFunction for Lt {
+    fn name() -> String {
+        "lt".to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        Ok(Value::B(args[0].1 < args[1].1))
+    }
+}
+
+pub struct Le;
+
+impl LibFunction for Le {
+    fn name() -> String {
+        "le".to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        Ok(Value::B(args[0].1 <= args[1].1))
+    }
+}
+
+pub struct Not;
+
+impl LibFunction for Not {
+    fn name() -> String {
+        "not".to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        (!args[0].1.clone()).map_err(|s| Error::from_callee(ctx, s))
+    }
+}
+
+// TODO: short circuiting
+pub struct And;
+
+impl LibFunction for And {
+    fn name() -> String {
+        "and".to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        args[0]
+            .1
+            .clone()
+            .and(args[1].1.clone())
+            .map_err(|s| Error::from_callee(ctx, s))
+    }
+}
+
+pub struct Or;
+
+impl LibFunction for Or {
+    fn name() -> String {
+        "or".to_string()
+    }
+
+    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        args[0]
+            .1
+            .clone()
+            .or(args[1].1.clone())
+            .map_err(|s| Error::from_callee(ctx, s))
     }
 }
