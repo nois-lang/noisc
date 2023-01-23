@@ -291,7 +291,7 @@ impl DestructureItem {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct AstContext {
     pub input: String,
     pub global_scope: AstScope,
@@ -370,9 +370,9 @@ impl<A> AstPair<A> {
 
     pub fn map<T, F>(&self, f: F) -> AstPair<T>
     where
-        F: Fn(&A) -> T,
+        F: FnOnce(&A) -> T,
     {
-        let t = f(&(self).1);
+        let t = f(&self.1);
         AstPair(self.0, t)
     }
 

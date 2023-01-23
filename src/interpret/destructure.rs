@@ -20,21 +20,21 @@ where
     T: Evaluate + Debug,
     F: Fn(AstPair<Identifier>, T) -> Definition,
 {
-    match assignee.clone().1 {
+    match assignee.1 {
         Assignee::Identifier(i) => Ok(vec![(i.clone().1, f(i, expression))]),
         Assignee::Hole => Ok(vec![]),
-        Assignee::DestructureList(dl) => destructure_list(dl, expression, assignee.0, ctx),
+        Assignee::DestructureList(dl) => destructure_list(&dl, expression, assignee.0, ctx),
     }
 }
 
 pub fn destructure_list<T: Evaluate + Debug>(
-    destructure_list: DestructureList,
+    destructure_list: &DestructureList,
     expression: T,
     span: Span,
     ctx: &mut RefMut<Context>,
 ) -> Result<Vec<(Identifier, Definition)>, Error> {
     let e = expression.eval(ctx)?;
-    debug!("destructuring list {:?} into {:?}", &e, &destructure_list);
+    debug!("destructuring list {:?} into {:?}", &e, destructure_list);
     match &e.1 {
         Value::List { items: vs, .. } => {
             let spread_items = destructure_list
@@ -54,7 +54,7 @@ pub fn destructure_list<T: Evaluate + Debug>(
             match spread_items.len() {
                 0 => {
                     if destructure_list.0.len() == vs.len() {
-                        Ok(zip(destructure_list.0, vs)
+                        Ok(zip(&destructure_list.0, vs)
                             .map(|(i, v)| destructure_item(i, e.map(|_| v.clone()), ctx))
                             .collect::<Result<Vec<_>, _>>()?
                             .into_iter()
@@ -76,7 +76,7 @@ pub fn destructure_list<T: Evaluate + Debug>(
                     span,
                     ctx,
                     destructure_list,
-                    vs,
+                    &vs,
                     spread_items.first().unwrap().clone(),
                 ),
                 _ => Err(Error::from_span(
@@ -95,7 +95,7 @@ pub fn destructure_list<T: Evaluate + Debug>(
 }
 
 fn destructure_item(
-    destructure_item: AstPair<DestructureItem>,
+    destructure_item: &AstPair<DestructureItem>,
     value: AstPair<Value>,
     ctx: &mut RefMut<Context>,
 ) -> Result<Vec<(Identifier, Definition)>, Error> {
@@ -103,19 +103,22 @@ fn destructure_item(
         "destructuring item {:?} into {:?}",
         &value, &destructure_item
     );
-    match destructure_item.1 {
+    match &destructure_item.1 {
         DestructureItem::Hole | DestructureItem::SpreadHole => Ok(vec![]),
         DestructureItem::Identifier { identifier, .. } => {
-            Ok(vec![(identifier.1, Definition::Value(value))])
+            Ok(vec![(identifier.1.clone(), Definition::Value(value))])
         }
-        DestructureItem::List(ls) => destructure_list(ls, value.clone(), value.0, ctx),
+        DestructureItem::List(ls) => {
+            let s = value.0;
+            destructure_list(&ls, value, s, ctx)
+        }
     }
 }
 
 fn destructure_with_spread(
     span: Span,
     ctx: &mut RefMut<Context>,
-    destructure_list: DestructureList,
+    destructure_list: &DestructureList,
     vs: &Vec<Value>,
     spread_item: (usize, AstPair<Identifier>),
 ) -> Result<Vec<(Identifier, Definition)>, Error> {
@@ -123,7 +126,6 @@ fn destructure_with_spread(
         .0
         .iter()
         .take(spread_item.0)
-        .cloned()
         .zip(vs.iter().take(spread_item.0))
         .map(|(i, v)| destructure_item(i, AstPair::from_span(&span, v.clone()), ctx))
         .collect::<Result<Vec<_>, _>>()?
@@ -145,7 +147,6 @@ fn destructure_with_spread(
         .0
         .iter()
         .skip(spread_item.0 + 1)
-        .cloned()
         .zip(vs.iter().skip(spread_value_count + spread_item.0))
         .map(|(i, v)| destructure_item(i, AstPair::from_span(&span, v.clone()), ctx))
         .collect::<Result<Vec<_>, _>>()?

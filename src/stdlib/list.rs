@@ -147,7 +147,7 @@ impl LibFunction for Map {
                     Scope::new("<closure>".to_string())
                         .with_callee(callee)
                         .with_arguments(Some(vec![
-                            args[0].map(|_| li.clone()),
+                            args[0].map(|_| li),
                             args[1].map(|_| Value::I(i as i128)),
                         ])),
                 );
