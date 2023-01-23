@@ -1,5 +1,6 @@
 use std::cell::RefMut;
 use std::fmt::{Display, Formatter};
+use std::mem::take;
 use std::ops::{Deref, DerefMut};
 
 use log::debug;
@@ -71,11 +72,12 @@ pub fn function_call(
         debug!("function callee {:?}", callee);
     }
 
-    let scope = Scope::new(name.clone())
-        .with_callee(Some(function_call.0))
-        .with_arguments(Some(args));
-    debug!("push scope @{}: {:?}", name, scope);
-    ctx.scope_stack.push(scope);
+    debug!("push scope @{}", name);
+    ctx.scope_stack.push(take(
+        Scope::new(name.clone())
+            .with_callee(Some(function_call.0))
+            .with_arguments(Some(args)),
+    ));
 
     let res = if let Some(i) = id {
         match ctx.find_definition(&i.1) {
@@ -211,11 +213,11 @@ impl Evaluate for AstPair<Expression> {
                 let p_match = match_expression(self, ctx)?;
                 match p_match {
                     Some((clause, pm)) => {
-                        ctx.scope_stack.push(
+                        ctx.scope_stack.push(take(
                             Scope::new("<match_predicate>".to_string())
                                 .with_definitions(pm.into_iter().collect())
                                 .with_callee(Some(clause.0)),
-                        );
+                        ));
                         debug!("push scope {:?}", &ctx.scope_stack.last().unwrap());
 
                         let res = clause.1.block.eval(ctx);

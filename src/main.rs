@@ -116,9 +116,11 @@ pub fn piped_input() -> Option<String> {
 
 #[cfg(test)]
 mod tests {
+    use mem::take;
     use std::cell::{RefCell, RefMut};
     use std::collections::HashMap;
     use std::fs::read_to_string;
+    use std::mem;
 
     use crate::ast::ast::AstPair;
     use crate::error::Error;
@@ -161,10 +163,10 @@ mod tests {
         let source = read_to_string(format!("data/{name}.no")).unwrap();
         let (ast, a_ctx) = parse_ast(source);
         execute(ast, Context::stdlib(a_ctx.into_inner().input), |ctx| {
-            ctx.scope_stack.push(
+            ctx.scope_stack.push(take(
                 Scope::new("test".to_string())
                     .with_definitions(HashMap::from([TestPrintln::definition()])),
-            );
+            ));
         });
         OUT.with(|o| o.replace(vec![]).join("\n"))
     }

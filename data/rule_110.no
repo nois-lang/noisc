@@ -24,15 +24,17 @@ next = seq {
     n
 }
 
-pretty = (grid, size) -> grid
-    .map(seq -> seq
-        .map(e -> match e {
-            True  => 'x',
-            False => ' ',
-        })
-        .flat()
-    )
-    .map(seq -> println(seq))
+pretty = (grid, size) {
+    grid
+        .map(seq -> seq
+            .map(e -> match e {
+                True  => 'x',
+                False => ' ',
+            })
+            .flat()
+        )
+        .map(seq -> println(seq))
+}
 
 main = {
     start = args().at(0)

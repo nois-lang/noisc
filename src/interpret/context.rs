@@ -1,6 +1,7 @@
 use std::cell::RefMut;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
+use std::mem;
 
 use log::error;
 
@@ -38,34 +39,42 @@ impl Scope {
         }
     }
 
-    pub fn with_definitions(&self, definitions: HashMap<Identifier, Definition>) -> Self {
-        let mut new = self.clone();
-        new.definitions = definitions;
-        new
+    pub fn with_definitions(&mut self, definitions: HashMap<Identifier, Definition>) -> &mut Self {
+        self.definitions = definitions;
+        self
     }
 
-    pub fn with_callee(&self, callee: Option<Span>) -> Self {
-        let mut new = self.clone();
-        new.callee = callee;
-        new
+    pub fn with_callee(&mut self, callee: Option<Span>) -> &mut Self {
+        self.callee = callee;
+        self
     }
 
-    pub fn with_arguments(&self, arguments: Option<Vec<AstPair<Value>>>) -> Self {
-        let mut new = self.clone();
-        new.arguments = arguments;
-        new
+    pub fn with_arguments(&mut self, arguments: Option<Vec<AstPair<Value>>>) -> &mut Self {
+        self.arguments = arguments;
+        self
     }
 
-    pub fn with_method_callee(&self, method_callee: Option<AstPair<Value>>) -> Self {
-        let mut new = self.clone();
-        new.method_callee = method_callee;
-        new
+    pub fn with_method_callee(&mut self, method_callee: Option<AstPair<Value>>) -> &mut Self {
+        self.method_callee = method_callee;
+        self
     }
 
-    pub fn with_return_value(&self, return_value: Option<Value>) -> Self {
-        let mut new = self.clone();
-        new.return_value = return_value;
-        new
+    pub fn with_return_value(&mut self, return_value: Option<Value>) -> &mut Self {
+        self.return_value = return_value;
+        self
+    }
+}
+
+impl Default for Scope {
+    fn default() -> Self {
+        Scope {
+            name: String::default(),
+            definitions: HashMap::default(),
+            callee: None,
+            arguments: None,
+            method_callee: None,
+            return_value: None,
+        }
     }
 }
 
@@ -99,7 +108,9 @@ impl Context {
                 },
                 scope_stack: vec![AstScope::new()],
             },
-            scope_stack: vec![Scope::new("stdlib".to_string()).with_definitions(defs)],
+            scope_stack: vec![mem::take(
+                Scope::new("stdlib".to_string()).with_definitions(defs),
+            )],
         }
     }
 

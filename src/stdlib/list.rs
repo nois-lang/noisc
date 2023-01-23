@@ -1,5 +1,6 @@
 use std::cell::RefMut;
 use std::collections::HashMap;
+use std::mem::take;
 
 use log::debug;
 
@@ -143,14 +144,14 @@ impl LibFunction for Map {
             .enumerate()
             .map(|(i, li)| {
                 // TODO: refactor to a common method of calling a closure from sys function
-                ctx.scope_stack.push(
+                ctx.scope_stack.push(take(
                     Scope::new("<closure>".to_string())
                         .with_callee(callee)
                         .with_arguments(Some(vec![
                             args[0].map(|_| li),
                             args[1].map(|_| Value::I(i as i128)),
                         ])),
-                );
+                ));
                 debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
 
                 let next = args[1].eval(ctx)?;
@@ -196,14 +197,14 @@ impl LibFunction for Filter {
             .into_iter()
             .enumerate()
             .map(|(i, li)| {
-                ctx.scope_stack.push(
+                ctx.scope_stack.push(take(
                     Scope::new("<closure>".to_string())
                         .with_callee(callee)
                         .with_arguments(Some(vec![
                             args[0].map(|_| li.clone()),
                             args[1].map(|_| Value::I(i as i128)),
                         ])),
-                );
+                ));
                 debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
 
                 let next = args[1].eval(ctx)?;
@@ -257,7 +258,7 @@ impl LibFunction for Reduce {
         list.into_iter()
             .enumerate()
             .map(|(i, li)| {
-                ctx.scope_stack.push(
+                ctx.scope_stack.push(take(
                     Scope::new("<closure>".to_string())
                         .with_callee(callee)
                         .with_arguments(Some(vec![
@@ -265,7 +266,7 @@ impl LibFunction for Reduce {
                             args[0].map(|_| li.clone()),
                             args[2].map(|_| Value::I(i as i128)),
                         ])),
-                );
+                ));
                 debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
 
                 let next = args[2].eval(ctx)?;
