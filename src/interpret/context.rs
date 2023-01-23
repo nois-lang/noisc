@@ -71,7 +71,7 @@ impl Scope {
 
 #[derive(Clone)]
 pub struct SysFunction(
-    pub fn(Vec<AstPair<Value>>, &mut RefMut<Context>) -> Result<AstPair<Value>, Error>,
+    pub fn(&Vec<AstPair<Value>>, &mut RefMut<Context>) -> Result<AstPair<Value>, Error>,
 );
 
 impl Debug for SysFunction {

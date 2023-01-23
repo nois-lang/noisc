@@ -34,7 +34,7 @@ pub trait LibFunction {
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error>;
 
     fn call_fn(
-        args: Vec<AstPair<Value>>,
+        args: &Vec<AstPair<Value>>,
         ctx: &mut RefMut<Context>,
     ) -> Result<AstPair<Value>, Error> {
         debug!("stdlib function call {:?}", Self::name(),);
@@ -45,8 +45,8 @@ pub trait LibFunction {
         debug!(
             "stdlib function call {:?}, args: {:?}, result: {:?}",
             Self::name(),
-            &arguments,
-            &res
+            arguments,
+            res
         );
 
         let scope = ctx.scope_stack.last().unwrap();

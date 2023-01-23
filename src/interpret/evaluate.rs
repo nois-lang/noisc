@@ -370,28 +370,32 @@ impl Evaluate for AstPair<Identifier> {
 impl Evaluate for AstPair<Value> {
     fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
         debug!("eval value {:?}", &self);
-        let scope = ctx.scope_stack.last().unwrap();
-        match &self.1 {
-            Value::Fn(f) if scope.arguments.is_some() => {
-                debug!("eval function {:?}", f);
-                self.map(|_| f.clone()).eval(ctx)
+        let args = &ctx.scope_stack.last().unwrap().arguments;
+        if args.is_some() {
+            match &self.1 {
+                Value::Fn(f) => {
+                    debug!("eval function {:?}", f);
+                    self.map(|_| f.clone()).eval(ctx)
+                }
+                Value::Closure(f, defs) => {
+                    debug!("eval closure {:?}", f);
+                    debug!("extending scope with captured definitions: {:?}", defs);
+                    ctx.scope_stack
+                        .last_mut()
+                        .unwrap()
+                        .definitions
+                        .extend(defs.clone());
+                    self.map(|_| f.clone()).eval(ctx)
+                }
+                Value::System(sf) => {
+                    // TODO: store sys function name
+                    debug!("eval system function");
+                    sf.0(&args.as_ref().unwrap().clone(), ctx)
+                }
+                _ => Ok(self.clone()),
             }
-            Value::Closure(f, defs) if scope.arguments.is_some() => {
-                debug!("eval closure {:?}", f);
-                debug!("extending scope with captured definitions: {:?}", defs);
-                ctx.scope_stack
-                    .last_mut()
-                    .unwrap()
-                    .definitions
-                    .extend(defs.clone());
-                self.map(|_| f.clone()).eval(ctx)
-            }
-            Value::System(sf) if scope.arguments.is_some() => {
-                // TODO: store sys function name
-                debug!("eval system function");
-                sf.0(scope.arguments.clone().unwrap(), ctx)
-            }
-            _ => Ok(self.clone()),
+        } else {
+            Ok(self.clone())
         }
     }
 }
@@ -399,19 +403,20 @@ impl Evaluate for AstPair<Value> {
 impl Evaluate for Definition {
     fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
         debug!("eval definition {:?}", &self);
-        let scope = ctx.scope_stack.last().unwrap();
+        let scope = ctx.scope_stack.last_mut().unwrap();
         match &self {
             Definition::User(_, exp) => exp.eval(ctx),
             Definition::System(f) => {
-                let m_args = scope.arguments.clone();
-                if let Some(args) = m_args {
+                if scope.arguments.is_some() {
                     debug!(
                         "consuming scope @{} arguments: {:?}",
                         scope.name, scope.arguments
                     );
-                    ctx.scope_stack.last_mut().unwrap().arguments = None;
 
-                    f.0(args, ctx)
+                    let args = scope.arguments.as_ref().unwrap().clone();
+                    scope.arguments = None;
+
+                    f.0(&args, ctx)
                 } else {
                     let callee = scope.callee.unwrap();
                     Ok(AstPair(callee, Value::System(f.clone())))
