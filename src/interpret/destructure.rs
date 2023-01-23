@@ -23,7 +23,7 @@ where
     match assignee.clone().1 {
         Assignee::Identifier(i) => Ok(vec![(i.clone().1, f(i, expression))]),
         Assignee::Hole => Ok(vec![]),
-        Assignee::DestructureList(dl) => destructure_list(dl, expression, assignee.clone().0, ctx),
+        Assignee::DestructureList(dl) => destructure_list(dl, expression, assignee.0, ctx),
     }
 }
 
@@ -61,7 +61,7 @@ pub fn destructure_list<T: Evaluate + Debug>(
                             .flatten()
                             .collect::<Vec<_>>())
                     } else {
-                        return Err(Error::from_span(
+                        Err(Error::from_span(
                             &e.0,
                             &ctx.ast_context,
                             format!(
@@ -69,13 +69,13 @@ pub fn destructure_list<T: Evaluate + Debug>(
                                 destructure_list.0.len(),
                                 vs.len()
                             ),
-                        ));
+                        ))
                     }
                 }
                 1 => destructure_with_spread(
                     span,
                     ctx,
-                    destructure_list.clone(),
+                    destructure_list,
                     vs,
                     spread_items.first().unwrap().clone(),
                 ),
@@ -139,10 +139,7 @@ fn destructure_with_spread(
         .collect::<Vec<_>>();
     let spread_pair = vec![(
         spread_item.1.clone().1,
-        Definition::Value(AstPair::from_span(
-            &span,
-            Value::list(spread_values.clone()),
-        )),
+        Definition::Value(AstPair::from_span(&span, Value::list(spread_values))),
     )];
     let after_pairs = destructure_list
         .0

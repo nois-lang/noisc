@@ -108,10 +108,10 @@ impl Context {
             .scope_stack
             .iter()
             .rev()
-            .filter_map(|s| s.definitions.get(&identifier))
-            .cloned()
-            .next();
-        if let None = r {
+            .filter_map(|s| s.definitions.get(identifier))
+            .next()
+            .cloned();
+        if r.is_none() {
             error!(
                 "definition {} not found in scope stack {:?}",
                 &identifier, &self.scope_stack
@@ -130,7 +130,7 @@ impl Statement {
             Statement::Assignment {
                 assignee,
                 expression,
-            } => assign_definitions(assignee, expression, ctx, |i, e| Definition::User(i, e)),
+            } => assign_definitions(assignee, expression, ctx, Definition::User),
             _ => Ok(vec![]),
         }
     }

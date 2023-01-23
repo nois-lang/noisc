@@ -11,7 +11,7 @@ impl NoisParser {
     pub fn parse_program(input: &str) -> Result<Pair<Rule>, Error> {
         Self::parse(Rule::program, input)
             .map(|ps| ps.into_iter().next().unwrap())
-            .map_err(|e| Error::Error(e))
+            .map_err(Error::Error)
     }
 }
 

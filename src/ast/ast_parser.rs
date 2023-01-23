@@ -102,25 +102,25 @@ pub fn parse_expression(
         Rule::unary_expression if ch[0].as_rule() == Rule::prefix_operator => {
             let operator = parse_unary_operator(&ch[0], ctx)?;
             let operand = parse_expression(&ch[1], ctx)?;
-            return Ok(AstPair::from_pair(
+            Ok(AstPair::from_pair(
                 pair,
                 Expression::Unary {
                     operator: Box::new(operator),
                     operand: Box::new(operand),
                 },
-            ));
+            ))
         }
         // postfix operator expression
         Rule::unary_expression if ch[1].as_rule() == Rule::postfix_operator => {
             let operand = parse_expression(&ch[0], ctx)?;
             let operator = parse_unary_operator(&ch[1], ctx)?;
-            return Ok(AstPair::from_pair(
+            Ok(AstPair::from_pair(
                 pair,
                 Expression::Unary {
                     operator: Box::new(operator),
                     operand: Box::new(operand),
                 },
-            ));
+            ))
         }
         Rule::match_expression => {
             let ch = children(pair);
@@ -130,13 +130,13 @@ pub fn parse_expression(
                 .skip(1)
                 .map(|c| parse_match_clause(c, ctx))
                 .collect::<Result<_, _>>()?;
-            return Ok(AstPair::from_pair(
+            Ok(AstPair::from_pair(
                 pair,
                 Expression::MatchExpression {
                     condition: Box::new(condition),
                     match_clauses,
                 },
-            ));
+            ))
         }
         _ => {
             let operand = parse_operand(pair, ctx)?;
@@ -170,7 +170,7 @@ pub fn parse_complex_expression(
                 let o1 = parse_binary_operator(&c, ctx)?;
                 let mut o2;
                 while !operator_stack.is_empty() {
-                    o2 = operator_stack.iter().cloned().last().unwrap();
+                    o2 = operator_stack.iter().last().unwrap().clone();
                     if o1.1.precedence() == o2.1.precedence()
                         && o1.1.associativity() == Associativity::None
                         && o2.1.associativity() == Associativity::None
@@ -296,14 +296,14 @@ pub fn parse_operand(
 ) -> Result<AstPair<Operand>, Error> {
     match pair.as_rule() {
         Rule::integer => {
-            parse_integer(pair, ctx).map(|i| AstPair::from_pair(&pair, Operand::Integer(i)))
+            parse_integer(pair, ctx).map(|i| AstPair::from_pair(pair, Operand::Integer(i)))
         }
-        Rule::float => parse_float(pair, ctx).map(|f| AstPair::from_pair(&pair, Operand::Float(f))),
+        Rule::float => parse_float(pair, ctx).map(|f| AstPair::from_pair(pair, Operand::Float(f))),
         Rule::boolean => {
-            parse_boolean(pair, ctx).map(|b| AstPair::from_pair(&pair, Operand::Boolean(b)))
+            parse_boolean(pair, ctx).map(|b| AstPair::from_pair(pair, Operand::Boolean(b)))
         }
         Rule::string => {
-            parse_string(pair, ctx).map(|s| AstPair::from_pair(&pair, Operand::String(s)))
+            parse_string(pair, ctx).map(|s| AstPair::from_pair(pair, Operand::String(s)))
         }
         Rule::HOLE_OP => Ok(AstPair::from_pair(pair, Operand::Hole)),
         Rule::function_init => parse_function_init(pair, ctx),
@@ -319,7 +319,7 @@ pub fn parse_operand(
                 .last_mut()
                 .unwrap()
                 .usage
-                .insert(id.1.clone(), id.0.clone());
+                .insert(id.1.clone(), id.0);
 
             Ok(AstPair::from_span(
                 &id.0,
@@ -623,7 +623,7 @@ fn parse_match_clause(
             let ch = children(pair);
             let pattern = parse_pattern_item(&ch[0], ctx)?;
             let block = parse_block(&ch[1], ctx)?;
-            Ok(AstPair::from_pair(&pair, MatchClause { pattern, block }))
+            Ok(AstPair::from_pair(pair, MatchClause { pattern, block }))
         }
         _ => Err(Error::from_pair(
             pair,
@@ -661,7 +661,7 @@ fn parse_pattern_item(
                 Rule::pattern_list => return parse_pattern_list(&ch[0], ctx),
                 r => unreachable!("{:?}", r),
             };
-            Ok(AstPair::from_pair(&pair, item))
+            Ok(AstPair::from_pair(pair, item))
         }
         _ => Err(Error::from_pair(
             pair,
@@ -684,7 +684,7 @@ fn parse_pattern_list(
                 .iter()
                 .map(|i| parse_pattern_item(i, ctx))
                 .collect::<Result<_, _>>()?;
-            Ok(AstPair::from_pair(&pair, PatternItem::PatternList(is)))
+            Ok(AstPair::from_pair(pair, PatternItem::PatternList(is)))
         }
         _ => Err(Error::from_pair(
             pair,
@@ -719,7 +719,7 @@ mod tests {
     }
 
     fn parse_block(source: &str) -> Block {
-        let file = &NoisParser::parse(Rule::program, source.clone()).unwrap();
+        let file = &NoisParser::parse(Rule::program, source).unwrap();
         let ctx = Context::stdlib(source.to_string());
         let a_ctx_cell = RefCell::new(ctx.ast_context);
         let a_ctx = &mut a_ctx_cell.borrow_mut();

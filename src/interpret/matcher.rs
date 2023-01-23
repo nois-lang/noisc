@@ -46,7 +46,7 @@ pub fn match_pattern_item(
         | PatternItem::String(_) => Value::try_from(pattern_item.clone())
             .map_err(|e| Error::from_span(&pattern_item.0, &ctx.ast_context, e))?
             .eq(&value.1)
-            .then(|| vec![]),
+            .then_some(vec![]),
         PatternItem::Identifier {
             identifier: id,
             spread: false,
@@ -82,7 +82,7 @@ pub fn match_pattern_item(
                         1 => match_list_with_spread(
                             &value,
                             ctx,
-                            items.clone(),
+                            items,
                             vs,
                             spread_items.first().unwrap().clone(),
                         ),

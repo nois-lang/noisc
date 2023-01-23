@@ -35,7 +35,7 @@ impl LibFunction for Println {
     fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         println!(
             "{}",
-            args.into_iter()
+            args.iter()
                 .map(|a| a.1.to_string())
                 .collect::<Vec<_>>()
                 .join(" ")
@@ -58,7 +58,7 @@ impl LibFunction for Eprintln {
     fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         eprintln!(
             "{}",
-            args.into_iter()
+            args.iter()
                 .map(|a| a.1.to_string())
                 .collect::<Vec<_>>()
                 .join(" ")
@@ -82,7 +82,7 @@ impl LibFunction for Debug {
     fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         println!(
             "{}",
-            args.into_iter()
+            args.iter()
                 .map(|a| format!("{:?}", a.1))
                 .collect::<Vec<_>>()
                 .join(" ")
@@ -105,13 +105,10 @@ impl LibFunction for Panic {
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         Err(Error::from_callee(
             ctx,
-            format!(
-                "{}",
-                args.into_iter()
-                    .map(|a| a.1.to_string())
-                    .collect::<Vec<_>>()
-                    .join(" ")
-            ),
+            args.iter()
+                .map(|a| a.1.to_string())
+                .collect::<Vec<_>>()
+                .join(" "),
         ))
     }
 }
@@ -131,7 +128,7 @@ impl LibFunction for Args {
             .lock()
             .unwrap()
             .iter()
-            .map(|a| Value::list(a.chars().map(|c| Value::C(c)).collect::<Vec<_>>()))
+            .map(|a| Value::list(a.chars().map(Value::C).collect::<Vec<_>>()))
             .collect::<Vec<_>>();
         Ok(Value::list(args))
     }

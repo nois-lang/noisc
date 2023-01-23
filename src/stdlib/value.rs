@@ -38,10 +38,7 @@ impl LibFunction for To {
     }
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        let is_type_list = |l: &Vec<Value>| match l[..] {
-            [Value::Type(..)] => true,
-            _ => false,
-        };
+        let is_type_list = |l: &Vec<Value>| matches!(l[..], [Value::Type(..)]);
         let (arg, vt) = match &arg_values(args)[..] {
             [a, vt @ Value::Type(..)] => (a.clone(), vt.clone()),
             [a, vt @ Value::List { items, .. }] if is_type_list(&items) => (a.clone(), vt.clone()),

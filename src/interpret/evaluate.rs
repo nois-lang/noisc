@@ -14,7 +14,7 @@ use crate::interpret::destructure::assign_definitions;
 use crate::interpret::matcher::match_expression;
 use crate::interpret::value::Value;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum FunctionCallType {
     Function,
     Operator,
@@ -199,7 +199,10 @@ pub fn function_call(
     );
 
     let id = function_call.1.as_identifier();
-    let name = id.clone().map(|i| i.1 .0).unwrap_or("<anon>".to_string());
+    let name = id
+        .clone()
+        .map(|i| i.1 .0)
+        .unwrap_or_else(|| "<anon>".to_string());
     let mut callee = None;
     if id.is_none() {
         debug!("eval function callee {:?}", function_call.1.callee);
@@ -249,7 +252,7 @@ impl Evaluate for AstPair<Operand> {
             Operand::Float(f) => Ok(self.map(|_| Value::F(*f))),
             Operand::Boolean(b) => Ok(self.map(|_| Value::B(*b))),
             Operand::String(s) => Ok(self.map(|_| Value::List {
-                items: s.chars().map(|c| Value::C(c)).collect(),
+                items: s.chars().map(Value::C).collect(),
                 spread: false,
             })),
             Operand::ValueType(vt) => Ok(self.map(|_| Value::Type(vt.clone()))),
@@ -257,11 +260,8 @@ impl Evaluate for AstPair<Operand> {
             Operand::ListInit { items } => {
                 let l = Value::List {
                     items: match items
-                        .into_iter()
-                        .map(|i| {
-                            let v = i.eval(ctx).map(|a| a.1);
-                            v
-                        })
+                        .iter()
+                        .map(|i| i.eval(ctx).map(|a| a.1))
                         .collect::<Result<Vec<_>, _>>()
                     {
                         Ok(r) => r
@@ -303,8 +303,8 @@ impl Evaluate for AstPair<FunctionInit> {
         let o_args = scope.arguments.clone();
         // if scope has args, this is a function call and function init must be evaluated
         debug!("eval {:?}, args: {:?}", &self, &o_args);
-        if o_args.is_some() {
-            for (param, v) in self.1.parameters.iter().zip(o_args.unwrap().clone()) {
+        if let Some(args) = o_args {
+            for (param, v) in self.1.parameters.iter().zip(args) {
                 let defs = assign_definitions(param.clone(), v, ctx, |_, e| Definition::Value(e))?;
                 ctx.scope_stack.last_mut().unwrap().definitions.extend(defs);
             }
@@ -326,7 +326,7 @@ impl Evaluate for AstPair<FunctionInit> {
                 Value::Fn(self.1.clone())
             } else {
                 let defs = closure
-                    .into_iter()
+                    .iter()
                     .map(|i| {
                         let def = ctx.find_definition(i).ok_or_else(|| {
                             Error::from_span(

@@ -11,11 +11,11 @@ impl log::Log for Logger {
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
             let pretty_level = match record.level() {
-                Level::Trace => format!("[.]").white(),
-                Level::Debug => format!("[d]").white(),
-                Level::Info => format!("[i]").bright_green(),
-                Level::Warn => format!("[W]").yellow(),
-                Level::Error => format!("[E]").red(),
+                Level::Trace => "[.]".to_string().white(),
+                Level::Debug => "[d]".to_string().white(),
+                Level::Info => "[i]".to_string().bright_green(),
+                Level::Warn => "[W]".to_string().yellow(),
+                Level::Error => "[E]".to_string().red(),
             };
             let format_target = || -> String {
                 let s = record.target();
@@ -32,11 +32,11 @@ impl log::Log for Logger {
             println!(
                 "{} [{:<12}:{:>3}] {}",
                 pretty_level,
-                format_target().to_string(),
+                format_target(),
                 record
                     .line()
                     .map(|i| i.to_string())
-                    .unwrap_or("?".to_string()),
+                    .unwrap_or_else(|| "?".to_string()),
                 record.args()
             );
         }

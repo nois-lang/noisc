@@ -1,6 +1,6 @@
 use crate::ast::ast::BinaryOperator;
 
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(Debug, PartialOrd, PartialEq, Eq, Clone)]
 pub enum Associativity {
     Left,
     Right,

@@ -47,7 +47,7 @@ where
         _ => terminate(format!("'{}' not found", identifier)),
     };
     let mut a = ctx_bm.scope_stack.last_mut().unwrap();
-    a.callee = Some(main_id.clone().0);
+    a.callee = Some(main_id.0);
     match main.eval(ctx_bm) {
         Ok(_) => {}
         Err(e) => {

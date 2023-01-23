@@ -84,7 +84,7 @@ impl LibFunction for Range {
             _ => return Err(arg_error("(I, I?)", args, ctx)),
         };
         Ok(Value::List {
-            items: range.map(|i| Value::I(i)).collect::<Vec<_>>(),
+            items: range.map(Value::I).collect::<Vec<_>>(),
             spread: false,
         })
     }
@@ -136,7 +136,7 @@ impl LibFunction for Map {
             [Value::List { items: l, .. }, Value::Closure(..) | Value::Fn(..)] => l.clone(),
             _ => return Err(arg_error("([*], (*, I) -> *))", args, ctx)),
         };
-        let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee.clone();
+        let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee;
 
         let res = list
             .into_iter()
@@ -145,7 +145,7 @@ impl LibFunction for Map {
                 // TODO: refactor to a common method of calling a closure from sys function
                 ctx.scope_stack.push(
                     Scope::new("<closure>".to_string())
-                        .with_callee(callee.clone())
+                        .with_callee(callee)
                         .with_arguments(Some(vec![
                             args[0].map(|_| li.clone()),
                             args[1].map(|_| Value::I(i as i128)),
@@ -190,7 +190,7 @@ impl LibFunction for Filter {
             [Value::List { items: l, .. }, Value::Closure(..) | Value::Fn(..)] => l.clone(),
             _ => return Err(arg_error("([*], (*, I) -> B)", args, ctx)),
         };
-        let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee.clone();
+        let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee;
 
         let res: Vec<Value> = list
             .into_iter()
@@ -198,7 +198,7 @@ impl LibFunction for Filter {
             .map(|(i, li)| {
                 ctx.scope_stack.push(
                     Scope::new("<closure>".to_string())
-                        .with_callee(callee.clone())
+                        .with_callee(callee)
                         .with_arguments(Some(vec![
                             args[0].map(|_| li.clone()),
                             args[1].map(|_| Value::I(i as i128)),
@@ -250,7 +250,7 @@ impl LibFunction for Reduce {
             }
             _ => return Err(arg_error("([a], b, (b, a, I) -> b)", args, ctx)),
         };
-        let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee.clone();
+        let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee;
 
         let mut acc = start;
 
@@ -259,7 +259,7 @@ impl LibFunction for Reduce {
             .map(|(i, li)| {
                 ctx.scope_stack.push(
                     Scope::new("<closure>".to_string())
-                        .with_callee(callee.clone())
+                        .with_callee(callee)
                         .with_arguments(Some(vec![
                             args[2].map(|_| acc.clone()),
                             args[0].map(|_| li.clone()),
@@ -278,7 +278,7 @@ impl LibFunction for Reduce {
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        Ok(acc.clone())
+        Ok(acc)
     }
 }
 
@@ -393,7 +393,7 @@ impl LibFunction for Flat {
         let res = match &arg_values(args)[..] {
             [Value::List { items: is, .. }] => {
                 let vs = is
-                    .into_iter()
+                    .iter()
                     .map(|i| match i {
                         Value::List { items: l, .. } => Some(l.clone()),
                         _ => None,
@@ -419,7 +419,7 @@ impl LibFunction for Join {
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let res = match &arg_values(args)[..] {
             [Value::List { items: is, .. }, v] => {
-                itertools::intersperse(is.into_iter().cloned(), v.clone()).collect::<Vec<_>>()
+                itertools::intersperse(is.iter().cloned(), v.clone()).collect::<Vec<_>>()
             }
             [Value::List { items: is, .. }] => is.clone(),
             _ => return Err(arg_error("([*], *?)", args, ctx)),

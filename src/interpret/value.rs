@@ -41,7 +41,7 @@ impl Value {
                         spread: false,
                     };
                 }
-                let types: Vec<Value> = items.into_iter().map(|v| v.value_type()).collect();
+                let types: Vec<Value> = items.iter().map(|v| v.value_type()).collect();
                 return if types.iter().collect::<HashSet<_>>().len() == 1 {
                     Value::List {
                         items: vec![types[0].clone()],
@@ -49,7 +49,7 @@ impl Value {
                     }
                 } else {
                     Value::List {
-                        items: types.clone(),
+                        items: types,
                         spread: false,
                     }
                 };
@@ -77,7 +77,7 @@ impl Value {
                         _ => None,
                     };
                     str.map(|s| Value::List {
-                        items: s.chars().into_iter().map(|c| Value::C(c)).collect(),
+                        items: s.chars().into_iter().map(Value::C).collect(),
                         spread: false,
                     })
                 }
@@ -95,9 +95,9 @@ impl Value {
                     let s = arg.to_string();
                     match t {
                         ValueType::Unit => Some(Value::Unit),
-                        ValueType::Integer => s.parse().map(|i| Value::I(i)).ok(),
-                        ValueType::Float => s.parse().map(|f| Value::F(f)).ok(),
-                        ValueType::Char => s.parse().map(|c| Value::C(c)).ok(),
+                        ValueType::Integer => s.parse().map(Value::I).ok(),
+                        ValueType::Float => s.parse().map(Value::F).ok(),
+                        ValueType::Char => s.parse().map(Value::C).ok(),
                         ValueType::Boolean => match s.as_str() {
                             "True" => Some(Value::B(true)),
                             "False" => Some(Value::B(false)),
@@ -108,14 +108,10 @@ impl Value {
                 }
                 // mono-type casts
                 _ => match (arg, t) {
-                    (Value::I(i), ValueType::Float) => {
-                        <f64 as NumCast>::from(*i).map(|f| Value::F(f))
-                    }
-                    (Value::F(f), ValueType::Integer) => {
-                        <i128 as NumCast>::from(*f).map(|i| Value::I(i))
-                    }
+                    (Value::I(i), ValueType::Float) => <f64 as NumCast>::from(*i).map(Value::F),
+                    (Value::F(f), ValueType::Integer) => <i128 as NumCast>::from(*f).map(Value::I),
                     (Value::I(i), ValueType::Char) => <u32 as NumCast>::from(*i)
-                        .and_then(|u| char::try_from(u).map(|c| Value::C(c)).ok()),
+                        .and_then(|u| char::try_from(u).map(Value::C).ok()),
                     (Value::C(c), ValueType::Integer) => {
                         <u32>::try_from(*c).ok().map(|u| Value::I(u as i128))
                     }
@@ -135,7 +131,7 @@ impl Value {
 
     pub fn and(&self, rhs: &Self) -> Result<Value, String> {
         match (self, rhs) {
-            (Value::B(b1), Value::B(b2)) => Ok(Value::B(b1.clone() && b2.clone())),
+            (Value::B(b1), Value::B(b2)) => Ok(Value::B(*b1 && *b2)),
             _ => Err(format!(
                 "incompatible operands: {} && {}",
                 self.value_type(),
@@ -146,7 +142,7 @@ impl Value {
 
     pub fn or(&self, rhs: &Self) -> Result<Value, String> {
         match (self, rhs) {
-            (Value::B(b1), Value::B(b2)) => Ok(Value::B(b1.clone() || b2.clone())),
+            (Value::B(b1), Value::B(b2)) => Ok(Value::B(*b1 || *b2)),
             _ => Err(format!(
                 "incompatible operands: {} || {}",
                 self.value_type(),
@@ -201,7 +197,7 @@ impl Display for Value {
             Value::B(b) => write!(f, "{}", if *b { "True" } else { "False" }),
             Value::List { items: l, spread } => {
                 let all_c = !l.is_empty() && l.iter().all(|v| matches!(v, Value::C(_)));
-                let is = l.into_iter().map(|i| i.to_string()).collect::<Vec<_>>();
+                let is = l.iter().map(|i| i.to_string()).collect::<Vec<_>>();
                 let spread_s = if *spread {
                     UnaryOperator::Spread.to_string()
                 } else {
@@ -230,7 +226,7 @@ impl TryFrom<AstPair<PatternItem>> for Value {
             PatternItem::Float(f) => Ok(Value::F(f)),
             PatternItem::Boolean(b) => Ok(Value::B(b)),
             PatternItem::String(s) => Ok(Value::List {
-                items: s.chars().map(|c| Value::C(c)).collect(),
+                items: s.chars().map(Value::C).collect(),
                 spread: false,
             }),
             _ => Err(format!(
@@ -248,7 +244,7 @@ impl ops::Add for &Value {
         fn push_end(a: &Vec<Value>, b: &Value) -> Value {
             Value::List {
                 items: a
-                    .into_iter()
+                    .iter()
                     .cloned()
                     .chain(vec![b.clone()].into_iter())
                     .collect(),
@@ -296,7 +292,7 @@ impl ops::Add for &Value {
                 _ => None,
             }
         }
-        match _add(self, rhs).or(_add(rhs, self)) {
+        match _add(self, rhs).or_else(|| _add(rhs, self)) {
             Some(r) => Ok(r),
             None => Err(format!(
                 "incompatible operands: {} + {}",
@@ -319,7 +315,7 @@ impl ops::Sub for &Value {
                 _ => None,
             }
         }
-        match _sub(self, rhs).or(_sub(rhs, self)) {
+        match _sub(self, rhs).or_else(|| _sub(rhs, self)) {
             Some(r) => Ok(r),
             None => Err(format!(
                 "incompatible operands: {} - {}",
@@ -342,7 +338,7 @@ impl ops::Rem for &Value {
                 _ => None,
             }
         }
-        match _rem(self, rhs).or(_rem(rhs, self)) {
+        match _rem(self, rhs).or_else(|| _rem(rhs, self)) {
             Some(r) => Ok(r),
             None => Err(format!(
                 "incompatible operands: {} % {}",
@@ -380,7 +376,7 @@ impl PartialOrd for &Value {
                 _ => None,
             }
         }
-        _cmp(self, other).or(_cmp(other, self))
+        _cmp(self, other).or_else(|| _cmp(other, self))
     }
 }
 

@@ -39,7 +39,7 @@ lazy_static! {
 
 fn main() {
     if let Some(source) = piped_input() {
-        let (ast, a_ctx) = parse_ast(source.clone());
+        let (ast, a_ctx) = parse_ast(source);
         execute(ast, Context::stdlib(a_ctx.into_inner().input), |_| {});
         return;
     }
@@ -71,7 +71,7 @@ fn main() {
             }
             info!("executing command {:?}", &command);
             let source = read_source(path);
-            let (ast, a_ctx) = parse_ast(source.clone());
+            let (ast, a_ctx) = parse_ast(source);
             execute(ast, Context::stdlib(a_ctx.into_inner().input), |_| {});
         }
     }
@@ -84,7 +84,7 @@ pub fn parse_ast(source: String) -> (AstPair<Block>, RefCell<AstContext>) {
     let pt = NoisParser::parse_program(source.as_str());
     let ast = pt.and_then(|parsed| parse_block(&parsed, ctx_bm));
     match ast {
-        Ok(a) => (a, RefCell::new(ctx.ast_context.clone())),
+        Ok(a) => (a, RefCell::new(ctx.ast_context)),
         Err(e) => terminate(e.to_string()),
     }
 }
@@ -147,13 +147,12 @@ mod tests {
                 _ctx: &mut RefMut<Context>,
             ) -> Result<Value, Error> {
                 OUT.with(|o| {
-                    o.borrow_mut().push(format!(
-                        "{}",
-                        args.into_iter()
+                    o.borrow_mut().push(
+                        args.iter()
                             .map(|a| a.1.to_string())
                             .collect::<Vec<_>>()
-                            .join(" ")
-                    ))
+                            .join(" "),
+                    )
                 });
                 Ok(Value::Unit)
             }

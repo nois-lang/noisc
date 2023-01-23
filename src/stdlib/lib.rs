@@ -77,11 +77,11 @@ pub fn arg_error(
         format!(
             "expected {}, found {}",
             expected_type,
-            vec_to_string_paren(args.into_iter().map(|l| l.1.value_type()).collect())
+            vec_to_string_paren(args.iter().map(|l| l.1.value_type()).collect())
         ),
     )
 }
 
 pub fn arg_values(args: &Vec<AstPair<Value>>) -> Vec<Value> {
-    args.into_iter().map(|a| a.1.clone()).collect::<Vec<_>>()
+    args.iter().map(|a| a.1.clone()).collect::<Vec<_>>()
 }

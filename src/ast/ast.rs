@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
+use std::hash::{Hash, Hasher};
 use std::string::ToString;
 
 use pest::iterators::Pair;
@@ -55,7 +56,7 @@ pub enum Operand {
     ValueType(ValueType),
 }
 
-#[derive(Debug, PartialOrd, Clone, Eq, Hash)]
+#[derive(Debug, PartialOrd, Clone, Eq)]
 pub enum ValueType {
     // TODO: differentiation between unit type and unit value initialization
     Unit,
@@ -66,6 +67,12 @@ pub enum ValueType {
     Function,
     Any,
     Type,
+}
+
+impl Hash for ValueType {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.to_string().hash(state);
+    }
 }
 
 impl PartialEq for ValueType {
@@ -157,7 +164,7 @@ impl Display for UnaryOperator {
     }
 }
 
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(Debug, PartialOrd, PartialEq, Eq, Clone)]
 pub enum BinaryOperator {
     Add,
     Subtract,
@@ -250,7 +257,7 @@ impl Assignee {
         match self {
             Assignee::Hole => vec![],
             Assignee::DestructureList(DestructureList(is)) => {
-                is.into_iter().flat_map(|di| di.1.flatten()).collect()
+                is.iter().flat_map(|di| di.1.flatten()).collect()
             }
             Assignee::Identifier(i) => vec![i.clone()],
         }
@@ -278,7 +285,7 @@ impl DestructureItem {
             DestructureItem::SpreadHole => vec![],
             DestructureItem::Identifier { identifier: i, .. } => vec![i.clone()],
             DestructureItem::List(DestructureList(is)) => {
-                is.into_iter().flat_map(|di| di.1.flatten()).collect()
+                is.iter().flat_map(|di| di.1.flatten()).collect()
             }
         }
     }
@@ -301,7 +308,7 @@ impl AstContext {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct AstScope {
     pub definitions: HashMap<Identifier, Option<Span>>,
     pub usage: HashMap<Identifier, Span>,
@@ -322,12 +329,12 @@ impl AstScope {
     ) -> HashMap<Identifier, Span> {
         self.usage
             .into_iter()
-            .filter(|(i, _)| !definitions.contains_key(&i))
+            .filter(|(i, _)| !definitions.contains_key(i))
             .collect()
     }
 }
 
-#[derive(Debug, PartialOrd, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialOrd, PartialEq, Eq, Clone, Copy)]
 pub struct Span {
     pub start: usize,
     pub end: usize,
@@ -336,7 +343,7 @@ pub struct Span {
 impl Span {
     pub fn as_span<'a>(&self, ctx: &'a AstContext) -> pest::Span<'a> {
         pest::Span::new(&ctx.input, self.start, self.end)
-            .expect(format!("failed to convert {:?}", self).as_str())
+            .unwrap_or_else(|| panic!("failed to convert {:?}", self))
     }
 }
 
@@ -349,7 +356,7 @@ impl<'a> From<pest::Span<'a>> for Span {
     }
 }
 
-#[derive(PartialOrd, PartialEq, Clone)]
+#[derive(PartialOrd, PartialEq, Eq, Clone)]
 pub struct AstPair<A>(pub Span, pub A);
 
 impl<A> AstPair<A> {
@@ -358,7 +365,7 @@ impl<A> AstPair<A> {
     }
 
     pub fn from_span(s: &Span, ast: A) -> AstPair<A> {
-        AstPair(s.clone(), ast)
+        AstPair(*s, ast)
     }
 
     pub fn map<T, F>(&self, f: F) -> AstPair<T>
@@ -366,7 +373,7 @@ impl<A> AstPair<A> {
         F: Fn(&A) -> T,
     {
         let t = f(&(self).1);
-        AstPair((&self.0).clone(), t)
+        AstPair(self.0, t)
     }
 
     pub fn flat_map<T, E, F>(&self, f: F) -> Result<AstPair<T>, E>
@@ -374,7 +381,7 @@ impl<A> AstPair<A> {
         F: Fn(&A) -> Result<T, E>,
     {
         let r = f(&self.1);
-        r.map(|t| AstPair((&self.0).clone(), t))
+        r.map(|t| AstPair(self.0, t))
     }
 }
 

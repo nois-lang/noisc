@@ -3,8 +3,8 @@ use std::fmt::{Display, Formatter};
 use std::panic::set_hook;
 
 use colored::Colorize;
-use pest::error::{Error as PError, LineColLocation};
 use pest::error::ErrorVariant;
+use pest::error::{Error as PError, LineColLocation};
 use pest::iterators::Pair;
 
 use crate::ast::ast::{AstContext, Span};
@@ -67,7 +67,6 @@ impl Error {
                 .last()
                 .expect("call stack is empty")
                 .callee
-                .clone()
                 .expect("no callee"),
             &ctx.ast_context,
             message,
@@ -89,7 +88,7 @@ impl Iterator for Error {
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::Error(e) => write!(f, "{}", e.to_string()),
+            Error::Error(e) => write!(f, "{}", e),
             Error::Cause {
                 error,
                 location,
