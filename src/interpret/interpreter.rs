@@ -43,7 +43,7 @@ where
     ctx_bm.ast_context.scope_stack.push(AstScope::new());
     debug!("push scope @{}", &ctx_bm.scope_stack.last().unwrap().name);
 
-    let (main_id, main) = match ctx_bm.find_definition(&identifier) {
+    let (main_id, main) = match ctx_bm.find_definition(&identifier).cloned() {
         Some(Definition::User(id, exp)) => (id, exp),
         _ => terminate(format!("'{}' not found", identifier)),
     };

@@ -114,14 +114,13 @@ impl Context {
         }
     }
 
-    pub fn find_definition(&self, identifier: &Identifier) -> Option<Definition> {
+    pub fn find_definition(&self, identifier: &Identifier) -> Option<&Definition> {
         let r = self
             .scope_stack
             .iter()
             .rev()
             .filter_map(|s| s.definitions.get(identifier))
-            .next()
-            .cloned();
+            .next();
         if r.is_none() {
             error!(
                 "definition {} not found in scope stack {:?}",

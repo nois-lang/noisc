@@ -81,7 +81,7 @@ pub fn function_call(
 
     let res = if let Some(i) = id {
         match ctx.find_definition(&i.1) {
-            Some(d) => d.eval(ctx),
+            Some(d) => d.clone().eval(ctx),
             None => Err(Error::from_span(
                 &function_call.0,
                 &ctx.ast_context,
@@ -347,7 +347,7 @@ impl Evaluate for AstPair<FunctionInit> {
                         let def = ctx.find_definition(i).expect(
                             format!("identifier {} not found: (required for closure)", i).as_str(),
                         );
-                        Ok((i.clone(), def))
+                        Ok((i.clone(), def.clone()))
                     })
                     .collect::<Result<_, _>>()?;
                 debug!("lazy init function with context snapshot {:?}", &ctx);
@@ -363,7 +363,7 @@ impl Evaluate for AstPair<Identifier> {
     fn eval(&self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
         debug!("eval {:?}", &self);
         let res = match ctx.find_definition(&self.1) {
-            Some(res) => res.eval(ctx),
+            Some(res) => res.clone().eval(ctx),
             None => Err(Error::from_span(
                 &self.0,
                 &ctx.ast_context,
