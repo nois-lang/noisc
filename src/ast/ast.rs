@@ -383,6 +383,19 @@ impl<A> AstPair<A> {
         let r = f(&self.1);
         r.map(|t| AstPair(self.0, t))
     }
+
+    pub fn as_ref(&self) -> AstPair<&A> {
+        AstPair(self.0, &self.1)
+    }
+}
+
+impl<A> AstPair<&A> {
+    pub fn cloned(self) -> AstPair<A>
+    where
+        A: Clone,
+    {
+        AstPair(self.0, (self.1).clone())
+    }
 }
 
 impl<T: Debug> Debug for AstPair<T> {

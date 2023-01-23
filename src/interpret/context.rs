@@ -149,11 +149,13 @@ impl Statement {
         &self,
         ctx: &mut RefMut<Context>,
     ) -> Result<Vec<(Identifier, Definition)>, Error> {
-        match self.clone() {
+        match self {
             Statement::Assignment {
                 assignee,
                 expression,
-            } => assign_definitions(assignee, expression, ctx, Definition::User),
+            } => assign_definitions(assignee.as_ref(), expression.as_ref(), ctx, |i, d| {
+                Definition::User(i, d.cloned())
+            }),
             _ => Ok(vec![]),
         }
     }

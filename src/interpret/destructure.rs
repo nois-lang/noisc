@@ -11,7 +11,7 @@ use crate::interpret::evaluate::Evaluate;
 use crate::interpret::value::Value;
 
 pub fn assign_definitions<T, F>(
-    assignee: AstPair<Assignee>,
+    assignee: AstPair<&Assignee>,
     expression: T,
     ctx: &mut RefMut<Context>,
     f: F,
@@ -21,7 +21,7 @@ where
     F: Fn(AstPair<Identifier>, T) -> Definition,
 {
     match assignee.1 {
-        Assignee::Identifier(i) => Ok(vec![(i.clone().1, f(i, expression))]),
+        Assignee::Identifier(i) => Ok(vec![(i.clone().1, f(i.clone(), expression))]),
         Assignee::Hole => Ok(vec![]),
         Assignee::DestructureList(dl) => destructure_list(&dl, expression, assignee.0, ctx),
     }
@@ -55,7 +55,7 @@ pub fn destructure_list<T: Evaluate + Debug>(
                 0 => {
                     if destructure_list.0.len() == vs.len() {
                         Ok(zip(&destructure_list.0, vs)
-                            .map(|(i, v)| destructure_item(i, e.map(|_| v.clone()), ctx))
+                            .map(|(i, v)| destructure_item(i, e.map(|_| v), ctx))
                             .collect::<Result<Vec<_>, _>>()?
                             .into_iter()
                             .flatten()
@@ -96,7 +96,7 @@ pub fn destructure_list<T: Evaluate + Debug>(
 
 fn destructure_item(
     destructure_item: &AstPair<DestructureItem>,
-    value: AstPair<Value>,
+    value: AstPair<&Value>,
     ctx: &mut RefMut<Context>,
 ) -> Result<Vec<(Identifier, Definition)>, Error> {
     debug!(
@@ -105,9 +105,10 @@ fn destructure_item(
     );
     match &destructure_item.1 {
         DestructureItem::Hole | DestructureItem::SpreadHole => Ok(vec![]),
-        DestructureItem::Identifier { identifier, .. } => {
-            Ok(vec![(identifier.1.clone(), Definition::Value(value))])
-        }
+        DestructureItem::Identifier { identifier, .. } => Ok(vec![(
+            identifier.1.clone(),
+            Definition::Value(value.cloned()),
+        )]),
         DestructureItem::List(ls) => {
             let s = value.0;
             destructure_list(&ls, value, s, ctx)
@@ -127,7 +128,7 @@ fn destructure_with_spread(
         .iter()
         .take(spread_item.0)
         .zip(vs.iter().take(spread_item.0))
-        .map(|(i, v)| destructure_item(i, AstPair::from_span(&span, v.clone()), ctx))
+        .map(|(i, v)| destructure_item(i, AstPair::from_span(&span, v), ctx))
         .collect::<Result<Vec<_>, _>>()?
         .into_iter()
         .flatten()
@@ -148,7 +149,7 @@ fn destructure_with_spread(
         .iter()
         .skip(spread_item.0 + 1)
         .zip(vs.iter().skip(spread_value_count + spread_item.0))
-        .map(|(i, v)| destructure_item(i, AstPair::from_span(&span, v.clone()), ctx))
+        .map(|(i, v)| destructure_item(i, AstPair::from_span(&span, v), ctx))
         .collect::<Result<Vec<_>, _>>()?
         .into_iter()
         .flatten()

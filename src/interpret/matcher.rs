@@ -1,5 +1,6 @@
 use std::cell::RefMut;
 use std::iter::zip;
+use std::ops::Deref;
 
 use log::debug;
 
@@ -10,7 +11,7 @@ use crate::interpret::evaluate::Evaluate;
 use crate::interpret::value::Value;
 
 pub fn match_expression(
-    expression: &AstPair<Expression>,
+    expression: &AstPair<&Expression>,
     ctx: &mut RefMut<Context>,
 ) -> Result<Option<(AstPair<MatchClause>, Vec<(Identifier, Definition)>)>, Error> {
     match expression.1.clone() {
@@ -18,7 +19,7 @@ pub fn match_expression(
             condition,
             match_clauses,
         } => {
-            let value = condition.eval(ctx)?;
+            let value = condition.deref().as_ref().eval(ctx)?;
             for (i, clause) in match_clauses.into_iter().enumerate() {
                 debug!("matching {:?} against {:?}", &value, &clause);
                 let p_match = match_pattern_item(&value, &clause.1.pattern, ctx)?;

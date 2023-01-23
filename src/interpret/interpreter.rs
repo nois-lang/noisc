@@ -49,7 +49,7 @@ where
     };
     let mut a = ctx_bm.scope_stack.last_mut().unwrap();
     a.callee = Some(main_id.0);
-    match main.eval(ctx_bm) {
+    match main.as_ref().eval(ctx_bm) {
         Ok(_) => {}
         Err(e) => {
             let err = Error::new_cause(e, main_id.1 .0, &main_id.0, &ctx_bm.ast_context);
