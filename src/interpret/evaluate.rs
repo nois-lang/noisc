@@ -328,12 +328,16 @@ impl Evaluate for AstPair<FunctionInit> {
                 let defs = closure
                     .into_iter()
                     .map(|i| {
-                        (
-                            i.clone(),
-                            ctx.find_definition(i).expect("identifier for closure"),
-                        )
+                        let def = ctx.find_definition(i).ok_or_else(|| {
+                            Error::from_span(
+                                &self.0,
+                                &ctx.ast_context,
+                                format!("identifier {} not found: (required for closure)", i),
+                            )
+                        })?;
+                        Ok((i.clone(), def))
                     })
-                    .collect();
+                    .collect::<Result<_, _>>()?;
                 debug!("lazy init function with context snapshot {:?}", &ctx);
                 // TODO: pass required definitions
                 Value::Closure(self.1.clone(), defs)
@@ -419,7 +423,7 @@ mod tests {
     use std::cell::RefCell;
     use std::vec;
 
-    use crate::ast::ast::{AstContext, ValueType};
+    use crate::ast::ast::ValueType;
     use crate::ast::ast_parser::parse_block;
     use crate::error::Error;
     use crate::interpret::context::Context;
@@ -428,15 +432,16 @@ mod tests {
     use crate::parser::NoisParser;
 
     fn evaluate(source: &str) -> Result<Value, Error> {
-        let a_ctx = AstContext::new(source.to_string());
-        let a_ctx_cell = RefCell::new(a_ctx.clone());
+        let ctx = &Context::stdlib(source.to_string());
+        let ctx_cell = RefCell::new(ctx.clone());
+        let ctx_bm = &mut ctx_cell.borrow_mut();
+
+        let a_ctx_cell = RefCell::new(ctx.ast_context.clone());
         let a_ctx_bm = &mut a_ctx_cell.borrow_mut();
 
         let pt = NoisParser::parse_program(source)?;
         let ast = parse_block(&pt, a_ctx_bm)?;
-        let ctx_cell = RefCell::new(Context::stdlib(a_ctx));
-        let ctx = &mut ctx_cell.borrow_mut();
-        ast.eval(ctx).map(|a| a.1)
+        ast.eval(ctx_bm).map(|a| a.1)
     }
 
     #[test]

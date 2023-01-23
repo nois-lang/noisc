@@ -314,7 +314,7 @@ pub fn parse_operand(
             let id = parse_identifier(pair, ctx)?;
 
             // definitions created by this assignee
-            debug!("usage: {:?}", id);
+            debug!("usage: {}", id.1);
             ctx.scope_stack
                 .last_mut()
                 .unwrap()
@@ -384,12 +384,30 @@ pub fn parse_function_init(
     ctx.scope_stack.push(AstScope::new());
     let parameters: Vec<AstPair<Assignee>> = parse_children(&ch[0], parse_assignee, ctx)?;
     let block = parse_block(&ch[1], ctx)?;
-    // TODO: detect if the function uses external definitions (is a closure)
-    // TODO: warn about unused definitions
+    // TODO: error on use of undefined id
+    let defs = ctx.global_scope.definitions.clone().into_iter().chain(
+        ctx.scope_stack
+            .last()
+            .unwrap()
+            .definitions
+            .clone()
+            .into_iter(),
+    );
+    let closure: Vec<Identifier> = ctx
+        .scope_stack
+        .last()
+        .unwrap()
+        .clone()
+        .external(&defs.collect())
+        .into_keys()
+        .collect();
+    if !&closure.is_empty() {
+        debug!("function init closure: {:?}", &closure);
+    }
     let fi = FunctionInit {
         parameters,
         block,
-        closure: vec![],
+        closure,
     };
     debug!("pop ast scope");
     ctx.scope_stack.pop();
@@ -421,6 +439,32 @@ pub fn parse_enum_define(
 ) -> Result<AstPair<Operand>, Error> {
     let values = parse_children(pair, parse_identifier, ctx)?;
     Ok(AstPair::from_pair(pair, Operand::EnumDefinition { values }))
+}
+
+fn parse_pattern_identifier(
+    pair: &Pair<Rule>,
+    ctx: &mut RefMut<AstContext>,
+) -> Result<AstPair<Identifier>, Error> {
+    match pair.as_rule() {
+        Rule::identifier => {
+            let id = &AstPair::from_pair(pair, Identifier::new(pair.as_str()));
+            debug!("definition: {}", id.1);
+            ctx.scope_stack
+                .last_mut()
+                .unwrap()
+                .definitions
+                .insert(id.1.clone(), Some(id.0));
+            Ok(id.clone())
+        }
+        _ => Err(Error::from_pair(
+            pair,
+            format!(
+                "expected {:?}, found {:?}",
+                Rule::identifier,
+                pair.as_rule()
+            ),
+        )),
+    }
 }
 
 fn parse_identifier(
@@ -504,9 +548,9 @@ fn parse_assignee(
             let defs = assignee
                 .flatten()
                 .into_iter()
-                .map(|a| (a.1, a.0))
+                .map(|a| (a.1, Some(a.0)))
                 .collect::<HashMap<_, _>>();
-            defs.keys().for_each(|i| debug!("definition: {:?}", i));
+            defs.keys().for_each(|i| debug!("definition: {}", i));
             ctx.scope_stack.last_mut().unwrap().definitions.extend(defs);
             Ok(AstPair::from_pair(ch, assignee))
         }
@@ -607,11 +651,11 @@ fn parse_pattern_item(
                 Rule::string => PatternItem::String(parse_string(&ch[0], ctx)?),
                 Rule::SPREAD_OP if ch.len() == 1 => PatternItem::SpreadHole,
                 Rule::SPREAD_OP if ch.len() == 2 => PatternItem::Identifier {
-                    identifier: parse_identifier(&ch[1], ctx)?,
+                    identifier: parse_pattern_identifier(&ch[1], ctx)?,
                     spread: true,
                 },
                 Rule::identifier => PatternItem::Identifier {
-                    identifier: parse_identifier(&ch[0], ctx)?,
+                    identifier: parse_pattern_identifier(&ch[0], ctx)?,
                     spread: false,
                 },
                 Rule::pattern_list => return parse_pattern_list(&ch[0], ctx),
@@ -659,6 +703,7 @@ mod tests {
 
     use pest::Parser;
 
+    use crate::interpret::context::Context;
     use crate::parser::NoisParser;
 
     use super::*;
@@ -674,10 +719,11 @@ mod tests {
     }
 
     fn parse_block(source: &str) -> Block {
-        let file = &NoisParser::parse(Rule::program, source).unwrap();
-        let ctx_cell = RefCell::new(AstContext::new(source.to_string()));
-        let ctx = &mut ctx_cell.borrow_mut();
-        parse_file(file, ctx).unwrap().1
+        let file = &NoisParser::parse(Rule::program, source.clone()).unwrap();
+        let ctx = Context::stdlib(source.to_string());
+        let a_ctx_cell = RefCell::new(ctx.ast_context);
+        let a_ctx = &mut a_ctx_cell.borrow_mut();
+        parse_file(file, a_ctx).unwrap().1
     }
 
     #[test]

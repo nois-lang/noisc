@@ -287,21 +287,23 @@ impl DestructureItem {
 #[derive(Debug, PartialEq, Clone)]
 pub struct AstContext {
     pub input: String,
+    pub global_scope: AstScope,
     pub scope_stack: Vec<AstScope>,
 }
 
 impl AstContext {
-    pub fn new(input: String) -> AstContext {
-        AstContext {
-            input,
-            scope_stack: vec![AstScope::new()],
+    pub fn definitions(&self) -> HashMap<Identifier, Option<Span>> {
+        let mut defs = HashMap::new();
+        for s in &self.scope_stack {
+            defs.extend(s.definitions.clone())
         }
+        defs
     }
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct AstScope {
-    pub definitions: HashMap<Identifier, Span>,
+    pub definitions: HashMap<Identifier, Option<Span>>,
     pub usage: HashMap<Identifier, Span>,
 }
 
@@ -311,6 +313,17 @@ impl AstScope {
             definitions: HashMap::new(),
             usage: HashMap::new(),
         }
+    }
+
+    /// Get used identifiers that are not provided by the map
+    pub fn external(
+        self,
+        definitions: &HashMap<Identifier, Option<Span>>,
+    ) -> HashMap<Identifier, Span> {
+        self.usage
+            .into_iter()
+            .filter(|(i, _)| !definitions.contains_key(&i))
+            .collect()
     }
 }
 

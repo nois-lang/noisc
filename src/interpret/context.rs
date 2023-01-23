@@ -4,7 +4,7 @@ use std::fmt::{Debug, Formatter};
 
 use log::error;
 
-use crate::ast::ast::{AstContext, AstPair, Expression, Identifier, Span, Statement};
+use crate::ast::ast::{AstContext, AstPair, AstScope, Expression, Identifier, Span, Statement};
 use crate::error::Error;
 use crate::interpret::destructure::assign_definitions;
 use crate::interpret::value::Value;
@@ -88,10 +88,17 @@ pub enum Definition {
 }
 
 impl Context {
-    pub fn stdlib(a_ctx: AstContext) -> Context {
-        let defs = stdlib().into_iter().flat_map(|p| p.definitions).collect();
+    pub fn stdlib(input: String) -> Context {
+        let defs: HashMap<_, _> = stdlib().into_iter().flat_map(|p| p.definitions).collect();
         Context {
-            ast_context: a_ctx,
+            ast_context: AstContext {
+                input,
+                global_scope: AstScope {
+                    definitions: defs.keys().map(|i| (i.clone(), None)).collect(),
+                    usage: HashMap::new(),
+                },
+                scope_stack: vec![AstScope::new()],
+            },
             scope_stack: vec![Scope::new("stdlib".to_string()).with_definitions(defs)],
         }
     }
