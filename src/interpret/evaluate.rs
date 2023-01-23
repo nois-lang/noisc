@@ -291,7 +291,17 @@ impl Evaluate for AstPair<Operand> {
                 };
                 Ok(self.map(|_| l))
             }
-            Operand::Identifier(i) => i.eval(ctx),
+            Operand::Identifier(i) => {
+                let res = i.eval(ctx);
+                // TODO: verify that updates the right def, not that higher in scope with that name
+                if let Ok(r) = res.clone() {
+                    debug!("replacing {} definition with concrete value: {:?}", i.1, r);
+                    if let Some(d) = ctx.find_definition_mut(&i.1) {
+                        *d = Definition::Value(r)
+                    }
+                }
+                res
+            }
             _ => Err(Error::from_span(
                 &self.0,
                 &ctx.ast_context,
@@ -332,13 +342,9 @@ impl Evaluate for AstPair<FunctionInit> {
                 let defs = closure
                     .iter()
                     .map(|i| {
-                        let def = ctx.find_definition(i).ok_or_else(|| {
-                            Error::from_span(
-                                &self.0,
-                                &ctx.ast_context,
-                                format!("identifier {} not found: (required for closure)", i),
-                            )
-                        })?;
+                        let def = ctx.find_definition(i).expect(
+                            format!("identifier {} not found: (required for closure)", i).as_str(),
+                        );
                         Ok((i.clone(), def))
                     })
                     .collect::<Result<_, _>>()?;

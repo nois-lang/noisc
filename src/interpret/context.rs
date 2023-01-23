@@ -119,6 +119,19 @@ impl Context {
         }
         r
     }
+
+    pub fn find_definition_mut(&mut self, identifier: &Identifier) -> Option<&mut Definition> {
+        let def = self
+            .scope_stack
+            .iter_mut()
+            .rev()
+            .filter_map(|s| s.definitions.get_mut(identifier))
+            .next();
+        if def.is_none() {
+            error!("definition {} not found", &identifier);
+        }
+        def
+    }
 }
 
 impl Statement {
