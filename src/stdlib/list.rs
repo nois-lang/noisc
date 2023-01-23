@@ -245,7 +245,7 @@ impl LibFunction for Reduce {
     }
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        let (list, start) = match &arg_values(args)[..] {
+        let (list, start) = match arg_values(args)[..] {
             [Value::List { items: l, .. }, s, Value::Closure(..) | Value::Fn(..)] => {
                 (l.clone(), s.clone())
             }
@@ -279,7 +279,7 @@ impl LibFunction for Reduce {
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        Ok(acc)
+        Ok(acc.clone())
     }
 }
 
@@ -419,9 +419,9 @@ impl LibFunction for Join {
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let res = match &arg_values(args)[..] {
-            [Value::List { items: is, .. }, v] => {
-                itertools::intersperse(is.iter().cloned(), v.clone()).collect::<Vec<_>>()
-            }
+            [Value::List { items: is, .. }, v] => itertools::intersperse(is.iter(), v)
+                .cloned()
+                .collect::<Vec<_>>(),
             [Value::List { items: is, .. }] => is.clone(),
             _ => return Err(arg_error("([*], *?)", args, ctx)),
         };

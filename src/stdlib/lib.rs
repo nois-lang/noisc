@@ -82,6 +82,6 @@ pub fn arg_error(
     )
 }
 
-pub fn arg_values(args: &Vec<AstPair<Value>>) -> Vec<Value> {
-    args.iter().map(|a| a.1.clone()).collect::<Vec<_>>()
+pub fn arg_values(args: &Vec<AstPair<Value>>) -> Vec<&Value> {
+    args.iter().map(|a| &a.1).collect::<Vec<_>>()
 }

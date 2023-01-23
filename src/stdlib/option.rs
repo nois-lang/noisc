@@ -30,7 +30,7 @@ impl LibFunction for Some {
     }
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        let arg = match &arg_values(args)[..] {
+        let arg = match arg_values(args)[..] {
             [a] => a.clone(),
             _ => return Err(arg_error("(*)", args, ctx)),
         };

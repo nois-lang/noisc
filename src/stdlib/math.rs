@@ -46,7 +46,7 @@ impl LibFunction for Sub {
     }
 
     fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        match &arg_values(args)[..] {
+        match arg_values(args)[..] {
             [a, b] => a - b,
             [a] => -a,
             _ => unreachable!(),
