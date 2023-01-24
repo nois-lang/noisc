@@ -32,10 +32,10 @@ pub fn stdlib() -> Vec<Package> {
 pub trait LibFunction {
     fn name() -> String;
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error>;
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error>;
 
     fn call_fn(
-        args: &Vec<AstPair<Rc<Value>>>,
+        args: &[AstPair<Rc<Value>>],
         ctx: &mut RefMut<Context>,
     ) -> Result<AstPair<Value>, Error> {
         debug!("stdlib function call {:?}", Self::name(),);
@@ -72,7 +72,7 @@ pub trait LibFunction {
 
 pub fn arg_error(
     expected_type: &str,
-    args: &Vec<AstPair<Rc<Value>>>,
+    args: &[AstPair<Rc<Value>>],
     ctx: &mut RefMut<Context>,
 ) -> Error {
     Error::from_callee(
@@ -85,6 +85,6 @@ pub fn arg_error(
     )
 }
 
-pub fn arg_values(args: &Vec<AstPair<Rc<Value>>>) -> Vec<&Value> {
+pub fn arg_values(args: &[AstPair<Rc<Value>>]) -> Vec<&Value> {
     args.iter().map(|a| a.1.as_ref()).collect::<Vec<_>>()
 }

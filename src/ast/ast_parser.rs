@@ -381,7 +381,7 @@ pub fn parse_function_init(
 ) -> Result<AstPair<Operand>, Error> {
     let ch = children(pair);
     debug!("push ast scope");
-    ctx.scope_stack.push(AstScope::new());
+    ctx.scope_stack.push(AstScope::default());
     let parameters: Vec<AstPair<Assignee>> = parse_children(&ch[0], parse_assignee, ctx)?;
     let block = parse_block(&ch[1], ctx)?;
     // TODO: error on use of undefined id

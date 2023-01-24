@@ -83,7 +83,7 @@ pub fn destructure_list<T: Evaluate + Debug>(
                 _ => Err(Error::from_span(
                     &span,
                     &ctx.ast_context,
-                    format!("ambiguous spreading logic: single spread identifier allowed"),
+                    "ambiguous spreading logic: single spread identifier allowed".to_string(),
                 )),
             }
         }
@@ -120,7 +120,7 @@ fn destructure_with_spread(
     span: Span,
     ctx: &mut RefMut<Context>,
     destructure_list: &DestructureList,
-    vs: &Vec<Value>,
+    vs: &[Value],
     spread_item: &(usize, AstPair<Identifier>),
 ) -> Result<Vec<(Identifier, Definition)>, Error> {
     let before_pairs = destructure_list

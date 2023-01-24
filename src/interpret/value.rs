@@ -241,7 +241,7 @@ impl ops::Add for &Value {
     type Output = Result<Value, String>;
 
     fn add(self, rhs: Self) -> Self::Output {
-        fn push_end(a: &Vec<Value>, b: &Value) -> Value {
+        fn push_end(a: &[Value], b: &Value) -> Value {
             Value::List {
                 items: a
                     .iter()
@@ -251,12 +251,9 @@ impl ops::Add for &Value {
                 spread: false,
             }
         }
-        fn push_start(a: &Value, b: &Vec<Value>) -> Value {
+        fn push_start(a: &Value, b: &[Value]) -> Value {
             Value::List {
-                items: vec![a.clone()]
-                    .into_iter()
-                    .chain(b.clone().into_iter())
-                    .collect(),
+                items: vec![a].into_iter().chain(b.iter()).cloned().collect(),
                 spread: false,
             }
         }

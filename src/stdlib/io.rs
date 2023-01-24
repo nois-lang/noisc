@@ -33,7 +33,7 @@ impl LibFunction for Println {
         "println".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         println!(
             "{}",
             args.iter()
@@ -56,7 +56,7 @@ impl LibFunction for Eprintln {
         "eprintln".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         eprintln!(
             "{}",
             args.iter()
@@ -80,7 +80,7 @@ impl LibFunction for Debug {
         "debug".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         println!(
             "{}",
             args.iter()
@@ -103,7 +103,7 @@ impl LibFunction for Panic {
         "panic".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         Err(Error::from_callee(
             ctx,
             args.iter()
@@ -121,7 +121,7 @@ impl LibFunction for Args {
         "args".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         if !args.is_empty() {
             return Err(arg_error("()", args, ctx));
         }

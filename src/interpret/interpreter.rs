@@ -40,7 +40,7 @@ where
     ctx_bm.scope_stack.push(take(
         Scope::new(identifier.to_string()).with_arguments(Some(vec![])),
     ));
-    ctx_bm.ast_context.scope_stack.push(AstScope::new());
+    ctx_bm.ast_context.scope_stack.push(AstScope::default());
     debug!("push scope @{}", &ctx_bm.scope_stack.last().unwrap().name);
 
     let (main_id, main) = match ctx_bm.find_definition(&identifier).cloned() {

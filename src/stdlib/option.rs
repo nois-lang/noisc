@@ -30,7 +30,7 @@ impl LibFunction for Some {
         "some".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let arg = match arg_values(args)[..] {
             [a] => a.clone(),
             _ => return Err(arg_error("(*)", args, ctx)),
@@ -57,7 +57,7 @@ impl LibFunction for None {
         "none".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         if !args.is_empty() {
             return Err(arg_error("()", args, ctx));
         }

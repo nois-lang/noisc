@@ -22,8 +22,8 @@ impl LibFunction for Type {
         "type".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        let arg = match &arg_values(args)[..] {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        let arg = match arg_values(args)[..] {
             [a] => a.clone(),
             _ => return Err(arg_error("(*)", args, ctx)),
         };
@@ -38,11 +38,11 @@ impl LibFunction for To {
         "to".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let is_type_list = |l: &Vec<Value>| matches!(l[..], [Value::Type(..)]);
-        let (arg, vt) = match &arg_values(args)[..] {
+        let (arg, vt) = match arg_values(args)[..] {
             [a, vt @ Value::Type(..)] => (a.clone(), vt.clone()),
-            [a, vt @ Value::List { items, .. }] if is_type_list(&items) => (a.clone(), vt.clone()),
+            [a, vt @ Value::List { items, .. }] if is_type_list(items) => (a.clone(), vt.clone()),
             _ => return Err(arg_error("(*, T)", args, ctx)),
         };
         arg.to(&vt).ok_or_else(|| {

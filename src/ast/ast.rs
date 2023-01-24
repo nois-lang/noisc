@@ -309,20 +309,13 @@ impl AstContext {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub struct AstScope {
     pub definitions: HashMap<Identifier, Option<Span>>,
     pub usage: HashMap<Identifier, Span>,
 }
 
 impl AstScope {
-    pub fn new() -> AstScope {
-        AstScope {
-            definitions: HashMap::new(),
-            usage: HashMap::new(),
-        }
-    }
-
     /// Get used identifiers that are not provided by the map
     pub fn external(
         self,

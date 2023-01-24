@@ -38,7 +38,7 @@ impl LibFunction for AddOp {
         BinaryOperator::Add.to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         Add::call(args, ctx)
     }
 }
@@ -50,7 +50,7 @@ impl LibFunction for SubOp {
         BinaryOperator::Subtract.to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         Sub::call(args, ctx)
     }
 }
@@ -62,7 +62,7 @@ impl LibFunction for RemOp {
         BinaryOperator::Remainder.to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         Rem::call(args, ctx)
     }
 }
@@ -74,7 +74,7 @@ impl LibFunction for EqOp {
         BinaryOperator::Equals.to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         Eq::call(args, ctx)
     }
 }
@@ -86,7 +86,7 @@ impl LibFunction for NeOp {
         BinaryOperator::NotEquals.to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         Ne::call(args, ctx)
     }
 }
@@ -98,7 +98,7 @@ impl LibFunction for GtOp {
         BinaryOperator::Greater.to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         Gt::call(args, ctx)
     }
 }
@@ -110,7 +110,7 @@ impl LibFunction for GeOp {
         BinaryOperator::GreaterOrEquals.to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         Ge::call(args, ctx)
     }
 }
@@ -122,7 +122,7 @@ impl LibFunction for LtOp {
         BinaryOperator::Less.to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         Lt::call(args, ctx)
     }
 }
@@ -134,7 +134,7 @@ impl LibFunction for LeOp {
         BinaryOperator::LessOrEquals.to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         Le::call(args, ctx)
     }
 }
@@ -146,7 +146,7 @@ impl LibFunction for AndOp {
         BinaryOperator::And.to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         And::call(args, ctx)
     }
 }
@@ -158,7 +158,7 @@ impl LibFunction for OrOp {
         BinaryOperator::Or.to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         Or::call(args, ctx)
     }
 }
@@ -170,7 +170,7 @@ impl LibFunction for SpreadOp {
         UnaryOperator::Spread.to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         Spread::call(args, ctx)
     }
 }

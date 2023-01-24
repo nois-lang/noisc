@@ -146,7 +146,7 @@ mod tests {
             }
 
             fn call(
-                args: &Vec<AstPair<Rc<Value>>>,
+                args: &[AstPair<Rc<Value>>],
                 _ctx: &mut RefMut<Context>,
             ) -> Result<Value, Error> {
                 OUT.with(|o| {

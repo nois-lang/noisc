@@ -143,7 +143,7 @@ impl Evaluate for AstPair<Rc<Statement>> {
                     assignee,
                     expression.map(|v| Rc::new(v.clone())),
                     ctx,
-                    |i, e| Definition::User(i, e),
+                    Definition::User,
                 )?;
                 ctx.scope_stack.last_mut().unwrap().definitions.extend(defs);
                 unit
@@ -348,9 +348,9 @@ impl Evaluate for AstPair<Rc<FunctionInit>> {
                     .iter()
                     .cloned()
                     .map(|i| {
-                        let def = ctx.find_definition(&i).expect(
-                            format!("identifier {} not found: (required for closure)", i).as_str(),
-                        );
+                        let def = ctx.find_definition(&i).unwrap_or_else(|| {
+                            panic!("identifier {} not found: (required for closure)", i)
+                        });
                         Ok((i, def.clone()))
                     })
                     .collect::<Result<_, _>>()?;
@@ -431,7 +431,7 @@ impl Evaluate for Definition {
                     f.0(args, ctx).map(|a| a.map(|v| Rc::new(v.clone())))
                 } else {
                     let callee = scope.callee.unwrap();
-                    Ok(AstPair(callee, Rc::new(Value::System(f.clone()))))
+                    Ok(AstPair(callee, Rc::new(Value::System(f))))
                 }
             }
             Definition::Value(v) => v.eval(ctx),

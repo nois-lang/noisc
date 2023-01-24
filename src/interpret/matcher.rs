@@ -21,7 +21,7 @@ pub fn match_expression(
             match_clauses,
         } => {
             let value = condition.deref().map(|v| Rc::new(v.clone())).eval(ctx)?;
-            for (i, clause) in match_clauses.into_iter().enumerate() {
+            for (i, clause) in match_clauses.iter().enumerate() {
                 debug!("matching {:?} against {:?}", value, clause);
                 let p_match = match_pattern_item(&value, &clause.1.pattern, ctx)?;
                 if let Some(pm) = p_match {
@@ -60,7 +60,7 @@ pub fn match_pattern_item(
             return Err(Error::from_span(
                 &pattern_item.0,
                 &ctx.ast_context,
-                format!("unexpected spread operator"),
+                "unexpected spread operator".to_string(),
             ));
         }
         PatternItem::PatternList(items) => {
@@ -80,18 +80,19 @@ pub fn match_pattern_item(
                         })
                         .collect::<Vec<_>>();
                     match spread_items.len() {
-                        0 => match_list(value, ctx, &items, vs),
+                        0 => match_list(value, ctx, items, vs),
                         1 => match_list_with_spread(
                             value,
                             ctx,
-                            &items,
+                            items,
                             vs,
                             spread_items.into_iter().next().unwrap(),
                         ),
                         _ => Err(Error::from_span(
                             &pattern_item.0,
                             &ctx.ast_context,
-                            format!("ambiguous spreading logic: single spread identifier allowed"),
+                            "ambiguous spreading logic: single spread identifier allowed"
+                                .to_string(),
                         )),
                     }
                 }
@@ -109,8 +110,8 @@ pub fn match_pattern_item(
 fn match_list(
     value: &AstPair<Rc<Value>>,
     ctx: &mut RefMut<Context>,
-    items: &Vec<AstPair<PatternItem>>,
-    vs: &Vec<Value>,
+    items: &[AstPair<PatternItem>],
+    vs: &[Value],
 ) -> Result<Option<Vec<(Identifier, Definition)>>, Error> {
     if items.len() == vs.len() {
         Ok(zip(items, vs)
@@ -133,8 +134,8 @@ fn match_list(
 fn match_list_with_spread(
     value: &AstPair<Rc<Value>>,
     ctx: &mut RefMut<Context>,
-    items: &Vec<AstPair<PatternItem>>,
-    vs: &Vec<Value>,
+    items: &[AstPair<PatternItem>],
+    vs: &[Value],
     spread_item: (usize, AstPair<Identifier>),
 ) -> Result<Option<Vec<(Identifier, Definition)>>, Error> {
     let before_pairs = items

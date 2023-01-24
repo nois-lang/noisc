@@ -38,7 +38,7 @@ impl LibFunction for Spread {
         "spread".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let arg = &args[0];
         match arg.1.as_ref() {
             Value::List { items: l, spread } => {
@@ -79,7 +79,7 @@ impl LibFunction for Range {
         "range".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let range = match arg_values(args)[..] {
             [Value::I(s)] => 0..*s,
             [Value::I(s), Value::I(e)] => *s..*e,
@@ -108,8 +108,8 @@ impl LibFunction for Len {
         "len".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        let l = match &arg_values(args)[..] {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        let l = match arg_values(args)[..] {
             [Value::List { items: l, .. }] => l.clone(),
             _ => return Err(arg_error("([*])", args, ctx)),
         };
@@ -133,8 +133,8 @@ impl LibFunction for Map {
         "map".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        let list = match &arg_values(args)[..] {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        let list = match arg_values(args)[..] {
             [Value::List { items: l, .. }, Value::Closure(..) | Value::Fn(..)] => l.clone(),
             _ => return Err(arg_error("([*], (*, I) -> *))", args, ctx)),
         };
@@ -187,8 +187,8 @@ impl LibFunction for Filter {
         "filter".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        let list = match &arg_values(args)[..] {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        let list = match arg_values(args)[..] {
             [Value::List { items: l, .. }, Value::Closure(..) | Value::Fn(..)] => l.clone(),
             _ => return Err(arg_error("([*], (*, I) -> B)", args, ctx)),
         };
@@ -245,7 +245,7 @@ impl LibFunction for Reduce {
         "reduce".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let (list, start) = match arg_values(args)[..] {
             [Value::List { items: l, .. }, s, Value::Closure(..) | Value::Fn(..)] => {
                 (l.clone(), s.clone())
@@ -265,7 +265,7 @@ impl LibFunction for Reduce {
                         .with_callee(callee)
                         .with_arguments(Some(vec![
                             args[2].with(Rc::new(acc.clone())),
-                            args[0].with(Rc::new(li.clone())),
+                            args[0].with(Rc::new(li)),
                             args[2].with(Rc::new(Value::I(i as i128))),
                         ])),
                 ));
@@ -281,7 +281,7 @@ impl LibFunction for Reduce {
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        Ok(acc.clone())
+        Ok(acc)
     }
 }
 
@@ -305,8 +305,8 @@ impl LibFunction for At {
         "at".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        let (list, i) = match &arg_values(args)[..] {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        let (list, i) = match arg_values(args)[..] {
             [Value::List { items: l, .. }, Value::I(i)] => (l.clone(), *i),
             _ => return Err(arg_error("([*], I)", args, ctx)),
         };
@@ -342,8 +342,8 @@ impl LibFunction for Slice {
         "slice".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        let (list, from, to) = match &arg_values(args)[..] {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        let (list, from, to) = match arg_values(args)[..] {
             [Value::List { items: l, .. }, Value::I(f), Value::I(t)] => (l.clone(), *f, *t),
             _ => return Err(arg_error("([*], I, I)", args, ctx)),
         };
@@ -392,8 +392,8 @@ impl LibFunction for Flat {
         "flat".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        let res = match &arg_values(args)[..] {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        let res = match arg_values(args)[..] {
             [Value::List { items: is, .. }] => {
                 let vs = is
                     .iter()
@@ -419,8 +419,8 @@ impl LibFunction for Join {
         "join".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        let res = match &arg_values(args)[..] {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        let res = match arg_values(args)[..] {
             [Value::List { items: is, .. }, v] => itertools::intersperse(is.iter(), v)
                 .cloned()
                 .collect::<Vec<_>>(),
@@ -439,8 +439,8 @@ impl LibFunction for Reverse {
         "reverse".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        let mut l = match &arg_values(args)[..] {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        let mut l = match arg_values(args)[..] {
             [Value::List { items: is, .. }] => is.clone(),
             _ => return Err(arg_error("([*])", args, ctx)),
         };

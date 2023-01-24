@@ -18,7 +18,55 @@ pub struct Context {
     pub scope_stack: Vec<Scope>,
 }
 
-#[derive(Debug, Clone)]
+impl Context {
+    pub fn stdlib(input: String) -> Context {
+        let defs: HashMap<_, _> = stdlib().into_iter().flat_map(|p| p.definitions).collect();
+        Context {
+            ast_context: AstContext {
+                input,
+                global_scope: AstScope {
+                    definitions: defs.keys().map(|i| (i.clone(), None)).collect(),
+                    usage: HashMap::new(),
+                },
+                scope_stack: vec![AstScope::default()],
+            },
+            scope_stack: vec![mem::take(
+                Scope::new("stdlib".to_string()).with_definitions(defs),
+            )],
+        }
+    }
+
+    pub fn find_definition(&self, identifier: &Identifier) -> Option<&Definition> {
+        let r = self
+            .scope_stack
+            .iter()
+            .rev()
+            .filter_map(|s| s.definitions.get(identifier))
+            .next();
+        if r.is_none() {
+            error!(
+                "definition {} not found in scope stack {:?}",
+                &identifier, &self.scope_stack
+            );
+        }
+        r
+    }
+
+    pub fn find_definition_mut(&mut self, identifier: &Identifier) -> Option<&mut Definition> {
+        let def = self
+            .scope_stack
+            .iter_mut()
+            .rev()
+            .filter_map(|s| s.definitions.get_mut(identifier))
+            .next();
+        if def.is_none() {
+            error!("definition {} not found", &identifier);
+        }
+        def
+    }
+}
+
+#[derive(Debug, Clone, Default)]
 pub struct Scope {
     pub name: String,
     pub definitions: HashMap<Identifier, Definition>,
@@ -66,20 +114,7 @@ impl Scope {
     }
 }
 
-impl Default for Scope {
-    fn default() -> Self {
-        Scope {
-            name: String::default(),
-            definitions: HashMap::default(),
-            callee: None,
-            arguments: None,
-            method_callee: None,
-            return_value: None,
-        }
-    }
-}
-
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct SysFunction(
     pub fn(Vec<AstPair<Rc<Value>>>, &mut RefMut<Context>) -> Result<AstPair<Value>, Error>,
 );
@@ -97,54 +132,6 @@ pub enum Definition {
     Value(AstPair<Rc<Value>>),
 }
 
-impl Context {
-    pub fn stdlib(input: String) -> Context {
-        let defs: HashMap<_, _> = stdlib().into_iter().flat_map(|p| p.definitions).collect();
-        Context {
-            ast_context: AstContext {
-                input,
-                global_scope: AstScope {
-                    definitions: defs.keys().map(|i| (i.clone(), None)).collect(),
-                    usage: HashMap::new(),
-                },
-                scope_stack: vec![AstScope::new()],
-            },
-            scope_stack: vec![mem::take(
-                Scope::new("stdlib".to_string()).with_definitions(defs),
-            )],
-        }
-    }
-
-    pub fn find_definition(&self, identifier: &Identifier) -> Option<&Definition> {
-        let r = self
-            .scope_stack
-            .iter()
-            .rev()
-            .filter_map(|s| s.definitions.get(identifier))
-            .next();
-        if r.is_none() {
-            error!(
-                "definition {} not found in scope stack {:?}",
-                &identifier, &self.scope_stack
-            );
-        }
-        r
-    }
-
-    pub fn find_definition_mut(&mut self, identifier: &Identifier) -> Option<&mut Definition> {
-        let def = self
-            .scope_stack
-            .iter_mut()
-            .rev()
-            .filter_map(|s| s.definitions.get_mut(identifier))
-            .next();
-        if def.is_none() {
-            error!("definition {} not found", &identifier);
-        }
-        def
-    }
-}
-
 impl Statement {
     pub fn as_definitions(
         &self,
@@ -158,7 +145,7 @@ impl Statement {
                 assignee,
                 expression.map(|v| Rc::new(v.clone())),
                 ctx,
-                |i, d| Definition::User(i, d),
+                Definition::User,
             ),
             _ => Ok(vec![]),
         }
