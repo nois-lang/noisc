@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
+use std::rc::Rc;
 use std::string::ToString;
 
 use pest::iterators::Pair;
@@ -105,26 +106,26 @@ impl Display for ValueType {
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub struct FunctionCall {
-    pub callee: AstPair<Expression>,
-    pub arguments: Vec<AstPair<Expression>>,
+    pub callee: AstPair<Rc<Expression>>,
+    pub arguments: Vec<AstPair<Rc<Expression>>>,
 }
 
 impl FunctionCall {
-    pub fn new_by_name(span: Span, name: &str, args: Vec<AstPair<Expression>>) -> FunctionCall {
+    pub fn new_by_name(span: Span, name: &str, args: Vec<AstPair<Rc<Expression>>>) -> FunctionCall {
         let exp = Expression::Operand(Box::new(AstPair(
             span,
             Operand::Identifier(AstPair(span, Identifier::new(name))),
         )));
         FunctionCall {
-            callee: AstPair(span, exp),
+            callee: AstPair(span, Rc::new(exp)),
             arguments: args,
         }
     }
 
-    pub fn as_identifier(&self) -> Option<AstPair<Identifier>> {
-        match &self.callee.1 {
+    pub fn as_identifier(&self) -> Option<&AstPair<Identifier>> {
+        match self.callee.1.as_ref() {
             Expression::Operand(o) => match &o.1 {
-                Operand::Identifier(a @ AstPair(_, Identifier(_))) => Some(a.clone()),
+                Operand::Identifier(a @ AstPair(_, Identifier(_))) => Some(a),
                 _ => None,
             },
             _ => None,
@@ -376,6 +377,10 @@ impl<A> AstPair<A> {
         AstPair(self.0, t)
     }
 
+    pub fn with<T>(&self, t: T) -> AstPair<T> {
+        AstPair(self.0, t)
+    }
+
     pub fn flat_map<T, E, F>(&self, f: F) -> Result<AstPair<T>, E>
     where
         F: Fn(&A) -> Result<T, E>,
@@ -390,7 +395,7 @@ impl<A> AstPair<A> {
 }
 
 impl<A> AstPair<&A> {
-    pub fn cloned(self) -> AstPair<A>
+    pub fn cloned(&self) -> AstPair<A>
     where
         A: Clone,
     {

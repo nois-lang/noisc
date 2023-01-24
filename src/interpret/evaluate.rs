@@ -2,6 +2,7 @@ use std::cell::RefMut;
 use std::fmt::{Display, Formatter};
 use std::mem::take;
 use std::ops::{Deref, DerefMut};
+use std::rc::Rc;
 
 use log::debug;
 
@@ -38,12 +39,12 @@ pub fn function_call(
     function_call: &AstPair<FunctionCall>,
     ctx: &mut RefMut<Context>,
     call_type: FunctionCallType,
-) -> Result<AstPair<Value>, Error> {
+) -> Result<AstPair<Rc<Value>>, Error> {
     debug!("function call {:?}", function_call);
-    let mut args: Vec<AstPair<Value>> = vec![];
-    if let Some(mc) = ctx.scope_stack.last().unwrap().method_callee.clone() {
+    let mut args: Vec<AstPair<Rc<Value>>> = vec![];
+    if let Some(mc) = &ctx.scope_stack.last().unwrap().method_callee {
         debug!("method call on {:?}", mc);
-        args.push(mc);
+        args.push(mc.map(Rc::clone));
         debug!("consuming scope method callee");
         ctx.scope_stack
             .deref_mut()
@@ -56,25 +57,24 @@ pub fn function_call(
             .1
             .arguments
             .iter()
-            .map(|a| a.as_ref().eval(ctx))
+            .map(|a| a.map(Rc::clone).eval(ctx))
             .collect::<Result<Vec<_>, _>>()?,
     );
 
     let id = function_call.1.as_identifier();
     let name = id
-        .clone()
-        .map(|i| i.1 .0)
+        .map(|i| i.1 .0.clone())
         .unwrap_or_else(|| "<anon>".to_string());
     let mut callee = None;
     if id.is_none() {
         debug!("eval function callee {:?}", function_call.1.callee);
-        callee = Some(function_call.1.callee.as_ref().eval(ctx)?);
+        callee = Some(function_call.1.callee.map(Rc::clone).eval(ctx)?);
         debug!("function callee {:?}", callee);
     }
 
     debug!("push scope @{}", name);
     ctx.scope_stack.push(take(
-        Scope::new(name.clone())
+        Scope::new(name.to_string())
             .with_callee(Some(function_call.0))
             .with_arguments(Some(args)),
     ));
@@ -89,15 +89,15 @@ pub fn function_call(
             )),
         }
     } else {
-        let f = match callee.unwrap().1 {
-            f @ Value::Closure(..) => Ok(f),
-            v => Err(Error::from_span(
+        let callee_rc = callee.unwrap().1;
+        if !matches!(callee_rc.as_ref(), Value::Closure(..)) {
+            return Err(Error::from_span(
                 &function_call.0,
                 &ctx.ast_context,
-                format!("expression not callable: {}", v),
-            )),
-        }?;
-        function_call.map(|_| f).as_ref().eval(ctx)
+                format!("expression not callable: {}", callee_rc),
+            ));
+        }
+        function_call.with(callee_rc).eval(ctx)
     };
     debug!("{} {:?} result {:?}", &call_type, &name, &res);
 
@@ -108,19 +108,19 @@ pub fn function_call(
 }
 
 pub trait Evaluate {
-    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error>;
+    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Rc<Value>>, Error>;
 }
 
-impl Evaluate for AstPair<&Block> {
-    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
+impl Evaluate for AstPair<Rc<Block>> {
+    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Rc<Value>>, Error> {
         debug!("eval {:?}", &self);
-        let mut last_res = self.map(|_| Value::Unit);
+        let mut last_res = self.with(Rc::new(Value::Unit));
         for statement in &self.1.statements {
-            last_res = statement.as_ref().eval(ctx)?;
+            last_res = statement.map(|v| Rc::new(v.clone())).eval(ctx)?;
             let scope = ctx.scope_stack.last().unwrap();
-            if let Some(rv) = scope.return_value.clone() {
+            if let Some(rv) = scope.return_value.as_ref() {
                 debug!("block interrupted by return, value: {:?}", &rv);
-                return Ok(statement.map(|_| rv));
+                return Ok(statement.with(Rc::clone(rv)));
             }
         }
         debug!("block return value: {:?}", last_res);
@@ -128,62 +128,66 @@ impl Evaluate for AstPair<&Block> {
     }
 }
 
-impl Evaluate for AstPair<&Statement> {
-    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
-        let unit = Ok(self.map(|_| Value::Unit));
+impl Evaluate for AstPair<Rc<Statement>> {
+    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Rc<Value>>, Error> {
+        let unit = Ok(self.with(Rc::new(Value::Unit)));
         debug!("eval {:?}", &self);
-        match &self.1 {
-            Statement::Expression(exp) => exp.as_ref().eval(ctx),
+        match self.1.as_ref() {
+            Statement::Expression(exp) => exp.map(|v| Rc::new(v.clone())).eval(ctx),
             // TODO: reassignment
             Statement::Assignment {
                 assignee,
                 expression,
             } => {
-                let defs =
-                    assign_definitions(assignee.as_ref(), expression.as_ref(), ctx, |i, e| {
-                        Definition::User(i, e.cloned())
-                    })?;
+                let defs = assign_definitions(
+                    assignee,
+                    expression.map(|v| Rc::new(v.clone())),
+                    ctx,
+                    |i, e| Definition::User(i, e),
+                )?;
                 ctx.scope_stack.last_mut().unwrap().definitions.extend(defs);
                 unit
             }
             Statement::Return(v) => {
                 let return_value = match v {
-                    Some(a) => a.as_ref().eval(ctx)?.1,
-                    None => Value::Unit,
+                    Some(a) => a.map(|v| Rc::new(v.clone())).eval(ctx)?.1,
+                    None => Rc::new(Value::Unit),
                 };
-                ctx.scope_stack.last_mut().unwrap().return_value = Some(return_value.clone());
                 debug!("return value: {:?}", &return_value);
+                ctx.scope_stack.last_mut().unwrap().return_value = Some(return_value);
                 unit
             }
         }
     }
 }
 
-impl Evaluate for AstPair<&Expression> {
-    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
+impl Evaluate for AstPair<Rc<Expression>> {
+    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Rc<Value>>, Error> {
         debug!("eval {:?}", &self);
-        match &self.1 {
-            Expression::Operand(op) => op.deref().as_ref().eval(ctx),
+        match self.1.as_ref() {
+            Expression::Operand(op) => op.deref().map(|v| Rc::new(v.clone())).eval(ctx),
             Expression::Unary { operator, operand }
                 if matches!(&operator.1, UnaryOperator::ArgumentList(..)) =>
             {
                 let args = match &operator.1 {
-                    UnaryOperator::ArgumentList(args) => args.clone(),
+                    UnaryOperator::ArgumentList(args) => {
+                        args.iter().map(|a| a.map(|v| Rc::new(v.clone()))).collect()
+                    }
                     _ => unreachable!(),
                 };
                 let fc = FunctionCall {
-                    callee: self.map(|_| operand.deref().1.clone()),
+                    callee: self.with(Rc::new(operand.deref().1.clone())),
                     arguments: args,
                 };
-                function_call(&self.map(|_| fc), ctx, FunctionCallType::Function)
+                function_call(&self.with(fc), ctx, FunctionCallType::Function)
             }
             Expression::Unary { operator, operand } => {
                 let fc = FunctionCall::new_by_name(
                     operator.deref().0,
                     operator.1.to_string().as_str(),
-                    vec![operand.deref().clone()],
+                    vec![operand.deref().map(|v| Rc::new(v.clone()))],
                 );
-                let a = self.map(|_| fc);
+                let a = self.with(fc);
                 function_call(&a, ctx, FunctionCallType::Operator)
             }
             Expression::Binary {
@@ -192,20 +196,19 @@ impl Evaluate for AstPair<&Expression> {
                 right_operand,
             } => {
                 if operator.1 == BinaryOperator::Accessor {
-                    let l = left_operand.deref().as_ref().eval(ctx)?;
+                    let l = left_operand.deref().map(|v| Rc::new(v.clone())).eval(ctx)?;
                     ctx.scope_stack.last_mut().unwrap().method_callee = Some(l);
-                    right_operand.deref().as_ref().eval(ctx)
+                    right_operand.deref().map(|v| Rc::new(v.clone())).eval(ctx)
                 } else {
                     let fc = FunctionCall::new_by_name(
                         operator.deref().0,
                         operator.1.to_string().as_str(),
                         vec![left_operand, right_operand]
                             .into_iter()
-                            .map(|p| p.deref())
-                            .cloned()
+                            .map(|p| p.deref().map(|v| Rc::new(v.clone())))
                             .collect(),
                     );
-                    let a = self.map(|_| fc);
+                    let a = self.with(fc);
                     function_call(&a, ctx, FunctionCallType::Function)
                 }
             }
@@ -220,15 +223,21 @@ impl Evaluate for AstPair<&Expression> {
                         ));
                         debug!("push scope {:?}", &ctx.scope_stack.last().unwrap());
 
-                        let res = clause.1.block.as_ref().eval(ctx);
-                        let rv = &ctx.scope_stack.last().unwrap().return_value.clone();
+                        let res = clause.1.block.map(|v| Rc::new(v.clone())).eval(ctx);
+                        let rv: Option<Rc<Value>> = ctx
+                            .scope_stack
+                            .last()
+                            .unwrap()
+                            .return_value
+                            .as_ref()
+                            .map(Rc::clone);
 
                         debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
                         ctx.scope_stack.pop();
 
                         if let Some(v) = rv {
                             debug!("propagating return from match clause, value: {:?}", v);
-                            ctx.scope_stack.last_mut().unwrap().return_value = rv.clone();
+                            ctx.scope_stack.last_mut().unwrap().return_value = Some(v);
                         }
 
                         res.map_err(|e| {
@@ -242,7 +251,7 @@ impl Evaluate for AstPair<&Expression> {
                     }
                     None => {
                         debug!("no matches in match expression {:?}", &self);
-                        Ok(self.map(|_| Value::Unit))
+                        Ok(self.with(Rc::new(Value::Unit)))
                     }
                 }
             }
@@ -250,34 +259,34 @@ impl Evaluate for AstPair<&Expression> {
     }
 }
 
-impl Evaluate for AstPair<&Operand> {
-    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
+impl Evaluate for AstPair<Rc<Operand>> {
+    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Rc<Value>>, Error> {
         debug!("eval {:?}", &self);
-        match &self.1 {
-            Operand::Integer(i) => Ok(self.map(|_| Value::I(*i))),
-            Operand::Float(f) => Ok(self.map(|_| Value::F(*f))),
-            Operand::Boolean(b) => Ok(self.map(|_| Value::B(*b))),
-            Operand::String(s) => Ok(self.map(|_| Value::List {
+        match self.1.as_ref() {
+            Operand::Integer(i) => Ok(self.with(Rc::new(Value::I(*i)))),
+            Operand::Float(f) => Ok(self.with(Rc::new(Value::F(*f)))),
+            Operand::Boolean(b) => Ok(self.with(Rc::new(Value::B(*b)))),
+            Operand::String(s) => Ok(self.with(Rc::new(Value::List {
                 items: s.chars().map(Value::C).collect(),
                 spread: false,
-            })),
-            Operand::ValueType(vt) => Ok(self.map(|_| Value::Type(vt.clone()))),
-            Operand::FunctionInit(fi) => self.map(|_| fi).eval(ctx),
+            }))),
+            Operand::ValueType(vt) => Ok(self.with(Rc::new(Value::Type(vt.clone())))),
+            Operand::FunctionInit(fi) => AstPair(self.0, Rc::new(fi.clone())).eval(ctx),
             Operand::ListInit { items } => {
                 let l = Value::List {
                     items: match items
                         .iter()
-                        .map(|i| i.as_ref().eval(ctx).map(|a| a.1))
+                        .map(|i| i.map(|v| Rc::new(v.clone())).eval(ctx).map(|a| a.1))
                         .collect::<Result<Vec<_>, _>>()
                     {
                         Ok(r) => r
                             .into_iter()
-                            .flat_map(|i| match i {
+                            .flat_map(|i| match i.as_ref() {
                                 Value::List {
                                     items,
                                     spread: true,
-                                } => items,
-                                _ => vec![i],
+                                } => items.clone(),
+                                v => vec![v.clone()],
                             })
                             .collect(),
                         Err(e) => {
@@ -291,15 +300,15 @@ impl Evaluate for AstPair<&Operand> {
                     },
                     spread: false,
                 };
-                Ok(self.map(|_| l))
+                Ok(self.with(Rc::new(l)))
             }
             Operand::Identifier(i) => {
-                let res = i.as_ref().eval(ctx);
+                let res = i.map(|v| Rc::new(v.clone())).eval(ctx);
                 // TODO: check that updates the right def, not the one higher in scope
-                if let Ok(ref r) = res {
+                if let Ok(r) = &res {
                     debug!("replacing {} definition with concrete value: {:?}", i.1, r);
                     if let Some(d) = ctx.find_definition_mut(&i.1) {
-                        *d = Definition::Value(r.clone())
+                        *d = Definition::Value(r.map(Rc::clone))
                     }
                 }
                 res
@@ -313,56 +322,49 @@ impl Evaluate for AstPair<&Operand> {
     }
 }
 
-impl Evaluate for AstPair<&FunctionInit> {
-    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
+impl Evaluate for AstPair<Rc<FunctionInit>> {
+    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Rc<Value>>, Error> {
         debug!("eval {:?}", self);
-        let scope = ctx.scope_stack.last().unwrap().clone();
         // if scope has args, this is a function call and function init must be evaluated
-        if let Some(args) = &scope.arguments {
+        if let Some(args) = ctx.scope_stack.last().unwrap().arguments.as_ref() {
             debug!("function init args: {:?}", args);
-            for (param, v) in self.1.parameters.iter().zip(args) {
-                let defs = assign_definitions(param.as_ref(), v.as_ref(), ctx, |_, e| {
-                    Definition::Value(e.cloned())
-                })?;
+            for (param, v) in self.1.parameters.iter().zip(args.clone()) {
+                let defs = assign_definitions(param, v.clone(), ctx, |_, e| Definition::Value(e))?;
                 ctx.scope_stack.last_mut().unwrap().definitions.extend(defs);
             }
 
-            debug!(
-                "consuming scope @{} arguments: {:?}",
-                scope.name, scope.arguments
-            );
-            ctx.scope_stack.last_mut().unwrap().arguments = None;
+            let s = ctx.scope_stack.last().unwrap();
+            debug!("consuming scope @{} arguments: {:?}", s.name, s.arguments);
+            debug!("function init scope @{}: {:?}", s.name, s.definitions);
 
-            debug!(
-                "function init scope @{}: {:?}",
-                scope.name, scope.definitions
-            );
-            self.1.block.as_ref().eval(ctx)
+            ctx.scope_stack.last_mut().unwrap().arguments = None;
+            self.clone().1.block.map(|v| Rc::new(v.clone())).eval(ctx)
         } else {
             let closure = &self.1.closure;
             let v = if closure.is_empty() {
-                Value::Fn(self.1.clone())
+                Value::Fn(self.1.as_ref().clone())
             } else {
                 let defs = closure
                     .iter()
+                    .cloned()
                     .map(|i| {
-                        let def = ctx.find_definition(i).expect(
+                        let def = ctx.find_definition(&i).expect(
                             format!("identifier {} not found: (required for closure)", i).as_str(),
                         );
-                        Ok((i.clone(), def.clone()))
+                        Ok((i, def.clone()))
                     })
                     .collect::<Result<_, _>>()?;
                 debug!("lazy init function with context snapshot {:?}", &ctx);
                 // TODO: pass required definitions
-                Value::Closure(self.1.clone(), defs)
+                Value::Closure(self.1.as_ref().clone(), defs)
             };
-            Ok(AstPair::from_span(&self.0, v))
+            Ok(AstPair::from_span(&self.0, Rc::new(v)))
         }
     }
 }
 
-impl Evaluate for AstPair<&Identifier> {
-    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
+impl Evaluate for AstPair<Rc<Identifier>> {
+    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Rc<Value>>, Error> {
         debug!("eval {:?}", &self);
         let res = match ctx.find_definition(&self.1) {
             Some(res) => res.clone().eval(ctx),
@@ -377,15 +379,15 @@ impl Evaluate for AstPair<&Identifier> {
     }
 }
 
-impl Evaluate for AstPair<&Value> {
-    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
+impl Evaluate for AstPair<Rc<Value>> {
+    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Rc<Value>>, Error> {
         debug!("eval value {:?}", &self);
         let args = &ctx.scope_stack.last().unwrap().arguments;
         if args.is_some() {
-            match &self.1 {
+            match self.1.as_ref() {
                 Value::Fn(f) => {
                     debug!("eval function {:?}", f);
-                    self.map(|_| f).eval(ctx)
+                    self.with(Rc::new(f.clone())).eval(ctx)
                 }
                 Value::Closure(f, defs) => {
                     debug!("eval closure {:?}", f);
@@ -395,27 +397,27 @@ impl Evaluate for AstPair<&Value> {
                         .unwrap()
                         .definitions
                         .extend(defs.clone());
-                    self.map(|_| f).eval(ctx)
+                    self.with(Rc::new(f.clone())).eval(ctx)
                 }
                 Value::System(sf) => {
                     // TODO: store sys function name
                     debug!("eval system function");
-                    sf.0(&args.as_ref().unwrap().clone(), ctx)
+                    sf.0(args.as_ref().unwrap().clone(), ctx).map(|a| a.map(|v| Rc::new(v.clone())))
                 }
-                _ => Ok(self.cloned()),
+                _ => Ok(self),
             }
         } else {
-            Ok(self.cloned())
+            Ok(self)
         }
     }
 }
 
 impl Evaluate for Definition {
-    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Value>, Error> {
+    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Rc<Value>>, Error> {
         debug!("eval definition {:?}", &self);
         let scope = ctx.scope_stack.last_mut().unwrap();
-        match &self {
-            Definition::User(_, exp) => exp.as_ref().eval(ctx),
+        match self {
+            Definition::User(_, exp) => exp.eval(ctx),
             Definition::System(f) => {
                 if scope.arguments.is_some() {
                     debug!(
@@ -426,13 +428,13 @@ impl Evaluate for Definition {
                     let args = scope.arguments.as_ref().unwrap().clone();
                     scope.arguments = None;
 
-                    f.0(&args, ctx)
+                    f.0(args, ctx).map(|a| a.map(|v| Rc::new(v.clone())))
                 } else {
                     let callee = scope.callee.unwrap();
-                    Ok(AstPair(callee, Value::System(f.clone())))
+                    Ok(AstPair(callee, Rc::new(Value::System(f.clone()))))
                 }
             }
-            Definition::Value(v) => v.as_ref().eval(ctx),
+            Definition::Value(v) => v.eval(ctx),
         }
     }
 }
@@ -440,6 +442,7 @@ impl Evaluate for Definition {
 #[cfg(test)]
 mod tests {
     use std::cell::RefCell;
+    use std::rc::Rc;
     use std::vec;
 
     use crate::ast::ast::ValueType;
@@ -460,7 +463,10 @@ mod tests {
 
         let pt = NoisParser::parse_program(source)?;
         let ast = parse_block(&pt, a_ctx_bm)?;
-        ast.as_ref().eval(ctx_bm).map(|a| a.1)
+        ast.map(|v| Rc::new(v.clone()))
+            .eval(ctx_bm)
+            .map(|a| a.1)
+            .map(|v| v.as_ref().clone())
     }
 
     #[test]

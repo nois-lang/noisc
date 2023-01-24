@@ -1,5 +1,6 @@
 use std::cell::RefMut;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use crate::ast::ast::AstPair;
 use crate::error::Error;
@@ -21,7 +22,7 @@ impl LibFunction for Type {
         "type".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let arg = match &arg_values(args)[..] {
             [a] => a.clone(),
             _ => return Err(arg_error("(*)", args, ctx)),
@@ -37,7 +38,7 @@ impl LibFunction for To {
         "to".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let is_type_list = |l: &Vec<Value>| matches!(l[..], [Value::Type(..)]);
         let (arg, vt) = match &arg_values(args)[..] {
             [a, vt @ Value::Type(..)] => (a.clone(), vt.clone()),

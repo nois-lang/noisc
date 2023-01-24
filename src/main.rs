@@ -121,6 +121,7 @@ mod tests {
     use std::collections::HashMap;
     use std::fs::read_to_string;
     use std::mem;
+    use std::rc::Rc;
 
     use crate::ast::ast::AstPair;
     use crate::error::Error;
@@ -145,7 +146,7 @@ mod tests {
             }
 
             fn call(
-                args: &Vec<AstPair<Value>>,
+                args: &Vec<AstPair<Rc<Value>>>,
                 _ctx: &mut RefMut<Context>,
             ) -> Result<Value, Error> {
                 OUT.with(|o| {

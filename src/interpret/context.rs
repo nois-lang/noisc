@@ -2,6 +2,7 @@ use std::cell::RefMut;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::mem;
+use std::rc::Rc;
 
 use log::error;
 
@@ -22,9 +23,9 @@ pub struct Scope {
     pub name: String,
     pub definitions: HashMap<Identifier, Definition>,
     pub callee: Option<Span>,
-    pub arguments: Option<Vec<AstPair<Value>>>,
-    pub method_callee: Option<AstPair<Value>>,
-    pub return_value: Option<Value>,
+    pub arguments: Option<Vec<AstPair<Rc<Value>>>>,
+    pub method_callee: Option<AstPair<Rc<Value>>>,
+    pub return_value: Option<Rc<Value>>,
 }
 
 impl Scope {
@@ -49,17 +50,17 @@ impl Scope {
         self
     }
 
-    pub fn with_arguments(&mut self, arguments: Option<Vec<AstPair<Value>>>) -> &mut Self {
+    pub fn with_arguments(&mut self, arguments: Option<Vec<AstPair<Rc<Value>>>>) -> &mut Self {
         self.arguments = arguments;
         self
     }
 
-    pub fn with_method_callee(&mut self, method_callee: Option<AstPair<Value>>) -> &mut Self {
+    pub fn with_method_callee(&mut self, method_callee: Option<AstPair<Rc<Value>>>) -> &mut Self {
         self.method_callee = method_callee;
         self
     }
 
-    pub fn with_return_value(&mut self, return_value: Option<Value>) -> &mut Self {
+    pub fn with_return_value(&mut self, return_value: Option<Rc<Value>>) -> &mut Self {
         self.return_value = return_value;
         self
     }
@@ -80,7 +81,7 @@ impl Default for Scope {
 
 #[derive(Clone)]
 pub struct SysFunction(
-    pub fn(&Vec<AstPair<Value>>, &mut RefMut<Context>) -> Result<AstPair<Value>, Error>,
+    pub fn(Vec<AstPair<Rc<Value>>>, &mut RefMut<Context>) -> Result<AstPair<Value>, Error>,
 );
 
 impl Debug for SysFunction {
@@ -91,9 +92,9 @@ impl Debug for SysFunction {
 
 #[derive(Debug, Clone)]
 pub enum Definition {
-    User(AstPair<Identifier>, AstPair<Expression>),
+    User(AstPair<Identifier>, AstPair<Rc<Expression>>),
     System(SysFunction),
-    Value(AstPair<Value>),
+    Value(AstPair<Rc<Value>>),
 }
 
 impl Context {
@@ -153,9 +154,12 @@ impl Statement {
             Statement::Assignment {
                 assignee,
                 expression,
-            } => assign_definitions(assignee.as_ref(), expression.as_ref(), ctx, |i, d| {
-                Definition::User(i, d.cloned())
-            }),
+            } => assign_definitions(
+                assignee,
+                expression.map(|v| Rc::new(v.clone())),
+                ctx,
+                |i, d| Definition::User(i, d),
+            ),
             _ => Ok(vec![]),
         }
     }

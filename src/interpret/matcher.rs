@@ -1,6 +1,7 @@
 use std::cell::RefMut;
 use std::iter::zip;
 use std::ops::Deref;
+use std::rc::Rc;
 
 use log::debug;
 
@@ -11,21 +12,21 @@ use crate::interpret::evaluate::Evaluate;
 use crate::interpret::value::Value;
 
 pub fn match_expression(
-    expression: &AstPair<&Expression>,
+    expression: &AstPair<Rc<Expression>>,
     ctx: &mut RefMut<Context>,
 ) -> Result<Option<(AstPair<MatchClause>, Vec<(Identifier, Definition)>)>, Error> {
-    match expression.1.clone() {
+    match expression.1.as_ref() {
         Expression::MatchExpression {
             condition,
             match_clauses,
         } => {
-            let value = condition.deref().as_ref().eval(ctx)?;
+            let value = condition.deref().map(|v| Rc::new(v.clone())).eval(ctx)?;
             for (i, clause) in match_clauses.into_iter().enumerate() {
-                debug!("matching {:?} against {:?}", &value, &clause);
+                debug!("matching {:?} against {:?}", value, clause);
                 let p_match = match_pattern_item(&value, &clause.1.pattern, ctx)?;
                 if let Some(pm) = p_match {
                     debug!("matched pattern #{i}: {:?}", clause.1);
-                    return Ok(Some((clause, pm)));
+                    return Ok(Some((clause.clone(), pm)));
                 }
             }
             Ok(None)
@@ -35,7 +36,7 @@ pub fn match_expression(
 }
 
 pub fn match_pattern_item(
-    value: &AstPair<Value>,
+    value: &AstPair<Rc<Value>>,
     pattern_item: &AstPair<PatternItem>,
     ctx: &mut RefMut<Context>,
 ) -> Result<Option<Vec<(Identifier, Definition)>>, Error> {
@@ -44,7 +45,7 @@ pub fn match_pattern_item(
         PatternItem::Integer(_)
         | PatternItem::Float(_)
         | PatternItem::Boolean(_)
-        | PatternItem::String(_) => Value::try_from(pattern_item.clone())
+        | PatternItem::String(_) => Value::try_from(pattern_item)
             .map_err(|e| Error::from_span(&pattern_item.0, &ctx.ast_context, e))?
             .eq(&value.1)
             .then_some(vec![]),
@@ -63,14 +64,14 @@ pub fn match_pattern_item(
             ));
         }
         PatternItem::PatternList(items) => {
-            return match &value.1 {
+            return match value.1.as_ref() {
                 Value::List { items: vs, .. } => {
                     let spread_items = items
                         .iter()
                         .enumerate()
                         .filter_map(|(i, id)| match &id.1 {
                             // hole identifier will be inaccessible since it's invalid identifier
-                            PatternItem::SpreadHole => Some((i, id.map(|_| Identifier::new("_")))),
+                            PatternItem::SpreadHole => Some((i, id.with(Identifier::new("_")))),
                             PatternItem::Identifier {
                                 identifier,
                                 spread: true,
@@ -79,9 +80,9 @@ pub fn match_pattern_item(
                         })
                         .collect::<Vec<_>>();
                     match spread_items.len() {
-                        0 => match_list(&value, ctx, &items, vs),
+                        0 => match_list(value, ctx, &items, vs),
                         1 => match_list_with_spread(
-                            &value,
+                            value,
                             ctx,
                             &items,
                             vs,
@@ -106,14 +107,14 @@ pub fn match_pattern_item(
 }
 
 fn match_list(
-    value: &AstPair<Value>,
+    value: &AstPair<Rc<Value>>,
     ctx: &mut RefMut<Context>,
     items: &Vec<AstPair<PatternItem>>,
     vs: &Vec<Value>,
 ) -> Result<Option<Vec<(Identifier, Definition)>>, Error> {
     if items.len() == vs.len() {
         Ok(zip(items, vs)
-            .map(|(i, v)| match_pattern_item(&value.map(|_| v.clone()), i, ctx))
+            .map(|(i, v)| match_pattern_item(&value.with(Rc::new(v.clone())), i, ctx))
             .collect::<Result<Option<Vec<_>>, _>>()?
             .map(|o| o.into_iter().flatten().collect::<Vec<_>>()))
     } else {
@@ -130,7 +131,7 @@ fn match_list(
 }
 
 fn match_list_with_spread(
-    value: &AstPair<Value>,
+    value: &AstPair<Rc<Value>>,
     ctx: &mut RefMut<Context>,
     items: &Vec<AstPair<PatternItem>>,
     vs: &Vec<Value>,
@@ -140,7 +141,7 @@ fn match_list_with_spread(
         .iter()
         .take(spread_item.0)
         .zip(vs.iter().take(spread_item.0))
-        .map(|(i, v)| match_pattern_item(&value.map(|_| v.clone()), i, ctx))
+        .map(|(i, v)| match_pattern_item(&value.with(Rc::new(v.clone())), i, ctx))
         .collect::<Result<Option<Vec<_>>, _>>()?
         .map(|o| o.into_iter().flatten().collect::<Vec<_>>());
     let spread_value_count = vs.len() - (items.len() - 1);
@@ -152,13 +153,13 @@ fn match_list_with_spread(
         .collect::<Vec<_>>();
     let spread_pair = Some(vec![(
         spread_item.1 .1,
-        Definition::Value(value.map(|_| Value::list(spread_values))),
+        Definition::Value(value.with(Rc::new(Value::list(spread_values)))),
     )]);
     let after_pairs = items
         .iter()
         .skip(spread_item.0 + 1)
         .zip(vs.iter().skip(spread_value_count + spread_item.0))
-        .map(|(i, v)| match_pattern_item(&value.map(|_| v.clone()), i, ctx))
+        .map(|(i, v)| match_pattern_item(&value.with(Rc::new(v.clone())), i, ctx))
         .collect::<Result<Option<Vec<_>>, _>>()?
         .map(|o| o.into_iter().flatten().collect::<Vec<_>>());
     Ok(vec![before_pairs, spread_pair, after_pairs]

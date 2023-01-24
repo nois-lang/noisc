@@ -217,14 +217,14 @@ impl Display for Value {
     }
 }
 
-impl TryFrom<AstPair<PatternItem>> for Value {
+impl TryFrom<&AstPair<PatternItem>> for Value {
     type Error = String;
 
-    fn try_from(a: AstPair<PatternItem>) -> Result<Self, Self::Error> {
-        match a.1 {
-            PatternItem::Integer(i) => Ok(Value::I(i)),
-            PatternItem::Float(f) => Ok(Value::F(f)),
-            PatternItem::Boolean(b) => Ok(Value::B(b)),
+    fn try_from(a: &AstPair<PatternItem>) -> Result<Self, Self::Error> {
+        match &a.1 {
+            PatternItem::Integer(i) => Ok(Value::I(*i)),
+            PatternItem::Float(f) => Ok(Value::F(*f)),
+            PatternItem::Boolean(b) => Ok(Value::B(*b)),
             PatternItem::String(s) => Ok(Value::List {
                 items: s.chars().map(Value::C).collect(),
                 spread: false,

@@ -1,5 +1,6 @@
 use std::cell::RefMut;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use log::debug;
 
@@ -31,16 +32,16 @@ pub fn stdlib() -> Vec<Package> {
 pub trait LibFunction {
     fn name() -> String;
 
-    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error>;
+    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error>;
 
     fn call_fn(
-        args: &Vec<AstPair<Value>>,
+        args: &Vec<AstPair<Rc<Value>>>,
         ctx: &mut RefMut<Context>,
     ) -> Result<AstPair<Value>, Error> {
         debug!("stdlib function call {:?}", Self::name(),);
-        let arguments: Vec<AstPair<Value>> = args
+        let arguments: Vec<AstPair<Rc<Value>>> = args
             .iter()
-            .map(|a| a.as_ref().eval(ctx))
+            .map(|a| a.clone().eval(ctx))
             .collect::<Result<_, _>>()?;
 
         let res = Self::call(&arguments, ctx);
@@ -64,14 +65,14 @@ pub trait LibFunction {
     fn definition() -> (Identifier, Definition) {
         (
             Identifier(Self::name()),
-            Definition::System(SysFunction(|args, ctx| Self::call_fn(args, ctx))),
+            Definition::System(SysFunction(|args, ctx| Self::call_fn(&args, ctx))),
         )
     }
 }
 
 pub fn arg_error(
     expected_type: &str,
-    args: &Vec<AstPair<Value>>,
+    args: &Vec<AstPair<Rc<Value>>>,
     ctx: &mut RefMut<Context>,
 ) -> Error {
     Error::from_callee(
@@ -84,6 +85,6 @@ pub fn arg_error(
     )
 }
 
-pub fn arg_values(args: &Vec<AstPair<Value>>) -> Vec<&Value> {
-    args.iter().map(|a| &a.1).collect::<Vec<_>>()
+pub fn arg_values(args: &Vec<AstPair<Rc<Value>>>) -> Vec<&Value> {
+    args.iter().map(|a| a.1.as_ref()).collect::<Vec<_>>()
 }

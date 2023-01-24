@@ -1,5 +1,6 @@
 use std::cell::RefMut;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use crate::ast::ast::AstPair;
 use crate::error::Error;
@@ -33,8 +34,8 @@ impl LibFunction for Add {
         "add".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        (&args[0].1 + &args[1].1).map_err(|s| Error::from_callee(ctx, s))
+    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        (args[0].1.as_ref() + args[1].1.as_ref()).map_err(|s| Error::from_callee(ctx, s))
     }
 }
 
@@ -45,7 +46,7 @@ impl LibFunction for Sub {
         "sub".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         match arg_values(args)[..] {
             [a, b] => a - b,
             [a] => -a,
@@ -62,8 +63,8 @@ impl LibFunction for Rem {
         "rem".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        (&args[0].1 % &args[1].1).map_err(|s| Error::from_callee(ctx, s))
+    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        (args[0].1.as_ref() % args[1].1.as_ref()).map_err(|s| Error::from_callee(ctx, s))
     }
 }
 
@@ -74,7 +75,7 @@ impl LibFunction for Eq {
         "eq".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &Vec<AstPair<Rc<Value>>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         Ok(Value::B(args[0].1 == args[1].1))
     }
 }
@@ -86,7 +87,7 @@ impl LibFunction for Ne {
         "ne".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &Vec<AstPair<Rc<Value>>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         Ok(Value::B(args[0].1 != args[1].1))
     }
 }
@@ -98,8 +99,8 @@ impl LibFunction for Gt {
         "gt".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        Ok(Value::B(&args[0].1 > &args[1].1))
+    fn call(args: &Vec<AstPair<Rc<Value>>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        Ok(Value::B(args[0].1.as_ref() > args[1].1.as_ref()))
     }
 }
 
@@ -110,8 +111,8 @@ impl LibFunction for Ge {
         "ge".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        Ok(Value::B(&args[0].1 >= &args[1].1))
+    fn call(args: &Vec<AstPair<Rc<Value>>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        Ok(Value::B(args[0].1.as_ref() >= args[1].1.as_ref()))
     }
 }
 
@@ -122,8 +123,8 @@ impl LibFunction for Lt {
         "lt".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        Ok(Value::B(&args[0].1 < &args[1].1))
+    fn call(args: &Vec<AstPair<Rc<Value>>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        Ok(Value::B(args[0].1.as_ref() < args[1].1.as_ref()))
     }
 }
 
@@ -134,8 +135,8 @@ impl LibFunction for Le {
         "le".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Value>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        Ok(Value::B(&args[0].1 <= &args[1].1))
+    fn call(args: &Vec<AstPair<Rc<Value>>>, _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        Ok(Value::B(args[0].1.as_ref() <= args[1].1.as_ref()))
     }
 }
 
@@ -146,8 +147,8 @@ impl LibFunction for Not {
         "not".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        (!&args[0].1).map_err(|s| Error::from_callee(ctx, s))
+    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        (!args[0].1.as_ref()).map_err(|s| Error::from_callee(ctx, s))
     }
 }
 
@@ -159,10 +160,10 @@ impl LibFunction for And {
         "and".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         args[0]
             .1
-            .and(&args[1].1)
+            .and(args[1].1.as_ref())
             .map_err(|s| Error::from_callee(ctx, s))
     }
 }
@@ -174,10 +175,10 @@ impl LibFunction for Or {
         "or".to_string()
     }
 
-    fn call(args: &Vec<AstPair<Value>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &Vec<AstPair<Rc<Value>>>, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         args[0]
             .1
-            .or(&args[1].1)
+            .or(args[1].1.as_ref())
             .map_err(|s| Error::from_callee(ctx, s))
     }
 }
