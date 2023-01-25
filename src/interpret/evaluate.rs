@@ -267,7 +267,7 @@ impl Evaluate for AstPair<Rc<Operand>> {
             Operand::Float(f) => Ok(self.with(Rc::new(Value::F(*f)))),
             Operand::Boolean(b) => Ok(self.with(Rc::new(Value::B(*b)))),
             Operand::String(s) => Ok(self.with(Rc::new(Value::List {
-                items: s.chars().map(Value::C).collect(),
+                items: Rc::new(s.chars().map(Value::C).collect()),
                 spread: false,
             }))),
             Operand::ValueType(vt) => Ok(self.with(Rc::new(Value::Type(vt.clone())))),
@@ -279,16 +279,17 @@ impl Evaluate for AstPair<Rc<Operand>> {
                         .map(|i| i.map(|v| Rc::new(v.clone())).eval(ctx).map(|a| a.1))
                         .collect::<Result<Vec<_>, _>>()
                     {
-                        Ok(r) => r
-                            .into_iter()
-                            .flat_map(|i| match i.as_ref() {
-                                Value::List {
-                                    items,
-                                    spread: true,
-                                } => items.clone(),
-                                v => vec![v.clone()],
-                            })
-                            .collect(),
+                        Ok(r) => Rc::new(
+                            r.into_iter()
+                                .flat_map(|i| match i.as_ref() {
+                                    Value::List {
+                                        items,
+                                        spread: true,
+                                    } => items.as_ref().clone(),
+                                    v => vec![v.clone()],
+                                })
+                                .collect(),
+                        ),
                         Err(e) => {
                             return Err(Error::new_cause(
                                 e,
@@ -476,47 +477,26 @@ mod tests {
         assert_eq!(evaluate("4.56"), Ok(Value::F(4.56)));
         assert_eq!(evaluate("1e12"), Ok(Value::F(1e12)));
         assert_eq!(evaluate("'a'").map(|r| r.to_string()), Ok("a".to_string()));
-        assert_eq!(
-            evaluate("[]"),
-            Ok(Value::List {
-                items: vec![],
-                spread: false,
-            })
-        );
+        assert_eq!(evaluate("[]"), Ok(Value::list(vec![])));
         assert_eq!(
             evaluate("[1, 2]"),
-            Ok(Value::List {
-                items: vec![Value::I(1), Value::I(2)],
-                spread: false,
-            })
+            Ok(Value::list(vec![Value::I(1), Value::I(2)]))
         );
         assert_eq!(
             evaluate("'ab'"),
-            Ok(Value::List {
-                items: vec![Value::C('a'), Value::C('b')],
-                spread: false,
-            })
+            Ok(Value::list(vec![Value::C('a'), Value::C('b')]))
         );
         assert_eq!(
             evaluate("[1, 'b']"),
-            Ok(Value::List {
-                items: vec![
-                    Value::I(1),
-                    Value::List {
-                        items: vec![Value::C('b')],
-                        spread: false,
-                    },
-                ],
-                spread: false,
-            })
+            Ok(Value::list(vec![
+                Value::I(1),
+                Value::list(vec![Value::C('b')])
+            ]))
         );
         assert!(matches!(evaluate("a -> a"), Ok(Value::Fn(..))));
         assert_eq!(
             evaluate("[C]"),
-            Ok(Value::List {
-                items: vec![Value::Type(ValueType::Char)],
-                spread: false,
-            })
+            Ok(Value::list(vec![Value::Type(ValueType::Char)]))
         );
     }
 
@@ -557,57 +537,35 @@ mod tests {
         assert_eq!(evaluate("type(True)"), Ok(Value::Type(ValueType::Boolean)));
         assert_eq!(
             evaluate("type([])"),
-            Ok(Value::List {
-                items: vec![Value::Type(ValueType::Any)],
-                spread: false,
-            })
+            Ok(Value::list(vec![Value::Type(ValueType::Any)]))
         );
         assert_eq!(
             evaluate("type('')"),
-            Ok(Value::List {
-                items: vec![Value::Type(ValueType::Any)],
-                spread: false,
-            })
+            Ok(Value::list(vec![Value::Type(ValueType::Any)]))
         );
         assert_eq!(
             evaluate("type('abc')"),
-            Ok(Value::List {
-                items: vec![Value::Type(ValueType::Char)],
-                spread: false,
-            })
+            Ok(Value::list(vec![Value::Type(ValueType::Char)]))
         );
         assert_eq!(evaluate("type(-> 1)"), Ok(Value::Type(ValueType::Function)));
         assert_eq!(
             evaluate("type([1, 2, 3])"),
-            Ok(Value::List {
-                items: vec![Value::Type(ValueType::Integer)],
-                spread: false,
-            })
+            Ok(Value::list(vec![Value::Type(ValueType::Integer)]))
         );
         assert_eq!(
             evaluate("type([1, 'abc', 1.5])"),
-            Ok(Value::List {
-                items: vec![
-                    Value::Type(ValueType::Integer),
-                    Value::List {
-                        items: vec![Value::Type(ValueType::Char)],
-                        spread: false,
-                    },
-                    Value::Type(ValueType::Float),
-                ],
-                spread: false,
-            })
+            Ok(Value::list(vec![
+                Value::Type(ValueType::Integer),
+                Value::list(vec![Value::Type(ValueType::Char)],),
+                Value::Type(ValueType::Float),
+            ],))
         );
         assert_eq!(evaluate("type(C)"), Ok(Value::Type(ValueType::Type)));
         assert_eq!(
             evaluate("type(['abc'])"),
-            Ok(Value::List {
-                items: vec![Value::List {
-                    items: vec![Value::Type(ValueType::Char)],
-                    spread: false,
-                }],
-                spread: false,
-            })
+            Ok(Value::list(vec![Value::list(vec![Value::Type(
+                ValueType::Char
+            )])]))
         );
     }
 

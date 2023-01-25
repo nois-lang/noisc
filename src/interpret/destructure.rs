@@ -55,7 +55,7 @@ pub fn destructure_list<T: Evaluate + Debug>(
             match spread_items.len() {
                 0 => {
                     if destructure_list.0.len() == vs.len() {
-                        Ok(zip(&destructure_list.0, vs)
+                        Ok(zip(&destructure_list.0, vs.as_ref())
                             .map(|(i, v)| destructure_item(i, e.with(Rc::new(v.clone())), ctx))
                             .collect::<Result<Vec<_>, _>>()?
                             .into_iter()

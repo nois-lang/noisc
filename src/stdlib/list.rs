@@ -49,7 +49,7 @@ impl LibFunction for Spread {
                     ))
                 } else {
                     Ok(Value::List {
-                        items: l.clone(),
+                        items: Rc::clone(l),
                         spread: true,
                     })
                 }
@@ -85,10 +85,7 @@ impl LibFunction for Range {
             [Value::I(s), Value::I(e)] => *s..*e,
             _ => return Err(arg_error("(I, I?)", args, ctx)),
         };
-        Ok(Value::List {
-            items: range.map(Value::I).collect::<Vec<_>>(),
-            spread: false,
-        })
+        Ok(Value::list(range.map(Value::I).collect::<Vec<_>>()))
     }
 }
 
@@ -141,7 +138,7 @@ impl LibFunction for Map {
         let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee;
 
         let res = list
-            .into_iter()
+            .iter()
             .enumerate()
             .map(|(i, li)| {
                 // TODO: refactor to a common method of calling a closure from sys function
@@ -149,7 +146,7 @@ impl LibFunction for Map {
                     Scope::new("<closure>".to_string())
                         .with_callee(callee)
                         .with_arguments(Some(vec![
-                            args[0].with(Rc::new(li)),
+                            args[0].with(Rc::new(li.clone())),
                             args[1].with(Rc::new(Value::I(i as i128))),
                         ])),
                 ));
@@ -164,10 +161,7 @@ impl LibFunction for Map {
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        Ok(Value::List {
-            items: res,
-            spread: false,
-        })
+        Ok(Value::list(res))
     }
 }
 
@@ -195,7 +189,7 @@ impl LibFunction for Filter {
         let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee;
 
         let res: Vec<Value> = list
-            .into_iter()
+            .iter()
             .enumerate()
             .map(|(i, li)| {
                 ctx.scope_stack.push(take(
@@ -225,12 +219,10 @@ impl LibFunction for Filter {
             .collect::<Result<Vec<_>, _>>()?
             .into_iter()
             .filter_map(|(i, f)| if f { Some(i) } else { None })
+            .cloned()
             .collect();
 
-        Ok(Value::List {
-            items: res,
-            spread: false,
-        })
+        Ok(Value::list(res))
     }
 }
 
@@ -248,16 +240,16 @@ impl LibFunction for Reduce {
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let (list, start) = match arg_values(args)[..] {
             [Value::List { items: l, .. }, s, Value::Closure(..) | Value::Fn(..)] => {
-                (l.clone(), s.clone())
+                (Rc::clone(l), s)
             }
             _ => return Err(arg_error("([a], b, (b, a, I) -> b)", args, ctx)),
         };
         let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee;
 
         // TODO: optimize: make rc
-        let mut acc = start;
+        let mut acc = start.clone();
 
-        list.into_iter()
+        list.iter()
             .enumerate()
             .map(|(i, li)| {
                 ctx.scope_stack.push(take(
@@ -265,7 +257,7 @@ impl LibFunction for Reduce {
                         .with_callee(callee)
                         .with_arguments(Some(vec![
                             args[2].with(Rc::new(acc.clone())),
-                            args[0].with(Rc::new(li)),
+                            args[0].with(Rc::new(li.clone())),
                             args[2].with(Rc::new(Value::I(i as i128))),
                         ])),
                 ));
@@ -307,7 +299,7 @@ impl LibFunction for At {
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let (list, i) = match arg_values(args)[..] {
-            [Value::List { items: l, .. }, Value::I(i)] => (l.clone(), *i),
+            [Value::List { items: l, .. }, Value::I(i)] => (Rc::clone(l), *i),
             _ => return Err(arg_error("([*], I)", args, ctx)),
         };
 
@@ -395,15 +387,15 @@ impl LibFunction for Flat {
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let res = match arg_values(args)[..] {
             [Value::List { items: is, .. }] => {
-                let vs = is
+                let l = is
                     .iter()
                     .map(|i| match i {
-                        Value::List { items: l, .. } => Some(l.clone()),
+                        Value::List { items: l, .. } => Some(l.as_ref()),
                         _ => None,
                     })
                     .collect::<Option<Vec<_>>>()
                     .ok_or_else(|| arg_error("([[*]])", args, ctx))?;
-                vs.into_iter().flatten().collect::<Vec<_>>()
+                l.into_iter().flatten().cloned().collect()
             }
             _ => return Err(arg_error("([[*]])", args, ctx)),
         };
@@ -424,7 +416,7 @@ impl LibFunction for Join {
             [Value::List { items: is, .. }, v] => itertools::intersperse(is.iter(), v)
                 .cloned()
                 .collect::<Vec<_>>(),
-            [Value::List { items: is, .. }] => is.clone(),
+            [Value::List { items: is, .. }] => is.as_ref().clone(),
             _ => return Err(arg_error("([*], *?)", args, ctx)),
         };
 
@@ -440,12 +432,11 @@ impl LibFunction for Reverse {
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
-        let mut l = match arg_values(args)[..] {
+        let l = match arg_values(args)[..] {
             [Value::List { items: is, .. }] => is.clone(),
             _ => return Err(arg_error("([*])", args, ctx)),
         };
 
-        l.reverse();
-        Ok(Value::list(l))
+        Ok(Value::list(l.iter().rev().cloned().collect()))
     }
 }

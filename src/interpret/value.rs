@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops;
+use std::rc::Rc;
 
 use num::NumCast;
 
@@ -16,7 +17,7 @@ pub enum Value {
     F(f64),
     C(char),
     B(bool),
-    List { items: Vec<Value>, spread: bool },
+    List { items: Rc<Vec<Value>>, spread: bool },
     // closures use context "snapshot" for evaluation
     Fn(FunctionInit),
     Closure(FunctionInit, HashMap<Identifier, Definition>),
@@ -35,23 +36,21 @@ impl Value {
             Value::Fn(..) | Value::Closure(..) | Value::System(..) => ValueType::Function,
             Value::Type(_) => ValueType::Type,
             Value::List { items, .. } => {
-                if items.is_empty() {
-                    return Value::List {
-                        items: vec![Value::Type(ValueType::Any)],
-                        spread: false,
-                    };
-                }
-                let types: Vec<Value> = items.iter().map(|v| v.value_type()).collect();
-                return if types.iter().collect::<HashSet<_>>().len() == 1 {
-                    Value::List {
-                        items: vec![types[0].clone()],
-                        spread: false,
+                let items = {
+                    if items.is_empty() {
+                        vec![Value::Type(ValueType::Any)]
+                    } else {
+                        let types: Vec<Value> = items.iter().map(|v| v.value_type()).collect();
+                        if types.iter().collect::<HashSet<_>>().len() == 1 {
+                            vec![types.into_iter().next().unwrap()]
+                        } else {
+                            types
+                        }
                     }
-                } else {
-                    Value::List {
-                        items: types,
-                        spread: false,
-                    }
+                };
+                return Value::List {
+                    items: Rc::new(items),
+                    spread: false,
                 };
             }
         };
@@ -65,7 +64,7 @@ impl Value {
         }
         match (self, vt) {
             // cast to [C]
-            (arg, Value::List { items, .. }) => match &items[0] {
+            (arg, Value::List { items, .. }) => match items.first().unwrap() {
                 Value::Type(t) => {
                     let str = match t {
                         ValueType::Char => match arg {
@@ -77,7 +76,7 @@ impl Value {
                         _ => None,
                     };
                     str.map(|s| Value::List {
-                        items: s.chars().into_iter().map(Value::C).collect(),
+                        items: Rc::new(s.chars().into_iter().map(Value::C).collect()),
                         spread: false,
                     })
                 }
@@ -88,7 +87,7 @@ impl Value {
                 (Value::List { .. }, t)
                     if arg_type
                         == Value::List {
-                            items: vec![Value::Type(ValueType::Char)],
+                            items: Rc::new(vec![Value::Type(ValueType::Char)]),
                             spread: false,
                         } =>
                 {
@@ -124,7 +123,7 @@ impl Value {
 
     pub fn list(vec: Vec<Value>) -> Value {
         Self::List {
-            items: vec,
+            items: Rc::new(vec),
             spread: false,
         }
     }
@@ -226,7 +225,7 @@ impl TryFrom<&AstPair<PatternItem>> for Value {
             PatternItem::Float(f) => Ok(Value::F(*f)),
             PatternItem::Boolean(b) => Ok(Value::B(*b)),
             PatternItem::String(s) => Ok(Value::List {
-                items: s.chars().map(Value::C).collect(),
+                items: Rc::new(s.chars().map(Value::C).collect()),
                 spread: false,
             }),
             _ => Err(format!(
@@ -243,17 +242,18 @@ impl ops::Add for &Value {
     fn add(self, rhs: Self) -> Self::Output {
         fn push_end(a: &[Value], b: &Value) -> Value {
             Value::List {
-                items: a
-                    .iter()
-                    .cloned()
-                    .chain(vec![b.clone()].into_iter())
-                    .collect(),
+                items: Rc::new(
+                    a.iter()
+                        .cloned()
+                        .chain(vec![b.clone()].into_iter())
+                        .collect(),
+                ),
                 spread: false,
             }
         }
         fn push_start(a: &Value, b: &[Value]) -> Value {
             Value::List {
-                items: vec![a].into_iter().chain(b.iter()).cloned().collect(),
+                items: Rc::new(vec![a].into_iter().chain(b.iter()).cloned().collect()),
                 spread: false,
             }
         }
@@ -273,11 +273,13 @@ impl ops::Add for &Value {
                     },
                 ) => match (s1, s2) {
                     _ if s1 == s2 => Some(Value::List {
-                        items: l1
-                            .clone()
-                            .into_iter()
-                            .chain(l2.clone().into_iter())
-                            .collect(),
+                        items: Rc::new(
+                            l1.as_ref()
+                                .iter()
+                                .chain(l2.as_ref().iter())
+                                .cloned()
+                                .collect(),
+                        ),
                         spread: false,
                     }),
                     (true, false) => Some(push_end(l1, b)),

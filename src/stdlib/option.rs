@@ -35,10 +35,7 @@ impl LibFunction for Some {
             [a] => a.clone(),
             _ => return Err(arg_error("(*)", args, ctx)),
         };
-        Ok(Value::List {
-            items: vec![arg],
-            spread: false,
-        })
+        Ok(Value::list(vec![arg]))
     }
 }
 
