@@ -305,9 +305,8 @@ impl Evaluate for AstPair<Rc<Operand>> {
             }
             Operand::Identifier(i) => {
                 let res = i.map(|v| Rc::new(v.clone())).eval(ctx);
-                // TODO: check that updates the right def, not the one higher in scope
                 if let Ok(r) = &res {
-                    debug!("replacing {} definition with concrete value: {:?}", i.1, r);
+                    debug!("replacing definition {} with concrete value: {:?}", i.1, r);
                     if let Some(d) = ctx.find_definition_mut(&i.1) {
                         *d = Definition::Value(r.map(Rc::clone))
                     }
@@ -626,6 +625,21 @@ mod tests {
             evaluate("match range(100) { [_, .., a] => a }"),
             Ok(Value::I(99))
         );
+    }
+
+    #[test]
+    fn evaluate_closure_recompute_correct_def() {
+        let source = r#"
+g = a -> a + 1        
+f = {
+    a = 20
+    g(a)
+}
+
+a = 10
+a
+        "#;
+        assert_eq!(evaluate(source), Ok(Value::I(10)));
     }
 
     // TODO: more tests
