@@ -21,7 +21,7 @@ pub enum Statement {
         assignee: AstPair<Assignee>,
         expression: AstPair<Expression>,
     },
-    Expression(AstPair<Expression>),
+    Expression(AstPair<Rc<Expression>>),
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]

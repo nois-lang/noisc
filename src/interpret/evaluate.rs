@@ -133,7 +133,7 @@ impl Evaluate for AstPair<Rc<Statement>> {
         let unit = Ok(self.with(Rc::new(Value::Unit)));
         debug!("eval {:?}", &self);
         match self.1.as_ref() {
-            Statement::Expression(exp) => exp.map(|v| Rc::new(v.clone())).eval(ctx),
+            Statement::Expression(exp) => exp.map(Rc::clone).eval(ctx),
             // TODO: reassignment
             Statement::Assignment {
                 assignee,

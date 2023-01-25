@@ -42,8 +42,8 @@ pub fn parse_block(
                 pair,
                 Block {
                     statements: vec![AstPair::from_span(
-                        &expression.clone().0,
-                        Rc::new(Statement::Expression(expression)),
+                        &expression.0.clone(),
+                        Rc::new(Statement::Expression(expression.map_into(Rc::new))),
                     )],
                 },
             ))
@@ -80,7 +80,7 @@ pub fn parse_statement(
             ))
         }
         Rule::expression => {
-            let exp = parse_expression(pair, ctx)?;
+            let exp = parse_expression(pair, ctx)?.map_into(Rc::new);
             Ok(AstPair::from_pair(pair, Statement::Expression(exp)))
         }
         _ => Err(Error::from_pair(
@@ -752,7 +752,7 @@ mod tests {
             .into_iter()
             .map(|s| {
                 let exp = match_enum!(s.1.as_ref(), Statement::Expression(e) => e);
-                let op = *match_enum!(exp.1.clone(), Expression::Operand(o) => o);
+                let op = *match_enum!(exp.1.as_ref().clone(), Expression::Operand(o) => o);
                 op.1
             })
             .collect::<Vec<_>>();
@@ -774,7 +774,7 @@ False
             .into_iter()
             .map(|s| {
                 let exp = match_enum!(s.1.as_ref(), Statement::Expression(e) => e);
-                let op = *match_enum!(exp.1.clone(), Expression::Operand(o) => o);
+                let op = *match_enum!(exp.1.as_ref().clone(), Expression::Operand(o) => o);
                 op.1
             })
             .collect::<Vec<_>>();
@@ -801,7 +801,7 @@ False
             .into_iter()
             .map(|s| {
                 let exp = match_enum!(s.1.as_ref(), Statement::Expression(e) => e);
-                let op = *match_enum!(exp.1.clone(), Expression::Operand(o) => o);
+                let op = *match_enum!(exp.1.as_ref().clone(), Expression::Operand(o) => o);
                 match_enum!(op.1, Operand::String(s) => s)
             })
             .collect::<Vec<_>>();
@@ -929,7 +929,7 @@ Block {
             .into_iter()
             .map(|s| {
                 let exp = match_enum!(s.1.as_ref(), Statement::Expression(e) => e);
-                let op = *match_enum!(exp.1.clone(), Expression::Operand(o) => o);
+                let op = *match_enum!(exp.1.as_ref().clone(), Expression::Operand(o) => o);
                 op.1
             })
             .collect::<Vec<_>>();
@@ -970,7 +970,7 @@ Block {
             .into_iter()
             .map(|s| {
                 let exp = match_enum!(s.1.as_ref(), Statement::Expression(e) => e);
-                match_enum!(&exp.1, Expression::Operand(o) => o)
+                match_enum!(&exp.1.as_ref(), Expression::Operand(o) => o)
                     .deref()
                     .1
                     .clone()
@@ -1003,7 +1003,7 @@ Block {
             .into_iter()
             .map(|s| {
                 let exp = match_enum!(s.1.as_ref(), Statement::Expression(e) => e);
-                let op = *match_enum!(exp.1.clone(), Expression::Operand(o) => o);
+                let op = *match_enum!(exp.1.as_ref().clone(), Expression::Operand(o) => o);
                 op.1
             })
             .collect::<Vec<_>>();
