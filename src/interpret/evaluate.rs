@@ -165,7 +165,7 @@ impl Evaluate for AstPair<Rc<Expression>> {
     fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Rc<Value>>, Error> {
         debug!("eval {:?}", &self);
         match self.1.as_ref() {
-            Expression::Operand(op) => op.deref().map(|v| Rc::new(v.clone())).eval(ctx),
+            Expression::Operand(op) => op.map(|v| Rc::new(v.clone())).eval(ctx),
             Expression::Unary { operator, operand }
                 if matches!(&operator.1, UnaryOperator::ArgumentList(..)) =>
             {
@@ -459,7 +459,7 @@ mod tests {
     use std::rc::Rc;
     use std::vec;
 
-    use crate::ast::ast::ValueType;
+    use crate::ast::ast::{AstContext, LintingConfig, ValueType};
     use crate::ast::ast_parser::parse_block;
     use crate::error::Error;
     use crate::interpret::context::Context;
@@ -468,7 +468,11 @@ mod tests {
     use crate::parser::NoisParser;
 
     fn evaluate(source: &str) -> Result<Value, Error> {
-        let ctx = &Context::stdlib(source.to_string());
+        _evaluate(source, LintingConfig::none())
+    }
+
+    fn _evaluate(source: &str, config: LintingConfig) -> Result<Value, Error> {
+        let ctx = &Context::stdlib(AstContext::stdlib(source.to_string(), config));
         let ctx_cell = RefCell::new(ctx.clone());
         let ctx_bm = &mut ctx_cell.borrow_mut();
 
@@ -503,7 +507,7 @@ mod tests {
             evaluate("[1, 'b']"),
             Ok(Value::list(vec![
                 Value::I(1),
-                Value::list(vec![Value::C('b')])
+                Value::list(vec![Value::C('b')]),
             ]))
         );
         assert!(matches!(evaluate("a -> a"), Ok(Value::Fn(..))));
@@ -569,7 +573,7 @@ mod tests {
             evaluate("type([1, 'abc', 1.5])"),
             Ok(Value::list(vec![
                 Value::Type(ValueType::Integer),
-                Value::list(vec![Value::Type(ValueType::Char)],),
+                Value::list(vec![Value::Type(ValueType::Char)]),
                 Value::Type(ValueType::Float),
             ],))
         );

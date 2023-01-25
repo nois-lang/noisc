@@ -152,7 +152,7 @@ impl LibFunction for Map {
                 ));
                 debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
 
-                let next = args[1].clone().eval(ctx)?;
+                let next = args[1].map(Rc::clone).eval(ctx)?;
 
                 debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
                 ctx.scope_stack.pop();
@@ -202,7 +202,7 @@ impl LibFunction for Filter {
                 ));
                 debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
 
-                let next = args[1].clone().eval(ctx)?;
+                let next = args[1].map(Rc::clone).eval(ctx)?;
 
                 debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
                 ctx.scope_stack.pop();
@@ -263,7 +263,7 @@ impl LibFunction for Reduce {
                 ));
                 debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
 
-                let next = args[2].clone().eval(ctx)?;
+                let next = args[2].map(Rc::clone).eval(ctx)?;
 
                 debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
                 ctx.scope_stack.pop();

@@ -5,9 +5,11 @@ use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use std::string::ToString;
 
+use log::error;
 use pest::iterators::Pair;
 
 use crate::parser::Rule;
+use crate::stdlib::lib::stdlib;
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub struct Block {
@@ -295,17 +297,45 @@ impl DestructureItem {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct AstContext {
     pub input: String,
+    pub linting_config: LintingConfig,
     pub global_scope: AstScope,
     pub scope_stack: Vec<AstScope>,
 }
 
 impl AstContext {
+    pub fn stdlib(input: String, config: LintingConfig) -> AstContext {
+        let defs: HashMap<_, _> = stdlib().into_iter().flat_map(|p| p.definitions).collect();
+        AstContext {
+            input,
+            linting_config: config,
+            global_scope: AstScope {
+                definitions: defs.keys().map(|i| (i.clone(), None)).collect(),
+                usage: HashMap::new(),
+            },
+            scope_stack: vec![AstScope::default()],
+        }
+    }
+
     pub fn definitions(&self) -> HashMap<Identifier, Option<Span>> {
         let mut defs = HashMap::new();
         for s in &self.scope_stack {
             defs.extend(s.definitions.clone())
         }
         defs
+    }
+
+    pub fn is_defined(&self, identifier: &Identifier) -> bool {
+        let found = self
+            .scope_stack
+            .iter()
+            .chain([&self.global_scope])
+            .filter_map(|s| s.definitions.get(identifier))
+            .count()
+            > 0;
+        if found {
+            error!("definition {} not found in ctx {:?}", identifier, self);
+        }
+        found
     }
 }
 
@@ -325,6 +355,25 @@ impl AstScope {
             .into_iter()
             .filter(|(i, _)| !definitions.contains_key(i))
             .collect()
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct LintingConfig {
+    pub check_undefined_ids: bool,
+}
+
+impl LintingConfig {
+    pub fn full() -> LintingConfig {
+        LintingConfig {
+            check_undefined_ids: true,
+        }
+    }
+
+    pub fn none() -> LintingConfig {
+        LintingConfig {
+            check_undefined_ids: false,
+        }
     }
 }
 

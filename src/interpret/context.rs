@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use log::error;
 
-use crate::ast::ast::{AstContext, AstPair, AstScope, Expression, Identifier, Span, Statement};
+use crate::ast::ast::{AstContext, AstPair, Expression, Identifier, Span, Statement};
 use crate::error::Error;
 use crate::interpret::destructure::assign_definitions;
 use crate::interpret::value::Value;
@@ -19,17 +19,10 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn stdlib(input: String) -> Context {
+    pub fn stdlib(a_ctx: AstContext) -> Context {
         let defs: HashMap<_, _> = stdlib().into_iter().flat_map(|p| p.definitions).collect();
         Context {
-            ast_context: AstContext {
-                input,
-                global_scope: AstScope {
-                    definitions: defs.keys().map(|i| (i.clone(), None)).collect(),
-                    usage: HashMap::new(),
-                },
-                scope_stack: vec![AstScope::default()],
-            },
+            ast_context: a_ctx,
             scope_stack: vec![take(
                 Scope::new("stdlib".to_string()).with_definitions(defs),
             )],

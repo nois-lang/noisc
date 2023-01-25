@@ -320,6 +320,9 @@ pub fn parse_operand(
 
             // definitions created by this assignee
             debug!("usage: {}", id.1);
+            if ctx.linting_config.check_undefined_ids && !ctx.is_defined(&id.1) {
+                return Err(Error::from_pair(pair, format!("{} is not defined", id.1)));
+            }
             ctx.scope_stack
                 .last_mut()
                 .unwrap()
@@ -389,7 +392,6 @@ pub fn parse_function_init(
     ctx.scope_stack.push(AstScope::default());
     let parameters: Vec<AstPair<Assignee>> = parse_children(&ch[0], parse_assignee, ctx)?;
     let block = parse_block(&ch[1], ctx)?;
-    // TODO: error on use of undefined id
     let defs = ctx.global_scope.definitions.clone().into_iter().chain(
         ctx.scope_stack
             .last()
@@ -709,6 +711,7 @@ mod tests {
 
     use pest::Parser;
 
+    use crate::ast::ast::LintingConfig;
     use crate::interpret::context::Context;
     use crate::parser::NoisParser;
 
@@ -726,7 +729,10 @@ mod tests {
 
     fn parse_block(source: &str) -> Block {
         let file = &NoisParser::parse(Rule::program, source).unwrap();
-        let ctx = Context::stdlib(source.to_string());
+        let ctx = Context::stdlib(AstContext::stdlib(
+            source.to_string(),
+            LintingConfig::none(),
+        ));
         let a_ctx_cell = RefCell::new(ctx.ast_context);
         let a_ctx = &mut a_ctx_cell.borrow_mut();
         parse_file(file, a_ctx).unwrap().1

@@ -16,7 +16,7 @@ use lazy_static::lazy_static;
 use log::{info, LevelFilter};
 use shellexpand::tilde;
 
-use crate::ast::ast::{AstContext, AstPair, Block};
+use crate::ast::ast::{AstContext, AstPair, Block, LintingConfig};
 use crate::ast::ast_parser::parse_block;
 use crate::cli::{Cli, Commands};
 use crate::error::terminate;
@@ -39,8 +39,8 @@ lazy_static! {
 
 fn main() {
     if let Some(source) = piped_input() {
-        let (ast, a_ctx) = parse_ast(source);
-        execute(ast, Context::stdlib(a_ctx.into_inner().input), |_| {});
+        let (ast, a_ctx) = parse_ast(source, LintingConfig::full());
+        execute(ast, Context::stdlib(a_ctx), |_| {});
         return;
     }
 
@@ -57,7 +57,7 @@ fn main() {
             }
             info!("executing command {:?}", &command);
             let source = read_source(path);
-            let (ast, _) = parse_ast(source);
+            let (ast, _) = parse_ast(source, LintingConfig::full());
             println!("{:#?}", ast);
         }
         Commands::Run {
@@ -71,20 +71,21 @@ fn main() {
             }
             info!("executing command {:?}", &command);
             let source = read_source(path);
-            let (ast, a_ctx) = parse_ast(source);
-            execute(ast, Context::stdlib(a_ctx.into_inner().input), |_| {});
+            let (ast, a_ctx) = parse_ast(source, LintingConfig::full());
+            execute(ast, Context::stdlib(a_ctx), |_| {});
         }
     }
 }
 
-pub fn parse_ast(source: String) -> (AstPair<Block>, RefCell<AstContext>) {
-    let ctx = Context::stdlib(source.clone());
+pub fn parse_ast(source: String, config: LintingConfig) -> (AstPair<Block>, AstContext) {
+    let a_ctx = AstContext::stdlib(source.clone(), config);
+    let ctx = Context::stdlib(a_ctx);
     let ctx_rc = &RefCell::new(ctx.ast_context.clone());
     let ctx_bm = &mut ctx_rc.borrow_mut();
     let pt = NoisParser::parse_program(source.as_str());
     let ast = pt.and_then(|parsed| parse_block(&parsed, ctx_bm));
     match ast {
-        Ok(a) => (a, RefCell::new(ctx.ast_context)),
+        Ok(a) => (a, ctx.ast_context),
         Err(e) => terminate(e.to_string()),
     }
 }
@@ -122,7 +123,7 @@ mod tests {
     use std::mem::take;
     use std::rc::Rc;
 
-    use crate::ast::ast::AstPair;
+    use crate::ast::ast::{AstPair, LintingConfig};
     use crate::error::Error;
     use crate::interpret::context::{Context, Scope};
     use crate::interpret::interpreter::execute;
@@ -161,8 +162,8 @@ mod tests {
         }
 
         let source = read_to_string(format!("data/{name}.no")).unwrap();
-        let (ast, a_ctx) = parse_ast(source);
-        execute(ast, Context::stdlib(a_ctx.into_inner().input), |ctx| {
+        let (ast, a_ctx) = parse_ast(source, LintingConfig::full());
+        execute(ast, Context::stdlib(a_ctx), |ctx| {
             ctx.scope_stack.push(take(
                 Scope::new("test".to_string())
                     .with_definitions(HashMap::from([TestPrintln::definition()])),
