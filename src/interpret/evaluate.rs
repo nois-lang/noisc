@@ -347,7 +347,7 @@ impl Evaluate for AstPair<Rc<FunctionInit>> {
             debug!("function init scope @{}: {:?}", s.name, s.definitions);
 
             ctx.scope_stack.last_mut().unwrap().arguments = None;
-            self.clone().1.block.map(|v| Rc::new(v.clone())).eval(ctx)
+            self.1.block.map(Rc::clone).eval(ctx)
         } else {
             let closure = &self.1.closure;
             let v = if closure.is_empty() {
@@ -364,7 +364,6 @@ impl Evaluate for AstPair<Rc<FunctionInit>> {
                     })
                     .collect::<Result<_, _>>()?;
                 debug!("lazy init function with context snapshot {:?}", &ctx);
-                // TODO: pass required definitions
                 Value::Closure(self.1, defs)
             };
             Ok(AstPair::from_span(&self.0, Rc::new(v)))

@@ -1,5 +1,6 @@
 use std::cell::RefMut;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use enquote::unquote;
 use log::debug;
@@ -406,7 +407,7 @@ pub fn parse_function_init(
     }
     let fi = FunctionInit {
         parameters,
-        block,
+        block: AstPair(block.0, Rc::new(block.1)),
         closure,
     };
     debug!("pop ast scope");

@@ -136,7 +136,7 @@ impl FunctionCall {
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub struct FunctionInit {
     pub parameters: Vec<AstPair<Assignee>>,
-    pub block: AstPair<Block>,
+    pub block: AstPair<Rc<Block>>,
     pub closure: Vec<Identifier>,
 }
 
