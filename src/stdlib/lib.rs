@@ -65,7 +65,7 @@ pub trait LibFunction {
     fn definition() -> (Identifier, Definition) {
         (
             Identifier(Self::name()),
-            Definition::System(SysFunction(|args, ctx| Self::call_fn(&args, ctx))),
+            Definition::System(SysFunction(|args, ctx| Self::call_fn(args, ctx))),
         )
     }
 }

@@ -71,7 +71,7 @@ pub struct Scope {
     pub name: String,
     pub definitions: HashMap<Identifier, Definition>,
     pub callee: Option<Span>,
-    pub arguments: Option<Vec<AstPair<Rc<Value>>>>,
+    pub arguments: Option<Rc<Vec<AstPair<Rc<Value>>>>>,
     pub method_callee: Option<AstPair<Rc<Value>>>,
     pub return_value: Option<Rc<Value>>,
 }
@@ -98,7 +98,7 @@ impl Scope {
         self
     }
 
-    pub fn with_arguments(&mut self, arguments: Option<Vec<AstPair<Rc<Value>>>>) -> &mut Self {
+    pub fn with_arguments(&mut self, arguments: Option<Rc<Vec<AstPair<Rc<Value>>>>>) -> &mut Self {
         self.arguments = arguments;
         self
     }
@@ -116,7 +116,7 @@ impl Scope {
 
 #[derive(Clone, Copy)]
 pub struct SysFunction(
-    pub fn(Vec<AstPair<Rc<Value>>>, &mut RefMut<Context>) -> Result<AstPair<Value>, Error>,
+    pub fn(&Vec<AstPair<Rc<Value>>>, &mut RefMut<Context>) -> Result<AstPair<Value>, Error>,
 );
 
 impl Debug for SysFunction {

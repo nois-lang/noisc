@@ -145,10 +145,10 @@ impl LibFunction for Map {
                 ctx.scope_stack.push(take(
                     Scope::new("<closure>".to_string())
                         .with_callee(callee)
-                        .with_arguments(Some(vec![
+                        .with_arguments(Some(Rc::new(vec![
                             args[0].with(Rc::new(li.clone())),
                             args[1].with(Rc::new(Value::I(i as i128))),
-                        ])),
+                        ]))),
                 ));
                 debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
 
@@ -195,10 +195,10 @@ impl LibFunction for Filter {
                 ctx.scope_stack.push(take(
                     Scope::new("<closure>".to_string())
                         .with_callee(callee)
-                        .with_arguments(Some(vec![
+                        .with_arguments(Some(Rc::new(vec![
                             args[0].with(Rc::new(li.clone())),
                             args[1].with(Rc::new(Value::I(i as i128))),
-                        ])),
+                        ]))),
                 ));
                 debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
 
@@ -255,11 +255,11 @@ impl LibFunction for Reduce {
                 ctx.scope_stack.push(take(
                     Scope::new("<closure>".to_string())
                         .with_callee(callee)
-                        .with_arguments(Some(vec![
+                        .with_arguments(Some(Rc::new(vec![
                             args[2].with(Rc::new(acc.clone())),
                             args[0].with(Rc::new(li.clone())),
                             args[2].with(Rc::new(Value::I(i as i128))),
-                        ])),
+                        ]))),
                 ));
                 debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
 

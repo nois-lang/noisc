@@ -1,6 +1,7 @@
 use std::cell::{RefCell, RefMut};
 use std::collections::HashMap;
 use std::mem::take;
+use std::rc::Rc;
 
 use log::debug;
 
@@ -38,7 +39,7 @@ where
     update_ctx(ctx_bm);
 
     ctx_bm.scope_stack.push(take(
-        Scope::new(identifier.to_string()).with_arguments(Some(vec![])),
+        Scope::new(identifier.to_string()).with_arguments(Some(Rc::new(vec![]))),
     ));
     ctx_bm.ast_context.scope_stack.push(AstScope::default());
     debug!("push scope @{}", &ctx_bm.scope_stack.last().unwrap().name);

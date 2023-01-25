@@ -76,7 +76,7 @@ pub fn function_call(
     ctx.scope_stack.push(take(
         Scope::new(name.to_string())
             .with_callee(Some(function_call.0))
-            .with_arguments(Some(args)),
+            .with_arguments(Some(Rc::new(args))),
     ));
 
     let res = if let Some(i) = id {
@@ -327,10 +327,18 @@ impl Evaluate for AstPair<Rc<FunctionInit>> {
     fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Rc<Value>>, Error> {
         debug!("eval {:?}", self);
         // if scope has args, this is a function call and function init must be evaluated
-        if let Some(args) = ctx.scope_stack.last().unwrap().arguments.as_ref() {
+        if let Some(args) = ctx
+            .scope_stack
+            .last()
+            .unwrap()
+            .arguments
+            .as_ref()
+            .map(Rc::clone)
+        {
             debug!("function init args: {:?}", args);
-            for (param, v) in self.1.parameters.iter().zip(args.clone()) {
-                let defs = assign_definitions(param, v.clone(), ctx, |_, e| Definition::Value(e))?;
+            for (param, v) in self.1.parameters.iter().zip(args.iter()) {
+                let defs =
+                    assign_definitions(param, v.map(Rc::clone), ctx, |_, e| Definition::Value(e))?;
                 ctx.scope_stack.last_mut().unwrap().definitions.extend(defs);
             }
 
@@ -383,8 +391,14 @@ impl Evaluate for AstPair<Rc<Identifier>> {
 impl Evaluate for AstPair<Rc<Value>> {
     fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Rc<Value>>, Error> {
         debug!("eval value {:?}", &self);
-        let args = &ctx.scope_stack.last().unwrap().arguments;
-        if args.is_some() {
+        if let Some(args) = ctx
+            .scope_stack
+            .last()
+            .unwrap()
+            .arguments
+            .as_ref()
+            .map(Rc::clone)
+        {
             match self.1.as_ref() {
                 Value::Fn(f) => {
                     debug!("eval function {:?}", f);
@@ -403,7 +417,7 @@ impl Evaluate for AstPair<Rc<Value>> {
                 Value::System(sf) => {
                     // TODO: store sys function name
                     debug!("eval system function");
-                    sf.0(args.as_ref().unwrap().clone(), ctx).map(|a| a.map(|v| Rc::new(v.clone())))
+                    sf.0(args.as_ref(), ctx).map(|a| a.map(|v| Rc::new(v.clone())))
                 }
                 _ => Ok(self),
             }
@@ -426,10 +440,10 @@ impl Evaluate for Definition {
                         scope.name, scope.arguments
                     );
 
-                    let args = scope.arguments.as_ref().unwrap().clone();
+                    let args = Rc::clone(scope.arguments.as_ref().unwrap());
                     scope.arguments = None;
 
-                    f.0(args, ctx).map(|a| a.map(|v| Rc::new(v.clone())))
+                    f.0(args.as_ref(), ctx).map(|a| a.map(|v| Rc::new(v.clone())))
                 } else {
                     let callee = scope.callee.unwrap();
                     Ok(AstPair(callee, Rc::new(Value::System(f))))
