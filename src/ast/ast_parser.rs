@@ -29,7 +29,11 @@ pub fn parse_block(
 ) -> Result<AstPair<Block>, Error> {
     match pair.as_rule() {
         Rule::block => {
-            let statements = parse_children(pair, parse_statement, ctx)?;
+            let statements = parse_children(
+                pair,
+                |p, ctx| parse_statement(p, ctx).map(|a| a.map_into(Rc::new)),
+                ctx,
+            )?;
             Ok(AstPair::from_pair(pair, Block { statements }))
         }
         Rule::expression => {
@@ -39,7 +43,7 @@ pub fn parse_block(
                 Block {
                     statements: vec![AstPair::from_span(
                         &expression.clone().0,
-                        Statement::Expression(expression),
+                        Rc::new(Statement::Expression(expression)),
                     )],
                 },
             ))
@@ -701,6 +705,7 @@ fn parse_pattern_list(
 #[cfg(test)]
 mod tests {
     use std::cell::RefCell;
+    use std::ops::Deref;
 
     use pest::Parser;
 
@@ -746,8 +751,8 @@ mod tests {
             .statements
             .into_iter()
             .map(|s| {
-                let exp = match_enum!(s.1, Statement::Expression(e) => e);
-                let op = *match_enum!(exp.1, Expression::Operand(o) => o);
+                let exp = match_enum!(s.1.as_ref(), Statement::Expression(e) => e);
+                let op = *match_enum!(exp.1.clone(), Expression::Operand(o) => o);
                 op.1
             })
             .collect::<Vec<_>>();
@@ -768,8 +773,8 @@ False
             .statements
             .into_iter()
             .map(|s| {
-                let exp = match_enum!(s.1, Statement::Expression(e) => e);
-                let op = *match_enum!(exp.1, Expression::Operand(o) => o);
+                let exp = match_enum!(s.1.as_ref(), Statement::Expression(e) => e);
+                let op = *match_enum!(exp.1.clone(), Expression::Operand(o) => o);
                 op.1
             })
             .collect::<Vec<_>>();
@@ -795,8 +800,8 @@ False
             .statements
             .into_iter()
             .map(|s| {
-                let exp = match_enum!(s.1, Statement::Expression(e) => e);
-                let op = *match_enum!(exp.1, Expression::Operand(o) => o);
+                let exp = match_enum!(s.1.as_ref(), Statement::Expression(e) => e);
+                let op = *match_enum!(exp.1.clone(), Expression::Operand(o) => o);
                 match_enum!(op.1, Operand::String(s) => s)
             })
             .collect::<Vec<_>>();
@@ -923,8 +928,8 @@ Block {
             .statements
             .into_iter()
             .map(|s| {
-                let exp = match_enum!(s.1, Statement::Expression(e) => e);
-                let op = *match_enum!(exp.1, Expression::Operand(o) => o);
+                let exp = match_enum!(s.1.as_ref(), Statement::Expression(e) => e);
+                let op = *match_enum!(exp.1.clone(), Expression::Operand(o) => o);
                 op.1
             })
             .collect::<Vec<_>>();
@@ -964,9 +969,11 @@ Block {
             .statements
             .into_iter()
             .map(|s| {
-                let exp = match_enum!(s.1, Statement::Expression(e) => e);
-                let op = *match_enum!(exp.1, Expression::Operand(o) => o);
-                op.1
+                let exp = match_enum!(s.1.as_ref(), Statement::Expression(e) => e);
+                match_enum!(&exp.1, Expression::Operand(o) => o)
+                    .deref()
+                    .1
+                    .clone()
             })
             .collect::<Vec<_>>();
         assert_eq!(structs.len(), 2);
@@ -995,8 +1002,8 @@ Block {
             .statements
             .into_iter()
             .map(|s| {
-                let exp = match_enum!(s.1, Statement::Expression(e) => e);
-                let op = *match_enum!(exp.1, Expression::Operand(o) => o);
+                let exp = match_enum!(s.1.as_ref(), Statement::Expression(e) => e);
+                let op = *match_enum!(exp.1.clone(), Expression::Operand(o) => o);
                 op.1
             })
             .collect::<Vec<_>>();

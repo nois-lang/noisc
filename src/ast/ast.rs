@@ -11,7 +11,7 @@ use crate::parser::Rule;
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub struct Block {
-    pub statements: Vec<AstPair<Statement>>,
+    pub statements: Vec<AstPair<Rc<Statement>>>,
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
@@ -367,6 +367,14 @@ impl<A> AstPair<A> {
         F: FnOnce(&A) -> T,
     {
         let t = f(&self.1);
+        AstPair(self.0, t)
+    }
+
+    pub fn map_into<T, F>(self, f: F) -> AstPair<T>
+    where
+        F: FnOnce(A) -> T,
+    {
+        let t = f(self.1);
         AstPair(self.0, t)
     }
 

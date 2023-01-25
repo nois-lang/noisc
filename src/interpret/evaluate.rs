@@ -116,7 +116,7 @@ impl Evaluate for AstPair<Rc<Block>> {
         debug!("eval {:?}", &self);
         let mut last_res = self.with(Rc::new(Value::Unit));
         for statement in &self.1.statements {
-            last_res = statement.map(|v| Rc::new(v.clone())).eval(ctx)?;
+            last_res = statement.map(Rc::clone).eval(ctx)?;
             let scope = ctx.scope_stack.last().unwrap();
             if let Some(rv) = scope.return_value.as_ref() {
                 debug!("block interrupted by return, value: {:?}", &rv);
