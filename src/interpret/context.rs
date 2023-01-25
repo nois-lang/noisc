@@ -1,7 +1,7 @@
 use std::cell::RefMut;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
-use std::mem;
+use std::mem::take;
 use std::rc::Rc;
 
 use log::error;
@@ -30,7 +30,7 @@ impl Context {
                 },
                 scope_stack: vec![AstScope::default()],
             },
-            scope_stack: vec![mem::take(
+            scope_stack: vec![take(
                 Scope::new("stdlib".to_string()).with_definitions(defs),
             )],
         }

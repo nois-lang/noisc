@@ -116,11 +116,10 @@ pub fn piped_input() -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use mem::take;
     use std::cell::{RefCell, RefMut};
     use std::collections::HashMap;
     use std::fs::read_to_string;
-    use std::mem;
+    use std::mem::take;
     use std::rc::Rc;
 
     use crate::ast::ast::AstPair;
