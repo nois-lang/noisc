@@ -172,14 +172,17 @@ impl PartialEq for Value {
                     items: ib,
                     spread: sb,
                 },
-            ) => ia == ib && sa == sb,
+            ) => ia.as_ref() == ib.as_ref() && sa == sb,
             (Self::Fn(a), Self::Fn(b)) => a == b,
             (Self::Closure(a, _), Self::Closure(b, _)) => a == b,
+            (Value::Unit, Value::Unit) => true,
             (Value::I(i1), Value::I(i2)) => i1 == i2,
             (Value::F(f1), Value::F(f2)) => f1 == f2,
             (Value::I(i1), Value::F(f2)) => (*i1 as f64) == *f2,
             (Value::F(f1), Value::I(i2)) => *f1 == (*i2 as f64),
-            _ => format!("{:?}", self) == format!("{:?}", other),
+            (Value::C(c1), Value::C(c2)) => c1 == c2,
+            (Value::B(b1), Value::B(b2)) => b1 == b2,
+            _ => false,
         }
     }
 }
