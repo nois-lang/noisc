@@ -19,8 +19,8 @@ pub enum Value {
     B(bool),
     List { items: Rc<Vec<Value>>, spread: bool },
     // closures use context "snapshot" for evaluation
-    Fn(FunctionInit),
-    Closure(FunctionInit, HashMap<Identifier, Definition>),
+    Fn(Rc<FunctionInit>),
+    Closure(Rc<FunctionInit>, HashMap<Identifier, Definition>),
     System(SysFunction),
     Type(ValueType),
 }

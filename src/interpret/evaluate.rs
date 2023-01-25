@@ -343,7 +343,7 @@ impl Evaluate for AstPair<Rc<FunctionInit>> {
         } else {
             let closure = &self.1.closure;
             let v = if closure.is_empty() {
-                Value::Fn(self.1.as_ref().clone())
+                Value::Fn(self.1)
             } else {
                 let defs = closure
                     .iter()
@@ -357,7 +357,7 @@ impl Evaluate for AstPair<Rc<FunctionInit>> {
                     .collect::<Result<_, _>>()?;
                 debug!("lazy init function with context snapshot {:?}", &ctx);
                 // TODO: pass required definitions
-                Value::Closure(self.1.as_ref().clone(), defs)
+                Value::Closure(self.1, defs)
             };
             Ok(AstPair::from_span(&self.0, Rc::new(v)))
         }
@@ -388,7 +388,7 @@ impl Evaluate for AstPair<Rc<Value>> {
             match self.1.as_ref() {
                 Value::Fn(f) => {
                     debug!("eval function {:?}", f);
-                    self.with(Rc::new(f.clone())).eval(ctx)
+                    self.with(Rc::clone(f)).eval(ctx)
                 }
                 Value::Closure(f, defs) => {
                     debug!("eval closure {:?}", f);
@@ -398,7 +398,7 @@ impl Evaluate for AstPair<Rc<Value>> {
                         .unwrap()
                         .definitions
                         .extend(defs.clone());
-                    self.with(Rc::new(f.clone())).eval(ctx)
+                    self.with(Rc::clone(f)).eval(ctx)
                 }
                 Value::System(sf) => {
                     // TODO: store sys function name
