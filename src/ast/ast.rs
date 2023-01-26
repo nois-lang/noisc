@@ -332,7 +332,7 @@ impl AstContext {
             .filter_map(|s| s.definitions.get(identifier))
             .count()
             > 0;
-        if found {
+        if !found {
             error!("definition {} not found in ctx {:?}", identifier, self);
         }
         found

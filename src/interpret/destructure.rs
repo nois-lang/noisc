@@ -11,19 +11,49 @@ use crate::interpret::context::{Context, Definition};
 use crate::interpret::evaluate::Evaluate;
 use crate::interpret::value::Value;
 
+#[derive(Debug, Clone)]
+pub struct AssignmentPair(pub Identifier, pub Definition);
+
+impl AssignmentPair {
+    pub fn into_tuple(self) -> (Identifier, Definition) {
+        (self.0, self.1)
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct AssignmentResult {
+    pub pairs: Vec<AssignmentPair>,
+    pub is_destructured: bool,
+}
+
+impl AssignmentResult {
+    pub fn destructured(pairs: Vec<AssignmentPair>) -> AssignmentResult {
+        AssignmentResult {
+            pairs,
+            is_destructured: true,
+        }
+    }
+}
+
 pub fn assign_definitions<T, F>(
     assignee: &AstPair<Assignee>,
     expression: T,
     ctx: &mut RefMut<Context>,
     f: F,
-) -> Result<Vec<(Identifier, Definition)>, Error>
+) -> Result<AssignmentResult, Error>
 where
     T: Evaluate + Debug,
     F: Fn(AstPair<Identifier>, T) -> Definition,
 {
     match &assignee.1 {
-        Assignee::Identifier(i) => Ok(vec![(i.1.clone(), f(i.clone(), expression))]),
-        Assignee::Hole => Ok(vec![]),
+        Assignee::Identifier(i) => Ok(AssignmentResult {
+            pairs: vec![AssignmentPair(i.1.clone(), f(i.clone(), expression))],
+            is_destructured: false,
+        }),
+        Assignee::Hole => Ok(AssignmentResult {
+            pairs: vec![],
+            is_destructured: true,
+        }),
         Assignee::DestructureList(dl) => destructure_list(dl, expression, assignee.0, ctx),
     }
 }
@@ -33,7 +63,7 @@ pub fn destructure_list<T: Evaluate + Debug>(
     expression: T,
     span: Span,
     ctx: &mut RefMut<Context>,
-) -> Result<Vec<(Identifier, Definition)>, Error> {
+) -> Result<AssignmentResult, Error> {
     let e = expression.eval(ctx)?;
     debug!("destructuring list {:?} into {:?}", &e, destructure_list);
     match e.1.as_ref() {
@@ -55,12 +85,16 @@ pub fn destructure_list<T: Evaluate + Debug>(
             match spread_items.len() {
                 0 => {
                     if destructure_list.0.len() == vs.len() {
-                        Ok(zip(&destructure_list.0, vs.as_ref())
-                            .map(|(i, v)| destructure_item(i, e.with(Rc::new(v.clone())), ctx))
+                        let pairs = zip(&destructure_list.0, vs.as_ref())
+                            .map(|(i, v)| {
+                                destructure_item(i, e.with(Rc::new(v.clone())), ctx)
+                                    .map(|r| r.pairs)
+                            })
                             .collect::<Result<Vec<_>, _>>()?
                             .into_iter()
                             .flatten()
-                            .collect::<Vec<_>>())
+                            .collect::<Vec<_>>();
+                        Ok(AssignmentResult::destructured(pairs))
                     } else {
                         Err(Error::from_span(
                             &e.0,
@@ -99,15 +133,18 @@ fn destructure_item(
     destructure_item: &AstPair<DestructureItem>,
     value: AstPair<Rc<Value>>,
     ctx: &mut RefMut<Context>,
-) -> Result<Vec<(Identifier, Definition)>, Error> {
+) -> Result<AssignmentResult, Error> {
     debug!(
         "destructuring item {:?} into {:?}",
         &value, &destructure_item
     );
     match &destructure_item.1 {
-        DestructureItem::Hole | DestructureItem::SpreadHole => Ok(vec![]),
+        DestructureItem::Hole | DestructureItem::SpreadHole => {
+            Ok(AssignmentResult::destructured(vec![]))
+        }
         DestructureItem::Identifier { identifier, .. } => {
-            Ok(vec![(identifier.1.clone(), Definition::Value(value))])
+            let pair = AssignmentPair(identifier.1.clone(), Definition::Value(value));
+            Ok(AssignmentResult::destructured(vec![pair]))
         }
         DestructureItem::List(ls) => {
             let s = value.0;
@@ -122,13 +159,15 @@ fn destructure_with_spread(
     destructure_list: &DestructureList,
     vs: &[Value],
     spread_item: &(usize, AstPair<Identifier>),
-) -> Result<Vec<(Identifier, Definition)>, Error> {
+) -> Result<AssignmentResult, Error> {
     let before_pairs = destructure_list
         .0
         .iter()
         .take(spread_item.0)
         .zip(vs.iter().take(spread_item.0))
-        .map(|(i, v)| destructure_item(i, AstPair::from_span(&span, Rc::new(v.clone())), ctx))
+        .map(|(i, v)| {
+            destructure_item(i, AstPair::from_span(&span, Rc::new(v.clone())), ctx).map(|r| r.pairs)
+        })
         .collect::<Result<Vec<_>, _>>()?
         .into_iter()
         .flatten()
@@ -140,7 +179,7 @@ fn destructure_with_spread(
         .take(spread_value_count)
         .cloned()
         .collect::<Vec<_>>();
-    let spread_pair = vec![(
+    let spread_pair = vec![AssignmentPair(
         spread_item.1 .1.clone(),
         Definition::Value(AstPair::from_span(
             &span,
@@ -152,13 +191,16 @@ fn destructure_with_spread(
         .iter()
         .skip(spread_item.0 + 1)
         .zip(vs.iter().skip(spread_value_count + spread_item.0))
-        .map(|(i, v)| destructure_item(i, AstPair::from_span(&span, Rc::new(v.clone())), ctx))
+        .map(|(i, v)| {
+            destructure_item(i, AstPair::from_span(&span, Rc::new(v.clone())), ctx).map(|r| r.pairs)
+        })
         .collect::<Result<Vec<_>, _>>()?
         .into_iter()
         .flatten()
         .collect::<Vec<_>>();
-    Ok(vec![before_pairs, spread_pair, after_pairs]
+    let pairs = vec![before_pairs, spread_pair, after_pairs]
         .into_iter()
         .flatten()
-        .collect())
+        .collect();
+    Ok(AssignmentResult::destructured(pairs))
 }

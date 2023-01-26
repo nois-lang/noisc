@@ -8,6 +8,7 @@ use log::debug;
 use crate::ast::ast::{AstPair, AstScope, Block, Identifier};
 use crate::error::{terminate, Error};
 use crate::interpret::context::{Context, Definition, Scope};
+use crate::interpret::destructure::AssignmentPair;
 use crate::interpret::evaluate::Evaluate;
 
 pub fn execute<F>(block: AstPair<Block>, ctx: Context, mut update_ctx: F)
@@ -23,7 +24,11 @@ where
         .map(|s| s.1.as_definitions(ctx_bm))
         .collect::<Result<Vec<_>, _>>();
     let block_defs = match r_defs {
-        Ok(ds) => ds.into_iter().flatten().collect::<HashMap<_, _>>(),
+        Ok(ds) => ds
+            .into_iter()
+            .flat_map(|r| r.pairs)
+            .map(AssignmentPair::into_tuple)
+            .collect::<HashMap<_, _>>(),
         Err(e) => terminate(e.to_string()),
     };
     let identifier = Identifier::new("main");

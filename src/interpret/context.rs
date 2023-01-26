@@ -4,11 +4,9 @@ use std::fmt::{Debug, Formatter};
 use std::mem::take;
 use std::rc::Rc;
 
-use log::error;
-
 use crate::ast::ast::{AstContext, AstPair, Expression, Identifier, Span, Statement};
 use crate::error::Error;
-use crate::interpret::destructure::assign_definitions;
+use crate::interpret::destructure::{assign_definitions, AssignmentResult};
 use crate::interpret::value::Value;
 use crate::stdlib::lib::stdlib;
 
@@ -30,32 +28,19 @@ impl Context {
     }
 
     pub fn find_definition(&self, identifier: &Identifier) -> Option<&Definition> {
-        let r = self
-            .scope_stack
+        self.scope_stack
             .iter()
             .rev()
             .filter_map(|s| s.definitions.get(identifier))
-            .next();
-        if r.is_none() {
-            error!(
-                "definition {} not found in scope stack {:?}",
-                &identifier, &self.scope_stack
-            );
-        }
-        r
+            .next()
     }
 
     pub fn find_definition_mut(&mut self, identifier: &Identifier) -> Option<&mut Definition> {
-        let def = self
-            .scope_stack
+        self.scope_stack
             .iter_mut()
             .rev()
             .filter_map(|s| s.definitions.get_mut(identifier))
-            .next();
-        if def.is_none() {
-            error!("definition {} not found", &identifier);
-        }
-        def
+            .next()
     }
 }
 
@@ -126,10 +111,7 @@ pub enum Definition {
 }
 
 impl Statement {
-    pub fn as_definitions(
-        &self,
-        ctx: &mut RefMut<Context>,
-    ) -> Result<Vec<(Identifier, Definition)>, Error> {
+    pub fn as_definitions(&self, ctx: &mut RefMut<Context>) -> Result<AssignmentResult, Error> {
         match self {
             Statement::Assignment {
                 assignee,
@@ -140,7 +122,7 @@ impl Statement {
                 ctx,
                 Definition::User,
             ),
-            _ => Ok(vec![]),
+            _ => Ok(AssignmentResult::default()),
         }
     }
 }

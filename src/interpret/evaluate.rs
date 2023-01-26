@@ -12,7 +12,7 @@ use crate::ast::ast::{
 };
 use crate::error::Error;
 use crate::interpret::context::{Context, Definition, Scope};
-use crate::interpret::destructure::assign_definitions;
+use crate::interpret::destructure::{assign_definitions, AssignmentPair, AssignmentResult};
 use crate::interpret::matcher::match_expression;
 use crate::interpret::value::Value;
 
@@ -134,7 +134,6 @@ impl Evaluate for AstPair<Rc<Statement>> {
         debug!("eval {:?}", &self);
         match self.1.as_ref() {
             Statement::Expression(exp) => exp.map(Rc::clone).eval(ctx),
-            // TODO: reassignment
             Statement::Assignment {
                 assignee,
                 expression,
@@ -145,7 +144,25 @@ impl Evaluate for AstPair<Rc<Statement>> {
                     ctx,
                     Definition::User,
                 )?;
-                ctx.scope_stack.last_mut().unwrap().definitions.extend(defs);
+                debug!("assignment defs: {:?}", defs);
+                match defs {
+                    AssignmentResult {
+                        ref pairs,
+                        is_destructured: false,
+                    } if !pairs.is_empty() && ctx.find_definition_mut(&pairs[0].0).is_some() => {
+                        let ap = pairs.iter().next().unwrap();
+                        let r = ap.1.clone().eval(ctx)?;
+                        debug!("found prev defined id, reassign to {:?}", &ap);
+                        *ctx.find_definition_mut(&pairs[0].0).unwrap() = Definition::Value(r);
+                    }
+                    _ => {
+                        debug!("new assignment: {:?}", defs);
+                        let scope = ctx.scope_stack.last_mut().unwrap();
+                        scope
+                            .definitions
+                            .extend(defs.pairs.into_iter().map(AssignmentPair::into_tuple));
+                    }
+                };
                 unit
             }
             Statement::Return(v) => {
@@ -338,7 +355,11 @@ impl Evaluate for AstPair<Rc<FunctionInit>> {
             for (param, v) in self.1.parameters.iter().zip(args.iter()) {
                 let defs =
                     assign_definitions(param, v.map(Rc::clone), ctx, |_, e| Definition::Value(e))?;
-                ctx.scope_stack.last_mut().unwrap().definitions.extend(defs);
+                ctx.scope_stack
+                    .last_mut()
+                    .unwrap()
+                    .definitions
+                    .extend(defs.pairs.into_iter().map(AssignmentPair::into_tuple));
             }
 
             let s = ctx.scope_stack.last().unwrap();
@@ -640,6 +661,36 @@ a = 10
 a
         "#;
         assert_eq!(evaluate(source), Ok(Value::I(10)));
+    }
+
+    #[test]
+    fn evaluate_reassign() {
+        let source = r#"
+a = 4
+a = 5
+a
+        "#;
+        assert_eq!(evaluate(source), Ok(Value::I(5)));
+    }
+
+    #[test]
+    fn evaluate_reassign_with_itself() {
+        let source = r#"
+a = 4
+a = a + 1
+a
+        "#;
+        assert_eq!(evaluate(source), Ok(Value::I(5)));
+    }
+
+    #[test]
+    fn evaluate_reassign_closure() {
+        let source = r#"
+a = b -> b + 12
+a = b -> b + a(10)
+a(1)
+        "#;
+        assert_eq!(evaluate(source), Ok(Value::I(23)));
     }
 
     // TODO: more tests
