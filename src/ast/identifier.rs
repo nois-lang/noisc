@@ -2,7 +2,9 @@ use std::cell::RefMut;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
+
 use log::debug;
+
 use crate::ast::ast_pair::AstPair;
 use crate::error::Error;
 use crate::interpret::context::Context;
@@ -41,4 +43,4 @@ impl Evaluate for AstPair<Rc<Identifier>> {
 }
 
 #[cfg(test)]
-mod tests {}
+mod test {}

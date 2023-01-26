@@ -46,4 +46,4 @@ impl Evaluate for Definition {
 }
 
 #[cfg(test)]
-mod tests {}
+mod test {}

@@ -5,9 +5,8 @@ use std::rc::Rc;
 
 use log::debug;
 
-use crate::ast::ast_context::{AstContext, AstScope, LintingConfig};
+use crate::ast::ast_context::AstScope;
 use crate::ast::ast_pair::AstPair;
-use crate::ast::ast_parser::parse_block;
 use crate::ast::block::Block;
 use crate::ast::identifier::Identifier;
 use crate::error::{terminate, Error};
@@ -15,8 +14,6 @@ use crate::interpret::context::{Context, Scope};
 use crate::interpret::definition::Definition;
 use crate::interpret::destructure::AssignmentPair;
 use crate::interpret::evaluate::Evaluate;
-use crate::interpret::value::Value;
-use crate::parser::NoisParser;
 
 pub fn execute_file<F>(block: AstPair<Block>, ctx: Context, mut update_ctx: F)
 where
@@ -74,22 +71,36 @@ where
     ctx_bm.ast_context.scope_stack.pop();
 }
 
-pub fn evaluate(source: &str) -> Result<Value, Error> {
-    _evaluate(source, LintingConfig::none())
-}
+#[cfg(test)]
+pub mod test {
+    use std::cell::RefCell;
+    use std::rc::Rc;
 
-fn _evaluate(source: &str, config: LintingConfig) -> Result<Value, Error> {
-    let ctx = &Context::stdlib(AstContext::stdlib(source.to_string(), config));
-    let ctx_cell = RefCell::new(ctx.clone());
-    let ctx_bm = &mut ctx_cell.borrow_mut();
+    use crate::ast::ast_context::{AstContext, LintingConfig};
+    use crate::ast::ast_parser::parse_block;
+    use crate::error::Error;
+    use crate::interpret::context::Context;
+    use crate::interpret::evaluate::Evaluate;
+    use crate::interpret::value::Value;
+    use crate::parser::NoisParser;
 
-    let a_ctx_cell = RefCell::new(ctx.ast_context.clone());
-    let a_ctx_bm = &mut a_ctx_cell.borrow_mut();
+    pub fn evaluate(source: &str) -> Result<Value, Error> {
+        _evaluate(source, LintingConfig::none())
+    }
 
-    let pt = NoisParser::parse_program(source)?;
-    let ast = parse_block(&pt, a_ctx_bm)?;
-    ast.map(|v| Rc::new(v.clone()))
-        .eval(ctx_bm)
-        .map(|a| a.1)
-        .map(|v| v.as_ref().clone())
+    fn _evaluate(source: &str, config: LintingConfig) -> Result<Value, Error> {
+        let ctx = &Context::stdlib(AstContext::stdlib(source.to_string(), config));
+        let ctx_cell = RefCell::new(ctx.clone());
+        let ctx_bm = &mut ctx_cell.borrow_mut();
+
+        let a_ctx_cell = RefCell::new(ctx.ast_context.clone());
+        let a_ctx_bm = &mut a_ctx_cell.borrow_mut();
+
+        let pt = NoisParser::parse_program(source)?;
+        let ast = parse_block(&pt, a_ctx_bm)?;
+        ast.map(|v| Rc::new(v.clone()))
+            .eval(ctx_bm)
+            .map(|a| a.1)
+            .map(|v| v.as_ref().clone())
+    }
 }

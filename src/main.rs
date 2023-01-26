@@ -118,7 +118,7 @@ pub fn piped_input() -> Option<String> {
 }
 
 #[cfg(test)]
-mod tests {
+mod test {
     use std::cell::{RefCell, RefMut};
     use std::collections::HashMap;
     use std::fs::read_to_string;

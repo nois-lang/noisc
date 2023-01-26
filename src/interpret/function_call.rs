@@ -105,4 +105,4 @@ pub fn function_call(
 }
 
 #[cfg(test)]
-mod tests {}
+mod test {}

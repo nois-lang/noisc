@@ -16,7 +16,7 @@ impl NoisParser {
 }
 
 #[cfg(test)]
-mod tests {
+mod test {
     use pest::parses_to;
 
     use crate::parser::*;

@@ -174,8 +174,8 @@ fn match_list_with_spread(
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::interpret::interpreter::evaluate;
+mod test {
+    use crate::interpret::interpreter::test::evaluate;
     use crate::interpret::value::Value;
 
     #[test]

@@ -450,9 +450,9 @@ impl Evaluate for AstPair<Rc<Value>> {
 }
 
 #[cfg(test)]
-mod tests {
+mod test {
     use crate::ast::value_type::ValueType;
-    use crate::interpret::interpreter::evaluate;
+    use crate::interpret::interpreter::test::evaluate;
     use crate::interpret::value::Value;
 
     #[test]

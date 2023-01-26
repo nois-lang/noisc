@@ -72,4 +72,4 @@ impl Evaluate for AstPair<Rc<FunctionInit>> {
 }
 
 #[cfg(test)]
-mod tests {}
+mod test {}

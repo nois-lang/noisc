@@ -56,7 +56,7 @@ pub fn parse_block(
     }
 }
 
-pub fn parse_statement(
+fn parse_statement(
     pair: &Pair<Rule>,
     ctx: &mut RefMut<AstContext>,
 ) -> Result<AstPair<Statement>, Error> {
@@ -91,7 +91,7 @@ pub fn parse_statement(
     }
 }
 
-pub fn parse_expression(
+fn parse_expression(
     pair: &Pair<Rule>,
     ctx: &mut RefMut<AstContext>,
 ) -> Result<AstPair<Expression>, Error> {
@@ -154,7 +154,7 @@ pub fn parse_expression(
     }
 }
 
-pub fn parse_complex_expression(
+fn parse_complex_expression(
     pair: &Pair<Rule>,
     ctx: &mut RefMut<AstContext>,
 ) -> Result<AstPair<Expression>, Error> {
@@ -236,7 +236,7 @@ pub fn parse_complex_expression(
     Ok(exp)
 }
 
-pub fn parse_unary_operator(
+fn parse_unary_operator(
     pair: &Pair<Rule>,
     ctx: &mut RefMut<AstContext>,
 ) -> Result<AstPair<UnaryOperator>, Error> {
@@ -261,7 +261,7 @@ pub fn parse_unary_operator(
     op.map(|op| AstPair::from_pair(pair, op))
 }
 
-pub fn parse_binary_operator(
+fn parse_binary_operator(
     pair: &Pair<Rule>,
     _ctx: &mut RefMut<AstContext>,
 ) -> Result<AstPair<BinaryOperator>, Error> {
@@ -296,7 +296,7 @@ pub fn parse_binary_operator(
     op.map(|op| AstPair::from_pair(pair, op))
 }
 
-pub fn parse_operand(
+fn parse_operand(
     pair: &Pair<Rule>,
     ctx: &mut RefMut<AstContext>,
 ) -> Result<AstPair<Operand>, Error> {
@@ -346,7 +346,7 @@ pub fn parse_operand(
     }
 }
 
-pub fn parse_integer(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<i128, Error> {
+fn parse_integer(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<i128, Error> {
     let num_s = pair.as_str();
     match num_s.parse::<i128>() {
         Ok(n) => Ok(n),
@@ -354,7 +354,7 @@ pub fn parse_integer(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result
     }
 }
 
-pub fn parse_float(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<f64, Error> {
+fn parse_float(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<f64, Error> {
     let num_s = pair.as_str();
     match num_s.parse::<f64>() {
         Ok(n) => Ok(n),
@@ -362,7 +362,7 @@ pub fn parse_float(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<f
     }
 }
 
-pub fn parse_boolean(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<bool, Error> {
+fn parse_boolean(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<bool, Error> {
     let bool_s = pair.as_str();
     match bool_s.to_lowercase().parse::<bool>() {
         Ok(b) => Ok(b),
@@ -373,7 +373,7 @@ pub fn parse_boolean(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result
     }
 }
 
-pub fn parse_string(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<String, Error> {
+fn parse_string(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<String, Error> {
     let raw_str = pair.as_str();
     match unquote(raw_str) {
         Ok(s) => Ok(s),
@@ -384,7 +384,7 @@ pub fn parse_string(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<
     }
 }
 
-pub fn parse_function_init(
+fn parse_function_init(
     pair: &Pair<Rule>,
     ctx: &mut RefMut<AstContext>,
 ) -> Result<AstPair<Operand>, Error> {
@@ -422,7 +422,7 @@ pub fn parse_function_init(
     Ok(AstPair::from_pair(pair, Operand::FunctionInit(fi)))
 }
 
-pub fn parse_list_init(
+fn parse_list_init(
     pair: &Pair<Rule>,
     ctx: &mut RefMut<AstContext>,
 ) -> Result<AstPair<Operand>, Error> {
@@ -430,7 +430,7 @@ pub fn parse_list_init(
     Ok(AstPair::from_pair(pair, Operand::ListInit { items }))
 }
 
-pub fn parse_struct_define(
+fn parse_struct_define(
     pair: &Pair<Rule>,
     ctx: &mut RefMut<AstContext>,
 ) -> Result<AstPair<Operand>, Error> {
@@ -441,7 +441,7 @@ pub fn parse_struct_define(
     ))
 }
 
-pub fn parse_enum_define(
+fn parse_enum_define(
     pair: &Pair<Rule>,
     ctx: &mut RefMut<AstContext>,
 ) -> Result<AstPair<Operand>, Error> {
@@ -492,10 +492,7 @@ fn parse_identifier(
     }
 }
 
-pub fn parse_value_type(
-    pair: &Pair<Rule>,
-    _ctx: &mut RefMut<AstContext>,
-) -> Result<ValueType, Error> {
+fn parse_value_type(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<ValueType, Error> {
     Ok(match pair.as_rule() {
         Rule::unit_type => ValueType::Unit,
         Rule::integer_type => ValueType::Integer,
@@ -517,7 +514,7 @@ pub fn parse_value_type(
     })
 }
 
-pub fn parse_argument_list(
+fn parse_argument_list(
     pair: &Pair<Rule>,
     ctx: &mut RefMut<AstContext>,
 ) -> Result<Vec<AstPair<Expression>>, Error> {
@@ -706,7 +703,7 @@ fn parse_pattern_list(
 }
 
 #[cfg(test)]
-mod tests {
+mod test {
     use std::cell::RefCell;
     use std::ops::Deref;
 

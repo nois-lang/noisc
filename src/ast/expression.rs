@@ -146,8 +146,8 @@ fn eval_match_expression(
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::interpret::interpreter::evaluate;
+mod test {
+    use crate::interpret::interpreter::test::evaluate;
     use crate::interpret::value::Value;
 
     #[test]

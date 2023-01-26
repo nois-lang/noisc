@@ -91,4 +91,4 @@ impl Evaluate for AstPair<Rc<Operand>> {
 }
 
 #[cfg(test)]
-mod tests {}
+mod test {}

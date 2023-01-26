@@ -89,4 +89,4 @@ impl Evaluate for AstPair<Rc<Statement>> {
 }
 
 #[cfg(test)]
-mod tests {}
+mod test {}

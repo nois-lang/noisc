@@ -33,4 +33,4 @@ impl Evaluate for AstPair<Rc<Block>> {
 }
 
 #[cfg(test)]
-mod tests {}
+mod test {}
