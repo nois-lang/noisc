@@ -196,3 +196,32 @@ fn destructure_with_spread(
         .collect();
     Ok(pairs)
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::interpret::interpreter::evaluate;
+    use crate::interpret::value::Value;
+
+    #[test]
+    fn evaluate_assignee_basic() {
+        assert_eq!(evaluate("a = 4\na"), Ok(Value::I(4)));
+        assert_eq!(evaluate("_ = 4"), Ok(Value::Unit));
+        assert_eq!(evaluate("[a, b] = [1, 2]\na"), Ok(Value::I(1)));
+        assert_eq!(evaluate("[a, b] = [1, 2]\nb"), Ok(Value::I(2)));
+        assert_eq!(evaluate("[a, b] = [1, 2, 3]\na").is_err(), true);
+        assert_eq!(evaluate("[a, _, c] = [1, 2, 3]\nc"), Ok(Value::I(3)));
+        assert_eq!(
+            evaluate("[_, [c, _]] = [[1, 2], [3, 4]]\nc"),
+            Ok(Value::I(3))
+        );
+    }
+
+    #[test]
+    fn evaluate_assignee_spread_hole() {
+        assert_eq!(evaluate("[..] = [1, 2, 3]"), Ok(Value::Unit));
+        assert_eq!(evaluate("[a, ..] = [1, 2, 3]\na"), Ok(Value::I(1)));
+        assert_eq!(evaluate("[.., a] = [1, 2, 3]\na"), Ok(Value::I(3)));
+        assert_eq!(evaluate("[_, a, ..] = [1, 2, 3]\na"), Ok(Value::I(2)));
+        assert_eq!(evaluate("[_, a, ..] = range(100)\na"), Ok(Value::I(1)));
+    }
+}

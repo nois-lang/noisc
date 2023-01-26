@@ -21,7 +21,7 @@ use crate::ast::ast_parser::parse_block;
 use crate::cli::{Cli, Commands};
 use crate::error::terminate;
 use crate::interpret::context::Context;
-use crate::interpret::interpreter::execute;
+use crate::interpret::interpreter::execute_file;
 use crate::parser::NoisParser;
 
 pub mod ast;
@@ -40,7 +40,7 @@ lazy_static! {
 fn main() {
     if let Some(source) = piped_input() {
         let (ast, a_ctx) = parse_ast(source, LintingConfig::full());
-        execute(ast, Context::stdlib(a_ctx), |_| {});
+        execute_file(ast, Context::stdlib(a_ctx), |_| {});
         return;
     }
 
@@ -72,7 +72,7 @@ fn main() {
             info!("executing command {:?}", &command);
             let source = read_source(path);
             let (ast, a_ctx) = parse_ast(source, LintingConfig::full());
-            execute(ast, Context::stdlib(a_ctx), |_| {});
+            execute_file(ast, Context::stdlib(a_ctx), |_| {});
         }
     }
 }
@@ -126,7 +126,7 @@ mod tests {
     use crate::ast::ast::{AstPair, LintingConfig};
     use crate::error::Error;
     use crate::interpret::context::{Context, Scope};
-    use crate::interpret::interpreter::execute;
+    use crate::interpret::interpreter::execute_file;
     use crate::interpret::value::Value;
     use crate::parse_ast;
     use crate::stdlib::lib::LibFunction;
@@ -163,7 +163,7 @@ mod tests {
 
         let source = read_to_string(format!("data/{name}.no")).unwrap();
         let (ast, a_ctx) = parse_ast(source, LintingConfig::full());
-        execute(ast, Context::stdlib(a_ctx), |ctx| {
+        execute_file(ast, Context::stdlib(a_ctx), |ctx| {
             ctx.scope_stack.push(take(
                 Scope::new("test".to_string())
                     .with_definitions(HashMap::from([TestPrintln::definition()])),

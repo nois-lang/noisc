@@ -168,3 +168,22 @@ fn match_list_with_spread(
         .collect::<Option<Vec<_>>>()
         .map(|l| l.into_iter().flatten().collect()))
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::interpret::interpreter::evaluate;
+    use crate::interpret::value::Value;
+
+    #[test]
+    fn evaluate_match_spread_hole() {
+        assert_eq!(evaluate("match [1, 2, 3] { [..] => 5 }"), Ok(Value::I(5)));
+        assert_eq!(
+            evaluate("match [1, 2, 3] { [a, ..] => a }"),
+            Ok(Value::I(1))
+        );
+        assert_eq!(
+            evaluate("match range(100) { [_, .., a] => a }"),
+            Ok(Value::I(99))
+        );
+    }
+}

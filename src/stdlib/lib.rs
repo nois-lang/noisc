@@ -90,7 +90,6 @@ pub fn arg_values(args: &[AstPair<Rc<Value>>]) -> Vec<&Value> {
     args.iter().map(|a| a.1.as_ref()).collect::<Vec<_>>()
 }
 
-// TODO: support for method references
 pub fn run_closure(
     closure: &AstPair<Rc<Value>>,
     arguments: Option<Rc<Vec<AstPair<Rc<Value>>>>>,
