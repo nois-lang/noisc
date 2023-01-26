@@ -46,67 +46,80 @@ impl Evaluate for AstPair<Rc<Expression>> {
                 left_operand,
                 operator,
                 right_operand,
-            } => {
-                if operator.1 == BinaryOperator::Accessor {
-                    let l = left_operand.deref().map(|v| Rc::new(v.clone())).eval(ctx)?;
-                    ctx.scope_stack.last_mut().unwrap().method_callee = Some(l);
-                    right_operand.deref().map(|v| Rc::new(v.clone())).eval(ctx)
-                } else {
-                    let fc = FunctionCall::new_by_name(
-                        operator.deref().0,
-                        operator.1.to_string().as_str(),
-                        vec![left_operand, right_operand]
-                            .into_iter()
-                            .map(|p| p.deref().map(|v| Rc::new(v.clone())))
-                            .collect(),
-                    );
-                    let a = self.with(fc);
-                    function_call(&a, ctx, FunctionCallType::Function)
-                }
+            } => eval_binary_expression(&self, left_operand, operator, right_operand, ctx),
+            Expression::MatchExpression { .. } => eval_match_expression(&self, ctx),
+        }
+    }
+}
+
+fn eval_binary_expression(
+    pair: &AstPair<Rc<Expression>>,
+    left_operand: &AstPair<Expression>,
+    operator: &AstPair<BinaryOperator>,
+    right_operand: &AstPair<Expression>,
+    ctx: &mut RefMut<Context>,
+) -> Result<AstPair<Rc<Value>>, Error> {
+    if operator.1 == BinaryOperator::Accessor {
+        let l = left_operand.deref().map(|v| Rc::new(v.clone())).eval(ctx)?;
+        ctx.scope_stack.last_mut().unwrap().method_callee = Some(l);
+        right_operand.deref().map(|v| Rc::new(v.clone())).eval(ctx)
+    } else {
+        let fc = FunctionCall::new_by_name(
+            operator.deref().0,
+            operator.1.to_string().as_str(),
+            vec![left_operand, right_operand]
+                .into_iter()
+                .map(|p| p.deref().map(|v| Rc::new(v.clone())))
+                .collect(),
+        );
+        let a = pair.with(fc);
+        function_call(&a, ctx, FunctionCallType::Function)
+    }
+}
+
+fn eval_match_expression(
+    pair: &AstPair<Rc<Expression>>,
+    ctx: &mut RefMut<Context>,
+) -> Result<AstPair<Rc<Value>>, Error> {
+    let p_match = match_expression(pair, ctx)?;
+    match p_match {
+        Some((clause, pm)) => {
+            ctx.scope_stack.push(take(
+                Scope::new("<match_predicate>".to_string())
+                    .with_definitions(pm.into_iter().collect())
+                    .with_callee(Some(clause.0)),
+            ));
+            debug!("push scope {:?}", &ctx.scope_stack.last().unwrap());
+
+            let res = clause.1.block.map(|v| Rc::new(v.clone())).eval(ctx);
+            let rv: Option<Rc<Value>> = ctx
+                .scope_stack
+                .last()
+                .unwrap()
+                .return_value
+                .as_ref()
+                .map(Rc::clone);
+
+            debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
+            ctx.scope_stack.pop();
+
+            if let Some(v) = rv {
+                debug!("propagating return from match clause, value: {:?}", v);
+                ctx.scope_stack.last_mut().unwrap().return_value = Some(v);
             }
-            Expression::MatchExpression { .. } => {
-                let p_match = match_expression(&self, ctx)?;
-                match p_match {
-                    Some((clause, pm)) => {
-                        ctx.scope_stack.push(take(
-                            Scope::new("<match_predicate>".to_string())
-                                .with_definitions(pm.into_iter().collect())
-                                .with_callee(Some(clause.0)),
-                        ));
-                        debug!("push scope {:?}", &ctx.scope_stack.last().unwrap());
 
-                        let res = clause.1.block.map(|v| Rc::new(v.clone())).eval(ctx);
-                        let rv: Option<Rc<Value>> = ctx
-                            .scope_stack
-                            .last()
-                            .unwrap()
-                            .return_value
-                            .as_ref()
-                            .map(Rc::clone);
-
-                        debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
-                        ctx.scope_stack.pop();
-
-                        if let Some(v) = rv {
-                            debug!("propagating return from match clause, value: {:?}", v);
-                            ctx.scope_stack.last_mut().unwrap().return_value = Some(v);
-                        }
-
-                        res.map_err(|e| {
-                            Error::new_cause(
-                                e,
-                                "<match clause>".to_string(),
-                                &clause.1.block.0,
-                                &ctx.ast_context,
-                            )
-                        })
-                    }
-                    None => {
-                        debug!("no matches in match expression {:?}", &self);
-                        Ok(self.with(Rc::new(Value::Unit)))
-                    }
-                }
-            }
+            res.map_err(|e| {
+                Error::new_cause(
+                    e,
+                    "<match clause>".to_string(),
+                    &clause.1.block.0,
+                    &ctx.ast_context,
+                )
+            })
+        }
+        None => {
+            debug!("no matches in match expression {:?}", &pair);
+            Ok(pair.with(Rc::new(Value::Unit)))
         }
     }
 }
