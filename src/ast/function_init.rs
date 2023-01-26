@@ -58,7 +58,7 @@ impl Evaluate for AstPair<Rc<FunctionInit>> {
                     .cloned()
                     .map(|i| {
                         let def = ctx.find_definition(&i).unwrap_or_else(|| {
-                            panic!("identifier {} not found: (required for closure)", i)
+                            panic!("identifier {i} not found: (required for closure)")
                         });
                         Ok((i, def.clone()))
                     })

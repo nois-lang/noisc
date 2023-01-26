@@ -75,7 +75,7 @@ pub struct Span {
 impl Span {
     pub fn as_span<'a>(&self, ctx: &'a AstContext) -> pest::Span<'a> {
         pest::Span::new(&ctx.input, self.start, self.end)
-            .unwrap_or_else(|| panic!("failed to convert {:?}", self))
+            .unwrap_or_else(|| panic!("failed to convert {self:?}"))
     }
 }
 

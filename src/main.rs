@@ -60,7 +60,7 @@ fn main() {
             info!("executing command {:?}", &command);
             let source = read_source(path);
             let (ast, _) = parse_ast(source, LintingConfig::full());
-            println!("{:#?}", ast);
+            println!("{ast:#?}");
         }
         Commands::Run {
             source: path,
@@ -100,7 +100,7 @@ pub fn read_source(path: &String) -> String {
         .and_then(|p| read_to_string(p).map_err(|e| e.to_string()));
     match source {
         Ok(s) => s,
-        Err(e) => terminate(format!("unable to read file {}: {}", path, e)),
+        Err(e) => terminate(format!("unable to read file {path}: {e}")),
     }
 }
 

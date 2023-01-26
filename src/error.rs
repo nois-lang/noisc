@@ -89,7 +89,7 @@ impl Iterator for Error {
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::Error(e) => write!(f, "{}", e),
+            Error::Error(e) => write!(f, "{e}"),
             Error::Cause {
                 error,
                 location,

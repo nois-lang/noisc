@@ -167,7 +167,7 @@ impl Value {
 
 impl Hash for Value {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        format!("{:?}", self).hash(state);
+        format!("{self:?}").hash(state);
     }
 }
 

@@ -1,8 +1,8 @@
-use crate::ast::ast_pair::{AstPair, Span};
 use std::cell::RefMut;
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use crate::ast::ast_pair::{AstPair, Span};
 use crate::error::Error;
 use crate::interpret::context::Context;
 use crate::interpret::value::Value;
@@ -342,17 +342,14 @@ pub fn from_relative_index(i: i128, len: usize) -> Result<usize, String> {
         if i < len as i128 {
             Ok(i as usize)
         } else {
-            Err(format!("index out of bounds: {}, size is {}", i, len))
+            Err(format!("index out of bounds: {i}, size is {len}"))
         }
     } else {
         let ni = (len as i128) + i;
         if ni >= 0 {
             Ok(ni as usize)
         } else {
-            Err(format!(
-                "negative index out of bounds: {}, size is {}",
-                ni, len
-            ))
+            Err(format!("negative index out of bounds: {ni}, size is {len}"))
         }
     }
 }

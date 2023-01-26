@@ -82,7 +82,7 @@ pub fn function_call(
             None => Err(Error::from_span(
                 &function_call.0,
                 &ctx.ast_context,
-                format!("{} '{}' not found", call_type, name),
+                format!("{call_type} '{name}' not found"),
             )),
         }
     } else {
@@ -91,7 +91,7 @@ pub fn function_call(
             return Err(Error::from_span(
                 &function_call.0,
                 &ctx.ast_context,
-                format!("expression not callable: {}", callee_rc),
+                format!("expression not callable: {callee_rc}"),
             ));
         }
         function_call.with(callee_rc).eval(ctx)

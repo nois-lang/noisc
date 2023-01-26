@@ -55,7 +55,7 @@ where
 
     let (main_id, main) = match ctx_bm.find_definition(&identifier).cloned() {
         Some(Definition::User(id, exp)) => (id, exp),
-        _ => terminate(format!("'{}' not found", identifier)),
+        _ => terminate(format!("'{identifier}' not found")),
     };
     let mut a = ctx_bm.scope_stack.last_mut().unwrap();
     a.callee = Some(main_id.0);

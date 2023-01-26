@@ -250,7 +250,7 @@ fn parse_unary_operator(
             Rule::argument_list => Ok(UnaryOperator::ArgumentList(parse_argument_list(&c, ctx)?)),
             r => Err(Error::from_pair(
                 pair,
-                format!("expected unary operator, found {:?}", r),
+                format!("expected unary operator, found {r:?}"),
             )),
         },
         _ => Err(Error::from_pair(
@@ -285,7 +285,7 @@ fn parse_binary_operator(
             Rule::OR_OP => Ok(BinaryOperator::Or),
             r => Err(Error::from_pair(
                 pair,
-                format!("expected binary operator, found {:?}", r),
+                format!("expected binary operator, found {r:?}"),
             )),
         },
         _ => Err(Error::from_pair(
