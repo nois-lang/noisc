@@ -1,16 +1,14 @@
-use crate::ast::ast_context::AstContext;
-use crate::ast::ast_pair::{AstPair, Span};
-use crate::ast::expression::Expression;
-use crate::ast::identifier::Identifier;
-use crate::ast::statement::Statement;
 use std::cell::RefMut;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::mem::take;
 use std::rc::Rc;
 
+use crate::ast::ast_context::AstContext;
+use crate::ast::ast_pair::{AstPair, Span};
+use crate::ast::identifier::Identifier;
 use crate::error::Error;
-use crate::interpret::destructure::{assign_definitions, AssignmentResult};
+use crate::interpret::definition::Definition;
 use crate::interpret::value::Value;
 use crate::stdlib::lib::stdlib;
 
@@ -104,29 +102,5 @@ pub struct SysFunction(
 impl Debug for SysFunction {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "<system function>")
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum Definition {
-    User(AstPair<Identifier>, AstPair<Rc<Expression>>),
-    System(SysFunction),
-    Value(AstPair<Rc<Value>>),
-}
-
-impl Statement {
-    pub fn as_definitions(&self, ctx: &mut RefMut<Context>) -> Result<AssignmentResult, Error> {
-        match self {
-            Statement::Assignment {
-                assignee,
-                expression,
-            } => assign_definitions(
-                assignee,
-                expression.map(|v| Rc::new(v.clone())),
-                ctx,
-                Definition::User,
-            ),
-            _ => Ok(AssignmentResult::default()),
-        }
     }
 }

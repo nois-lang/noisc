@@ -8,7 +8,8 @@ use crate::ast::identifier::Identifier;
 use log::debug;
 
 use crate::error::Error;
-use crate::interpret::context::{Context, Definition, Scope, SysFunction};
+use crate::interpret::context::{Context, Scope, SysFunction};
+use crate::interpret::definition::Definition;
 use crate::interpret::evaluate::Evaluate;
 use crate::interpret::value::Value;
 use crate::stdlib::*;

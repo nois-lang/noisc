@@ -3,14 +3,15 @@ use std::iter::zip;
 use std::ops::Deref;
 use std::rc::Rc;
 
+use log::debug;
+
 use crate::ast::ast_pair::AstPair;
 use crate::ast::expression::Expression;
 use crate::ast::identifier::Identifier;
 use crate::ast::matcher::{MatchClause, PatternItem};
-use log::debug;
-
 use crate::error::Error;
-use crate::interpret::context::{Context, Definition};
+use crate::interpret::context::Context;
+use crate::interpret::definition::Definition;
 use crate::interpret::evaluate::Evaluate;
 use crate::interpret::value::Value;
 

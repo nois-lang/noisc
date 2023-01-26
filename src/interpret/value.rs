@@ -1,3 +1,5 @@
+use log::debug;
+use std::cell::RefMut;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
@@ -11,9 +13,12 @@ use crate::ast::identifier::Identifier;
 use crate::ast::matcher::PatternItem;
 use crate::ast::unary_operator::UnaryOperator;
 use crate::ast::value_type::ValueType;
+use crate::error::Error;
 use num::NumCast;
 
-use crate::interpret::context::{Definition, SysFunction};
+use crate::interpret::context::{Context, SysFunction};
+use crate::interpret::definition::Definition;
+use crate::interpret::evaluate::Evaluate;
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -198,6 +203,25 @@ impl PartialEq for Value {
 
 impl Eq for Value {}
 
+impl PartialOrd for Value {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        fn _cmp(a: &Value, b: &Value) -> Option<Ordering> {
+            match (a, b) {
+                (Value::I(i1), Value::I(i2)) => i1.partial_cmp(i2),
+                (Value::F(f1), Value::F(f2)) => f1.partial_cmp(f2),
+                (Value::I(i1), Value::F(f2)) => (*i1 as f64).partial_cmp(f2),
+                (Value::C(c1), Value::C(c2)) => c1.partial_cmp(c2),
+                (Value::B(b1), Value::B(b2)) => b1.partial_cmp(b2),
+                (Value::List { items: l1, .. }, Value::List { items: l2, .. }) => {
+                    l1.as_ref().partial_cmp(l2.as_ref())
+                }
+                _ => None,
+            }
+        }
+        _cmp(self, other).or_else(|| _cmp(other, self))
+    }
+}
+
 impl Display for Value {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match &self {
@@ -376,25 +400,6 @@ impl ops::Neg for &Value {
     }
 }
 
-impl PartialOrd for Value {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        fn _cmp(a: &Value, b: &Value) -> Option<Ordering> {
-            match (a, b) {
-                (Value::I(i1), Value::I(i2)) => i1.partial_cmp(i2),
-                (Value::F(f1), Value::F(f2)) => f1.partial_cmp(f2),
-                (Value::I(i1), Value::F(f2)) => (*i1 as f64).partial_cmp(f2),
-                (Value::C(c1), Value::C(c2)) => c1.partial_cmp(c2),
-                (Value::B(b1), Value::B(b2)) => b1.partial_cmp(b2),
-                (Value::List { items: l1, .. }, Value::List { items: l2, .. }) => {
-                    l1.as_ref().partial_cmp(l2.as_ref())
-                }
-                _ => None,
-            }
-        }
-        _cmp(self, other).or_else(|| _cmp(other, self))
-    }
-}
-
 impl ops::Not for &Value {
     type Output = Result<Value, String>;
 
@@ -403,5 +408,155 @@ impl ops::Not for &Value {
             Value::B(b) => Ok(Value::B(!*b)),
             op => Err(format!("incompatible operands: !{}", op.value_type())),
         }
+    }
+}
+
+impl Evaluate for AstPair<Rc<Value>> {
+    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Rc<Value>>, Error> {
+        debug!("eval value {:?}", &self);
+        if let Some(args) = ctx
+            .scope_stack
+            .last()
+            .unwrap()
+            .arguments
+            .as_ref()
+            .map(Rc::clone)
+        {
+            match self.1.as_ref() {
+                Value::Fn(f) => {
+                    debug!("eval function {:?}", f);
+                    self.with(Rc::clone(f)).eval(ctx)
+                }
+                Value::Closure(f, defs) => {
+                    debug!("eval closure {:?}", f);
+                    debug!("extending scope with captured definitions: {:?}", defs);
+                    ctx.scope_stack
+                        .last_mut()
+                        .unwrap()
+                        .definitions
+                        .extend(defs.clone());
+                    self.with(Rc::clone(f)).eval(ctx)
+                }
+                Value::System(sf) => {
+                    debug!("eval system function");
+                    sf.0(args.as_ref(), ctx).map(|a| a.map(|v| Rc::new(v.clone())))
+                }
+                _ => Ok(self),
+            }
+        } else {
+            Ok(self)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::ast::value_type::ValueType;
+    use crate::interpret::interpreter::evaluate;
+    use crate::interpret::value::Value;
+
+    #[test]
+    fn evaluate_literals() {
+        assert_eq!(evaluate(""), Ok(Value::Unit));
+        assert_eq!(evaluate("4"), Ok(Value::I(4)));
+        assert_eq!(evaluate("4.56"), Ok(Value::F(4.56)));
+        assert_eq!(evaluate("1e12"), Ok(Value::F(1e12)));
+        assert_eq!(evaluate("'a'").map(|r| r.to_string()), Ok("a".to_string()));
+        assert_eq!(evaluate("[]"), Ok(Value::list(vec![])));
+        assert_eq!(
+            evaluate("[1, 2]"),
+            Ok(Value::list(vec![Value::I(1), Value::I(2)]))
+        );
+        assert_eq!(
+            evaluate("'ab'"),
+            Ok(Value::list(vec![Value::C('a'), Value::C('b')]))
+        );
+        assert_eq!(
+            evaluate("[1, 'b']"),
+            Ok(Value::list(vec![
+                Value::I(1),
+                Value::list(vec![Value::C('b')]),
+            ]))
+        );
+        assert!(matches!(evaluate("a -> a"), Ok(Value::Fn(..))));
+        assert_eq!(
+            evaluate("[C]"),
+            Ok(Value::list(vec![Value::Type(ValueType::Char)]))
+        );
+    }
+
+    #[test]
+    fn evaluate_value_equality() {
+        assert_eq!(evaluate("1 == 1"), Ok(Value::B(true)));
+        assert_eq!(evaluate("'foo' == 'foo'"), Ok(Value::B(true)));
+        assert_eq!(evaluate("'' == ''"), Ok(Value::B(true)));
+        assert_eq!(evaluate("[] == ''"), Ok(Value::B(true)));
+        assert_eq!(evaluate("[] == []"), Ok(Value::B(true)));
+        assert_eq!(evaluate("() == ()"), Ok(Value::B(true)));
+        assert_eq!(evaluate("f = a -> {}\n f == f"), Ok(Value::B(true)));
+
+        assert_eq!(evaluate("(a -> {}) == (a -> {})"), Ok(Value::B(false)));
+        assert_eq!(evaluate("1 == 2"), Ok(Value::B(false)));
+        assert_eq!(evaluate("1 == '1'"), Ok(Value::B(false)));
+        assert_eq!(evaluate("1 == [1]"), Ok(Value::B(false)));
+    }
+
+    #[test]
+    fn evaluate_value_type() {
+        assert_eq!(evaluate("type(1)"), Ok(Value::Type(ValueType::Integer)));
+        assert_eq!(evaluate("type(1.5)"), Ok(Value::Type(ValueType::Float)));
+        assert_eq!(evaluate("type(True)"), Ok(Value::Type(ValueType::Boolean)));
+        assert_eq!(
+            evaluate("type([])"),
+            Ok(Value::list(vec![Value::Type(ValueType::Any)]))
+        );
+        assert_eq!(
+            evaluate("type('')"),
+            Ok(Value::list(vec![Value::Type(ValueType::Any)]))
+        );
+        assert_eq!(
+            evaluate("type('abc')"),
+            Ok(Value::list(vec![Value::Type(ValueType::Char)]))
+        );
+        assert_eq!(evaluate("type(-> 1)"), Ok(Value::Type(ValueType::Function)));
+        assert_eq!(
+            evaluate("type([1, 2, 3])"),
+            Ok(Value::list(vec![Value::Type(ValueType::Integer)]))
+        );
+        assert_eq!(
+            evaluate("type([1, 'abc', 1.5])"),
+            Ok(Value::list(vec![
+                Value::Type(ValueType::Integer),
+                Value::list(vec![Value::Type(ValueType::Char)]),
+                Value::Type(ValueType::Float),
+            ],))
+        );
+        assert_eq!(evaluate("type(C)"), Ok(Value::Type(ValueType::Type)));
+        assert_eq!(
+            evaluate("type(['abc'])"),
+            Ok(Value::list(vec![Value::list(vec![Value::Type(
+                ValueType::Char
+            )])]))
+        );
+    }
+
+    #[test]
+    fn evaluate_value_type_equality() {
+        assert_eq!(evaluate("type(1) == I"), Ok(Value::B(true)));
+        assert_eq!(evaluate("type([]) == [*]"), Ok(Value::B(true)));
+        assert_eq!(evaluate("type('') == [*]"), Ok(Value::B(true)));
+        assert_eq!(evaluate("type('a') == [C]"), Ok(Value::B(true)));
+        assert_eq!(evaluate("type(['a']) == [[C]]"), Ok(Value::B(true)));
+        assert_eq!(evaluate("type([[]]) == [[*]]"), Ok(Value::B(true)));
+        assert_eq!(evaluate("* == ()"), Ok(Value::B(true)));
+        assert_eq!(evaluate("I == *"), Ok(Value::B(true)));
+        assert_eq!(evaluate("[I] == *"), Ok(Value::B(true)));
+        assert_eq!(evaluate("[I] == [*]"), Ok(Value::B(true)));
+
+        assert_eq!(evaluate("type(1) == C"), Ok(Value::B(false)));
+        assert_eq!(evaluate("type('a') == [I]"), Ok(Value::B(false)));
+        assert_eq!(evaluate("type(['a']) == [C]"), Ok(Value::B(false)));
+        assert_eq!(evaluate("[C] == [[*]]"), Ok(Value::B(false)));
+        assert_eq!(evaluate("I == [*]"), Ok(Value::B(false)));
     }
 }

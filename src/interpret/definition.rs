@@ -1,13 +1,22 @@
 use std::cell::RefMut;
 use std::rc::Rc;
 
-use crate::ast::ast_pair::AstPair;
 use log::debug;
 
+use crate::ast::ast_pair::AstPair;
+use crate::ast::expression::Expression;
+use crate::ast::identifier::Identifier;
 use crate::error::Error;
-use crate::interpret::context::{Context, Definition};
+use crate::interpret::context::{Context, SysFunction};
 use crate::interpret::evaluate::Evaluate;
 use crate::interpret::value::Value;
+
+#[derive(Debug, Clone)]
+pub enum Definition {
+    User(AstPair<Identifier>, AstPair<Rc<Expression>>),
+    System(SysFunction),
+    Value(AstPair<Rc<Value>>),
+}
 
 impl Evaluate for Definition {
     fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Rc<Value>>, Error> {
