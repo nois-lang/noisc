@@ -4,6 +4,9 @@ on:
   - push
   - pull_request
 
+env:
+  RUSTFLAGS: "-Dwarnings"
+
 jobs:
   build:
 
@@ -14,6 +17,9 @@ jobs:
 
       - name: Install Cargo
         run: sudo apt install cargo
+
+      - name: Clippy
+        run: cargo clippy -- -A clippy::type_complexity -A clippy::module_inception
 
       - name: Test
         run: cargo test --verbose
