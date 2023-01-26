@@ -26,6 +26,10 @@ pub enum Value {
 }
 
 impl Value {
+    pub fn is_callable(&self) -> bool {
+        matches!(self, Value::Closure(..) | Value::Fn(..) | Value::System(..))
+    }
+
     pub fn value_type(&self) -> Value {
         let vt = match self {
             Value::Unit => ValueType::Unit,

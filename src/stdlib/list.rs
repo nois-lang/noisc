@@ -129,7 +129,7 @@ impl LibFunction for Map {
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let list = match arg_values(args)[..] {
-            [Value::List { items: l, .. }, Value::Closure(..) | Value::Fn(..)] => l,
+            [Value::List { items: l, .. }, f] if f.is_callable() => l,
             _ => return Err(arg_error("([*], (*, I) -> *))", args, ctx)),
         };
         let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee;
@@ -174,7 +174,7 @@ impl LibFunction for Filter {
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let list = match arg_values(args)[..] {
-            [Value::List { items: l, .. }, Value::Closure(..) | Value::Fn(..)] => l,
+            [Value::List { items: l, .. }, f] if f.is_callable() => l,
             _ => return Err(arg_error("([*], (*, I) -> B)", args, ctx)),
         };
         let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee;
@@ -225,7 +225,7 @@ impl LibFunction for Reduce {
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let (list, start) = match arg_values(args)[..] {
-            [Value::List { items: l, .. }, s, Value::Closure(..) | Value::Fn(..)] => (l, s),
+            [Value::List { items: l, .. }, s, f] if f.is_callable() => (l, s),
             _ => return Err(arg_error("([a], b, (b, a, I) -> b)", args, ctx)),
         };
         let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee;
