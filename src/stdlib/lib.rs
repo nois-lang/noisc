@@ -1,12 +1,13 @@
 use std::cell::RefMut;
 use std::collections::HashMap;
+use std::mem::take;
 use std::rc::Rc;
 
 use log::debug;
 
-use crate::ast::ast::{AstPair, Identifier};
+use crate::ast::ast::{AstPair, Identifier, Span};
 use crate::error::Error;
-use crate::interpret::context::{Context, Definition, SysFunction};
+use crate::interpret::context::{Context, Definition, Scope, SysFunction};
 use crate::interpret::evaluate::Evaluate;
 use crate::interpret::value::Value;
 use crate::stdlib::*;
@@ -87,4 +88,26 @@ pub fn arg_error(
 
 pub fn arg_values(args: &[AstPair<Rc<Value>>]) -> Vec<&Value> {
     args.iter().map(|a| a.1.as_ref()).collect::<Vec<_>>()
+}
+
+// TODO: support for method references
+pub fn run_closure(
+    closure: &AstPair<Rc<Value>>,
+    arguments: Option<Rc<Vec<AstPair<Rc<Value>>>>>,
+    callee: Option<Span>,
+    ctx: &mut RefMut<Context>,
+) -> Result<AstPair<Rc<Value>>, Error> {
+    ctx.scope_stack.push(take(
+        Scope::new("<closure>".to_string())
+            .with_callee(callee)
+            .with_arguments(arguments),
+    ));
+    debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
+
+    let next = closure.map(Rc::clone).eval(ctx);
+
+    debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
+    ctx.scope_stack.pop();
+
+    next
 }

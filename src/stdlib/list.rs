@@ -1,16 +1,12 @@
 use std::cell::RefMut;
 use std::collections::HashMap;
-use std::mem::take;
 use std::rc::Rc;
-
-use log::debug;
 
 use crate::ast::ast::{AstPair, Span};
 use crate::error::Error;
-use crate::interpret::context::{Context, Scope};
-use crate::interpret::evaluate::Evaluate;
+use crate::interpret::context::Context;
 use crate::interpret::value::Value;
-use crate::stdlib::lib::{arg_error, arg_values, LibFunction, Package};
+use crate::stdlib::lib::{arg_error, arg_values, run_closure, LibFunction, Package};
 
 pub fn package() -> Package {
     Package {
@@ -62,6 +58,7 @@ impl LibFunction for Spread {
     }
 }
 
+// TODO: backwards range (same as slice())
 /// Generate a list of integers in specified range
 ///
 ///     range(I, I) -> [I]    from inclusive, to exclusive
@@ -107,7 +104,7 @@ impl LibFunction for Len {
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let l = match arg_values(args)[..] {
-            [Value::List { items: l, .. }] => l.clone(),
+            [Value::List { items: l, .. }] => l,
             _ => return Err(arg_error("([*])", args, ctx)),
         };
         Ok(Value::I(l.len() as i128))
@@ -132,7 +129,7 @@ impl LibFunction for Map {
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let list = match arg_values(args)[..] {
-            [Value::List { items: l, .. }, Value::Closure(..) | Value::Fn(..)] => l.clone(),
+            [Value::List { items: l, .. }, Value::Closure(..) | Value::Fn(..)] => l,
             _ => return Err(arg_error("([*], (*, I) -> *))", args, ctx)),
         };
         let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee;
@@ -141,21 +138,15 @@ impl LibFunction for Map {
             .iter()
             .enumerate()
             .map(|(i, li)| {
-                // TODO: refactor to a common method of calling a closure from sys function
-                ctx.scope_stack.push(take(
-                    Scope::new("<closure>".to_string())
-                        .with_callee(callee)
-                        .with_arguments(Some(Rc::new(vec![
-                            args[0].with(Rc::new(li.clone())),
-                            args[1].with(Rc::new(Value::I(i as i128))),
-                        ]))),
-                ));
-                debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
-
-                let next = args[1].map(Rc::clone).eval(ctx)?;
-
-                debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
-                ctx.scope_stack.pop();
+                let next = run_closure(
+                    &args[1],
+                    Some(Rc::new(vec![
+                        args[0].with(Rc::new(li.clone())),
+                        args[1].with(Rc::new(Value::I(i as i128))),
+                    ])),
+                    callee,
+                    ctx,
+                )?;
 
                 Ok(next.1.as_ref().clone())
             })
@@ -183,7 +174,7 @@ impl LibFunction for Filter {
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let list = match arg_values(args)[..] {
-            [Value::List { items: l, .. }, Value::Closure(..) | Value::Fn(..)] => l.clone(),
+            [Value::List { items: l, .. }, Value::Closure(..) | Value::Fn(..)] => l,
             _ => return Err(arg_error("([*], (*, I) -> B)", args, ctx)),
         };
         let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee;
@@ -192,20 +183,15 @@ impl LibFunction for Filter {
             .iter()
             .enumerate()
             .map(|(i, li)| {
-                ctx.scope_stack.push(take(
-                    Scope::new("<closure>".to_string())
-                        .with_callee(callee)
-                        .with_arguments(Some(Rc::new(vec![
-                            args[0].with(Rc::new(li.clone())),
-                            args[1].with(Rc::new(Value::I(i as i128))),
-                        ]))),
-                ));
-                debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
-
-                let next = args[1].map(Rc::clone).eval(ctx)?;
-
-                debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
-                ctx.scope_stack.pop();
+                let next = run_closure(
+                    &args[1],
+                    Some(Rc::new(vec![
+                        args[0].with(Rc::new(li.clone())),
+                        args[1].with(Rc::new(Value::I(i as i128))),
+                    ])),
+                    callee,
+                    ctx,
+                )?;
 
                 let b = match next.1.as_ref() {
                     Value::B(b) => Ok(b),
@@ -239,9 +225,7 @@ impl LibFunction for Reduce {
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let (list, start) = match arg_values(args)[..] {
-            [Value::List { items: l, .. }, s, Value::Closure(..) | Value::Fn(..)] => {
-                (Rc::clone(l), s)
-            }
+            [Value::List { items: l, .. }, s, Value::Closure(..) | Value::Fn(..)] => (l, s),
             _ => return Err(arg_error("([a], b, (b, a, I) -> b)", args, ctx)),
         };
         let callee: Option<Span> = ctx.scope_stack.last().unwrap().callee;
@@ -252,21 +236,16 @@ impl LibFunction for Reduce {
         list.iter()
             .enumerate()
             .map(|(i, li)| {
-                ctx.scope_stack.push(take(
-                    Scope::new("<closure>".to_string())
-                        .with_callee(callee)
-                        .with_arguments(Some(Rc::new(vec![
-                            args[2].with(Rc::new(acc.clone())),
-                            args[0].with(Rc::new(li.clone())),
-                            args[2].with(Rc::new(Value::I(i as i128))),
-                        ]))),
-                ));
-                debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
-
-                let next = args[2].map(Rc::clone).eval(ctx)?;
-
-                debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
-                ctx.scope_stack.pop();
+                let next = run_closure(
+                    &args[2],
+                    Some(Rc::new(vec![
+                        args[2].with(Rc::new(acc.clone())),
+                        args[0].with(Rc::new(li.clone())),
+                        args[2].with(Rc::new(Value::I(i as i128))),
+                    ])),
+                    callee,
+                    ctx,
+                )?;
 
                 acc = next.1.as_ref().clone();
                 Ok(acc.clone())
@@ -299,7 +278,7 @@ impl LibFunction for At {
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let (list, i) = match arg_values(args)[..] {
-            [Value::List { items: l, .. }, Value::I(i)] => (Rc::clone(l), *i),
+            [Value::List { items: l, .. }, Value::I(i)] => (l, *i),
             _ => return Err(arg_error("([*], I)", args, ctx)),
         };
 
@@ -336,7 +315,7 @@ impl LibFunction for Slice {
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
         let (list, from, to) = match arg_values(args)[..] {
-            [Value::List { items: l, .. }, Value::I(f), Value::I(t)] => (l.clone(), *f, *t),
+            [Value::List { items: l, .. }, Value::I(f), Value::I(t)] => (l, *f, *t),
             _ => return Err(arg_error("([*], I, I)", args, ctx)),
         };
 
