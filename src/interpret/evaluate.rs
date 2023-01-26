@@ -434,7 +434,6 @@ impl Evaluate for AstPair<Rc<Value>> {
                     self.with(Rc::clone(f)).eval(ctx)
                 }
                 Value::System(sf) => {
-                    // TODO: store sys function name
                     debug!("eval system function");
                     sf.0(args.as_ref(), ctx).map(|a| a.map(|v| Rc::new(v.clone())))
                 }

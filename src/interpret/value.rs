@@ -371,14 +371,18 @@ impl ops::Neg for &Value {
     }
 }
 
-impl PartialOrd for &Value {
+impl PartialOrd for Value {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         fn _cmp(a: &Value, b: &Value) -> Option<Ordering> {
             match (a, b) {
                 (Value::I(i1), Value::I(i2)) => i1.partial_cmp(i2),
                 (Value::F(f1), Value::F(f2)) => f1.partial_cmp(f2),
                 (Value::I(i1), Value::F(f2)) => (*i1 as f64).partial_cmp(f2),
-                // TODO: other cases
+                (Value::C(c1), Value::C(c2)) => c1.partial_cmp(c2),
+                (Value::B(b1), Value::B(b2)) => b1.partial_cmp(b2),
+                (Value::List { items: l1, .. }, Value::List { items: l2, .. }) => {
+                    l1.as_ref().partial_cmp(l2.as_ref())
+                }
                 _ => None,
             }
         }

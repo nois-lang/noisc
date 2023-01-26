@@ -23,6 +23,7 @@ pub fn package() -> Package {
             Join::definition(),
             Flat::definition(),
             Reverse::definition(),
+            Sort::definition(),
         ]),
     }
 }
@@ -417,5 +418,43 @@ impl LibFunction for Reverse {
         };
 
         Ok(Value::list(l.iter().rev().cloned().collect()))
+    }
+}
+
+pub struct Sort;
+
+impl LibFunction for Sort {
+    fn name() -> String {
+        "sort".to_string()
+    }
+
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+        let mut l = match arg_values(args)[..] {
+            [Value::List { items: is, .. }] => is.as_ref().clone(),
+            _ => return Err(arg_error("([*])", args, ctx)),
+        };
+
+        let err = l
+            .windows(2)
+            .map(|is| {
+                is[0].partial_cmp(&is[1]).ok_or_else(|| {
+                    Error::from_callee(
+                        ctx,
+                        format!(
+                            "values are not comparable: {}, {}",
+                            is[0].value_type(),
+                            is[1].value_type()
+                        ),
+                    )
+                })
+            })
+            .find(Result::is_err);
+        if let Some(Err(e)) = err {
+            return Err(e);
+        }
+
+        l.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+        Ok(Value::list(l))
     }
 }
