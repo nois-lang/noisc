@@ -5,7 +5,11 @@ use std::rc::Rc;
 
 use log::debug;
 
-use crate::ast::ast::{AstPair, BinaryOperator, Expression, FunctionCall, UnaryOperator};
+use crate::ast::ast_pair::AstPair;
+use crate::ast::binary_operator::BinaryOperator;
+use crate::ast::expression::Expression;
+use crate::ast::function_call::FunctionCall;
+use crate::ast::unary_operator::UnaryOperator;
 use crate::error::Error;
 use crate::interpret::context::{Context, Scope};
 use crate::interpret::evaluate::function_call::{function_call, FunctionCallType};

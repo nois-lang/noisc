@@ -5,8 +5,11 @@ use std::rc::Rc;
 
 use log::debug;
 
-use crate::ast::ast::{AstContext, AstPair, AstScope, Block, Identifier, LintingConfig};
+use crate::ast::ast_context::{AstContext, AstScope, LintingConfig};
+use crate::ast::ast_pair::AstPair;
 use crate::ast::ast_parser::parse_block;
+use crate::ast::block::Block;
+use crate::ast::identifier::Identifier;
 use crate::error::{terminate, Error};
 use crate::interpret::context::{Context, Definition, Scope};
 use crate::interpret::destructure::AssignmentPair;

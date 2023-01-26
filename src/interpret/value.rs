@@ -5,9 +5,14 @@ use std::hash::{Hash, Hasher};
 use std::ops;
 use std::rc::Rc;
 
+use crate::ast::ast_pair::AstPair;
+use crate::ast::function_init::FunctionInit;
+use crate::ast::identifier::Identifier;
+use crate::ast::matcher::PatternItem;
+use crate::ast::unary_operator::UnaryOperator;
+use crate::ast::value_type::ValueType;
 use num::NumCast;
 
-use crate::ast::ast::{AstPair, FunctionInit, Identifier, PatternItem, UnaryOperator, ValueType};
 use crate::interpret::context::{Definition, SysFunction};
 
 #[derive(Debug, Clone)]

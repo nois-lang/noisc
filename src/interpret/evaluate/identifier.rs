@@ -3,7 +3,8 @@ use std::rc::Rc;
 
 use log::debug;
 
-use crate::ast::ast::{AstPair, Identifier};
+use crate::ast::ast_pair::AstPair;
+use crate::ast::identifier::Identifier;
 use crate::error::Error;
 use crate::interpret::context::Context;
 use crate::interpret::evaluate::Evaluate;

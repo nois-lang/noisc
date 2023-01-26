@@ -1,9 +1,10 @@
 use std::cell::RefMut;
 use std::rc::Rc;
 
+use crate::ast::ast_pair::AstPair;
+use crate::ast::operand::Operand;
 use log::debug;
 
-use crate::ast::ast::{AstPair, Operand};
 use crate::error::Error;
 use crate::interpret::context::{Context, Definition};
 use crate::interpret::evaluate::Evaluate;

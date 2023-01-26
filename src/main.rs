@@ -10,14 +10,16 @@ use std::io;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
+use crate::ast::ast_context::{AstContext, LintingConfig};
+use crate::ast::ast_pair::AstPair;
 use atty::Stream;
 use clap::Parser as p;
 use lazy_static::lazy_static;
 use log::{info, LevelFilter};
 use shellexpand::tilde;
 
-use crate::ast::ast::{AstContext, AstPair, Block, LintingConfig};
 use crate::ast::ast_parser::parse_block;
+use crate::ast::block::Block;
 use crate::cli::{Cli, Commands};
 use crate::error::terminate;
 use crate::interpret::context::Context;
@@ -123,7 +125,8 @@ mod tests {
     use std::mem::take;
     use std::rc::Rc;
 
-    use crate::ast::ast::{AstPair, LintingConfig};
+    use crate::ast::ast_context::LintingConfig;
+    use crate::ast::ast_pair::AstPair;
     use crate::error::Error;
     use crate::interpret::context::{Context, Scope};
     use crate::interpret::interpreter::execute_file;

@@ -2,12 +2,13 @@ use std::cell::RefMut;
 use std::fmt::{Display, Formatter};
 use std::panic::set_hook;
 
+use crate::ast::ast_context::AstContext;
+use crate::ast::ast_pair::Span;
 use colored::Colorize;
 use pest::error::ErrorVariant;
 use pest::error::{Error as PError, LineColLocation};
 use pest::iterators::Pair;
 
-use crate::ast::ast::{AstContext, Span};
 use crate::interpret::context::Context;
 use crate::parser::Rule;
 

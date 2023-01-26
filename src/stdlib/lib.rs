@@ -3,9 +3,10 @@ use std::collections::HashMap;
 use std::mem::take;
 use std::rc::Rc;
 
+use crate::ast::ast_pair::{AstPair, Span};
+use crate::ast::identifier::Identifier;
 use log::debug;
 
-use crate::ast::ast::{AstPair, Identifier, Span};
 use crate::error::Error;
 use crate::interpret::context::{Context, Definition, Scope, SysFunction};
 use crate::interpret::evaluate::Evaluate;

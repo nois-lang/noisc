@@ -1,9 +1,9 @@
 use std::cell::RefMut;
 use std::rc::Rc;
 
+use crate::ast::ast_pair::AstPair;
 use log::debug;
 
-use crate::ast::ast::AstPair;
 use crate::error::Error;
 use crate::interpret::context::Context;
 use crate::interpret::evaluate::Evaluate;
@@ -49,7 +49,7 @@ impl Evaluate for AstPair<Rc<Value>> {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::ast::ValueType;
+    use crate::ast::value_type::ValueType;
     use crate::interpret::interpreter::evaluate;
     use crate::interpret::value::Value;
 
@@ -157,6 +157,4 @@ mod tests {
         assert_eq!(evaluate("[C] == [[*]]"), Ok(Value::B(false)));
         assert_eq!(evaluate("I == [*]"), Ok(Value::B(false)));
     }
-
 }
-

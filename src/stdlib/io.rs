@@ -2,9 +2,9 @@ use std::cell::RefMut;
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use crate::ast::ast_pair::AstPair;
 use colored::Colorize;
 
-use crate::ast::ast::AstPair;
 use crate::error::Error;
 use crate::interpret::context::Context;
 use crate::interpret::value::Value;

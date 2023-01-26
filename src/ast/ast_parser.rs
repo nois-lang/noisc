@@ -6,13 +6,21 @@ use enquote::unquote;
 use log::debug;
 use pest::iterators::Pair;
 
-use crate::ast::ast::{
-    Assignee, AstContext, AstPair, AstScope, BinaryOperator, Block, DestructureItem,
-    DestructureList, Expression, FunctionInit, Identifier, MatchClause, Operand, PatternItem,
-    Statement, UnaryOperator, ValueType,
-};
-use crate::ast::expression::{Associativity, OperatorAssociativity, OperatorPrecedence};
+use crate::ast::ast_context::{AstContext, AstScope};
+use crate::ast::ast_pair::AstPair;
+use crate::ast::binary_operator::BinaryOperator;
+use crate::ast::block::Block;
+use crate::ast::destructure::{Assignee, DestructureItem, DestructureList};
+use crate::ast::expression::Expression;
+use crate::ast::function_init::FunctionInit;
+use crate::ast::identifier::Identifier;
+use crate::ast::matcher::{MatchClause, PatternItem};
+use crate::ast::operand::Operand;
+use crate::ast::operator::{Associativity, OperatorAssociativity, OperatorPrecedence};
+use crate::ast::statement::Statement;
+use crate::ast::unary_operator::UnaryOperator;
 use crate::ast::util::{children, first_child, parse_children};
+use crate::ast::value_type::ValueType;
 use crate::error::Error;
 use crate::parser::Rule;
 
@@ -704,7 +712,12 @@ mod tests {
 
     use pest::Parser;
 
-    use crate::ast::ast::LintingConfig;
+    use crate::ast::ast_context::{AstContext, LintingConfig};
+    use crate::ast::ast_pair::AstPair;
+    use crate::ast::block::Block;
+    use crate::ast::expression::Expression;
+    use crate::ast::identifier::Identifier;
+    use crate::ast::operand::Operand;
     use crate::interpret::context::Context;
     use crate::parser::NoisParser;
 
