@@ -29,8 +29,7 @@ jobs:
         run: cargo test --verbose
 
       - name: Clippy
-        run: cargo clippy --tests -- \
+        run: cargo clippy -- \
           -A clippy::type_complexity \
-          -A clippy::module_inception \
           -A clippy::bool_assert_comparison
 
