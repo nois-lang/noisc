@@ -24,14 +24,14 @@ use crate::interpret::context::Context;
 use crate::interpret::interpreter::execute_file;
 use crate::parser::NoisParser;
 
-pub mod ast;
-pub mod cli;
-pub mod error;
-pub mod interpret;
-pub mod logger;
-pub mod parser;
-pub mod stdlib;
-pub mod util;
+mod ast;
+mod cli;
+mod error;
+mod interpret;
+mod logger;
+mod parser;
+mod stdlib;
+mod util;
 
 lazy_static! {
     static ref RUN_ARGS: Mutex<Vec<String>> = Mutex::new(vec![]);

@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use enquote::unquote;
 use log::debug;
-use pest::iterators::{Pair, Pairs};
+use pest::iterators::Pair;
 
 use crate::ast::ast::{
     Assignee, AstContext, AstPair, AstScope, BinaryOperator, Block, DestructureItem,
@@ -15,13 +15,6 @@ use crate::ast::expression::{Associativity, OperatorAssociativity, OperatorPrece
 use crate::ast::util::{children, first_child, parse_children};
 use crate::error::Error;
 use crate::parser::Rule;
-
-pub fn parse_file(
-    pairs: &Pairs<Rule>,
-    ctx: &mut RefMut<AstContext>,
-) -> Result<AstPair<Block>, Error> {
-    parse_block(&pairs.clone().into_iter().next().unwrap(), ctx)
-}
 
 pub fn parse_block(
     pair: &Pair<Rule>,
@@ -735,7 +728,9 @@ mod tests {
         ));
         let a_ctx_cell = RefCell::new(ctx.ast_context);
         let a_ctx = &mut a_ctx_cell.borrow_mut();
-        parse_file(file, a_ctx).unwrap().1
+        super::parse_block(&file.clone().into_iter().next().unwrap(), a_ctx)
+            .unwrap()
+            .1
     }
 
     #[test]
