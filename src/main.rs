@@ -95,7 +95,7 @@ pub fn read_source(path: &String) -> String {
         .canonicalize()
         .map(|s| s.into_os_string())
         .map_err(|e| e.to_string())
-        .and_then(|p| read_to_string(&p).map_err(|e| e.to_string()));
+        .and_then(|p| read_to_string(p).map_err(|e| e.to_string()));
     match source {
         Ok(s) => s,
         Err(e) => terminate(format!("unable to read file {}: {}", path, e)),

@@ -36,7 +36,7 @@ where
         Scope::new("global".to_string()).with_definitions(block_defs.clone()),
     ));
     ctx_bm.ast_context.scope_stack.push(AstScope {
-        definitions: block_defs.into_iter().map(|(i, _)| (i, None)).collect(),
+        definitions: block_defs.into_keys().map(|i| (i, None)).collect(),
         usage: HashMap::new(),
     });
     debug!("push scope @{}", &ctx_bm.scope_stack.last().unwrap().name);
