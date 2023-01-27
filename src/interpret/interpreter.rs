@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use log::debug;
 
-use crate::ast::ast_context::AstScope;
+use crate::ast::ast_context::{AstContext, AstScope};
 use crate::ast::ast_pair::AstPair;
 use crate::ast::ast_parser::parse_block;
 use crate::ast::block::Block;
@@ -74,10 +74,13 @@ where
     ctx_bm.ast_context.scope_stack.pop();
 }
 
-pub fn evaluate(source: &str, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+pub fn evaluate(
+    source: &str,
+    ctx: &mut RefMut<Context>,
+    a_ctx: &mut RefMut<AstContext>,
+) -> Result<Value, Error> {
     let pt = NoisParser::parse_program(source)?;
-    let a_ctx_cell = RefCell::new(ctx.ast_context.clone());
-    let ast = parse_block(&pt, &mut a_ctx_cell.borrow_mut())?;
+    let ast = parse_block(&pt, a_ctx)?;
     ast.map(|v| Rc::new(v.clone()))
         .eval(ctx)
         .map(|a| a.1)
@@ -94,13 +97,13 @@ pub mod test {
     use crate::interpret::value::Value;
 
     pub fn evaluate(source: &str) -> Result<Value, Error> {
-        let ctx = Context::stdlib(AstContext::stdlib(
-            source.to_string(),
-            LintingConfig::none(),
-        ));
+        let a_ctx = AstContext::stdlib(source.to_string(), LintingConfig::none());
+        let a_ctx_cell = RefCell::new(a_ctx.clone());
+        let a_ctx_bm = &mut a_ctx_cell.borrow_mut();
+        let ctx = Context::stdlib(a_ctx);
         let ctx_cell = RefCell::new(ctx.clone());
         let ctx_bm = &mut ctx_cell.borrow_mut();
 
-        super::evaluate(source, ctx_bm)
+        super::evaluate(source, ctx_bm, a_ctx_bm)
     }
 }

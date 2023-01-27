@@ -24,7 +24,7 @@ use crate::ast::ast_parser::parse_block;
 use crate::ast::block::Block;
 use crate::cli::{Cli, Commands};
 use crate::error::terminate;
-use crate::interpret::context::{Context, Scope};
+use crate::interpret::context::Context;
 use crate::interpret::interpreter::{evaluate, execute_file};
 use crate::parser::NoisParser;
 
@@ -122,10 +122,12 @@ fn piped_input() -> Option<String> {
 fn run_repl() {
     println!("Nois {} REPL, ctrl+d to exit", built_info::PKG_VERSION);
 
-    let ctx = Context::stdlib(AstContext::stdlib(String::new(), LintingConfig::full()));
+    let a_ctx = AstContext::stdlib(String::new(), LintingConfig::full());
+    let a_ctx_cell = RefCell::new(a_ctx.clone());
+    let a_ctx_bm = &mut a_ctx_cell.borrow_mut();
+    let ctx = Context::stdlib(a_ctx);
     let ctx_cell = RefCell::new(ctx);
     let ctx_bm = &mut ctx_cell.borrow_mut();
-    ctx_bm.scope_stack.push(Scope::new("repl".to_string()));
 
     let interface =
         Interface::new("repl").unwrap_or_else(|e| terminate(format!("error starting repl: {e}")));
@@ -135,7 +137,7 @@ fn run_repl() {
         ctx_bm.ast_context.input = line.clone();
 
         debug!("eval statement {:?}", line);
-        let res = evaluate(line.as_str(), ctx_bm);
+        let res = evaluate(line.as_str(), ctx_bm, a_ctx_bm);
         match res {
             Ok(v) => println!("{v}"),
             Err(e) => eprintln!("{}", e.to_string().red()),
