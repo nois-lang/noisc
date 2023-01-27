@@ -19,7 +19,7 @@ use crate::interpret::context::{Context, SysFunction};
 use crate::interpret::definition::Definition;
 use crate::interpret::evaluate::Evaluate;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Value {
     Unit,
     I(i128),
@@ -221,6 +221,32 @@ impl PartialOrd for Value {
     }
 }
 
+impl Debug for Value {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            Value::List { items: l, spread } => {
+                let all_c = !l.is_empty() && l.iter().all(|v| matches!(v, Value::C(_)));
+                let is = l.iter().map(|i| format!("{i:?}")).collect::<Vec<_>>();
+                let spread_s = if *spread {
+                    UnaryOperator::Spread.to_string()
+                } else {
+                    "".to_string()
+                };
+                if all_c && !*spread {
+                    write!(f, "'{}'", is.join(""))
+                } else {
+                    write!(f, "{}[{}]", spread_s, is.join(", "))
+                }
+            }
+            Value::Unit => write!(f, "()"),
+            Value::Fn(fun) => write!(f, "{fun:?}"),
+            Value::Closure(fun, _) => write!(f, "{fun:?}"),
+            Value::System(fun) => write!(f, "{fun:?}"),
+            v => write!(f, "{v}"),
+        }
+    }
+}
+
 impl Display for Value {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match &self {
@@ -232,15 +258,10 @@ impl Display for Value {
             Value::List { items: l, spread } => {
                 let all_c = !l.is_empty() && l.iter().all(|v| matches!(v, Value::C(_)));
                 let is = l.iter().map(|i| i.to_string()).collect::<Vec<_>>();
-                let spread_s = if *spread {
-                    UnaryOperator::Spread.to_string()
-                } else {
-                    "".to_string()
-                };
                 if all_c && !*spread {
                     write!(f, "{}", is.join(""))
                 } else {
-                    write!(f, "{}[{}]", spread_s, is.join(", "))
+                    write!(f, "[{}]", is.join(", "))
                 }
             }
             Value::Fn(..) => write!(f, "<fn>"),

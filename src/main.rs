@@ -132,7 +132,7 @@ fn run_repl() {
         debug!("eval statement {:?}", line);
         let res = evaluate(line.as_str(), &mut ctx);
         match res {
-            Ok(v) => println!("{v}"),
+            Ok(v) => println!("{v:?}"),
             Err(e) => eprintln!("{}", e.to_string().red()),
         }
     }
