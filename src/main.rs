@@ -54,74 +54,42 @@ fn main() {
 
     let verbose_level = LevelFilter::Trace;
 
-    let command = Cli::parse().command;
+    let Cli { command, verbose } = Cli::parse();
+    if verbose {
+        logger::init(verbose_level);
+    }
     match &command {
-        Commands::Parse {
-            source: path,
-            verbose,
-        } => {
-            if *verbose {
-                logger::init(verbose_level);
-            }
+        Commands::Parse { source: path } => {
             info!("executing command {:?}", &command);
             let source = read_source(path);
             let (ast, _) = parse_ast(source, LintingConfig::full());
+            // TODO: pretty print AST
             println!("{ast:#?}");
         }
-        Commands::Run {
-            source: path,
-            verbose,
-            args,
-        } => {
+        Commands::Run { source: path, args } => {
             RUN_ARGS.lock().unwrap().extend(args.clone());
-            if *verbose {
-                logger::init(verbose_level);
-            }
             info!("executing command {:?}", &command);
             let source = read_source(path);
             let (ast, a_ctx) = parse_ast(source, LintingConfig::full());
             execute_file(ast, Context::stdlib(a_ctx), |_| {});
         }
-        Commands::Repl { verbose, args } => {
+        Commands::Repl { args } => {
             RUN_ARGS.lock().unwrap().extend(args.clone());
-            if *verbose {
-                logger::init(verbose_level);
-            }
-
-            println!("Nois {} REPL, ctrl+d to exit", built_info::PKG_VERSION);
-
-            let ctx = Context::stdlib(AstContext::stdlib(String::new(), LintingConfig::full()));
-            let ctx_cell = RefCell::new(ctx);
-            let ctx_bm = &mut ctx_cell.borrow_mut();
-            ctx_bm.scope_stack.push(Scope::new("repl".to_string()));
-
-            let interface = Interface::new("repl")
-                .unwrap_or_else(|e| terminate(format!("error starting repl: {e}")));
-            interface.set_prompt("-> ").ok();
-            while let ReadResult::Input(line) = interface.read_line().unwrap() {
-                interface.add_history_unique(line.clone());
-                ctx_bm.ast_context.input = line.clone();
-
-                debug!("eval statement {:?}", line);
-                let res = evaluate(line.as_str(), ctx_bm);
-                match res {
-                    Ok(v) => println!("{v}"),
-                    Err(e) => eprintln!("{}", e.to_string().red()),
-                }
-            }
+            run_repl()
         }
     }
 }
 
 fn parse_ast(source: String, config: LintingConfig) -> (AstPair<Block>, AstContext) {
-    let a_ctx = AstContext::stdlib(source.clone(), config);
-    let ctx = Context::stdlib(a_ctx);
-    let ctx_rc = &RefCell::new(ctx.ast_context.clone());
+    let ctx = AstContext::stdlib(source.clone(), config);
+    let ctx_rc = &RefCell::new(ctx);
     let ctx_bm = &mut ctx_rc.borrow_mut();
+
     let pt = NoisParser::parse_program(source.as_str());
     let ast = pt.and_then(|parsed| parse_block(&parsed, ctx_bm));
+
     match ast {
-        Ok(a) => (a, ctx.ast_context),
+        Ok(a) => (a, ctx_bm.clone()),
         Err(e) => terminate(e.to_string()),
     }
 }
@@ -149,6 +117,30 @@ fn piped_input() -> Option<String> {
             .collect::<Vec<_>>()
             .join("\n"),
     )
+}
+
+fn run_repl() {
+    println!("Nois {} REPL, ctrl+d to exit", built_info::PKG_VERSION);
+
+    let ctx = Context::stdlib(AstContext::stdlib(String::new(), LintingConfig::full()));
+    let ctx_cell = RefCell::new(ctx);
+    let ctx_bm = &mut ctx_cell.borrow_mut();
+    ctx_bm.scope_stack.push(Scope::new("repl".to_string()));
+
+    let interface =
+        Interface::new("repl").unwrap_or_else(|e| terminate(format!("error starting repl: {e}")));
+    interface.set_prompt("-> ").ok();
+    while let ReadResult::Input(line) = interface.read_line().unwrap() {
+        interface.add_history_unique(line.clone());
+        ctx_bm.ast_context.input = line.clone();
+
+        debug!("eval statement {:?}", line);
+        let res = evaluate(line.as_str(), ctx_bm);
+        match res {
+            Ok(v) => println!("{v}"),
+            Err(e) => eprintln!("{}", e.to_string().red()),
+        }
+    }
 }
 
 #[cfg(test)]

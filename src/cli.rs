@@ -5,6 +5,16 @@ use clap::{Parser, Subcommand};
 pub struct Cli {
     #[clap(subcommand)]
     pub command: Commands,
+
+    #[clap(
+        global = true,
+        short,
+        long,
+        required = false,
+        takes_value = false,
+        help = "Detailed output"
+    )]
+    pub verbose: bool,
 }
 
 #[derive(Subcommand, Debug)]
@@ -13,43 +23,19 @@ pub enum Commands {
     Parse {
         #[clap(value_parser, help = "Path to source file")]
         source: String,
-
-        #[clap(
-            short,
-            long,
-            required = false,
-            takes_value = false,
-            help = "Detailed output"
-        )]
-        verbose: bool,
     },
+
     #[clap(about = "Run source file")]
     Run {
         #[clap(value_parser, help = "Path to source file")]
         source: String,
 
-        #[clap(
-            short,
-            long,
-            required = false,
-            takes_value = false,
-            help = "Detailed output"
-        )]
-        verbose: bool,
-
         #[clap(multiple = true)]
         args: Vec<String>,
     },
-    Repl {
-        #[clap(
-        short,
-        long,
-        required = false,
-        takes_value = false,
-        help = "Detailed output"
-        )]
-        verbose: bool,
 
+    #[clap(about = "Start interactive interpreter")]
+    Repl {
         #[clap(multiple = true)]
         args: Vec<String>,
     },
