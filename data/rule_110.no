@@ -1,14 +1,7 @@
 next = seq {
     n = seq.map((e, i) {
-        // TODO: short circuit
-        prev = match i - 1 < 0 {
-            False => seq.at(i - 1),
-            t => t
-        }
-        next = match i + 1 >= seq.len() {
-            False => seq.at(i + 1),
-            t => t
-        }
+        prev = i - 1 < 0 || seq.at(i - 1)
+        next = i + 1 >= seq.len() || seq.at(i + 1)
         match [prev, e, next] {
             [True , True , True ] => False,
             [True , True , False] => True,

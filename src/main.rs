@@ -86,7 +86,7 @@ fn parse_ast(source: String, config: LintingConfig) -> (AstPair<Block>, AstConte
     let ast = pt.and_then(|parsed| parse_block(&parsed, &mut ctx));
 
     match ast {
-        Ok(a) => (a, ctx.clone()),
+        Ok(a) => (a, ctx),
         Err(e) => terminate(e.to_string()),
     }
 }

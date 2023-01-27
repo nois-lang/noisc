@@ -81,21 +81,36 @@ fn eval_binary_expression(
     right_operand: &AstPair<Expression>,
     ctx: &mut Context,
 ) -> Result<AstPair<Rc<Value>>, Error> {
-    if operator.1 == BinaryOperator::Accessor {
-        let l = left_operand.deref().map(|v| Rc::new(v.clone())).eval(ctx)?;
-        ctx.scope_stack.last_mut().unwrap().method_callee = Some(l);
-        right_operand.deref().map(|v| Rc::new(v.clone())).eval(ctx)
-    } else {
-        let fc = FunctionCall::new_by_name(
-            operator.deref().0,
-            operator.1.to_string().as_str(),
-            vec![left_operand, right_operand]
-                .into_iter()
-                .map(|p| p.deref().map(|v| Rc::new(v.clone())))
-                .collect(),
-        );
-        let a = pair.with(fc);
-        function_call(&a, ctx, FunctionCallType::Function)
+    match operator.1 {
+        BinaryOperator::Accessor => {
+            let l = left_operand.deref().map(|v| Rc::new(v.clone())).eval(ctx)?;
+            ctx.scope_stack.last_mut().unwrap().method_callee = Some(l);
+            right_operand.deref().map(|v| Rc::new(v.clone())).eval(ctx)
+        }
+        _ => {
+            if let Some(condition) = operator.1.short_circuit_condition() {
+                let left = left_operand.deref().map(|v| Rc::new(v.clone())).eval(ctx)?;
+                debug!(
+                    "short-circuit case for {}, value: {:?}, condition: {:?}",
+                    operator.1,
+                    left.1.as_ref(),
+                    condition
+                );
+                if left.1.as_ref() == &condition {
+                    return Ok(left);
+                }
+            }
+            let fc = FunctionCall::new_by_name(
+                operator.deref().0,
+                operator.1.to_string().as_str(),
+                vec![left_operand, right_operand]
+                    .into_iter()
+                    .map(|p| p.deref().map(|v| Rc::new(v.clone())))
+                    .collect(),
+            );
+            let a = pair.with(fc);
+            function_call(&a, ctx, FunctionCallType::Function)
+        }
     }
 }
 
@@ -194,5 +209,29 @@ a = 10
 a
         "#;
         assert_eq!(evaluate(source), Ok(Value::I(10)));
+    }
+
+    #[test]
+    fn evaluate_and_short_circuit() {
+        let source = r#"False && panic()"#;
+        assert_eq!(evaluate(source), Ok(Value::B(false)));
+    }
+
+    #[test]
+    fn evaluate_or_short_circuit() {
+        let source = r#"True || panic()"#;
+        assert_eq!(evaluate(source), Ok(Value::B(true)));
+    }
+
+    #[test]
+    fn evaluate_and_short_circuit_panic() {
+        let source = r#"True && panic()"#;
+        assert!(evaluate(source).is_err());
+    }
+
+    #[test]
+    fn evaluate_or_and_short_circuit_panic() {
+        let source = r#"False || panic()"#;
+        assert!(evaluate(source).is_err());
     }
 }

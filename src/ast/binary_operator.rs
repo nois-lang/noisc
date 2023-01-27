@@ -1,6 +1,8 @@
 use std::fmt;
 use std::fmt::{Display, Formatter};
 
+use crate::interpret::value::Value;
+
 #[derive(Debug, PartialOrd, PartialEq, Eq, Clone)]
 pub enum BinaryOperator {
     Add,
@@ -18,6 +20,16 @@ pub enum BinaryOperator {
     LessOrEquals,
     And,
     Or,
+}
+
+impl BinaryOperator {
+    pub fn short_circuit_condition(&self) -> Option<Value> {
+        match self {
+            BinaryOperator::And => Some(Value::B(false)),
+            BinaryOperator::Or => Some(Value::B(true)),
+            _ => None,
+        }
+    }
 }
 
 impl Display for BinaryOperator {
