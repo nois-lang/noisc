@@ -33,6 +33,14 @@ impl Evaluate for AstPair<Rc<FunctionInit>> {
             .map(Rc::clone)
         {
             debug!("function init args: {:?}", args);
+
+            if self.1.block.1.statements.is_empty() {
+                debug!(
+                    "eval function init with empty body prematurely, without creating the scope"
+                );
+                return Ok(self.with(Rc::new(Value::Unit)));
+            }
+
             for (param, v) in self.1.parameters.iter().zip(args.iter()) {
                 let defs =
                     assign_definitions(param, v.map(Rc::clone), ctx, |_, e| Definition::Value(e))?;
