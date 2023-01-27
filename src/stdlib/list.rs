@@ -8,30 +8,34 @@ use crate::interpret::value::Value;
 use crate::stdlib::lib::{arg_error, arg_values, run_closure, LibFunction, Package};
 
 pub fn package() -> Package {
+    let mut defs = HashMap::new();
+    [
+        Spread::definitions(),
+        Range::definitions(),
+        Len::definitions(),
+        Map::definitions(),
+        Filter::definitions(),
+        Reduce::definitions(),
+        At::definitions(),
+        Slice::definitions(),
+        Join::definitions(),
+        Flat::definitions(),
+        Reverse::definitions(),
+        Sort::definitions(),
+    ]
+    .into_iter()
+    .for_each(|d| defs.extend(d));
     Package {
         name: "list".to_string(),
-        definitions: HashMap::from([
-            Spread::definition(),
-            Range::definition(),
-            Len::definition(),
-            Map::definition(),
-            Filter::definition(),
-            Reduce::definition(),
-            At::definition(),
-            Slice::definition(),
-            Join::definition(),
-            Flat::definition(),
-            Reverse::definition(),
-            Sort::definition(),
-        ]),
+        definitions: defs,
     }
 }
 
 pub struct Spread;
 
 impl LibFunction for Spread {
-    fn name() -> String {
-        "spread".to_string()
+    fn name() -> Vec<String> {
+        vec!["spread".to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
@@ -52,7 +56,7 @@ impl LibFunction for Spread {
             }
             a => Err(Error::from_callee(
                 ctx,
-                format!("incompatible operand: {}{}", Self::name(), a.value_type()),
+                format!("incompatible spread operand: {}", a.value_type()),
             )),
         }
     }
@@ -72,8 +76,8 @@ impl LibFunction for Spread {
 pub struct Range;
 
 impl LibFunction for Range {
-    fn name() -> String {
-        "range".to_string()
+    fn name() -> Vec<String> {
+        vec!["range".to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
@@ -98,8 +102,8 @@ impl LibFunction for Range {
 pub struct Len;
 
 impl LibFunction for Len {
-    fn name() -> String {
-        "len".to_string()
+    fn name() -> Vec<String> {
+        vec!["len".to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
@@ -123,8 +127,8 @@ impl LibFunction for Len {
 pub struct Map;
 
 impl LibFunction for Map {
-    fn name() -> String {
-        "map".to_string()
+    fn name() -> Vec<String> {
+        vec!["map".to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
@@ -168,8 +172,8 @@ impl LibFunction for Map {
 pub struct Filter;
 
 impl LibFunction for Filter {
-    fn name() -> String {
-        "filter".to_string()
+    fn name() -> Vec<String> {
+        vec!["filter".to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
@@ -219,8 +223,8 @@ impl LibFunction for Filter {
 pub struct Reduce;
 
 impl LibFunction for Reduce {
-    fn name() -> String {
-        "reduce".to_string()
+    fn name() -> Vec<String> {
+        vec!["reduce".to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
@@ -272,8 +276,8 @@ impl LibFunction for Reduce {
 pub struct At;
 
 impl LibFunction for At {
-    fn name() -> String {
-        "at".to_string()
+    fn name() -> Vec<String> {
+        vec!["at".to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
@@ -309,8 +313,8 @@ impl LibFunction for At {
 pub struct Slice;
 
 impl LibFunction for Slice {
-    fn name() -> String {
-        "slice".to_string()
+    fn name() -> Vec<String> {
+        vec!["slice".to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
@@ -356,8 +360,8 @@ pub fn from_relative_index(i: i128, len: usize) -> Result<usize, String> {
 pub struct Flat;
 
 impl LibFunction for Flat {
-    fn name() -> String {
-        "flat".to_string()
+    fn name() -> Vec<String> {
+        vec!["flat".to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
@@ -383,8 +387,8 @@ impl LibFunction for Flat {
 pub struct Join;
 
 impl LibFunction for Join {
-    fn name() -> String {
-        "join".to_string()
+    fn name() -> Vec<String> {
+        vec!["join".to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
@@ -403,8 +407,8 @@ impl LibFunction for Join {
 pub struct Reverse;
 
 impl LibFunction for Reverse {
-    fn name() -> String {
-        "reverse".to_string()
+    fn name() -> Vec<String> {
+        vec!["reverse".to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
@@ -420,8 +424,8 @@ impl LibFunction for Reverse {
 pub struct Sort;
 
 impl LibFunction for Sort {
-    fn name() -> String {
-        "sort".to_string()
+    fn name() -> Vec<String> {
+        vec!["sort".to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {

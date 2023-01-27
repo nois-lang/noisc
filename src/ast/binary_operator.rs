@@ -7,7 +7,7 @@ use crate::error::Error;
 use crate::interpret::context::Context;
 use crate::interpret::value::Value;
 use crate::stdlib::lib::LibFunction;
-use crate::stdlib::operator::{AddOp, AndOp, EqOp, GeOp, GtOp, LeOp, LtOp, NeOp, OrOp, SubOp};
+use crate::stdlib::math::*;
 
 #[derive(Debug, PartialOrd, PartialEq, Eq, Clone)]
 pub enum BinaryOperator {
@@ -41,20 +41,20 @@ impl BinaryOperator {
         &self,
     ) -> Box<fn(&[AstPair<Rc<Value>>], &mut Context) -> Result<Value, Error>> {
         Box::new(match self {
-            BinaryOperator::Add => AddOp::call,
-            BinaryOperator::Subtract => SubOp::call,
+            BinaryOperator::Add => Add::call,
+            BinaryOperator::Subtract => Sub::call,
             BinaryOperator::Multiply => todo!(),
             BinaryOperator::Divide => todo!(),
             BinaryOperator::Exponent => todo!(),
             BinaryOperator::Remainder => todo!(),
-            BinaryOperator::Equals => EqOp::call,
-            BinaryOperator::NotEquals => NeOp::call,
-            BinaryOperator::Greater => GtOp::call,
-            BinaryOperator::GreaterOrEquals => GeOp::call,
-            BinaryOperator::Less => LtOp::call,
-            BinaryOperator::LessOrEquals => LeOp::call,
-            BinaryOperator::And => AndOp::call,
-            BinaryOperator::Or => OrOp::call,
+            BinaryOperator::Equals => Eq::call,
+            BinaryOperator::NotEquals => Ne::call,
+            BinaryOperator::Greater => Gt::call,
+            BinaryOperator::GreaterOrEquals => Ge::call,
+            BinaryOperator::Less => Lt::call,
+            BinaryOperator::LessOrEquals => Le::call,
+            BinaryOperator::And => And::call,
+            BinaryOperator::Or => Or::call,
             BinaryOperator::Accessor => panic!(". operator must be called as a function call"),
         })
     }

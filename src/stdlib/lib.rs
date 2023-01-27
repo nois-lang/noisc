@@ -32,7 +32,7 @@ pub fn stdlib() -> Vec<Package> {
 }
 
 pub trait LibFunction {
-    fn name() -> String;
+    fn name() -> Vec<String>;
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error>;
 
@@ -61,11 +61,16 @@ pub trait LibFunction {
         res.map(|v| AstPair::from_span(&callee, v))
     }
 
-    fn definition() -> (Identifier, Definition) {
-        (
-            Identifier(Self::name()),
-            Definition::System(SysFunction(|args, ctx| Self::call_fn(args, ctx))),
-        )
+    fn definitions() -> Vec<(Identifier, Definition)> {
+        Self::name()
+            .into_iter()
+            .map(|n| {
+                (
+                    Identifier(n),
+                    Definition::System(SysFunction(|args, ctx| Self::call_fn(args, ctx))),
+                )
+            })
+            .collect()
     }
 }
 

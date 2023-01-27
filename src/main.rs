@@ -165,8 +165,8 @@ mod test {
         struct TestPrintln;
 
         impl LibFunction for TestPrintln {
-            fn name() -> String {
-                "println".to_string()
+            fn name() -> Vec<String> {
+                vec!["println".to_string()]
             }
 
             fn call(args: &[AstPair<Rc<Value>>], _ctx: &mut Context) -> Result<Value, Error> {
@@ -185,9 +185,10 @@ mod test {
         let source = read_to_string(format!("data/{name}.no")).unwrap();
         let (ast, a_ctx) = parse_ast(source, LintingConfig::full());
         execute_file(ast, &mut Context::stdlib(a_ctx), |ctx| {
+            let mut test_defs = HashMap::new();
+            test_defs.extend(TestPrintln::definitions());
             ctx.scope_stack.push(take(
-                Scope::new("test".to_string())
-                    .with_definitions(HashMap::from([TestPrintln::definition()])),
+                Scope::new("test".to_string()).with_definitions(test_defs),
             ));
         });
         OUT.with(|o| o.replace(vec![]).join("\n"))

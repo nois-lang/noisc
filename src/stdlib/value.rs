@@ -8,17 +8,21 @@ use crate::interpret::value::Value;
 use crate::stdlib::lib::{arg_error, arg_values, LibFunction, Package};
 
 pub fn package() -> Package {
+    let mut defs = HashMap::new();
+    [Type::definitions(), To::definitions()]
+        .into_iter()
+        .for_each(|d| defs.extend(d));
     Package {
         name: "value".to_string(),
-        definitions: HashMap::from([Type::definition(), To::definition()]),
+        definitions: defs,
     }
 }
 
 pub struct Type;
 
 impl LibFunction for Type {
-    fn name() -> String {
-        "type".to_string()
+    fn name() -> Vec<String> {
+        vec!["type".to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
@@ -33,8 +37,8 @@ impl LibFunction for Type {
 pub struct To;
 
 impl LibFunction for To {
-    fn name() -> String {
-        "to".to_string()
+    fn name() -> Vec<String> {
+        vec!["to".to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {

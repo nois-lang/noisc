@@ -8,9 +8,13 @@ use crate::interpret::value::Value;
 use crate::stdlib::lib::{arg_error, arg_values, LibFunction, Package};
 
 pub fn package() -> Package {
+    let mut defs = HashMap::new();
+    [Some::definitions(), None::definitions()]
+        .into_iter()
+        .for_each(|d| defs.extend(d));
     Package {
         name: "option".to_string(),
-        definitions: HashMap::from([Some::definition(), None::definition()]),
+        definitions: defs,
     }
 }
 
@@ -25,8 +29,8 @@ pub fn package() -> Package {
 pub struct Some;
 
 impl LibFunction for Some {
-    fn name() -> String {
-        "some".to_string()
+    fn name() -> Vec<String> {
+        vec!["some".to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
@@ -49,8 +53,8 @@ impl LibFunction for Some {
 pub struct None;
 
 impl LibFunction for None {
-    fn name() -> String {
-        "none".to_string()
+    fn name() -> Vec<String> {
+        vec!["none".to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {

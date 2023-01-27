@@ -11,15 +11,19 @@ use crate::stdlib::lib::{arg_error, LibFunction, Package};
 use crate::RUN_ARGS;
 
 pub fn package() -> Package {
+    let mut defs = HashMap::new();
+    [
+        Println::definitions(),
+        Eprintln::definitions(),
+        Debug::definitions(),
+        Panic::definitions(),
+        Args::definitions(),
+    ]
+    .into_iter()
+    .for_each(|d| defs.extend(d));
     Package {
         name: "io".to_string(),
-        definitions: HashMap::from([
-            Println::definition(),
-            Eprintln::definition(),
-            Debug::definition(),
-            Panic::definition(),
-            Args::definition(),
-        ]),
+        definitions: defs,
     }
 }
 
@@ -28,8 +32,8 @@ pub fn package() -> Package {
 pub struct Println;
 
 impl LibFunction for Println {
-    fn name() -> String {
-        "println".to_string()
+    fn name() -> Vec<String> {
+        vec!["println".to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], _ctx: &mut Context) -> Result<Value, Error> {
@@ -51,8 +55,8 @@ impl LibFunction for Println {
 pub struct Eprintln;
 
 impl LibFunction for Eprintln {
-    fn name() -> String {
-        "eprintln".to_string()
+    fn name() -> Vec<String> {
+        vec!["eprintln".to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], _ctx: &mut Context) -> Result<Value, Error> {
@@ -75,8 +79,8 @@ impl LibFunction for Eprintln {
 pub struct Debug;
 
 impl LibFunction for Debug {
-    fn name() -> String {
-        "debug".to_string()
+    fn name() -> Vec<String> {
+        vec!["debug".to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], _ctx: &mut Context) -> Result<Value, Error> {
@@ -98,8 +102,8 @@ impl LibFunction for Debug {
 pub struct Panic;
 
 impl LibFunction for Panic {
-    fn name() -> String {
-        "panic".to_string()
+    fn name() -> Vec<String> {
+        vec!["panic".to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
@@ -116,8 +120,8 @@ impl LibFunction for Panic {
 pub struct Args;
 
 impl LibFunction for Args {
-    fn name() -> String {
-        "args".to_string()
+    fn name() -> Vec<String> {
+        vec!["args".to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {

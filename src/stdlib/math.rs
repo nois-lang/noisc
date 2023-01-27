@@ -2,35 +2,40 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::ast::ast_pair::AstPair;
+use crate::ast::binary_operator::BinaryOperator;
 use crate::error::Error;
 use crate::interpret::context::Context;
 use crate::interpret::value::Value;
 use crate::stdlib::lib::{arg_values, LibFunction, Package};
 
 pub fn package() -> Package {
+    let mut defs = HashMap::new();
+    [
+        Add::definitions(),
+        Sub::definitions(),
+        Rem::definitions(),
+        Eq::definitions(),
+        Ne::definitions(),
+        Gt::definitions(),
+        Ge::definitions(),
+        Lt::definitions(),
+        Le::definitions(),
+        And::definitions(),
+        Or::definitions(),
+    ]
+    .into_iter()
+    .for_each(|d| defs.extend(d));
     Package {
         name: "math".to_string(),
-        definitions: HashMap::from([
-            Add::definition(),
-            Sub::definition(),
-            Rem::definition(),
-            Eq::definition(),
-            Ne::definition(),
-            Gt::definition(),
-            Ge::definition(),
-            Lt::definition(),
-            Le::definition(),
-            And::definition(),
-            Or::definition(),
-        ]),
+        definitions: defs,
     }
 }
 
 pub struct Add;
 
 impl LibFunction for Add {
-    fn name() -> String {
-        "add".to_string()
+    fn name() -> Vec<String> {
+        vec!["add".to_string(), BinaryOperator::Add.to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
@@ -41,8 +46,8 @@ impl LibFunction for Add {
 pub struct Sub;
 
 impl LibFunction for Sub {
-    fn name() -> String {
-        "sub".to_string()
+    fn name() -> Vec<String> {
+        vec!["sub".to_string(), BinaryOperator::Subtract.to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
@@ -58,8 +63,8 @@ impl LibFunction for Sub {
 pub struct Rem;
 
 impl LibFunction for Rem {
-    fn name() -> String {
-        "rem".to_string()
+    fn name() -> Vec<String> {
+        vec!["rem".to_string(), BinaryOperator::Remainder.to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
@@ -70,8 +75,8 @@ impl LibFunction for Rem {
 pub struct Eq;
 
 impl LibFunction for Eq {
-    fn name() -> String {
-        "eq".to_string()
+    fn name() -> Vec<String> {
+        vec!["eq".to_string(), BinaryOperator::Equals.to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], _ctx: &mut Context) -> Result<Value, Error> {
@@ -82,8 +87,8 @@ impl LibFunction for Eq {
 pub struct Ne;
 
 impl LibFunction for Ne {
-    fn name() -> String {
-        "ne".to_string()
+    fn name() -> Vec<String> {
+        vec!["ne".to_string(), BinaryOperator::NotEquals.to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], _ctx: &mut Context) -> Result<Value, Error> {
@@ -94,8 +99,8 @@ impl LibFunction for Ne {
 pub struct Gt;
 
 impl LibFunction for Gt {
-    fn name() -> String {
-        "gt".to_string()
+    fn name() -> Vec<String> {
+        vec!["gt".to_string(), BinaryOperator::Greater.to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], _ctx: &mut Context) -> Result<Value, Error> {
@@ -106,8 +111,11 @@ impl LibFunction for Gt {
 pub struct Ge;
 
 impl LibFunction for Ge {
-    fn name() -> String {
-        "ge".to_string()
+    fn name() -> Vec<String> {
+        vec![
+            "ge".to_string(),
+            BinaryOperator::GreaterOrEquals.to_string(),
+        ]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], _ctx: &mut Context) -> Result<Value, Error> {
@@ -118,8 +126,8 @@ impl LibFunction for Ge {
 pub struct Lt;
 
 impl LibFunction for Lt {
-    fn name() -> String {
-        "lt".to_string()
+    fn name() -> Vec<String> {
+        vec!["lt".to_string(), BinaryOperator::Less.to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], _ctx: &mut Context) -> Result<Value, Error> {
@@ -130,8 +138,8 @@ impl LibFunction for Lt {
 pub struct Le;
 
 impl LibFunction for Le {
-    fn name() -> String {
-        "le".to_string()
+    fn name() -> Vec<String> {
+        vec!["le".to_string(), BinaryOperator::LessOrEquals.to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], _ctx: &mut Context) -> Result<Value, Error> {
@@ -142,8 +150,8 @@ impl LibFunction for Le {
 pub struct Not;
 
 impl LibFunction for Not {
-    fn name() -> String {
-        "not".to_string()
+    fn name() -> Vec<String> {
+        vec!["not".to_string(), BinaryOperator::NotEquals.to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
@@ -151,12 +159,11 @@ impl LibFunction for Not {
     }
 }
 
-// TODO: short circuiting
 pub struct And;
 
 impl LibFunction for And {
-    fn name() -> String {
-        "and".to_string()
+    fn name() -> Vec<String> {
+        vec!["and".to_string(), BinaryOperator::And.to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
@@ -170,8 +177,8 @@ impl LibFunction for And {
 pub struct Or;
 
 impl LibFunction for Or {
-    fn name() -> String {
-        "or".to_string()
+    fn name() -> Vec<String> {
+        vec!["or".to_string(), BinaryOperator::Or.to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
