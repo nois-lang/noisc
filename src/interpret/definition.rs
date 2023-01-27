@@ -1,4 +1,3 @@
-use std::cell::RefMut;
 use std::rc::Rc;
 
 use log::debug;
@@ -19,7 +18,7 @@ pub enum Definition {
 }
 
 impl Evaluate for Definition {
-    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Rc<Value>>, Error> {
+    fn eval(self, ctx: &mut Context) -> Result<AstPair<Rc<Value>>, Error> {
         debug!("eval definition {:?}", &self);
         let scope = ctx.scope_stack.last_mut().unwrap();
         match self {

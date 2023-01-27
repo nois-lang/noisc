@@ -1,3 +1,9 @@
+use std::mem::take;
+use std::ops::Deref;
+use std::rc::Rc;
+
+use log::debug;
+
 use crate::ast::ast_pair::AstPair;
 use crate::ast::binary_operator::BinaryOperator;
 use crate::ast::function_call::FunctionCall;
@@ -10,11 +16,6 @@ use crate::interpret::evaluate::Evaluate;
 use crate::interpret::function_call::{function_call, FunctionCallType};
 use crate::interpret::matcher::match_expression;
 use crate::interpret::value::Value;
-use log::debug;
-use std::cell::RefMut;
-use std::mem::take;
-use std::ops::Deref;
-use std::rc::Rc;
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Expression {
@@ -35,7 +36,7 @@ pub enum Expression {
 }
 
 impl Evaluate for AstPair<Rc<Expression>> {
-    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Rc<Value>>, Error> {
+    fn eval(self, ctx: &mut Context) -> Result<AstPair<Rc<Value>>, Error> {
         debug!("eval {:?}", &self);
         match self.1.as_ref() {
             Expression::Operand(op) => op.map(|v| Rc::new(v.clone())).eval(ctx),
@@ -78,7 +79,7 @@ fn eval_binary_expression(
     left_operand: &AstPair<Expression>,
     operator: &AstPair<BinaryOperator>,
     right_operand: &AstPair<Expression>,
-    ctx: &mut RefMut<Context>,
+    ctx: &mut Context,
 ) -> Result<AstPair<Rc<Value>>, Error> {
     if operator.1 == BinaryOperator::Accessor {
         let l = left_operand.deref().map(|v| Rc::new(v.clone())).eval(ctx)?;
@@ -100,7 +101,7 @@ fn eval_binary_expression(
 
 fn eval_match_expression(
     pair: &AstPair<Rc<Expression>>,
-    ctx: &mut RefMut<Context>,
+    ctx: &mut Context,
 ) -> Result<AstPair<Rc<Value>>, Error> {
     let p_match = match_expression(pair, ctx)?;
     match p_match {

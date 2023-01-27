@@ -1,4 +1,3 @@
-use std::cell::RefMut;
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -35,7 +34,7 @@ impl LibFunction for Spread {
         "spread".to_string()
     }
 
-    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
         let arg = &args[0];
         match arg.1.as_ref() {
             Value::List { items: l, spread } => {
@@ -77,7 +76,7 @@ impl LibFunction for Range {
         "range".to_string()
     }
 
-    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
         let range = match arg_values(args)[..] {
             [Value::I(s)] => 0..*s,
             [Value::I(s), Value::I(e)] => *s..*e,
@@ -103,7 +102,7 @@ impl LibFunction for Len {
         "len".to_string()
     }
 
-    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
         let l = match arg_values(args)[..] {
             [Value::List { items: l, .. }] => l,
             _ => return Err(arg_error("([*])", args, ctx)),
@@ -128,7 +127,7 @@ impl LibFunction for Map {
         "map".to_string()
     }
 
-    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
         let list = match arg_values(args)[..] {
             [Value::List { items: l, .. }, f] if f.is_callable() => l,
             _ => return Err(arg_error("([*], (*, I) -> *))", args, ctx)),
@@ -173,7 +172,7 @@ impl LibFunction for Filter {
         "filter".to_string()
     }
 
-    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
         let list = match arg_values(args)[..] {
             [Value::List { items: l, .. }, f] if f.is_callable() => l,
             _ => return Err(arg_error("([*], (*, I) -> B)", args, ctx)),
@@ -224,7 +223,7 @@ impl LibFunction for Reduce {
         "reduce".to_string()
     }
 
-    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
         let (list, start) = match arg_values(args)[..] {
             [Value::List { items: l, .. }, s, f] if f.is_callable() => (l, s),
             _ => return Err(arg_error("([a], b, (b, a, I) -> b)", args, ctx)),
@@ -277,7 +276,7 @@ impl LibFunction for At {
         "at".to_string()
     }
 
-    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
         let (list, i) = match arg_values(args)[..] {
             [Value::List { items: l, .. }, Value::I(i)] => (l, *i),
             _ => return Err(arg_error("([*], I)", args, ctx)),
@@ -314,7 +313,7 @@ impl LibFunction for Slice {
         "slice".to_string()
     }
 
-    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
         let (list, from, to) = match arg_values(args)[..] {
             [Value::List { items: l, .. }, Value::I(f), Value::I(t)] => (l, *f, *t),
             _ => return Err(arg_error("([*], I, I)", args, ctx)),
@@ -361,7 +360,7 @@ impl LibFunction for Flat {
         "flat".to_string()
     }
 
-    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
         let res = match arg_values(args)[..] {
             [Value::List { items: is, .. }] => {
                 let l = is
@@ -388,7 +387,7 @@ impl LibFunction for Join {
         "join".to_string()
     }
 
-    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
         let res = match arg_values(args)[..] {
             [Value::List { items: is, .. }, v] => itertools::intersperse(is.iter(), v)
                 .cloned()
@@ -408,7 +407,7 @@ impl LibFunction for Reverse {
         "reverse".to_string()
     }
 
-    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
         let l = match arg_values(args)[..] {
             [Value::List { items: is, .. }] => is.clone(),
             _ => return Err(arg_error("([*])", args, ctx)),
@@ -425,7 +424,7 @@ impl LibFunction for Sort {
         "sort".to_string()
     }
 
-    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
         let mut l = match arg_values(args)[..] {
             [Value::List { items: is, .. }] => is.as_ref().clone(),
             _ => return Err(arg_error("([*])", args, ctx)),

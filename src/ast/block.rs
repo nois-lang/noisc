@@ -1,4 +1,3 @@
-use std::cell::RefMut;
 use std::rc::Rc;
 
 use log::debug;
@@ -16,7 +15,7 @@ pub struct Block {
 }
 
 impl Evaluate for AstPair<Rc<Block>> {
-    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Rc<Value>>, Error> {
+    fn eval(self, ctx: &mut Context) -> Result<AstPair<Rc<Value>>, Error> {
         debug!("eval {:?}", &self);
         let mut last_res = self.with(Rc::new(Value::Unit));
         for statement in &self.1.statements {

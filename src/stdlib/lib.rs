@@ -1,12 +1,11 @@
-use std::cell::RefMut;
 use std::collections::HashMap;
 use std::mem::take;
 use std::rc::Rc;
 
-use crate::ast::ast_pair::{AstPair, Span};
-use crate::ast::identifier::Identifier;
 use log::debug;
 
+use crate::ast::ast_pair::{AstPair, Span};
+use crate::ast::identifier::Identifier;
 use crate::error::Error;
 use crate::interpret::context::{Context, Scope, SysFunction};
 use crate::interpret::definition::Definition;
@@ -35,12 +34,9 @@ pub fn stdlib() -> Vec<Package> {
 pub trait LibFunction {
     fn name() -> String;
 
-    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error>;
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error>;
 
-    fn call_fn(
-        args: &[AstPair<Rc<Value>>],
-        ctx: &mut RefMut<Context>,
-    ) -> Result<AstPair<Value>, Error> {
+    fn call_fn(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<AstPair<Value>, Error> {
         debug!("stdlib function call {:?}", Self::name(),);
         let arguments: Vec<AstPair<Rc<Value>>> = args
             .iter()
@@ -73,11 +69,7 @@ pub trait LibFunction {
     }
 }
 
-pub fn arg_error(
-    expected_type: &str,
-    args: &[AstPair<Rc<Value>>],
-    ctx: &mut RefMut<Context>,
-) -> Error {
+pub fn arg_error(expected_type: &str, args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Error {
     Error::from_callee(
         ctx,
         format!(
@@ -96,7 +88,7 @@ pub fn run_closure(
     closure: &AstPair<Rc<Value>>,
     arguments: Option<Rc<Vec<AstPair<Rc<Value>>>>>,
     callee: Option<Span>,
-    ctx: &mut RefMut<Context>,
+    ctx: &mut Context,
 ) -> Result<AstPair<Rc<Value>>, Error> {
     ctx.scope_stack.push(take(
         Scope::new("<closure>".to_string())

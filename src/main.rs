@@ -4,7 +4,6 @@ extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 
-use std::cell::RefCell;
 use std::fs::read_to_string;
 use std::io;
 use std::path::PathBuf;
@@ -48,7 +47,7 @@ lazy_static! {
 fn main() {
     if let Some(source) = piped_input() {
         let (ast, a_ctx) = parse_ast(source, LintingConfig::full());
-        execute_file(ast, Context::stdlib(a_ctx), |_| {});
+        execute_file(ast, &mut Context::stdlib(a_ctx), |_| {});
         return;
     }
 
@@ -71,7 +70,7 @@ fn main() {
             info!("executing command {:?}", &command);
             let source = read_source(path);
             let (ast, a_ctx) = parse_ast(source, LintingConfig::full());
-            execute_file(ast, Context::stdlib(a_ctx), |_| {});
+            execute_file(ast, &mut Context::stdlib(a_ctx), |_| {});
         }
         Commands::Repl { args } => {
             RUN_ARGS.lock().unwrap().extend(args.clone());
@@ -81,15 +80,13 @@ fn main() {
 }
 
 fn parse_ast(source: String, config: LintingConfig) -> (AstPair<Block>, AstContext) {
-    let ctx = AstContext::stdlib(source.clone(), config);
-    let ctx_rc = &RefCell::new(ctx);
-    let ctx_bm = &mut ctx_rc.borrow_mut();
+    let mut ctx = AstContext::stdlib(source.clone(), config);
 
     let pt = NoisParser::parse_program(source.as_str());
-    let ast = pt.and_then(|parsed| parse_block(&parsed, ctx_bm));
+    let ast = pt.and_then(|parsed| parse_block(&parsed, &mut ctx));
 
     match ast {
-        Ok(a) => (a, ctx_bm.clone()),
+        Ok(a) => (a, ctx.clone()),
         Err(e) => terminate(e.to_string()),
     }
 }
@@ -123,19 +120,17 @@ fn run_repl() {
     println!("Nois {} REPL, ctrl+d to exit", built_info::PKG_VERSION);
 
     let a_ctx = AstContext::stdlib(String::new(), LintingConfig::full());
-    let ctx = Context::stdlib(a_ctx);
-    let ctx_cell = RefCell::new(ctx);
-    let ctx_bm = &mut ctx_cell.borrow_mut();
+    let mut ctx = Context::stdlib(a_ctx);
 
     let interface =
         Interface::new("repl").unwrap_or_else(|e| terminate(format!("error starting repl: {e}")));
     interface.set_prompt("-> ").ok();
     while let ReadResult::Input(line) = interface.read_line().unwrap() {
         interface.add_history_unique(line.clone());
-        ctx_bm.ast_context.input = line.clone();
+        ctx.ast_context.input = line.clone();
 
         debug!("eval statement {:?}", line);
-        let res = evaluate(line.as_str(), ctx_bm);
+        let res = evaluate(line.as_str(), &mut ctx);
         match res {
             Ok(v) => println!("{v}"),
             Err(e) => eprintln!("{}", e.to_string().red()),
@@ -145,7 +140,7 @@ fn run_repl() {
 
 #[cfg(test)]
 mod test {
-    use std::cell::{RefCell, RefMut};
+    use std::cell::RefCell;
     use std::collections::HashMap;
     use std::fs::read_to_string;
     use std::mem::take;
@@ -174,10 +169,7 @@ mod test {
                 "println".to_string()
             }
 
-            fn call(
-                args: &[AstPair<Rc<Value>>],
-                _ctx: &mut RefMut<Context>,
-            ) -> Result<Value, Error> {
+            fn call(args: &[AstPair<Rc<Value>>], _ctx: &mut Context) -> Result<Value, Error> {
                 OUT.with(|o| {
                     o.borrow_mut().push(
                         args.iter()
@@ -192,7 +184,7 @@ mod test {
 
         let source = read_to_string(format!("data/{name}.no")).unwrap();
         let (ast, a_ctx) = parse_ast(source, LintingConfig::full());
-        execute_file(ast, Context::stdlib(a_ctx), |ctx| {
+        execute_file(ast, &mut Context::stdlib(a_ctx), |ctx| {
             ctx.scope_stack.push(take(
                 Scope::new("test".to_string())
                     .with_definitions(HashMap::from([TestPrintln::definition()])),

@@ -1,10 +1,9 @@
-use std::cell::RefMut;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use crate::ast::ast_pair::AstPair;
 use colored::Colorize;
 
+use crate::ast::ast_pair::AstPair;
 use crate::error::Error;
 use crate::interpret::context::Context;
 use crate::interpret::value::Value;
@@ -33,7 +32,7 @@ impl LibFunction for Println {
         "println".to_string()
     }
 
-    fn call(args: &[AstPair<Rc<Value>>], _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], _ctx: &mut Context) -> Result<Value, Error> {
         println!(
             "{}",
             args.iter()
@@ -56,7 +55,7 @@ impl LibFunction for Eprintln {
         "eprintln".to_string()
     }
 
-    fn call(args: &[AstPair<Rc<Value>>], _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], _ctx: &mut Context) -> Result<Value, Error> {
         eprintln!(
             "{}",
             args.iter()
@@ -80,7 +79,7 @@ impl LibFunction for Debug {
         "debug".to_string()
     }
 
-    fn call(args: &[AstPair<Rc<Value>>], _ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], _ctx: &mut Context) -> Result<Value, Error> {
         println!(
             "{}",
             args.iter()
@@ -103,7 +102,7 @@ impl LibFunction for Panic {
         "panic".to_string()
     }
 
-    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
         Err(Error::from_callee(
             ctx,
             args.iter()
@@ -121,7 +120,7 @@ impl LibFunction for Args {
         "args".to_string()
     }
 
-    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
         if !args.is_empty() {
             return Err(arg_error("()", args, ctx));
         }

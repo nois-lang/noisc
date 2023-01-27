@@ -1,4 +1,3 @@
-use std::cell::RefMut;
 use std::fmt::Debug;
 use std::iter::zip;
 use std::rc::Rc;
@@ -41,7 +40,7 @@ impl AssignmentResult {
 pub fn assign_definitions<T, F>(
     assignee: &AstPair<Assignee>,
     expression: T,
-    ctx: &mut RefMut<Context>,
+    ctx: &mut Context,
     f: F,
 ) -> Result<AssignmentResult, Error>
 where
@@ -67,7 +66,7 @@ pub fn destructure_list<T: Evaluate + Debug>(
     destructure_list: &DestructureList,
     expression: T,
     span: Span,
-    ctx: &mut RefMut<Context>,
+    ctx: &mut Context,
 ) -> Result<Vec<AssignmentPair>, Error> {
     let e = expression.eval(ctx)?;
     debug!("destructuring list {:?} into {:?}", &e, destructure_list);
@@ -133,7 +132,7 @@ pub fn destructure_list<T: Evaluate + Debug>(
 fn destructure_item(
     destructure_item: &AstPair<DestructureItem>,
     value: AstPair<Rc<Value>>,
-    ctx: &mut RefMut<Context>,
+    ctx: &mut Context,
 ) -> Result<Vec<AssignmentPair>, Error> {
     debug!(
         "destructuring item {:?} into {:?}",
@@ -154,7 +153,7 @@ fn destructure_item(
 
 fn destructure_with_spread(
     span: Span,
-    ctx: &mut RefMut<Context>,
+    ctx: &mut Context,
     destructure_list: &DestructureList,
     vs: &[Value],
     spread_item: &(usize, AstPair<Identifier>),

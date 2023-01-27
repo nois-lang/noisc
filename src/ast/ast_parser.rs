@@ -676,7 +676,6 @@ fn parse_pattern_list(
 
 #[cfg(test)]
 mod test {
-    use std::cell::RefCell;
     use std::ops::Deref;
 
     use pest::Parser;
@@ -687,7 +686,6 @@ mod test {
     use crate::ast::expression::Expression;
     use crate::ast::identifier::Identifier;
     use crate::ast::operand::Operand;
-    use crate::interpret::context::Context;
     use crate::parser::NoisParser;
 
     use super::*;
@@ -704,13 +702,8 @@ mod test {
 
     fn parse_block(source: &str) -> Block {
         let file = &NoisParser::parse(Rule::program, source).unwrap();
-        let ctx = Context::stdlib(AstContext::stdlib(
-            source.to_string(),
-            LintingConfig::none(),
-        ));
-        let a_ctx_cell = RefCell::new(ctx.ast_context);
-        let a_ctx = &mut a_ctx_cell.borrow_mut();
-        super::parse_block(&file.clone().into_iter().next().unwrap(), a_ctx)
+        let mut ctx = AstContext::stdlib(source.to_string(), LintingConfig::none());
+        super::parse_block(&file.clone().into_iter().next().unwrap(), &mut ctx)
             .unwrap()
             .1
     }

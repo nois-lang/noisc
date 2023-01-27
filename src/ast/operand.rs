@@ -1,3 +1,7 @@
+use std::rc::Rc;
+
+use log::debug;
+
 use crate::ast::ast_pair::AstPair;
 use crate::ast::expression::Expression;
 use crate::ast::function_init::FunctionInit;
@@ -8,9 +12,6 @@ use crate::interpret::context::Context;
 use crate::interpret::definition::Definition;
 use crate::interpret::evaluate::Evaluate;
 use crate::interpret::value::Value;
-use log::debug;
-use std::cell::RefMut;
-use std::rc::Rc;
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Operand {
@@ -28,7 +29,7 @@ pub enum Operand {
 }
 
 impl Evaluate for AstPair<Rc<Operand>> {
-    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Rc<Value>>, Error> {
+    fn eval(self, ctx: &mut Context) -> Result<AstPair<Rc<Value>>, Error> {
         debug!("eval {:?}", &self);
         match self.1.as_ref() {
             Operand::Integer(i) => Ok(self.with(Rc::new(Value::I(*i)))),

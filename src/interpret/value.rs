@@ -1,11 +1,12 @@
-use log::debug;
-use std::cell::RefMut;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops;
 use std::rc::Rc;
+
+use log::debug;
+use num::NumCast;
 
 use crate::ast::ast_pair::AstPair;
 use crate::ast::function_init::FunctionInit;
@@ -14,8 +15,6 @@ use crate::ast::matcher::PatternItem;
 use crate::ast::unary_operator::UnaryOperator;
 use crate::ast::value_type::ValueType;
 use crate::error::Error;
-use num::NumCast;
-
 use crate::interpret::context::{Context, SysFunction};
 use crate::interpret::definition::Definition;
 use crate::interpret::evaluate::Evaluate;
@@ -412,7 +411,7 @@ impl ops::Not for &Value {
 }
 
 impl Evaluate for AstPair<Rc<Value>> {
-    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Rc<Value>>, Error> {
+    fn eval(self, ctx: &mut Context) -> Result<AstPair<Rc<Value>>, Error> {
         debug!("eval value {:?}", &self);
         if let Some(args) = ctx
             .scope_stack

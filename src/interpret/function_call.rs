@@ -1,13 +1,12 @@
-use std::cell::RefMut;
 use std::fmt::{Display, Formatter};
 use std::mem::take;
 use std::ops::DerefMut;
 use std::rc::Rc;
 
-use crate::ast::ast_pair::AstPair;
-use crate::ast::function_call::FunctionCall;
 use log::debug;
 
+use crate::ast::ast_pair::AstPair;
+use crate::ast::function_call::FunctionCall;
 use crate::error::Error;
 use crate::interpret::context::{Context, Scope};
 use crate::interpret::evaluate::Evaluate;
@@ -34,7 +33,7 @@ impl Display for FunctionCallType {
 
 pub fn function_call(
     function_call: &AstPair<FunctionCall>,
-    ctx: &mut RefMut<Context>,
+    ctx: &mut Context,
     call_type: FunctionCallType,
 ) -> Result<AstPair<Rc<Value>>, Error> {
     debug!("function call {:?}", function_call);

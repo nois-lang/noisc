@@ -1,3 +1,7 @@
+use std::rc::Rc;
+
+use log::debug;
+
 use crate::ast::ast_pair::AstPair;
 use crate::ast::destructure::Assignee;
 use crate::ast::expression::Expression;
@@ -7,9 +11,6 @@ use crate::interpret::definition::Definition;
 use crate::interpret::destructure::{assign_definitions, AssignmentPair, AssignmentResult};
 use crate::interpret::evaluate::Evaluate;
 use crate::interpret::value::Value;
-use log::debug;
-use std::cell::RefMut;
-use std::rc::Rc;
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Statement {
@@ -22,7 +23,7 @@ pub enum Statement {
 }
 
 impl Statement {
-    pub fn as_definitions(&self, ctx: &mut RefMut<Context>) -> Result<AssignmentResult, Error> {
+    pub fn as_definitions(&self, ctx: &mut Context) -> Result<AssignmentResult, Error> {
         match self {
             Statement::Assignment {
                 assignee,
@@ -39,7 +40,7 @@ impl Statement {
 }
 
 impl Evaluate for AstPair<Rc<Statement>> {
-    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Rc<Value>>, Error> {
+    fn eval(self, ctx: &mut Context) -> Result<AstPair<Rc<Value>>, Error> {
         let unit = Ok(self.with(Rc::new(Value::Unit)));
         debug!("eval {:?}", &self);
         match self.1.as_ref() {

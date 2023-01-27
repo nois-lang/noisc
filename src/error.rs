@@ -1,14 +1,13 @@
-use std::cell::RefMut;
 use std::fmt::{Display, Formatter};
 use std::panic::set_hook;
 
-use crate::ast::ast_context::AstContext;
-use crate::ast::ast_pair::Span;
 use colored::Colorize;
 use pest::error::ErrorVariant;
 use pest::error::{Error as PError, LineColLocation};
 use pest::iterators::Pair;
 
+use crate::ast::ast_context::AstContext;
+use crate::ast::ast_pair::Span;
 use crate::interpret::context::Context;
 use crate::parser::Rule;
 
@@ -43,7 +42,7 @@ impl Error {
         Error::Error(Self::custom_error_span(span, ctx, message))
     }
 
-    pub fn from_callee(ctx: &mut RefMut<Context>, message: String) -> Error {
+    pub fn from_callee(ctx: &mut Context, message: String) -> Error {
         Error::Error(Self::custom_error_callee(ctx, message))
     }
 
@@ -62,7 +61,7 @@ impl Error {
         PError::new_from_span(ErrorVariant::CustomError { message }, span.as_span(ctx))
     }
 
-    fn custom_error_callee(ctx: &mut RefMut<Context>, message: String) -> PError<Rule> {
+    fn custom_error_callee(ctx: &mut Context, message: String) -> PError<Rule> {
         Self::custom_error_span(
             &ctx.scope_stack
                 .last()

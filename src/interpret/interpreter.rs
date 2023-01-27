@@ -1,4 +1,3 @@
-use std::cell::{RefCell, RefMut};
 use std::collections::HashMap;
 use std::mem::take;
 use std::rc::Rc;
@@ -18,17 +17,15 @@ use crate::interpret::evaluate::Evaluate;
 use crate::interpret::value::Value;
 use crate::parser::NoisParser;
 
-pub fn execute_file<F>(block: AstPair<Block>, ctx: Context, mut update_ctx: F)
+pub fn execute_file<F>(block: AstPair<Block>, ctx: &mut Context, mut update_ctx: F)
 where
-    F: FnMut(&mut RefMut<Context>),
+    F: FnMut(&mut Context),
 {
-    let ctx_cell = RefCell::new(ctx);
-    let ctx_bm = &mut ctx_cell.borrow_mut();
     let r_defs = block
         .1
         .statements
         .into_iter()
-        .map(|s| s.1.as_definitions(ctx_bm))
+        .map(|s| s.1.as_definitions(ctx))
         .collect::<Result<Vec<_>, _>>();
     let block_defs = match r_defs {
         Ok(ds) => ds
@@ -39,42 +36,42 @@ where
         Err(e) => terminate(e.to_string()),
     };
     let identifier = Identifier::new("main");
-    ctx_bm.scope_stack.push(take(
+    ctx.scope_stack.push(take(
         Scope::new("global".to_string()).with_definitions(block_defs.clone()),
     ));
-    ctx_bm.ast_context.scope_stack.push(AstScope {
+    ctx.ast_context.scope_stack.push(AstScope {
         definitions: block_defs.into_keys().map(|i| (i, None)).collect(),
         usage: HashMap::new(),
     });
-    debug!("push scope @{}", &ctx_bm.scope_stack.last().unwrap().name);
+    debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
 
-    update_ctx(ctx_bm);
+    update_ctx(ctx);
 
-    ctx_bm.scope_stack.push(take(
+    ctx.scope_stack.push(take(
         Scope::new(identifier.to_string()).with_arguments(Some(Rc::new(vec![]))),
     ));
-    ctx_bm.ast_context.scope_stack.push(AstScope::default());
-    debug!("push scope @{}", &ctx_bm.scope_stack.last().unwrap().name);
+    ctx.ast_context.scope_stack.push(AstScope::default());
+    debug!("push scope @{}", &ctx.scope_stack.last().unwrap().name);
 
-    let (main_id, main) = match ctx_bm.find_definition(&identifier).cloned() {
+    let (main_id, main) = match ctx.find_definition(&identifier).cloned() {
         Some(Definition::User(id, exp)) => (id, exp),
         _ => terminate(format!("'{identifier}' not found")),
     };
-    let mut a = ctx_bm.scope_stack.last_mut().unwrap();
+    let mut a = ctx.scope_stack.last_mut().unwrap();
     a.callee = Some(main_id.0);
-    match main.eval(ctx_bm) {
+    match main.eval(ctx) {
         Ok(_) => {}
         Err(e) => {
-            let err = Error::new_cause(e, main_id.1 .0, &main_id.0, &ctx_bm.ast_context);
+            let err = Error::new_cause(e, main_id.1 .0, &main_id.0, &ctx.ast_context);
             terminate(err.to_string())
         }
     };
-    debug!("pop scope @{}", &ctx_bm.scope_stack.last().unwrap().name);
-    ctx_bm.scope_stack.pop();
-    ctx_bm.ast_context.scope_stack.pop();
+    debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
+    ctx.scope_stack.pop();
+    ctx.ast_context.scope_stack.pop();
 }
 
-pub fn evaluate(source: &str, ctx: &mut RefMut<Context>) -> Result<Value, Error> {
+pub fn evaluate(source: &str, ctx: &mut Context) -> Result<Value, Error> {
     let pt = NoisParser::parse_program(source)?;
     let ast = parse_block(&pt, &mut ctx.ast_context)?;
     ast.map(|v| Rc::new(v.clone()))
@@ -85,8 +82,6 @@ pub fn evaluate(source: &str, ctx: &mut RefMut<Context>) -> Result<Value, Error>
 
 #[cfg(test)]
 pub mod test {
-    use std::cell::RefCell;
-
     use crate::ast::ast_context::{AstContext, LintingConfig};
     use crate::error::Error;
     use crate::interpret::context::Context;
@@ -94,10 +89,8 @@ pub mod test {
 
     pub fn evaluate(source: &str) -> Result<Value, Error> {
         let a_ctx = AstContext::stdlib(source.to_string(), LintingConfig::none());
-        let ctx = Context::stdlib(a_ctx);
-        let ctx_cell = RefCell::new(ctx.clone());
-        let ctx_bm = &mut ctx_cell.borrow_mut();
+        let mut ctx = Context::stdlib(a_ctx);
 
-        super::evaluate(source, ctx_bm)
+        super::evaluate(source, &mut ctx)
     }
 }

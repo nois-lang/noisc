@@ -1,3 +1,7 @@
+use std::rc::Rc;
+
+use log::debug;
+
 use crate::ast::ast_pair::AstPair;
 use crate::ast::block::Block;
 use crate::ast::destructure::Assignee;
@@ -8,9 +12,6 @@ use crate::interpret::definition::Definition;
 use crate::interpret::destructure::{assign_definitions, AssignmentPair};
 use crate::interpret::evaluate::Evaluate;
 use crate::interpret::value::Value;
-use log::debug;
-use std::cell::RefMut;
-use std::rc::Rc;
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub struct FunctionInit {
@@ -20,7 +21,7 @@ pub struct FunctionInit {
 }
 
 impl Evaluate for AstPair<Rc<FunctionInit>> {
-    fn eval(self, ctx: &mut RefMut<Context>) -> Result<AstPair<Rc<Value>>, Error> {
+    fn eval(self, ctx: &mut Context) -> Result<AstPair<Rc<Value>>, Error> {
         debug!("eval {:?}", self);
         // if scope has args, this is a function call and function init must be evaluated
         if let Some(args) = ctx

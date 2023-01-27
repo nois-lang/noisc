@@ -1,4 +1,3 @@
-use std::cell::RefMut;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::mem::take;
@@ -96,7 +95,7 @@ impl Scope {
 
 #[derive(Clone, Copy)]
 pub struct SysFunction(
-    pub fn(&Vec<AstPair<Rc<Value>>>, &mut RefMut<Context>) -> Result<AstPair<Value>, Error>,
+    pub fn(&Vec<AstPair<Rc<Value>>>, &mut Context) -> Result<AstPair<Value>, Error>,
 );
 
 impl Debug for SysFunction {

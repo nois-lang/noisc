@@ -1,4 +1,3 @@
-use std::cell::RefMut;
 use std::iter::zip;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -17,7 +16,7 @@ use crate::interpret::value::Value;
 
 pub fn match_expression(
     expression: &AstPair<Rc<Expression>>,
-    ctx: &mut RefMut<Context>,
+    ctx: &mut Context,
 ) -> Result<Option<(AstPair<MatchClause>, Vec<(Identifier, Definition)>)>, Error> {
     match expression.1.as_ref() {
         Expression::MatchExpression {
@@ -42,7 +41,7 @@ pub fn match_expression(
 pub fn match_pattern_item(
     value: &AstPair<Rc<Value>>,
     pattern_item: &AstPair<PatternItem>,
-    ctx: &mut RefMut<Context>,
+    ctx: &mut Context,
 ) -> Result<Option<Vec<(Identifier, Definition)>>, Error> {
     let defs = match &pattern_item.1 {
         PatternItem::Hole | PatternItem::SpreadHole => Some(vec![]),
@@ -113,7 +112,7 @@ pub fn match_pattern_item(
 
 fn match_list(
     value: &AstPair<Rc<Value>>,
-    ctx: &mut RefMut<Context>,
+    ctx: &mut Context,
     items: &[AstPair<PatternItem>],
     vs: &[Value],
 ) -> Result<Option<Vec<(Identifier, Definition)>>, Error> {
@@ -137,7 +136,7 @@ fn match_list(
 
 fn match_list_with_spread(
     value: &AstPair<Rc<Value>>,
-    ctx: &mut RefMut<Context>,
+    ctx: &mut Context,
     items: &[AstPair<PatternItem>],
     vs: &[Value],
     spread_item: (usize, AstPair<Identifier>),
