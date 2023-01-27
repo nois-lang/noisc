@@ -1,47 +1,23 @@
-next = seq {
-    n = seq.map((e, i) {
-        prev = i - 1 < 0 || seq.at(i - 1)
-        next = i + 1 >= seq.len() || seq.at(i + 1)
-        match [prev, e, next] {
-            [True , True , True ] => False,
-            [True , True , False] => True,
-            [True , False, True ] => True,
-            [True , False, False] => False,
-            [False, True , True ] => True,
-            [False, True , False] => True,
-            [False, False, True ] => True,
-            [False, False, False] => False,
-            v => panic(v)
-        }
-    })
-    n
-}
+next = seq -> seq.map((e, i) {
+    // TODO: window
+    prev = i - 1 < 0 || seq.at(i - 1)
+    next = i + 1 >= seq.len() || seq.at(i + 1)
+    match [prev, e, next] {
+        [True , True , True ] => False,
+        [True , False, False] => False,
+        [False, False, False] => False,
+        _ => True,
+    }
+})
 
-pretty = (grid, size) {
-    grid
-        .map(seq -> seq
-            .map(e -> match e {
-                True  => 'x',
-                False => ' ',
-            })
-            .flat()
-        )
-        .map(seq -> println(seq))
-}
+pretty = grid -> grid
+    .map(seq -> seq.map(e -> match e { True  => 'x', False => ' ' }).flat())
+    .map(seq -> println(seq))
 
 main = {
-    start = args().at(0)
-    iterations = args().at(1).to(I)
-    pad = range(iterations - 1).map(_ -> False)
-    s = start.map(d -> match [d] {
-        '1' => True,
-        '0' => False,
-        _ => panic(d)
-    })
-    r = range(iterations)
-        .reduce([[..pad, ..s]], acc {
-            n = next(acc.at(-1))
-            ..acc + n
-        })
-    pretty(r, iterations)
+    [start, iters] = match args() { [s, i] => [s, i.to(I)], _ => panic() }
+    pad = range(iters - 1).map(_ -> False)
+    s = start.map(d -> match [d] { '1' => True, '0' => False, _ => panic(d) })
+    r = range(iters).reduce([[..pad, ..s]], acc { n = next(acc.at(-1)) ~ ..acc + n })
+    pretty(r)
 }
