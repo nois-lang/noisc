@@ -172,6 +172,6 @@ DOUBLE_QUOTE                  = _{ "\"" }
 COMMA                         = _{ "," }
 AMPERSAND                     = _{ "&" }
 PIPE                          = _{ "|" }
-N                             = _{ NEWLINE }
+N                             = _{ NEWLINE | "~" }
 COMMENT                       = _{ "//" ~ (!"\n" ~ ANY)*}
 WHITESPACE                    = _{ " " | "\t" }
