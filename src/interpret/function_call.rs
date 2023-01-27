@@ -86,7 +86,7 @@ pub fn function_call(
         }
     } else {
         let callee_rc = callee.unwrap().1;
-        if !matches!(callee_rc.as_ref(), Value::Closure(..)) {
+        if !callee_rc.as_ref().is_callable() {
             return Err(Error::from_span(
                 &function_call.0,
                 &ctx.ast_context,

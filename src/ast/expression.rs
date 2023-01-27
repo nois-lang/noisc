@@ -82,36 +82,27 @@ fn eval_binary_expression(
     right_operand: &AstPair<Expression>,
     ctx: &mut Context,
 ) -> Result<AstPair<Rc<Value>>, Error> {
-    match operator.1 {
+    match &operator.1 {
         BinaryOperator::Accessor => {
             let l = left_operand.map(|v| Rc::new(v.clone())).eval(ctx)?;
             ctx.scope_stack.last_mut().unwrap().method_callee = Some(l);
             right_operand.map(|v| Rc::new(v.clone())).eval(ctx)
         }
-        _ => {
-            if let Some(condition) = operator.1.short_circuit_condition() {
-                let left = left_operand.map(|v| Rc::new(v.clone())).eval(ctx)?;
-                debug!(
-                    "short-circuit case for {}, value: {:?}, condition: {:?}",
-                    operator.1,
-                    left.1.as_ref(),
-                    condition
-                );
-                if left.1.as_ref() == &condition {
+        op => {
+            let left = left_operand.map(|v| Rc::new(v.clone())).eval(ctx)?;
+            if let Some(condition) = op.short_circuit_condition() {
+                if *left.1 == condition {
+                    debug!(
+                        "short-circuit case for {}, value: {:?}, condition: {:?}",
+                        op, left.1, condition
+                    );
                     return Ok(left);
                 }
             };
-            // TODO: optimize to not recalculate left_operand twice
-            let fc = FunctionCall::new_by_name(
-                operator.0,
-                operator.1.to_string().as_str(),
-                vec![left_operand, right_operand]
-                    .into_iter()
-                    .map(|p| p.map(|v| Rc::new(v.clone())))
-                    .collect(),
-            );
-            let a = pair.with(fc);
-            function_call(&a, ctx, FunctionCallType::Function)
+            let right = right_operand.map(|v| Rc::new(v.clone())).eval(ctx)?;
+            let args = &[left, right];
+            let r = op.call_function()(args, ctx)?;
+            Ok(AstPair(pair.0, Rc::new(r)))
         }
     }
 }
