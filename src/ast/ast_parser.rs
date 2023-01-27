@@ -1,4 +1,3 @@
-use std::cell::RefMut;
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -24,10 +23,7 @@ use crate::ast::value_type::ValueType;
 use crate::error::Error;
 use crate::parser::Rule;
 
-pub fn parse_block(
-    pair: &Pair<Rule>,
-    ctx: &mut RefMut<AstContext>,
-) -> Result<AstPair<Block>, Error> {
+pub fn parse_block(pair: &Pair<Rule>, ctx: &mut AstContext) -> Result<AstPair<Block>, Error> {
     match pair.as_rule() {
         Rule::block => {
             let statements = parse_children(
@@ -56,10 +52,7 @@ pub fn parse_block(
     }
 }
 
-fn parse_statement(
-    pair: &Pair<Rule>,
-    ctx: &mut RefMut<AstContext>,
-) -> Result<AstPair<Statement>, Error> {
+fn parse_statement(pair: &Pair<Rule>, ctx: &mut AstContext) -> Result<AstPair<Statement>, Error> {
     match pair.as_rule() {
         Rule::return_statement => {
             let m_exp = first_child(pair).map(|p| parse_expression(&p, ctx));
@@ -91,10 +84,7 @@ fn parse_statement(
     }
 }
 
-fn parse_expression(
-    pair: &Pair<Rule>,
-    ctx: &mut RefMut<AstContext>,
-) -> Result<AstPair<Expression>, Error> {
+fn parse_expression(pair: &Pair<Rule>, ctx: &mut AstContext) -> Result<AstPair<Expression>, Error> {
     let ch = children(pair);
     match pair.as_rule() {
         Rule::expression => {
@@ -156,7 +146,7 @@ fn parse_expression(
 
 fn parse_complex_expression(
     pair: &Pair<Rule>,
-    ctx: &mut RefMut<AstContext>,
+    ctx: &mut AstContext,
 ) -> Result<AstPair<Expression>, Error> {
     #[derive(Debug, PartialOrd, PartialEq, Clone)]
     enum Node {
@@ -238,7 +228,7 @@ fn parse_complex_expression(
 
 fn parse_unary_operator(
     pair: &Pair<Rule>,
-    ctx: &mut RefMut<AstContext>,
+    ctx: &mut AstContext,
 ) -> Result<AstPair<UnaryOperator>, Error> {
     let c = first_child(pair).unwrap();
     let op = match pair.as_rule() {
@@ -263,7 +253,7 @@ fn parse_unary_operator(
 
 fn parse_binary_operator(
     pair: &Pair<Rule>,
-    _ctx: &mut RefMut<AstContext>,
+    _ctx: &mut AstContext,
 ) -> Result<AstPair<BinaryOperator>, Error> {
     let c = first_child(pair).unwrap();
     let op = match pair.as_rule() {
@@ -296,10 +286,7 @@ fn parse_binary_operator(
     op.map(|op| AstPair::from_pair(pair, op))
 }
 
-fn parse_operand(
-    pair: &Pair<Rule>,
-    ctx: &mut RefMut<AstContext>,
-) -> Result<AstPair<Operand>, Error> {
+fn parse_operand(pair: &Pair<Rule>, ctx: &mut AstContext) -> Result<AstPair<Operand>, Error> {
     match pair.as_rule() {
         Rule::integer => {
             parse_integer(pair, ctx).map(|i| AstPair::from_pair(pair, Operand::Integer(i)))
@@ -346,7 +333,7 @@ fn parse_operand(
     }
 }
 
-fn parse_integer(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<i128, Error> {
+fn parse_integer(pair: &Pair<Rule>, _ctx: &mut AstContext) -> Result<i128, Error> {
     let num_s = pair.as_str();
     match num_s.parse::<i128>() {
         Ok(n) => Ok(n),
@@ -354,7 +341,7 @@ fn parse_integer(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<i12
     }
 }
 
-fn parse_float(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<f64, Error> {
+fn parse_float(pair: &Pair<Rule>, _ctx: &mut AstContext) -> Result<f64, Error> {
     let num_s = pair.as_str();
     match num_s.parse::<f64>() {
         Ok(n) => Ok(n),
@@ -362,7 +349,7 @@ fn parse_float(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<f64, 
     }
 }
 
-fn parse_boolean(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<bool, Error> {
+fn parse_boolean(pair: &Pair<Rule>, _ctx: &mut AstContext) -> Result<bool, Error> {
     let bool_s = pair.as_str();
     match bool_s.to_lowercase().parse::<bool>() {
         Ok(b) => Ok(b),
@@ -373,7 +360,7 @@ fn parse_boolean(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<boo
     }
 }
 
-fn parse_string(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<String, Error> {
+fn parse_string(pair: &Pair<Rule>, _ctx: &mut AstContext) -> Result<String, Error> {
     let raw_str = pair.as_str();
     match unquote(raw_str) {
         Ok(s) => Ok(s),
@@ -384,10 +371,7 @@ fn parse_string(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<Stri
     }
 }
 
-fn parse_function_init(
-    pair: &Pair<Rule>,
-    ctx: &mut RefMut<AstContext>,
-) -> Result<AstPair<Operand>, Error> {
+fn parse_function_init(pair: &Pair<Rule>, ctx: &mut AstContext) -> Result<AstPair<Operand>, Error> {
     let ch = children(pair);
     debug!("push ast scope");
     ctx.scope_stack.push(AstScope::default());
@@ -422,18 +406,12 @@ fn parse_function_init(
     Ok(AstPair::from_pair(pair, Operand::FunctionInit(fi)))
 }
 
-fn parse_list_init(
-    pair: &Pair<Rule>,
-    ctx: &mut RefMut<AstContext>,
-) -> Result<AstPair<Operand>, Error> {
+fn parse_list_init(pair: &Pair<Rule>, ctx: &mut AstContext) -> Result<AstPair<Operand>, Error> {
     let items = parse_children(pair, parse_expression, ctx)?;
     Ok(AstPair::from_pair(pair, Operand::ListInit { items }))
 }
 
-fn parse_struct_define(
-    pair: &Pair<Rule>,
-    ctx: &mut RefMut<AstContext>,
-) -> Result<AstPair<Operand>, Error> {
+fn parse_struct_define(pair: &Pair<Rule>, ctx: &mut AstContext) -> Result<AstPair<Operand>, Error> {
     let fields = parse_children(pair, parse_identifier, ctx)?;
     Ok(AstPair::from_pair(
         pair,
@@ -441,17 +419,14 @@ fn parse_struct_define(
     ))
 }
 
-fn parse_enum_define(
-    pair: &Pair<Rule>,
-    ctx: &mut RefMut<AstContext>,
-) -> Result<AstPair<Operand>, Error> {
+fn parse_enum_define(pair: &Pair<Rule>, ctx: &mut AstContext) -> Result<AstPair<Operand>, Error> {
     let values = parse_children(pair, parse_identifier, ctx)?;
     Ok(AstPair::from_pair(pair, Operand::EnumDefinition { values }))
 }
 
 fn parse_pattern_identifier(
     pair: &Pair<Rule>,
-    ctx: &mut RefMut<AstContext>,
+    ctx: &mut AstContext,
 ) -> Result<AstPair<Identifier>, Error> {
     match pair.as_rule() {
         Rule::identifier => {
@@ -477,7 +452,7 @@ fn parse_pattern_identifier(
 
 fn parse_identifier(
     pair: &Pair<Rule>,
-    _ctx: &mut RefMut<AstContext>,
+    _ctx: &mut AstContext,
 ) -> Result<AstPair<Identifier>, Error> {
     match pair.as_rule() {
         Rule::identifier => Ok(AstPair::from_pair(pair, Identifier::new(pair.as_str()))),
@@ -492,7 +467,7 @@ fn parse_identifier(
     }
 }
 
-fn parse_value_type(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<ValueType, Error> {
+fn parse_value_type(pair: &Pair<Rule>, _ctx: &mut AstContext) -> Result<ValueType, Error> {
     Ok(match pair.as_rule() {
         Rule::unit_type => ValueType::Unit,
         Rule::integer_type => ValueType::Integer,
@@ -516,7 +491,7 @@ fn parse_value_type(pair: &Pair<Rule>, _ctx: &mut RefMut<AstContext>) -> Result<
 
 fn parse_argument_list(
     pair: &Pair<Rule>,
-    ctx: &mut RefMut<AstContext>,
+    ctx: &mut AstContext,
 ) -> Result<Vec<AstPair<Expression>>, Error> {
     match pair.as_rule() {
         Rule::argument_list => parse_children(pair, parse_expression, ctx),
@@ -531,10 +506,7 @@ fn parse_argument_list(
     }
 }
 
-fn parse_assignee(
-    pair: &Pair<Rule>,
-    ctx: &mut RefMut<AstContext>,
-) -> Result<AstPair<Assignee>, Error> {
+fn parse_assignee(pair: &Pair<Rule>, ctx: &mut AstContext) -> Result<AstPair<Assignee>, Error> {
     match pair.as_rule() {
         Rule::assignee => {
             let ch = &first_child(pair).unwrap();
@@ -568,7 +540,7 @@ fn parse_assignee(
 
 fn parse_destructure_list(
     pair: &Pair<Rule>,
-    ctx: &mut RefMut<AstContext>,
+    ctx: &mut AstContext,
 ) -> Result<DestructureList, Error> {
     let items = children(pair)
         .iter()
@@ -579,7 +551,7 @@ fn parse_destructure_list(
 
 fn parse_destructure_item(
     pair: &Pair<Rule>,
-    ctx: &mut RefMut<AstContext>,
+    ctx: &mut AstContext,
 ) -> Result<AstPair<DestructureItem>, Error> {
     match pair.as_rule() {
         Rule::destructure_item => {
@@ -621,7 +593,7 @@ fn parse_destructure_item(
 
 fn parse_match_clause(
     pair: &Pair<Rule>,
-    ctx: &mut RefMut<AstContext>,
+    ctx: &mut AstContext,
 ) -> Result<AstPair<MatchClause>, Error> {
     match pair.as_rule() {
         Rule::match_clause => {
@@ -643,7 +615,7 @@ fn parse_match_clause(
 
 fn parse_pattern_item(
     pair: &Pair<Rule>,
-    ctx: &mut RefMut<AstContext>,
+    ctx: &mut AstContext,
 ) -> Result<AstPair<PatternItem>, Error> {
     match pair.as_rule() {
         Rule::pattern_item => {
@@ -681,7 +653,7 @@ fn parse_pattern_item(
 
 fn parse_pattern_list(
     pair: &Pair<Rule>,
-    ctx: &mut RefMut<AstContext>,
+    ctx: &mut AstContext,
 ) -> Result<AstPair<PatternItem>, Error> {
     match pair.as_rule() {
         Rule::pattern_list => {

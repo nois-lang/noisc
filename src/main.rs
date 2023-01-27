@@ -123,8 +123,6 @@ fn run_repl() {
     println!("Nois {} REPL, ctrl+d to exit", built_info::PKG_VERSION);
 
     let a_ctx = AstContext::stdlib(String::new(), LintingConfig::full());
-    let a_ctx_cell = RefCell::new(a_ctx.clone());
-    let a_ctx_bm = &mut a_ctx_cell.borrow_mut();
     let ctx = Context::stdlib(a_ctx);
     let ctx_cell = RefCell::new(ctx);
     let ctx_bm = &mut ctx_cell.borrow_mut();
@@ -137,7 +135,7 @@ fn run_repl() {
         ctx_bm.ast_context.input = line.clone();
 
         debug!("eval statement {:?}", line);
-        let res = evaluate(line.as_str(), ctx_bm, a_ctx_bm);
+        let res = evaluate(line.as_str(), ctx_bm);
         match res {
             Ok(v) => println!("{v}"),
             Err(e) => eprintln!("{}", e.to_string().red()),

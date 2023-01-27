@@ -1,9 +1,7 @@
-use std::cell::RefMut;
+use pest::iterators::Pair;
 
 use crate::ast::ast_context::AstContext;
 use crate::ast::ast_pair::AstPair;
-use pest::iterators::Pair;
-
 use crate::error::Error;
 use crate::parser::Rule;
 
@@ -18,10 +16,10 @@ pub fn first_child<'a>(p: &'a Pair<Rule>) -> Option<Pair<'a, Rule>> {
 pub fn parse_children<A, F>(
     pair: &Pair<Rule>,
     f: F,
-    ctx: &mut RefMut<AstContext>,
+    ctx: &mut AstContext,
 ) -> Result<Vec<AstPair<A>>, Error>
 where
-    F: Fn(&Pair<Rule>, &mut RefMut<AstContext>) -> Result<AstPair<A>, Error>,
+    F: Fn(&Pair<Rule>, &mut AstContext) -> Result<AstPair<A>, Error>,
 {
     children(pair)
         .into_iter()
