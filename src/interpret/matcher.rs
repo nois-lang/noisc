@@ -1,5 +1,4 @@
 use std::iter::zip;
-use std::ops::Deref;
 use std::rc::Rc;
 
 use log::debug;
@@ -23,7 +22,7 @@ pub fn match_expression(
             condition,
             match_clauses,
         } => {
-            let value = condition.deref().map(|v| Rc::new(v.clone())).eval(ctx)?;
+            let value = condition.map(|v| Rc::new(v.clone())).eval(ctx)?;
             for (i, clause) in match_clauses.iter().enumerate() {
                 debug!("matching {:?} against {:?}", value, clause);
                 let p_match = match_pattern_item(&value, &clause.1.pattern, ctx)?;

@@ -44,9 +44,10 @@ impl Evaluate for AstPair<Rc<Expression>> {
                 if matches!(&operator.1, UnaryOperator::ArgumentList(..)) =>
             {
                 let args = match &operator.1 {
-                    UnaryOperator::ArgumentList(args) => {
-                        args.iter().map(|a| a.map(|v| Rc::new(v.clone()))).collect()
-                    }
+                    UnaryOperator::ArgumentList(args) => args
+                        .iter()
+                        .map(|a| a.map(|v| Rc::new(v.clone())))
+                        .collect::<Vec<_>>(),
                     _ => unreachable!(),
                 };
                 let fc = FunctionCall {
@@ -59,7 +60,7 @@ impl Evaluate for AstPair<Rc<Expression>> {
                 let fc = FunctionCall::new_by_name(
                     operator.deref().0,
                     operator.1.to_string().as_str(),
-                    vec![operand.deref().map(|v| Rc::new(v.clone()))],
+                    vec![operand.map(|v| Rc::new(v.clone()))],
                 );
                 let a = self.with(fc);
                 function_call(&a, ctx, FunctionCallType::Operator)
@@ -83,13 +84,13 @@ fn eval_binary_expression(
 ) -> Result<AstPair<Rc<Value>>, Error> {
     match operator.1 {
         BinaryOperator::Accessor => {
-            let l = left_operand.deref().map(|v| Rc::new(v.clone())).eval(ctx)?;
+            let l = left_operand.map(|v| Rc::new(v.clone())).eval(ctx)?;
             ctx.scope_stack.last_mut().unwrap().method_callee = Some(l);
-            right_operand.deref().map(|v| Rc::new(v.clone())).eval(ctx)
+            right_operand.map(|v| Rc::new(v.clone())).eval(ctx)
         }
         _ => {
             if let Some(condition) = operator.1.short_circuit_condition() {
-                let left = left_operand.deref().map(|v| Rc::new(v.clone())).eval(ctx)?;
+                let left = left_operand.map(|v| Rc::new(v.clone())).eval(ctx)?;
                 debug!(
                     "short-circuit case for {}, value: {:?}, condition: {:?}",
                     operator.1,
@@ -99,13 +100,14 @@ fn eval_binary_expression(
                 if left.1.as_ref() == &condition {
                     return Ok(left);
                 }
-            }
+            };
+            // TODO: optimize to not recalculate left_operand twice
             let fc = FunctionCall::new_by_name(
-                operator.deref().0,
+                operator.0,
                 operator.1.to_string().as_str(),
                 vec![left_operand, right_operand]
                     .into_iter()
-                    .map(|p| p.deref().map(|v| Rc::new(v.clone())))
+                    .map(|p| p.map(|v| Rc::new(v.clone())))
                     .collect(),
             );
             let a = pair.with(fc);
