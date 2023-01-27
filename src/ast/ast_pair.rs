@@ -66,7 +66,7 @@ impl<T: Debug> Debug for AstPair<T> {
     }
 }
 
-#[derive(Debug, PartialOrd, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialOrd, PartialEq, Eq, Clone, Copy, Default)]
 pub struct Span {
     pub start: usize,
     pub end: usize,

@@ -10,20 +10,22 @@ use std::io;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
-use crate::ast::ast_context::{AstContext, LintingConfig};
-use crate::ast::ast_pair::AstPair;
 use atty::Stream;
 use clap::Parser as p;
+use colored::Colorize;
 use lazy_static::lazy_static;
-use log::{info, LevelFilter};
+use linefeed::{Interface, ReadResult};
+use log::{debug, info, LevelFilter};
 use shellexpand::tilde;
 
+use crate::ast::ast_context::{AstContext, LintingConfig};
+use crate::ast::ast_pair::AstPair;
 use crate::ast::ast_parser::parse_block;
 use crate::ast::block::Block;
 use crate::cli::{Cli, Commands};
 use crate::error::terminate;
-use crate::interpret::context::Context;
-use crate::interpret::interpreter::execute_file;
+use crate::interpret::context::{Context, Scope};
+use crate::interpret::interpreter::{evaluate, execute_file};
 use crate::parser::NoisParser;
 
 mod ast;
@@ -34,6 +36,10 @@ mod logger;
 mod parser;
 mod stdlib;
 mod util;
+
+pub mod built_info {
+    include!(concat!(env!("OUT_DIR"), "/built.rs"));
+}
 
 lazy_static! {
     static ref RUN_ARGS: Mutex<Vec<String>> = Mutex::new(vec![]);
@@ -76,10 +82,38 @@ fn main() {
             let (ast, a_ctx) = parse_ast(source, LintingConfig::full());
             execute_file(ast, Context::stdlib(a_ctx), |_| {});
         }
+        Commands::Repl { verbose, args } => {
+            RUN_ARGS.lock().unwrap().extend(args.clone());
+            if *verbose {
+                logger::init(verbose_level);
+            }
+
+            println!("Nois {} REPL, ctrl+d to exit", built_info::PKG_VERSION);
+
+            let ctx = Context::stdlib(AstContext::stdlib(String::new(), LintingConfig::full()));
+            let ctx_cell = RefCell::new(ctx);
+            let ctx_bm = &mut ctx_cell.borrow_mut();
+            ctx_bm.scope_stack.push(Scope::new("repl".to_string()));
+
+            let interface = Interface::new("repl")
+                .unwrap_or_else(|e| terminate(format!("error starting repl: {e}")));
+            interface.set_prompt("-> ").ok();
+            while let ReadResult::Input(line) = interface.read_line().unwrap() {
+                interface.add_history_unique(line.clone());
+                ctx_bm.ast_context.input = line.clone();
+
+                debug!("eval statement {:?}", line);
+                let res = evaluate(line.as_str(), ctx_bm);
+                match res {
+                    Ok(v) => println!("{v}"),
+                    Err(e) => eprintln!("{}", e.to_string().red()),
+                }
+            }
+        }
     }
 }
 
-pub fn parse_ast(source: String, config: LintingConfig) -> (AstPair<Block>, AstContext) {
+fn parse_ast(source: String, config: LintingConfig) -> (AstPair<Block>, AstContext) {
     let a_ctx = AstContext::stdlib(source.clone(), config);
     let ctx = Context::stdlib(a_ctx);
     let ctx_rc = &RefCell::new(ctx.ast_context.clone());
@@ -92,7 +126,7 @@ pub fn parse_ast(source: String, config: LintingConfig) -> (AstPair<Block>, AstC
     }
 }
 
-pub fn read_source(path: &String) -> String {
+fn read_source(path: &String) -> String {
     let source = PathBuf::from(tilde(path).to_string())
         .canonicalize()
         .map(|s| s.into_os_string())
@@ -104,7 +138,7 @@ pub fn read_source(path: &String) -> String {
     }
 }
 
-pub fn piped_input() -> Option<String> {
+fn piped_input() -> Option<String> {
     if atty::is(Stream::Stdin) {
         return None;
     }

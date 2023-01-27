@@ -8,6 +8,10 @@ readme = "README.md"
 repository = "https://github.com/nois-lang/nois"
 homepage = "https://github.com/nois-lang/nois"
 keywords = ["language", "programming-language", "rust"]
+build = "build.rs"
+
+[build-dependencies]
+built = "0.5.2"
 
 [dependencies]
 log = "0.4.17"
@@ -23,3 +27,4 @@ atty = "0.2.14"
 num = "0.4.0"
 itertools = "0.10.5"
 lazy_static = "1.4.0"
+linefeed = "0.6.0"

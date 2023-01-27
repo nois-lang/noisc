@@ -36,7 +36,8 @@ impl Evaluate for Definition {
 
                     f.0(args.as_ref(), ctx).map(|a| a.map(|v| Rc::new(v.clone())))
                 } else {
-                    let callee = scope.callee.unwrap();
+                    // callee can be None in case of the repl call
+                    let callee = scope.callee.unwrap_or_default();
                     Ok(AstPair(callee, Rc::new(Value::System(f))))
                 }
             }

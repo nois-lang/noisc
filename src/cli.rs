@@ -40,4 +40,17 @@ pub enum Commands {
         #[clap(multiple = true)]
         args: Vec<String>,
     },
+    Repl {
+        #[clap(
+        short,
+        long,
+        required = false,
+        takes_value = false,
+        help = "Detailed output"
+        )]
+        verbose: bool,
+
+        #[clap(multiple = true)]
+        args: Vec<String>,
+    },
 }
