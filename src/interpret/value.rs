@@ -141,6 +141,25 @@ impl Value {
         }
     }
 
+    pub fn exp(&self, rhs: &Value) -> Result<Value, String> {
+        fn _exp(a: &Value, b: &Value) -> Option<Value> {
+            match (a, b) {
+                (Value::I(i1), Value::I(i2)) => Some(Value::I(i1.pow(*i2 as u32))),
+                (Value::F(f1), Value::F(f2)) => Some(Value::F(f1.powf(*f2))),
+                (Value::I(i1), Value::F(f2)) => Some(Value::F((*i1 as f64).powf(*f2))),
+                _ => None,
+            }
+        }
+        match _exp(self, rhs).or_else(|| _exp(rhs, self)) {
+            Some(r) => Ok(r),
+            None => Err(format!(
+                "incompatible operands: {} ^ {}",
+                self.value_type(),
+                rhs.value_type()
+            )),
+        }
+    }
+
     pub fn and(&self, rhs: &Self) -> Result<Value, String> {
         match (self, rhs) {
             (Value::B(b1), Value::B(b2)) => Ok(Value::B(*b1 && *b2)),
@@ -374,6 +393,52 @@ impl ops::Sub for &Value {
             Some(r) => Ok(r),
             None => Err(format!(
                 "incompatible operands: {} - {}",
+                self.value_type(),
+                rhs.value_type()
+            )),
+        }
+    }
+}
+
+impl ops::Mul for &Value {
+    type Output = Result<Value, String>;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        fn _mul(a: &Value, b: &Value) -> Option<Value> {
+            match (a, b) {
+                (Value::I(i1), Value::I(i2)) => Some(Value::I(i1 * i2)),
+                (Value::F(f1), Value::F(f2)) => Some(Value::F(f1 * f2)),
+                (Value::I(i1), Value::F(f2)) => Some(Value::F(*i1 as f64 * f2)),
+                _ => None,
+            }
+        }
+        match _mul(self, rhs).or_else(|| _mul(rhs, self)) {
+            Some(r) => Ok(r),
+            None => Err(format!(
+                "incompatible operands: {} * {}",
+                self.value_type(),
+                rhs.value_type()
+            )),
+        }
+    }
+}
+
+impl ops::Div for &Value {
+    type Output = Result<Value, String>;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        fn _div(a: &Value, b: &Value) -> Option<Value> {
+            match (a, b) {
+                (Value::I(i1), Value::I(i2)) => Some(Value::I(i1 / i2)),
+                (Value::F(f1), Value::F(f2)) => Some(Value::F(f1 / f2)),
+                (Value::I(i1), Value::F(f2)) => Some(Value::F(*i1 as f64 / f2)),
+                _ => None,
+            }
+        }
+        match _div(self, rhs).or_else(|| _div(rhs, self)) {
+            Some(r) => Ok(r),
+            None => Err(format!(
+                "incompatible operands: {} / {}",
                 self.value_type(),
                 rhs.value_type()
             )),

@@ -10,7 +10,6 @@ use crate::interpret::value::Value;
 use crate::stdlib::lib::{LibFunction, Package};
 use crate::stdlib::list::Spread;
 
-// TODO: all operators
 pub fn package() -> Package {
     let mut defs = HashMap::new();
     [SpreadOp::definitions()]

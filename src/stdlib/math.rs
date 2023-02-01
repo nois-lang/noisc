@@ -13,6 +13,9 @@ pub fn package() -> Package {
     [
         Add::definitions(),
         Sub::definitions(),
+        Mul::definitions(),
+        Div::definitions(),
+        Exp::definitions(),
         Rem::definitions(),
         Eq::definitions(),
         Ne::definitions(),
@@ -57,6 +60,42 @@ impl LibFunction for Sub {
             _ => unreachable!(),
         }
         .map_err(|s| Error::from_callee(ctx, s))
+    }
+}
+
+pub struct Mul;
+
+impl LibFunction for Mul {
+    fn name() -> Vec<String> {
+        vec!["mul".to_string(), BinaryOperator::Multiply.to_string()]
+    }
+
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
+        (args[0].1.as_ref() * args[1].1.as_ref()).map_err(|s| Error::from_callee(ctx, s))
+    }
+}
+
+pub struct Div;
+
+impl LibFunction for Div {
+    fn name() -> Vec<String> {
+        vec!["div".to_string(), BinaryOperator::Divide.to_string()]
+    }
+
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
+        (args[0].1.as_ref() / args[1].1.as_ref()).map_err(|s| Error::from_callee(ctx, s))
+    }
+}
+
+pub struct Exp;
+
+impl LibFunction for Exp {
+    fn name() -> Vec<String> {
+        vec!["exp".to_string(), BinaryOperator::Exponent.to_string()]
+    }
+
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
+        (args[0].1.as_ref().exp(args[1].1.as_ref())).map_err(|s| Error::from_callee(ctx, s))
     }
 }
 
