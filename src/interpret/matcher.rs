@@ -121,15 +121,7 @@ fn match_list(
             .collect::<Result<Option<Vec<_>>, _>>()?
             .map(|o| o.into_iter().flatten().collect::<Vec<_>>()))
     } else {
-        Err(Error::from_span(
-            &value.0,
-            &ctx.ast_context,
-            format!(
-                "incompatible deconstruction length: expected {}, got {}",
-                items.len(),
-                vs.len()
-            ),
-        ))
+        Ok(None)
     }
 }
 
