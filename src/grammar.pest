@@ -132,7 +132,7 @@ char_single                   = _{
 string_double                 = _{ DOUBLE_QUOTE ~ inner_string_double ~ DOUBLE_QUOTE }
 inner_string_double           = @{ char_double* }
 char_double                   = _{
-  !("\"" | "\'" | "\\") ~ ANY
+  !("\"" | "\\") ~ ANY
   | "\\" ~ ("\"" | "\'" | "\\" | "/" | "n" | "r" | "t")
   | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
 }
