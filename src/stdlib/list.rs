@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use itertools::Itertools;
+
 use crate::ast::ast_pair::{AstPair, Span};
 use crate::error::Error;
 use crate::interpret::context::Context;
@@ -13,6 +15,7 @@ pub fn package() -> Package {
         Spread::definitions(),
         Range::definitions(),
         Len::definitions(),
+        Contains::definitions(),
         Map::definitions(),
         Filter::definitions(),
         Reduce::definitions(),
@@ -23,6 +26,7 @@ pub fn package() -> Package {
         Flat::definitions(),
         Reverse::definitions(),
         Sort::definitions(),
+        Unique::definitions(),
     ]
     .into_iter()
     .for_each(|d| defs.extend(d));
@@ -113,6 +117,22 @@ impl LibFunction for Len {
             _ => return Err(arg_error("([*])", args, ctx)),
         };
         Ok(Value::I(l.len() as i128))
+    }
+}
+
+pub struct Contains;
+
+impl LibFunction for Contains {
+    fn name() -> Vec<String> {
+        vec!["contains".to_string()]
+    }
+
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
+        let (l, e) = match arg_values(args)[..] {
+            [Value::List { items: l, .. }, e] => (l, e),
+            _ => return Err(arg_error("([*], *)", args, ctx)),
+        };
+        Ok(Value::B(l.contains(e)))
     }
 }
 
@@ -478,5 +498,45 @@ impl LibFunction for Sort {
         l.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
         Ok(Value::list(l))
+    }
+}
+
+pub struct Unique;
+
+impl LibFunction for Unique {
+    fn name() -> Vec<String> {
+        vec!["unique".to_string()]
+    }
+
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
+        let res: Vec<Value> = match arg_values(args)[..] {
+            [Value::List { items: is, .. }] => {
+                let l = is.as_ref().clone();
+                l.into_iter().unique().collect()
+            }
+            [Value::List { items: is, .. }, f] if f.is_callable() => {
+                let l = is.as_ref().clone();
+                l.into_iter()
+                    .map(|v| {
+                        match run_closure(
+                            &args[1],
+                            Some(Rc::new(vec![args[0].with(Rc::new(v.clone()))])),
+                            ctx.scope_stack.last().unwrap().callee,
+                            ctx,
+                        ) {
+                            Ok(mapped) => Ok((v, mapped.1.as_ref().clone())),
+                            Err(e) => Err(e),
+                        }
+                    })
+                    .collect::<Result<Vec<_>, _>>()?
+                    .into_iter()
+                    .unique_by(|(_, m)| m.clone())
+                    .map(|(v, _)| v)
+                    .collect()
+            }
+            _ => return Err(arg_error("([*], * -> *?)", args, ctx)),
+        };
+
+        Ok(Value::list(res))
     }
 }
