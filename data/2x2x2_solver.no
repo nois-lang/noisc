@@ -132,9 +132,30 @@ format = s {
         l1, l2, f1, f2, r1, r2, b1, b2, ..'\n',
         l3, l4, f3, f4, r3, r4, b3, b4, ..'\n',
         ..'    ',   d1, d2,             ..'\n',
-        ..'    ',   d3, d4,             ..'\n',
+        ..'    ',   d3, d4,
     ]
 }
+
+turns = [
+    [r,  "R" ],
+    [rr, "R'"],
+    [r2, "R2"],
+    [l,  "L" ],
+    [lr, "L'"],
+    [l2, "L2"],
+    [f,  "F" ],
+    [fr, "F'"],
+    [f2, "F2"],
+    [b,  "B" ],
+    [br, "B'"],
+    [b2, "B2"],
+    [u,  "U" ],
+    [ur, "U'"],
+    [u2, "U2"],
+    [d,  "D" ],
+    [dr, "D'"],
+    [d2, "D2"],
+]
 
 execute = (state, seq) {
     seq
@@ -162,7 +183,24 @@ execute = (state, seq) {
         .reduce(state, (s, t) -> t(s))
 }
 
+solve = (s, mDepth) {
+    sols = [[[], s]]
+
+    range(0, mDepth).map({
+        sols = sols
+            .map([sTurns, sState] {
+                turns.map([turnF, tName] -> [[..sTurns, tName], turnF(sState)])
+            })
+            .flat()
+
+        a = sols.filter([st, sol] -> sol == solvedState)
+        match a.len() > 0 { True => println('result:', a.at(0).at(0).join(' ').flat()) }
+    })
+    none()
+}
+
 main = {
-    res = execute(solvedState, args().at(0))
-    println(format(res))
+    scramble = execute(solvedState, args().at(0))
+    println('scramble:\n' + format(scramble))
+    solve(scramble, 4)
 }
