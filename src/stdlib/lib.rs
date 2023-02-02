@@ -107,5 +107,6 @@ pub fn run_closure(
     debug!("pop scope @{}", &ctx.scope_stack.last().unwrap().name);
     ctx.scope_stack.pop();
 
+    debug!("closure result: {next:?}");
     next
 }

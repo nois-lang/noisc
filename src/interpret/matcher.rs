@@ -139,6 +139,9 @@ fn match_list_with_spread(
         .map(|(i, v)| match_pattern_item(&value.with(Rc::new(v.clone())), i, ctx))
         .collect::<Result<Option<Vec<_>>, _>>()?
         .map(|o| o.into_iter().flatten().collect::<Vec<_>>());
+    if vs.is_empty() {
+        return Ok(None);
+    }
     let spread_value_count = vs.len() - (items.len() - 1);
     let spread_values = vs
         .iter()
