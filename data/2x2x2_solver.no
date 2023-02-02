@@ -183,17 +183,84 @@ execute = (state, seq) {
         .reduce(state, (s, t) -> t(s))
 }
 
+isEffectiveMove = (turns, move) {
+    match [turns, move] {
+        [[.., "R"], "R"] => False,
+        [[.., "R"], "R'"] => False,
+        [[.., "R"], "R2"] => False,
+        [[.., "R'"], "R"] => False,
+        [[.., "R'"], "R'"] => False,
+        [[.., "R'"], "R2"] => False,
+        [[.., "R2"], "R"] => False,
+        [[.., "R2"], "R'"] => False,
+        [[.., "R2"], "R2"] => False,
+        [[.., "L"], "L"] => False,
+        [[.., "L"], "L'"] => False,
+        [[.., "L"], "L2"] => False,
+        [[.., "L'"], "L"] => False,
+        [[.., "L'"], "L'"] => False,
+        [[.., "L'"], "L2"] => False,
+        [[.., "L2"], "L"] => False,
+        [[.., "L2"], "L'"] => False,
+        [[.., "L2"], "L2"] => False,
+        [[.., "F"], "F"] => False,
+        [[.., "F"], "F'"] => False,
+        [[.., "F"], "F2"] => False,
+        [[.., "F'"], "F"] => False,
+        [[.., "F'"], "F'"] => False,
+        [[.., "F'"], "F2"] => False,
+        [[.., "F2"], "F"] => False,
+        [[.., "F2"], "F'"] => False,
+        [[.., "F2"], "F2"] => False,
+        [[.., "B"], "B"] => False,
+        [[.., "B"], "B'"] => False,
+        [[.., "B"], "B2"] => False,
+        [[.., "B'"], "B"] => False,
+        [[.., "B'"], "B'"] => False,
+        [[.., "B'"], "B2"] => False,
+        [[.., "B2"], "B"] => False,
+        [[.., "B2"], "B'"] => False,
+        [[.., "B2"], "B2"] => False,
+        [[.., "U"], "U"] => False,
+        [[.., "U"], "U'"] => False,
+        [[.., "U"], "U2"] => False,
+        [[.., "U'"], "U"] => False,
+        [[.., "U'"], "U'"] => False,
+        [[.., "U'"], "U2"] => False,
+        [[.., "U2"], "U"] => False,
+        [[.., "U2"], "U'"] => False,
+        [[.., "U2"], "U2"] => False,
+        [[.., "D"], "D"] => False,
+        [[.., "D"], "D'"] => False,
+        [[.., "D"], "D2"] => False,
+        [[.., "D'"], "D"] => False,
+        [[.., "D'"], "D'"] => False,
+        [[.., "D'"], "D2"] => False,
+        [[.., "D2"], "D"] => False,
+        [[.., "D2"], "D'"] => False,
+        [[.., "D2"], "D2"] => False,
+        _ => True
+    }
+}
+
 solve = (s, mDepth) {
-    sols = [[[], s]]
+    visitedStates = []
+    lastDepthStates = [[[], s]]
 
     range(0, mDepth).map({
-        sols = sols
+        lastDepthStates = lastDepthStates
             .map([sTurns, sState] {
-                turns.map([turnF, tName] -> [[..sTurns, tName], turnF(sState)])
+                turns
+                    .filter([_, tName] {
+                        isEffectiveMove(sTurns, tName)
+                    })
+                    .map([turnF, tName] -> [[..sTurns, tName], turnF(sState)])
             })
             .flat()
-
-        a = sols.filter([st, sol] -> sol == solvedState)
+            .filter([_, sState] -> !(visitedStates.contains(sState)))
+        visitedStates = visitedStates + lastDepthStates
+        println('depth states: ' + visitedStates.len().to([C]))
+        a = lastDepthStates.filter([st, sol] -> sol == solvedState)
         match a.len() > 0 { True => println('result:', a.at(0).at(0).join(' ').flat()) }
     })
     none()
@@ -202,5 +269,5 @@ solve = (s, mDepth) {
 main = {
     scramble = execute(solvedState, args().at(0))
     println('scramble:\n' + format(scramble))
-    solve(scramble, 4)
+    solve(scramble, 5)
 }
