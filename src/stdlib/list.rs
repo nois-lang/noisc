@@ -19,6 +19,7 @@ pub fn package() -> Package {
         At::definitions(),
         Slice::definitions(),
         Join::definitions(),
+        Split::definitions(),
         Flat::definitions(),
         Reverse::definitions(),
         Sort::definitions(),
@@ -398,6 +399,27 @@ impl LibFunction for Join {
                 .collect::<Vec<_>>(),
             [Value::List { items: is, .. }] => is.as_ref().clone(),
             _ => return Err(arg_error("([*], *?)", args, ctx)),
+        };
+
+        Ok(Value::list(res))
+    }
+}
+
+pub struct Split;
+
+impl LibFunction for Split {
+    fn name() -> Vec<String> {
+        vec!["split".to_string()]
+    }
+
+    fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
+        let res = match arg_values(args)[..] {
+            [Value::List { items: is, .. }, v] => is
+                .split(|e| e == v)
+                .into_iter()
+                .map(|s| Value::list(s.to_vec()))
+                .collect(),
+            _ => return Err(arg_error("([*])", args, ctx)),
         };
 
         Ok(Value::list(res))
