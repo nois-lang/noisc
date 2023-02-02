@@ -124,7 +124,7 @@ pub fn destructure_list<T: Evaluate + Debug>(
         _ => Err(Error::from_span(
             &e.0,
             &ctx.ast_context,
-            format!("expected [*] to deconstruct, got {:?}", e.1),
+            format!("expected [*] to deconstruct, got {:?}", e.1.value_type()),
         )),
     }
 }

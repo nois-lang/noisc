@@ -101,7 +101,10 @@ pub fn match_pattern_item(
                 _ => Err(Error::from_span(
                     &value.0,
                     &ctx.ast_context,
-                    format!("expected [*] to deconstruct, got {:?}", value.1),
+                    format!(
+                        "expected [*] to deconstruct, got {:?}",
+                        value.1.value_type()
+                    ),
                 )),
             };
         }
