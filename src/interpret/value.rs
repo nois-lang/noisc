@@ -452,9 +452,9 @@ impl ops::Rem for &Value {
     fn rem(self, rhs: Self) -> Self::Output {
         fn _rem(a: &Value, b: &Value) -> Option<Value> {
             match (a, b) {
-                (Value::I(i1), Value::I(i2)) => Some(Value::I(i1 % i2)),
-                (Value::F(f1), Value::F(f2)) => Some(Value::F(f1 % f2)),
-                (Value::I(i1), Value::F(f2)) => Some(Value::F(*i1 as f64 % f2)),
+                (Value::I(i1), Value::I(i2)) => Some(Value::I(i1.rem_euclid(*i2))),
+                (Value::F(f1), Value::F(f2)) => Some(Value::F(f1.rem_euclid(*f2))),
+                (Value::I(i1), Value::F(f2)) => Some(Value::F((*i1 as f64).rem_euclid(*f2))),
                 _ => None,
             }
         }
