@@ -3,6 +3,7 @@ use std::rc::Rc;
 
 use crate::ast::ast_pair::AstPair;
 use crate::ast::binary_operator::BinaryOperator;
+use crate::ast::unary_operator::UnaryOperator;
 use crate::error::Error;
 use crate::interpret::context::Context;
 use crate::interpret::value::Value;
@@ -23,6 +24,7 @@ pub fn package() -> Package {
         Ge::definitions(),
         Lt::definitions(),
         Le::definitions(),
+        Not::definitions(),
         And::definitions(),
         Or::definitions(),
     ]
@@ -190,7 +192,7 @@ pub struct Not;
 
 impl LibFunction for Not {
     fn name() -> Vec<String> {
-        vec!["not".to_string(), BinaryOperator::NotEquals.to_string()]
+        vec!["not".to_string(), UnaryOperator::Not.to_string()]
     }
 
     fn call(args: &[AstPair<Rc<Value>>], ctx: &mut Context) -> Result<Value, Error> {
