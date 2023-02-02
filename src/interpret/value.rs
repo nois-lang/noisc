@@ -386,10 +386,11 @@ impl ops::Sub for &Value {
                 (Value::I(i1), Value::I(i2)) => Some(Value::I(i1 - i2)),
                 (Value::F(f1), Value::F(f2)) => Some(Value::F(f1 - f2)),
                 (Value::I(i1), Value::F(f2)) => Some(Value::F(*i1 as f64 - f2)),
+                (Value::F(f1), Value::I(i2)) => Some(Value::F(f1 - *i2 as f64)),
                 _ => None,
             }
         }
-        match _sub(self, rhs).or_else(|| _sub(rhs, self)) {
+        match _sub(self, rhs) {
             Some(r) => Ok(r),
             None => Err(format!(
                 "incompatible operands: {} - {}",
@@ -432,10 +433,11 @@ impl ops::Div for &Value {
                 (Value::I(i1), Value::I(i2)) => Some(Value::I(i1 / i2)),
                 (Value::F(f1), Value::F(f2)) => Some(Value::F(f1 / f2)),
                 (Value::I(i1), Value::F(f2)) => Some(Value::F(*i1 as f64 / f2)),
+                (Value::F(f1), Value::I(i2)) => Some(Value::F(f1 / *i2 as f64)),
                 _ => None,
             }
         }
-        match _div(self, rhs).or_else(|| _div(rhs, self)) {
+        match _div(self, rhs) {
             Some(r) => Ok(r),
             None => Err(format!(
                 "incompatible operands: {} / {}",
@@ -455,10 +457,11 @@ impl ops::Rem for &Value {
                 (Value::I(i1), Value::I(i2)) => Some(Value::I(i1.rem_euclid(*i2))),
                 (Value::F(f1), Value::F(f2)) => Some(Value::F(f1.rem_euclid(*f2))),
                 (Value::I(i1), Value::F(f2)) => Some(Value::F((*i1 as f64).rem_euclid(*f2))),
+                (Value::F(f1), Value::I(i2)) => Some(Value::F(f1.rem_euclid(*i2 as f64))),
                 _ => None,
             }
         }
-        match _rem(self, rhs).or_else(|| _rem(rhs, self)) {
+        match _rem(self, rhs) {
             Some(r) => Ok(r),
             None => Err(format!(
                 "incompatible operands: {} % {}",
