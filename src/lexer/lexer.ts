@@ -1,4 +1,11 @@
-export type TokenType = 'fn-keyword' | 'open-paren' | 'close-paren' | 'identifier' | 'string' | 'char' | 'number'
+export type TokenType
+    = 'fn-keyword'
+    | 'open-paren'
+    | 'close-paren'
+    | 'identifier'
+    | 'string'
+    | 'char'
+    | 'number'
 
 export interface Token {
     type: TokenType;
@@ -7,7 +14,11 @@ export interface Token {
 
 export const constTokenMap: Map<TokenType, Token> = new Map(
     (<Token[]>[
+        {type: 'type-keyword', value: 'type'},
         {type: 'fn-keyword', value: 'fn'},
+        {type: 'kind-keyword', value: 'kind'},
+        {type: 'impl-keyword', value: 'impl'},
+        {type: 'let-keyword', value: 'let'},
         {type: 'open-paren', value: '('},
         {type: 'close-paren', value: ')'},
         {type: 'open-brace', value: '{'},
@@ -88,8 +99,13 @@ const parseNumberLiteral = (chars: string[], tokens: Token[]): boolean => {
     return false
 }
 
+/**
+ * TODO: escape characters
+ *
+ * @param chars
+ * @param tokens
+ */
 const parseCharLiteral = (chars: string[], tokens: Token[]): boolean => {
-    // TODO: escape characters
     if (chars[0] === `'`) {
         chars.splice(0, 1)
         const charLiteral: string[] = []
@@ -105,8 +121,13 @@ const parseCharLiteral = (chars: string[], tokens: Token[]): boolean => {
     return false
 }
 
+/**
+ * TODO: escape characters
+ *
+ * @param chars
+ * @param tokens
+ */
 const parseStringLiteral = (chars: string[], tokens: Token[]): boolean => {
-    // TODO: escape characters
     if (chars[0] === '"') {
         chars.splice(0, 1)
         const stringLiteral: string[] = []
