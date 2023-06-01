@@ -1,4 +1,0 @@
-main = {
-    f = a -> i -> i + a
-    println(range(10).map(f(10)))
-}

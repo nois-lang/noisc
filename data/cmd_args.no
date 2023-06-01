@@ -1,4 +1,0 @@
-// run with nois run data/cmd_args.no -- some args
-main = {
-    println(args())     // [foo, bar]
-}

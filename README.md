@@ -6,4 +6,4 @@
   <br>
 </h1>
 
-<h4 align="center">Dynamically typed interpreted programming language with Rust runtime</h4>
+<h4 align="center">Statically typed programming language for the web</h4>

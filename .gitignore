@@ -1,4 +1,4 @@
-/target
 .idea
-data/test.no
-perf*
+node_modules
+dist
+pnpm-lock.yaml

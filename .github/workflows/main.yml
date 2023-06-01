@@ -4,30 +4,41 @@ on:
   - push
   - pull_request
 
-env:
-  RUSTFLAGS: "-Dwarnings"
-  CARGO_TERM_COLOR: always
-
 jobs:
-  build:
-
+  ci:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        node-version: [ 18.x ]
+
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
 
-      - run: |
-          rustup set auto-self-update disable
-          rustup toolchain install stable --profile minimal
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
 
-      - uses: Swatinem/rust-cache@v2
-
-      - name: Check
-        run: cargo check
-
-      - name: Test
-        run: cargo test --verbose
-
-      - name: Clippy
-        run: cargo clippy -- -A clippy::type_complexity -A clippy::bool_assert_comparison -A clippy::result_large_err
-
+      - name: Cache node modules
+        id: cache-node-modules
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - name: npm install
+        if: steps.cache-nodemodules.outputs.cache-hit != 'true'
+        run: |
+          npm install
+      - name: npm build
+        run: |
+          npm run build
+      - name: npm ci
+        run: |
+          npm run ci

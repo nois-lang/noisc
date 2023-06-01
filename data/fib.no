@@ -1,8 +1,0 @@
-fib = (a, b, l) -> match l {
-    0 => [a],
-    _ => [a, ..fib(b, a + b, l - 1)]
-}
-
-main = {
-    println(fib(0, 1, 10))
-}
