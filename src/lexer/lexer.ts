@@ -15,7 +15,11 @@ export type LexerTokenName
     | 'colon'
     | 'comma'
     | 'period'
+    | 'newline'
+
     | 'eof'
+    | '_'
+
     | 'identifier'
     | 'string'
     | 'char'
@@ -53,6 +57,13 @@ export const tokenize = (code: String): LexerToken[] => {
     while (chars.length !== 0) {
         if (isWhitespace(chars[0])) {
             chars.splice(0, 1)
+            continue
+        }
+        if (isNewline(chars[0])) {
+            while (isNewline(chars[0])) {
+                chars.splice(0, 1)
+            }
+            tokens.push({name: 'newline', value: '\n'})
             continue
         }
         let codeLeft = code.slice(code.length - chars.length)
@@ -164,7 +175,10 @@ const parseStringLiteral = (chars: string[], tokens: LexerToken[]): boolean => {
     return false
 }
 
-const isWhitespace = (char: string): boolean => char === ' ' || char === '\t' || char === '\n' || char === '\r'
+const isWhitespace = (char: string): boolean => char === ' ' || char === '\t'
+
+const isNewline = (char: string): boolean => char === '\n' || char === '\r'
+
 
 const isAlpha = (char: string): boolean =>
     (char >= 'A' && char <= 'Z') ||

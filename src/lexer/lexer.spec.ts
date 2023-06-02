@@ -16,10 +16,12 @@ fn main(): Unit {
             {'name': 'colon', 'value': ':'},
             {'name': 'identifier', 'value': 'Unit'},
             {'name': 'open-brace', 'value': '{'},
+            {'name': 'newline', 'value': '\n'},
             {'name': 'identifier', 'value': 'print'},
             {'name': 'open-paren', 'value': '('},
             {'name': 'number', 'value': '4'},
             {'name': 'close-paren', 'value': ')'},
+            {'name': 'newline', 'value': '\n'},
             {'name': 'close-brace', 'value': '}'},
             {'name': 'eof', 'value': ''}
         ])
