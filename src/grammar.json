@@ -1,0 +1,107 @@
+{
+  "rules": [
+    {
+      "from": "program",
+      "branches": [
+        [
+          "statement"
+        ]
+      ]
+    },
+    {
+      "from": "statement",
+      "branches": [
+        [
+          "function-def"
+        ]
+      ]
+    },
+    {
+      "from": "function-def",
+      "branches": [
+        [
+          "fn-keyword",
+          "identifier",
+          "params",
+          "colon",
+          "identifier",
+          "open-brace",
+          "block",
+          "close-brace"
+        ]
+      ]
+    },
+    {
+      "from": "params",
+      "branches": [
+        [
+          "open-paren",
+          "params_",
+          "close-paren"
+        ],
+        [
+          "open-paren",
+          "close-paren"
+        ]
+      ]
+    },
+    {
+      "from": "params_",
+      "branches": [
+        [
+          "param",
+          "comma",
+          "params"
+        ],
+        [
+          "param",
+          "trailing-comma"
+        ],
+        [
+          "param"
+        ]
+      ]
+    },
+    {
+      "from": "param",
+      "branches": [
+        [
+          "identifier",
+          "colon",
+          "identifier"
+        ]
+      ]
+    },
+    {
+      "from": "trailing-comma",
+      "branches": [
+        [
+          "comma"
+        ],
+        [
+          "e"
+        ]
+      ]
+    },
+    {
+      "from": "block",
+      "branches": [
+        [
+          "open-brace",
+          "block_",
+          "close-brace"
+        ],
+        [
+          "open-brace",
+          "close-brace"
+        ]
+      ]
+    },
+    {
+      "from": "block_",
+      "branches": [
+        []
+      ]
+    }
+  ]
+}

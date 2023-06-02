@@ -5,6 +5,7 @@
   "scripts": {
 	"start": "ts-node src/index.ts",
 	"build": "tsc",
+	"build:grammar": "ts-node src/grammar.ts",
 	"test": "jest --watchAll",
 	"ci": "jest --ci"
   },

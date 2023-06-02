@@ -1,0 +1,31 @@
+program         ::= statement
+                ;
+
+statement       ::= function-def
+                ;
+
+function-def    ::= FN-KEYWORD identifier params colon identifier OPEN-BRACE block CLOSE-BRACE
+                ;
+
+params          ::= OPEN-PAREN params_ CLOSE-PAREN
+                | OPEN-PAREN CLOSE-PAREN
+                ;
+
+params_         ::= param comma params
+                | param trailing-comma
+                | param
+                ;
+
+param           ::= identifier COLON identifier
+                ;
+
+
+trailing-comma  ::= comma
+                | E
+                ;
+
+block           ::= OPEN-BRACE block_ CLOSE-BRACE
+                | OPEN-BRACE CLOSE-BRACE
+                ;
+
+block_          ::= TODO

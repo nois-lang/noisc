@@ -1,1 +1,3 @@
-console.log('hello, world')
+import {rules} from './parser/parser'
+
+console.log(rules)
