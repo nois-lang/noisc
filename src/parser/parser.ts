@@ -22,8 +22,10 @@ export type Token = LexerToken | ParserToken
 
 export interface Rule {
     name: ParserTokenName,
-    branches: TokenName[][]
+    branches: ParseBranch[]
 }
+
+export type ParseBranch = TokenName[]
 
 const rawRules = (<any>grammar).default.rules
 export const rules: Map<ParserTokenName, Rule> = new Map(rawRules.map((r: Rule) => [r.name, r]))

@@ -1,16 +1,9 @@
-import {ParserTokenName, rules, TokenName} from './parser'
+import {ParseBranch, ParserTokenName, rules, TokenName} from './parser'
 
 export const firstTokens = (name: TokenName): Set<TokenName> => {
     const rule = rules.get(<ParserTokenName>name)
     if (rule) {
-        return new Set(rule.branches.flatMap(b => {
-            let first = b.at(0)
-            if (first) {
-                return [...firstTokens(first)]
-            } else {
-                return []
-            }
-        }))
+        return new Set(rule.branches.flatMap(b => branchFirstTokens(b)))
     } else {
         return new Set([name])
     }
@@ -34,7 +27,25 @@ export const followTokens = (name: TokenName): Set<TokenName> => {
     }
 }
 
-const nextTokens = (ruleName: ParserTokenName, branch: TokenName[], token: TokenName): Set<TokenName> => {
+export const branchFirstTokens = (b: ParseBranch): TokenName[] => {
+    let first = b.at(0)
+    if (first) {
+        return [...firstTokens(first)]
+    } else {
+        return []
+    }
+}
+
+const canMatchEmpty = (token: TokenName): boolean => {
+    const rule = rules.get(<ParserTokenName>token)
+    if (rule) {
+        return rule.branches.some(b => b.every(t => canMatchEmpty(t)))
+    } else {
+        return token === 'e'
+    }
+}
+
+const nextTokens = (ruleName: ParserTokenName, branch: ParseBranch, token: TokenName): Set<TokenName> => {
     if (ruleName === token) {
         return new Set()
     }
@@ -53,13 +64,4 @@ const nextTokens = (ruleName: ParserTokenName, branch: TokenName[], token: Token
         return new Set(res)
     }
     return new Set(...matchIndexes.flatMap(nextTokens_))
-}
-
-const canMatchEmpty = (token: TokenName): boolean => {
-    const rule = rules.get(<ParserTokenName>token)
-    if (rule) {
-        return rule.branches.some(b => b.every(t => canMatchEmpty(t)))
-    } else {
-        return token === 'e'
-    }
 }
