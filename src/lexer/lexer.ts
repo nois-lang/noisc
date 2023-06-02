@@ -15,10 +15,9 @@ export type LexerTokenName
     | 'colon'
     | 'comma'
     | 'period'
-    | 'newline'
 
     | 'eof'
-    | '_'
+    | 'e'
 
     | 'identifier'
     | 'string'
@@ -55,15 +54,8 @@ export const tokenize = (code: String): LexerToken[] => {
     const tokens: LexerToken[] = []
 
     while (chars.length !== 0) {
-        if (isWhitespace(chars[0])) {
+        if (isWhitespace(chars[0]) || isNewline(chars[0])) {
             chars.splice(0, 1)
-            continue
-        }
-        if (isNewline(chars[0])) {
-            while (isNewline(chars[0])) {
-                chars.splice(0, 1)
-            }
-            tokens.push({name: 'newline', value: '\n'})
             continue
         }
         let codeLeft = code.slice(code.length - chars.length)
