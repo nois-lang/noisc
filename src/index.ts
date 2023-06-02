@@ -1,3 +1,3 @@
-import {rules} from './parser/parser'
+import {firstTokens, followTokens, rules} from './parser/parser'
 
-console.log(rules)
+console.table([...rules.values()].map(rule => [rule.name, firstTokens(rule.name), followTokens(rule.name)]))

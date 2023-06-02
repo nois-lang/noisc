@@ -11,7 +11,7 @@ params          ::= OPEN-PAREN params_ CLOSE-PAREN
                 | OPEN-PAREN CLOSE-PAREN
                 ;
 
-params_         ::= param comma params
+params_         ::= param comma params_
                 | param trailing-comma
                 | param
                 ;
@@ -28,4 +28,4 @@ block           ::= OPEN-BRACE block_ CLOSE-BRACE
                 | OPEN-BRACE CLOSE-BRACE
                 ;
 
-block_          ::= TODO
+block_          ::= E

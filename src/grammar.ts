@@ -3,7 +3,7 @@ import {readFileSync, writeFileSync} from 'fs'
 type RawTokenName = string
 
 interface RawRule {
-    from: RawTokenName,
+    name: RawTokenName,
     branches: RawTokenName[][]
 }
 
@@ -14,7 +14,7 @@ const buildGrammar = (bnf: string): RawRule[] => {
         const [name, branches] = r.split('::=')
         return [name, branches]
     }).map(([name, branches]) => ({
-        from: name.trim(),
+        name: name.trim(),
         branches: branches.split('|')
             .map(b => b.trim())
             .map(b => b

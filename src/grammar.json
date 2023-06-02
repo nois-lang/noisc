@@ -1,7 +1,7 @@
 {
   "rules": [
     {
-      "from": "program",
+      "name": "program",
       "branches": [
         [
           "statement"
@@ -9,7 +9,7 @@
       ]
     },
     {
-      "from": "statement",
+      "name": "statement",
       "branches": [
         [
           "function-def"
@@ -17,7 +17,7 @@
       ]
     },
     {
-      "from": "function-def",
+      "name": "function-def",
       "branches": [
         [
           "fn-keyword",
@@ -32,7 +32,7 @@
       ]
     },
     {
-      "from": "params",
+      "name": "params",
       "branches": [
         [
           "open-paren",
@@ -46,12 +46,12 @@
       ]
     },
     {
-      "from": "params_",
+      "name": "params_",
       "branches": [
         [
           "param",
           "comma",
-          "params"
+          "params_"
         ],
         [
           "param",
@@ -63,7 +63,7 @@
       ]
     },
     {
-      "from": "param",
+      "name": "param",
       "branches": [
         [
           "identifier",
@@ -73,7 +73,7 @@
       ]
     },
     {
-      "from": "trailing-comma",
+      "name": "trailing-comma",
       "branches": [
         [
           "comma"
@@ -84,7 +84,7 @@
       ]
     },
     {
-      "from": "block",
+      "name": "block",
       "branches": [
         [
           "open-brace",
@@ -98,9 +98,11 @@
       ]
     },
     {
-      "from": "block_",
+      "name": "block_",
       "branches": [
-        []
+        [
+          "e"
+        ]
       ]
     }
   ]
