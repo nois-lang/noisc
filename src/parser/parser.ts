@@ -1,5 +1,6 @@
 import {LexerToken, LexerTokenName} from '../lexer/lexer'
 import * as grammar from '../grammar.json' assert {type: 'json'}
+import {generateParsingTable} from './table'
 
 export type ParserTokenName
     = 'program'
@@ -34,3 +35,44 @@ export type ParseBranch = TokenName[]
 
 const rawRules = (<any>grammar).default.rules
 export const rules: Map<ParserTokenName, Rule> = new Map(rawRules.map((r: Rule) => [r.name, r]))
+
+export const parse = (tokens: LexerToken[]): Transform[] => {
+    const table = generateParsingTable()
+    const buffer = structuredClone(tokens)
+    const chain: Transform[] = []
+
+    const stack: TokenName[] = []
+    stack.push('eof')
+    stack.push('program')
+
+    while (buffer.length > 0) {
+        if (stack.at(-1)! === buffer[0].name) {
+            buffer.splice(0, 1)
+            stack.pop()
+        } else {
+            const transform = table.get(<ParserTokenName>stack.at(-1)!)?.get(buffer[0].name)
+            if (!transform) {
+                console.error(buffer, stack)
+                throw Error(`syntax error, no value for ${stack.at(-1)}, ${buffer[0].name}`)
+            }
+            chain.push(transform)
+            stack.pop()
+            stack.push(...structuredClone(transform.branch).reverse())
+        }
+    }
+
+    return chain
+}
+
+export const generateTree = (tokens: LexerToken[], chain: Transform[]): Token => {
+    const transform = chain.splice(0, 1)[0]
+    const token: Token = {name: transform.name, nodes: []}
+    transform.branch.forEach(t => {
+        if (t === tokens[0].name) {
+            token.nodes.push(tokens.splice(0, 1)[0])
+        } else {
+            token.nodes.push(generateTree(tokens, chain))
+        }
+    })
+    return token
+}

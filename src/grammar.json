@@ -25,9 +25,7 @@
           "params",
           "colon",
           "identifier",
-          "open-brace",
-          "block",
-          "close-brace"
+          "block"
         ]
       ]
     },

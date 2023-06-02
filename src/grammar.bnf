@@ -4,7 +4,7 @@ program         ::= statement
 statement       ::= function-def
                 ;
 
-function-def    ::= FN-KEYWORD IDENTIFIER params COLON IDENTIFIER OPEN-BRACE block CLOSE-BRACE
+function-def    ::= FN-KEYWORD IDENTIFIER params COLON IDENTIFIER block
                 ;
 
 params          ::= OPEN-PAREN params_ CLOSE-PAREN
