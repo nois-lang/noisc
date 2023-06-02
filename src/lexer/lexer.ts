@@ -1,37 +1,54 @@
-export type TokenType
-    = 'fn-keyword'
+export type LexerTokenName
+    = 'type-keyword'
+    | 'fn-keyword'
+    | 'kind-keyword'
+    | 'impl-keyword'
+    | 'let-keyword'
     | 'open-paren'
     | 'close-paren'
+    | 'open-bracket'
+    | 'close-bracket'
+    | 'open-brace'
+    | 'close-brace'
+    | 'open-chevron'
+    | 'close-chevron'
+    | 'colon'
+    | 'comma'
+    | 'period'
+    | 'eof'
     | 'identifier'
     | 'string'
     | 'char'
     | 'number'
 
-export interface Token {
-    type: TokenType;
+export interface LexerToken {
+    name: LexerTokenName
     value: string
 }
 
-export const constTokenMap: Map<TokenType, Token> = new Map(
-    (<Token[]>[
-        {type: 'type-keyword', value: 'type'},
-        {type: 'fn-keyword', value: 'fn'},
-        {type: 'kind-keyword', value: 'kind'},
-        {type: 'impl-keyword', value: 'impl'},
-        {type: 'let-keyword', value: 'let'},
-        {type: 'open-paren', value: '('},
-        {type: 'close-paren', value: ')'},
-        {type: 'open-brace', value: '{'},
-        {type: 'close-brace', value: '}'},
-        {type: 'open-angle-bracket', value: '<'},
-        {type: 'close-angle-bracket', value: '>'},
-        {type: 'colon', value: ':'},
-    ]).map(t => [t.type, t])
-)
+const constTokens: LexerToken[] = [
+    {name: 'type-keyword', value: 'type'},
+    {name: 'fn-keyword', value: 'fn'},
+    {name: 'kind-keyword', value: 'kind'},
+    {name: 'impl-keyword', value: 'impl'},
+    {name: 'let-keyword', value: 'let'},
+    {name: 'open-paren', value: '('},
+    {name: 'close-paren', value: ')'},
+    {name: 'open-bracket', value: '['},
+    {name: 'close-bracket', value: ']'},
+    {name: 'open-brace', value: '{'},
+    {name: 'close-brace', value: '}'},
+    {name: 'open-chevron', value: '<'},
+    {name: 'close-chevron', value: '>'},
+    {name: 'colon', value: ':'},
+    {name: 'comma', value: ','},
+    {name: 'period', value: '.'}
+]
+export const constTokenMap: Map<LexerTokenName, LexerToken> = new Map(constTokens.map(t => [t.name, t]))
 
-export const tokenize = (code: String): Token[] => {
+export const tokenize = (code: String): LexerToken[] => {
     const chars = code.split('')
-    const tokens: Token[] = []
+    const tokens: LexerToken[] = []
 
     while (chars.length !== 0) {
         if (isWhitespace(chars[0])) {
@@ -60,17 +77,18 @@ export const tokenize = (code: String): Token[] => {
 
         throw Error(`unknown token \`${chars[0]}\``)
     }
+    tokens.push({name: 'eof', value: ''})
     return tokens
 }
 
-const parseIdentifier = (chars: string[], tokens: Token[]): boolean => {
+const parseIdentifier = (chars: string[], tokens: LexerToken[]): boolean => {
     if (isAlpha(chars[0])) {
         const identifier: string[] = []
         while (isAlpha(chars[0]) || isNumeric(chars[0])) {
             identifier.push(chars[0])
             chars.splice(0, 1)
         }
-        tokens.push({type: 'identifier', value: identifier.join('')})
+        tokens.push({name: 'identifier', value: identifier.join('')})
         return true
     }
     return false
@@ -85,7 +103,7 @@ const parseIdentifier = (chars: string[], tokens: Token[]): boolean => {
  * @param chars
  * @param tokens
  */
-const parseNumberLiteral = (chars: string[], tokens: Token[]): boolean => {
+const parseNumberLiteral = (chars: string[], tokens: LexerToken[]): boolean => {
     if (isNumeric(chars[0])) {
         const number: string[] = []
         while (isNumeric(chars[0])) {
@@ -93,7 +111,7 @@ const parseNumberLiteral = (chars: string[], tokens: Token[]): boolean => {
             chars.splice(0, 1)
         }
         // TODO: verify literal
-        tokens.push({type: 'number', value: number.join('')})
+        tokens.push({name: 'number', value: number.join('')})
         return true
     }
     return false
@@ -105,7 +123,7 @@ const parseNumberLiteral = (chars: string[], tokens: Token[]): boolean => {
  * @param chars
  * @param tokens
  */
-const parseCharLiteral = (chars: string[], tokens: Token[]): boolean => {
+const parseCharLiteral = (chars: string[], tokens: LexerToken[]): boolean => {
     if (chars[0] === `'`) {
         chars.splice(0, 1)
         const charLiteral: string[] = []
@@ -115,7 +133,7 @@ const parseCharLiteral = (chars: string[], tokens: Token[]): boolean => {
         }
         chars.splice(0, 1)
         // TODO: verify literal
-        tokens.push({type: 'char', value: charLiteral.join('')})
+        tokens.push({name: 'char', value: charLiteral.join('')})
         return true
     }
     return false
@@ -127,7 +145,7 @@ const parseCharLiteral = (chars: string[], tokens: Token[]): boolean => {
  * @param chars
  * @param tokens
  */
-const parseStringLiteral = (chars: string[], tokens: Token[]): boolean => {
+const parseStringLiteral = (chars: string[], tokens: LexerToken[]): boolean => {
     if (chars[0] === '"') {
         chars.splice(0, 1)
         const stringLiteral: string[] = []
@@ -140,7 +158,7 @@ const parseStringLiteral = (chars: string[], tokens: Token[]): boolean => {
         }
         chars.splice(0, 1)
         // TODO: verify literal
-        tokens.push({type: 'string', value: stringLiteral.join('')})
+        tokens.push({name: 'string', value: stringLiteral.join('')})
         return true
     }
     return false
