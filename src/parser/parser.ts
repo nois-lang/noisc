@@ -20,6 +20,11 @@ export interface ParserToken {
 export type TokenName = LexerTokenName | ParserTokenName
 export type Token = LexerToken | ParserToken
 
+export interface Transform {
+    name: ParserTokenName,
+    branch: ParseBranch
+}
+
 export interface Rule {
     name: ParserTokenName,
     branches: ParseBranch[]

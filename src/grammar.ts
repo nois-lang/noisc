@@ -9,19 +9,23 @@ interface RawRule {
 
 const buildGrammar = (bnf: string): RawRule[] => {
     bnf = bnf.replace(/^\/\/.*$/, '')
-    return bnf.split(';').map(r => {
-        const [name, branches] = r.split('::=')
-        return [name, branches]
-    }).map(([name, branches]) => ({
-        name: name.trim(),
-        branches: branches.split('|')
-            .map(b => b.trim())
-            .map(b => b
-                .split(' ')
-                .map(token => token.toLowerCase().trim())
-                .filter(token => token !== 'todo')
-            )
-    }))
+    return bnf
+        .split(';')
+        .map(r => r.trim())
+        .filter(r => r.length > 0)
+        .map(r => {
+            const [name, branches] = r.split('::=')
+            return [name, branches]
+        }).map(([name, branches]) => ({
+            name: name.trim(),
+            branches: branches.split('|')
+                .map(b => b.trim())
+                .map(b => b
+                    .split(' ')
+                    .map(token => token.toLowerCase().trim())
+                    .filter(token => token !== 'todo')
+                )
+        }))
 }
 
 const bnf = readFileSync('src/grammar.bnf').toString()

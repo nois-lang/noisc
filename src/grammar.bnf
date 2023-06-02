@@ -29,3 +29,4 @@ block           ::= OPEN-BRACE block_ CLOSE-BRACE
                 ;
 
 block_          ::= E
+                ;
