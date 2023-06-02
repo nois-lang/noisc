@@ -8,7 +8,6 @@ interface RawRule {
 }
 
 const buildGrammar = (bnf: string): RawRule[] => {
-    console.log(bnf)
     bnf = bnf.replace(/^\/\/.*$/, '')
     return bnf.split(';').map(r => {
         const [name, branches] = r.split('::=')
