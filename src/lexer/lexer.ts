@@ -1,28 +1,51 @@
-export type LexerTokenName
-    = 'type-keyword'
-    | 'fn-keyword'
-    | 'kind-keyword'
-    | 'impl-keyword'
-    | 'let-keyword'
-    | 'open-paren'
-    | 'close-paren'
-    | 'open-bracket'
-    | 'close-bracket'
-    | 'open-brace'
-    | 'close-brace'
-    | 'open-chevron'
-    | 'close-chevron'
-    | 'colon'
-    | 'comma'
-    | 'period'
+export const lexerTokenNames = <const>[
+    // keywords
+    'type-keyword',
+    'fn-keyword',
+    'kind-keyword',
+    'impl-keyword',
+    'const-keyword',
 
-    | 'eof'
-    | 'e'
+    // punctuation & operators
+    'open-paren',
+    'close-paren',
+    'open-bracket',
+    'close-bracket',
+    'open-brace',
+    'close-brace',
+    'open-chevron',
+    'close-chevron',
+    'colon',
+    'comma',
+    'period',
+    'equals',
 
-    | 'identifier'
-    | 'string'
-    | 'char'
-    | 'number'
+    'plus',
+    'minus',
+    'asterisk',
+    'slash',
+    'caret',
+    'percent',
+    'not-equals',
+    'greater-eq',
+    'open-chevron',
+    'less-eq',
+    'and',
+    'or',
+    'excl',
+    'spread',
+
+    // dynamic
+    'identifier',
+    'string',
+    'char',
+    'number',
+
+    // special
+    'eof',
+    'e',
+]
+export type LexerTokenName = typeof lexerTokenNames[number]
 
 export interface LexerToken {
     name: LexerTokenName
@@ -41,7 +64,7 @@ export const constTokenMap: Map<LexerTokenName, string> = new Map([
     ['fn-keyword', 'fn'],
     ['kind-keyword', 'kind'],
     ['impl-keyword', 'impl'],
-    ['let-keyword', 'let'],
+    ['const-keyword', 'const'],
     ['open-paren', '('],
     ['close-paren', ')'],
     ['open-bracket', '['],
@@ -52,7 +75,8 @@ export const constTokenMap: Map<LexerTokenName, string> = new Map([
     ['close-chevron', '>'],
     ['colon', ':'],
     ['comma', ','],
-    ['period', '.']
+    ['period', '.'],
+    ['equals', '=']
 ])
 
 export const tokenize = (code: String): LexerToken[] => {

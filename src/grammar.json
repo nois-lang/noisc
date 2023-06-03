@@ -4,6 +4,18 @@
       "name": "program",
       "branches": [
         [
+          "statements"
+        ]
+      ]
+    },
+    {
+      "name": "statements",
+      "branches": [
+        [
+          "statement",
+          "statements"
+        ],
+        [
           "statement"
         ]
       ]
@@ -13,6 +25,12 @@
       "branches": [
         [
           "function-def"
+        ],
+        [
+          "variable-def"
+        ],
+        [
+          "type-def"
         ]
       ]
     },
@@ -26,6 +44,28 @@
           "colon",
           "identifier",
           "block"
+        ]
+      ]
+    },
+    {
+      "name": "variable-def",
+      "branches": [
+        [
+          "const-keyword",
+          "identifier",
+          "equals",
+          "expr"
+        ]
+      ]
+    },
+    {
+      "name": "type-def",
+      "branches": [
+        [
+          "type-keyword",
+          "identifier",
+          "equals",
+          "type-expr"
         ]
       ]
     },
@@ -86,7 +126,7 @@
       "branches": [
         [
           "open-brace",
-          "block_",
+          "statements",
           "close-brace"
         ],
         [
@@ -96,7 +136,194 @@
       ]
     },
     {
-      "name": "block_",
+      "name": "expr",
+      "branches": [
+        [
+          "sub-expr",
+          "expr_"
+        ],
+        [
+          "sub-expr"
+        ]
+      ]
+    },
+    {
+      "name": "expr_",
+      "branches": [
+        [
+          "infix-operator",
+          "sub-expr"
+        ]
+      ]
+    },
+    {
+      "name": "sub-expr",
+      "branches": [
+        [
+          "unary-expr"
+        ],
+        [
+          "operand"
+        ],
+        [
+          "paren-expr"
+        ]
+      ]
+    },
+    {
+      "name": "unary-expr",
+      "branches": [
+        [
+          "prefix-op",
+          "paren-expr"
+        ],
+        [
+          "paren-expr",
+          "postfix-op"
+        ]
+      ]
+    },
+    {
+      "name": "paren-expr",
+      "branches": [
+        [
+          "operand"
+        ],
+        [
+          "open-paren",
+          "expr",
+          "close-paren"
+        ]
+      ]
+    },
+    {
+      "name": "operand",
+      "branches": [
+        [
+          "string"
+        ],
+        [
+          "char"
+        ],
+        [
+          "number"
+        ],
+        [
+          "identifier"
+        ],
+        [
+          "type-expr"
+        ]
+      ]
+    },
+    {
+      "name": "infix-operator",
+      "branches": [
+        [
+          "plus"
+        ],
+        [
+          "minus"
+        ],
+        [
+          "asterisk"
+        ],
+        [
+          "slash"
+        ],
+        [
+          "caret"
+        ],
+        [
+          "percent"
+        ],
+        [
+          "period"
+        ],
+        [
+          "equals"
+        ],
+        [
+          "not-equals"
+        ],
+        [
+          "close-chevron"
+        ],
+        [
+          "greater-eq"
+        ],
+        [
+          "open-chevron"
+        ],
+        [
+          "less-eq"
+        ],
+        [
+          "and"
+        ],
+        [
+          "or"
+        ]
+      ]
+    },
+    {
+      "name": "prefix-op",
+      "branches": [
+        [
+          "plus"
+        ],
+        [
+          "minus"
+        ],
+        [
+          "excl"
+        ],
+        [
+          "spread"
+        ]
+      ]
+    },
+    {
+      "name": "postfix-op",
+      "branches": [
+        [
+          "args"
+        ]
+      ]
+    },
+    {
+      "name": "args",
+      "branches": [
+        [
+          "open-paren",
+          "args_",
+          "close-paren"
+        ],
+        [
+          "open-paren",
+          "close-paren"
+        ]
+      ]
+    },
+    {
+      "name": "args_",
+      "branches": [
+        [
+          "identifier",
+          "comma",
+          "args_"
+        ],
+        [
+          "identifier",
+          "trailing-comma"
+        ],
+        [
+          "identifier"
+        ]
+      ]
+    },
+    {
+      "name": "type-expr",
       "branches": [
         [
           "e"

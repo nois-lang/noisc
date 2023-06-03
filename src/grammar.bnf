@@ -1,10 +1,20 @@
-program         ::= statement
+program         ::= statements
                 ;
 
-statement       ::= function-def
+statements      ::= statement statements
+                | statement
+                ;
+
+statement       ::= function-def | variable-def | type-def
                 ;
 
 function-def    ::= FN-KEYWORD IDENTIFIER params COLON IDENTIFIER block
+                ;
+
+variable-def    ::= CONST-KEYWORD IDENTIFIER EQUALS expr
+                ;
+
+type-def        ::= TYPE-KEYWORD IDENTIFIER EQUALS type-expr
                 ;
 
 params          ::= OPEN-PAREN params_ CLOSE-PAREN
@@ -24,9 +34,56 @@ trailing-comma  ::= COMMA
                 | E
                 ;
 
-block           ::= OPEN-BRACE block_ CLOSE-BRACE
+block           ::= OPEN-BRACE statements CLOSE-BRACE
                 | OPEN-BRACE CLOSE-BRACE
                 ;
 
-block_          ::= E
+expr            ::= sub-expr expr_
+                | sub-expr
                 ;
+
+expr_           ::= infix-operator sub-expr
+                ;
+
+sub-expr        ::= unary-expr
+                | operand
+                | paren-expr
+                ;
+
+unary-expr      ::= prefix-op paren-expr
+                | paren-expr postfix-op
+                ;
+
+paren-expr      ::= operand
+                | OPEN-PAREN expr CLOSE-PAREN
+                ;
+
+operand         ::= STRING
+                | CHAR
+                | NUMBER
+                | IDENTIFIER
+                | type-expr
+                ;
+
+infix-operator  ::= PLUS | MINUS | ASTERISK | SLASH | CARET | PERCENT | PERIOD | EQUALS | NOT-EQUALS | CLOSE-CHEVRON
+                | GREATER-EQ | OPEN-CHEVRON | LESS-EQ | AND | OR
+                ;
+
+prefix-op       ::= PLUS | MINUS | EXCL | SPREAD
+                ;
+
+postfix-op      ::= args
+                ;
+
+args            ::= OPEN-PAREN args_ CLOSE-PAREN
+                | OPEN-PAREN CLOSE-PAREN
+                ;
+
+args_           ::= IDENTIFIER COMMA args_
+                | IDENTIFIER trailing-comma
+                | IDENTIFIER
+                ;
+
+type-expr   ::= E
+                ;
+

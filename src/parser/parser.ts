@@ -87,8 +87,8 @@ export const generateTree = (tokens: LexerToken[], chain: Transform[]): Token =>
 
 export const compactToken = (token: Token): any => {
     if ('nodes' in token) {
-        return Object.fromEntries(token.nodes.map(n => [n.name, compactToken(n)]))
+        return { name: token.name, nodes: token.nodes.map(n => compactToken(n)) }
     } else {
-        return token.value
+        return { name: token.name, value: token.value }
     }
 }
