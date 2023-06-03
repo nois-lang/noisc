@@ -25,46 +25,22 @@ describe('parser', () => {
                                 {
                                     'name': 'function-def',
                                     'nodes': [
-                                        {
-                                            'name': 'fn-keyword',
-                                            'value': 'fn'
-                                        },
-                                        {
-                                            'name': 'identifier',
-                                            'value': 'main'
-                                        },
+                                        { 'name': 'fn-keyword', 'value': 'fn' },
+                                        { 'name': 'identifier', 'value': 'main' },
                                         {
                                             'name': 'params',
                                             'nodes': [
-                                                {
-                                                    'name': 'open-paren',
-                                                    'value': '('
-                                                },
-                                                {
-                                                    'name': 'close-paren',
-                                                    'value': ')'
-                                                }
+                                                { 'name': 'open-paren', 'value': '(' },
+                                                { 'name': 'close-paren', 'value': ')' }
                                             ]
                                         },
-                                        {
-                                            'name': 'colon',
-                                            'value': ':'
-                                        },
-                                        {
-                                            'name': 'identifier',
-                                            'value': 'Unit'
-                                        },
+                                        { 'name': 'colon', 'value': ':' },
+                                        { 'name': 'identifier', 'value': 'Unit' },
                                         {
                                             'name': 'block',
                                             'nodes': [
-                                                {
-                                                    'name': 'open-brace',
-                                                    'value': '{'
-                                                },
-                                                {
-                                                    'name': 'close-brace',
-                                                    'value': '}'
-                                                }
+                                                { 'name': 'open-brace', 'value': '{' },
+                                                { 'name': 'close-brace', 'value': '}' }
                                             ]
                                         }
                                     ]

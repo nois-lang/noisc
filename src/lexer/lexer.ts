@@ -89,13 +89,7 @@ export const tokenize = (code: String): LexerToken[] => {
             pos.pos++
             continue
         }
-        let codeLeft = code.slice(pos.pos)
-        let pair = [...constTokenMap.entries()].find(([, v]) => codeLeft.startsWith(v))
-        if (pair) {
-            const [name, value] = pair
-            const start = pos.pos
-            pos.pos += value.length
-            tokens.push(createToken(name, value, pos, start))
+        if (parseConstToken(chars, tokens, pos)) {
             continue
         }
         if (parseIdentifier(chars, tokens, pos)) {
@@ -110,7 +104,6 @@ export const tokenize = (code: String): LexerToken[] => {
         if (parseStringLiteral(chars, tokens, pos)) {
             continue
         }
-
         throw Error(`unknown token \`${chars[pos.pos]}\``)
     }
 
@@ -118,6 +111,19 @@ export const tokenize = (code: String): LexerToken[] => {
     tokens.push(createToken('eof', '', pos))
 
     return tokens
+}
+
+const parseConstToken = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
+    let codeLeft = chars.slice(pos.pos).join('')
+    let pair = [...constTokenMap.entries()].find(([, v]) => codeLeft.startsWith(v))
+    if (pair) {
+        const [name, value] = pair
+        const start = pos.pos
+        pos.pos += value.length
+        tokens.push(createToken(name, value, pos, start))
+        return true
+    }
+    return false
 }
 
 const parseIdentifier = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
