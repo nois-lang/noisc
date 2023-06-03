@@ -15,10 +15,6 @@ export const lexerTokenNames = <const>[
     'close-brace',
     'open-chevron',
     'close-chevron',
-    'colon',
-    'comma',
-    'period',
-    'equals',
 
     'plus',
     'minus',
@@ -26,7 +22,8 @@ export const lexerTokenNames = <const>[
     'slash',
     'caret',
     'percent',
-    'not-equals',
+    'equals-op',
+    'not-equals-op',
     'greater-eq',
     'open-chevron',
     'less-eq',
@@ -34,6 +31,11 @@ export const lexerTokenNames = <const>[
     'or',
     'excl',
     'spread',
+
+    'colon',
+    'comma',
+    'period',
+    'equals',
 
     // dynamic
     'identifier',
@@ -73,10 +75,26 @@ export const constTokenMap: Map<LexerTokenName, string> = new Map([
     ['close-brace', '}'],
     ['open-chevron', '<'],
     ['close-chevron', '>'],
+
+    ['equals-op', '=='],
+    ['plus', '+'],
+    ['minus', '-'],
+    ['asterisk', '*'],
+    ['slash', '/'],
+    ['caret', '^'],
+    ['percent', '%'],
+    ['not-equals-op', '!='],
+    ['greater-eq', '>='],
+    ['less-eq', '<='],
+    ['and', '&&'],
+    ['or', '||'],
+    ['excl', '!'],
+    ['spread', '..'],
+
     ['colon', ':'],
     ['comma', ','],
     ['period', '.'],
-    ['equals', '=']
+    ['equals', '='],
 ])
 
 export const tokenize = (code: String): LexerToken[] => {
@@ -173,17 +191,18 @@ const parseNumberLiteral = (chars: string[], tokens: LexerToken[], pos: { pos: n
  * @param pos
  */
 const parseCharLiteral = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
-    if (chars[pos.pos] === `'`) {
+    const quote = `'`
+    if (chars[pos.pos] === quote) {
         const start = pos.pos
         pos.pos++
         const charLiteral: string[] = []
-        while (chars[pos.pos] !== `'`) {
+        while (chars[pos.pos] !== quote) {
             charLiteral.push(chars[pos.pos])
             pos.pos++
         }
         pos.pos++
         // TODO: verify literal
-        tokens.push(createToken('char', charLiteral.join(''), pos, start))
+        tokens.push(createToken('char', quote + charLiteral.join('') + quote, pos, start))
         return true
     }
     return false
@@ -197,20 +216,21 @@ const parseCharLiteral = (chars: string[], tokens: LexerToken[], pos: { pos: num
  * @param pos
  */
 const parseStringLiteral = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
-    if (chars[pos.pos] === '"') {
+    const quote = '"'
+    if (chars[pos.pos] === quote) {
         const start = pos.pos
         pos.pos++
         const stringLiteral: string[] = []
-        while (chars[pos.pos] !== '"') {
+        while (chars[pos.pos] !== quote) {
             if (chars.length === pos.pos) {
-                throw Error('no matching `"`')
+                throw Error(`no matching \`${quote}\``)
             }
             stringLiteral.push(chars[pos.pos])
             pos.pos++
         }
         pos.pos++
         // TODO: verify literal
-        tokens.push(createToken('string', stringLiteral.join(''), pos, start))
+        tokens.push(createToken('string', quote + stringLiteral.join('') + quote, pos, start))
         return true
     }
     return false

@@ -65,8 +65,8 @@ operand         ::= STRING
                 | type-expr
                 ;
 
-infix-operator  ::= PLUS | MINUS | ASTERISK | SLASH | CARET | PERCENT | PERIOD | EQUALS | NOT-EQUALS | CLOSE-CHEVRON
-                | GREATER-EQ | OPEN-CHEVRON | LESS-EQ | AND | OR
+infix-operator  ::= PLUS | MINUS | ASTERISK | SLASH | CARET | PERCENT | PERIOD | EQUALS-OP | NOT-EQUALS-OP
+                | CLOSE-CHEVRON | GREATER-EQ | OPEN-CHEVRON | LESS-EQ | AND | OR
                 ;
 
 prefix-op       ::= PLUS | MINUS | EXCL | SPREAD

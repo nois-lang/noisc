@@ -36,15 +36,40 @@ fn main(): Unit {
 
     it('tokenize string literal', () => {
         expect(tokenize(`"string 123 \n ok"`)).toEqual([
-            { name: 'string', value: 'string 123 \n ok', location: { start: 0, end: 16 } },
+            { name: 'string', value: `"string 123 \n ok"`, location: { start: 0, end: 16 } },
             { name: 'eof', value: '', location: { start: 17, end: 17 } }
         ])
     })
 
     it('tokenize char literal', () => {
-        expect(tokenize('\'?\'')).toEqual([
-            { name: 'char', value: '?', location: { start: 0, end: 2 } },
+        expect(tokenize(`'?'`)).toEqual([
+            { name: 'char', value: `'?'`, location: { start: 0, end: 2 } },
             { name: 'eof', value: '', location: { start: 3, end: 3 } }
+        ])
+    })
+
+    it('tokenize expression', () => {
+        const tokens = tokenize(`1+call("str").ok() / (12 - a())`)
+        expect(tokens.map(t => [t.name, t.value])).toEqual([
+            ['number', '1'],
+            ['plus', '+'],
+            ['identifier', 'call'],
+            ['open-paren', '('],
+            ['string', '"str"'],
+            ['close-paren', ')'],
+            ['period', '.'],
+            ['identifier', 'ok'],
+            ['open-paren', '('],
+            ['close-paren', ')'],
+            ['slash', '/'],
+            ['open-paren', '('],
+            ['number', '12'],
+            ['minus', '-'],
+            ['identifier', 'a'],
+            ['open-paren', '('],
+            ['close-paren', ')'],
+            ['close-paren', ')'],
+            ['eof', '']
         ])
     })
 
