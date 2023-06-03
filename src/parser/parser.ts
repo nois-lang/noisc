@@ -36,14 +36,14 @@ export type ParseBranch = TokenName[]
 const rawRules = (<any>grammar).default.rules
 export const rules: Map<ParserTokenName, Rule> = new Map(rawRules.map((r: Rule) => [r.name, r]))
 
-export const parse = (tokens: LexerToken[]): Transform[] => {
+export const generateTransforms = (tokens: LexerToken[], root: ParserTokenName = 'program'): Transform[] => {
     const table = generateParsingTable()
     const buffer = structuredClone(tokens)
     const chain: Transform[] = []
 
     const stack: TokenName[] = []
     stack.push('eof')
-    stack.push('program')
+    stack.push(root)
 
     while (buffer.length > 0) {
         if (stack.at(-1)! === buffer[0].name) {
@@ -75,4 +75,12 @@ export const generateTree = (tokens: LexerToken[], chain: Transform[]): Token =>
         }
     })
     return token
+}
+
+export const compactToken = (token: Token): any => {
+    if ('nodes' in token) {
+        return Object.fromEntries(token.nodes.map(n => [n.name, compactToken(n)]))
+    } else {
+        return token.value
+    }
 }

@@ -1,4 +1,4 @@
-import {generateTree, parse, rules} from './parser/parser'
+import {generateTransforms, generateTree, rules} from './parser/parser'
 import {followTokens, transformFirstTokens} from './parser/locate-token'
 import {generateParsingTable} from './parser/table'
 import {tokenize} from './lexer/lexer'
@@ -14,7 +14,7 @@ fn main(): Unit {
 }`
 const tokens = tokenize(code)
 console.log({tokens})
-const chain = parse(tokens)
+const chain = generateTransforms(tokens)
 console.log(inspect({chain}, {depth: null, colors: true}))
 const rule = generateTree(tokens, chain)
 console.log(inspect({rule}, {depth: null, colors: true}))
