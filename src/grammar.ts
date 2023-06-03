@@ -1,4 +1,4 @@
-import {readFileSync, writeFileSync} from 'fs'
+import { readFileSync, writeFileSync } from 'fs'
 
 type RawTokenName = string
 
@@ -30,6 +30,6 @@ const buildGrammar = (bnf: string): RawRule[] => {
 
 const bnf = readFileSync('src/grammar.bnf').toString()
 const grammar = buildGrammar(bnf)
-const json = JSON.stringify({rules: grammar}, undefined, 2)
+const json = JSON.stringify({ rules: grammar }, undefined, 2)
 console.log('generated json grammar', json)
 writeFileSync('src/grammar.json', json)

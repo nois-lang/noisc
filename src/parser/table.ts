@@ -1,6 +1,6 @@
-import {ParserTokenName, rules, Transform} from './parser'
-import {LexerTokenName} from '../lexer/lexer'
-import {followTokens, transformFirstTokens} from './locate-token'
+import { ParserTokenName, rules, Transform } from './parser'
+import { LexerTokenName } from '../lexer/lexer'
+import { followTokens, transformFirstTokens } from './locate-token'
 
 export type ParsingTable = Map<ParserTokenName, Map<LexerTokenName, Transform>>
 
@@ -11,11 +11,11 @@ export const generateParsingTable = (): ParsingTable => {
         r.branches.forEach(b => {
             if (b.length === 1 && b.includes('e')) {
                 followTokens(r.name).forEach(ft => {
-                    ruleMap.set(<LexerTokenName>ft, {name: r.name, branch: b})
+                    ruleMap.set(<LexerTokenName>ft, { name: r.name, branch: b })
                 })
             } else {
-                transformFirstTokens({name: r.name, branch: b}).forEach(t => {
-                    ruleMap.set(<LexerTokenName>t, {name: r.name, branch: b})
+                transformFirstTokens({ name: r.name, branch: b }).forEach(t => {
+                    ruleMap.set(<LexerTokenName>t, { name: r.name, branch: b })
                 })
             }
         })

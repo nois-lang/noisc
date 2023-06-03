@@ -1,6 +1,6 @@
-import {tokenize} from '../lexer/lexer'
-import {expect} from '@jest/globals'
-import {compactToken, generateTransforms, generateTree} from './parser'
+import { tokenize } from '../lexer/lexer'
+import { expect } from '@jest/globals'
+import { compactToken, generateTransforms, generateTree } from './parser'
 
 describe('parser', () => {
 

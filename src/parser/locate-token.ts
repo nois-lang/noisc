@@ -1,9 +1,12 @@
-import {ParserTokenName, rules, TokenName, Transform} from './parser'
+import { ParserTokenName, rules, TokenName, Transform } from './parser'
 
 export const firstTokens = (token: TokenName): Set<TokenName> => {
     const rule = rules.get(<ParserTokenName>token)
     if (rule) {
-        return new Set(rule.branches.flatMap(b => [...transformFirstTokens({name: <ParserTokenName>token, branch: b})]))
+        return new Set(rule.branches.flatMap(b => [...transformFirstTokens({
+            name: <ParserTokenName>token,
+            branch: b
+        })]))
     } else {
         return new Set([token])
     }
@@ -34,7 +37,7 @@ export const followTokens = (name: TokenName): Set<TokenName> => {
         const follows = new Set(
             appears.flatMap(rule => rule.branches
                 .filter(b => b.includes(name))
-                .flatMap(b => [...nextTokens({name: rule.name, branch: b}, name)]))
+                .flatMap(b => [...nextTokens({ name: rule.name, branch: b }, name)]))
         )
         if (follows.size === 0) {
             return new Set(['eof'])
