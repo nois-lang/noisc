@@ -1,6 +1,6 @@
 import { LexerToken, LexerTokenName, TokenLocation } from '../lexer/lexer'
-import * as grammar from '../grammar.json' assert { type: 'json' }
 import { generateParsingTable } from './table'
+import { readFileSync } from 'fs'
 
 export type ParserTokenName
     = 'program'
@@ -34,7 +34,7 @@ export interface Rule {
 
 export type ParseBranch = TokenName[]
 
-const rawRules = (<any>grammar).default.rules
+const rawRules = JSON.parse(readFileSync('src/grammar.json').toString()).rules
 export const rules: Map<ParserTokenName, Rule> = new Map(rawRules.map((r: Rule) => [r.name, r]))
 
 export const generateTransforms = (tokens: LexerToken[], root: ParserTokenName = 'program'): Transform[] => {
