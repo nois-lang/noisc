@@ -27,71 +27,84 @@ export type LexerTokenName
 export interface LexerToken {
     name: LexerTokenName
     value: string
+    location: TokenLocation
 }
 
-const constTokens: LexerToken[] = [
-    {name: 'type-keyword', value: 'type'},
-    {name: 'fn-keyword', value: 'fn'},
-    {name: 'kind-keyword', value: 'kind'},
-    {name: 'impl-keyword', value: 'impl'},
-    {name: 'let-keyword', value: 'let'},
-    {name: 'open-paren', value: '('},
-    {name: 'close-paren', value: ')'},
-    {name: 'open-bracket', value: '['},
-    {name: 'close-bracket', value: ']'},
-    {name: 'open-brace', value: '{'},
-    {name: 'close-brace', value: '}'},
-    {name: 'open-chevron', value: '<'},
-    {name: 'close-chevron', value: '>'},
-    {name: 'colon', value: ':'},
-    {name: 'comma', value: ','},
-    {name: 'period', value: '.'}
-]
-export const constTokenMap: Map<LexerTokenName, LexerToken> = new Map(constTokens.map(t => [t.name, t]))
+export interface TokenLocation {
+    start: number
+    end: number
+}
+
+
+export const constTokenMap: Map<LexerTokenName, string> = new Map([
+    ['type-keyword', 'type'],
+    ['fn-keyword', 'fn'],
+    ['kind-keyword', 'kind'],
+    ['impl-keyword', 'impl'],
+    ['let-keyword', 'let'],
+    ['open-paren', '('],
+    ['close-paren', ')'],
+    ['open-bracket', '['],
+    ['close-bracket', ']'],
+    ['open-brace', '{'],
+    ['close-brace', '}'],
+    ['open-chevron', '<'],
+    ['close-chevron', '>'],
+    ['colon', ':'],
+    ['comma', ','],
+    ['period', '.']
+])
 
 export const tokenize = (code: String): LexerToken[] => {
+    const pos = { pos: 0 }
     const chars = code.split('')
     const tokens: LexerToken[] = []
 
-    while (chars.length !== 0) {
-        if (isWhitespace(chars[0]) || isNewline(chars[0])) {
-            chars.splice(0, 1)
+    while (pos.pos < chars.length) {
+        if (isWhitespace(chars[pos.pos]) || isNewline(chars[pos.pos])) {
+            pos.pos++
             continue
         }
-        let codeLeft = code.slice(code.length - chars.length)
-        let constToken = [...constTokenMap.values()].find(v => codeLeft.startsWith(v.value))
-        if (constToken) {
-            tokens.push(constToken)
-            chars.splice(0, constToken.value.length)
+        let codeLeft = code.slice(pos.pos)
+        let pair = [...constTokenMap.entries()].find(([, v]) => codeLeft.startsWith(v))
+        if (pair) {
+            const [name, value] = pair
+            const start = pos.pos
+            pos.pos += value.length
+            tokens.push(createToken(name, value, pos, start))
             continue
         }
-        if (parseIdentifier(chars, tokens)) {
+        if (parseIdentifier(chars, tokens, pos)) {
             continue
         }
-        if (parseNumberLiteral(chars, tokens)) {
+        if (parseNumberLiteral(chars, tokens, pos)) {
             continue
         }
-        if (parseCharLiteral(chars, tokens)) {
+        if (parseCharLiteral(chars, tokens, pos)) {
             continue
         }
-        if (parseStringLiteral(chars, tokens)) {
+        if (parseStringLiteral(chars, tokens, pos)) {
             continue
         }
 
-        throw Error(`unknown token \`${chars[0]}\``)
+        throw Error(`unknown token \`${chars[pos.pos]}\``)
     }
-    tokens.push({name: 'eof', value: ''})
+
+    pos.pos++
+    tokens.push(createToken('eof', '', pos))
+
     return tokens
 }
 
-const parseIdentifier = (chars: string[], tokens: LexerToken[]): boolean => {
-    if (isAlpha(chars[0])) {
+const parseIdentifier = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
+    if (isAlpha(chars[pos.pos])) {
+        const start = pos.pos
         const identifier: string[] = []
-        while (isAlpha(chars[0]) || isNumeric(chars[0])) {
-            identifier.push(chars[0])
-            chars.splice(0, 1)
+        while (isAlpha(chars[pos.pos]) || isNumeric(chars[pos.pos])) {
+            identifier.push(chars[pos.pos])
+            pos.pos++
         }
-        tokens.push({name: 'identifier', value: identifier.join('')})
+        tokens.push(createToken('identifier', identifier.join(''), pos, start))
         return true
     }
     return false
@@ -105,16 +118,18 @@ const parseIdentifier = (chars: string[], tokens: LexerToken[]): boolean => {
  *
  * @param chars
  * @param tokens
+ * @param pos
  */
-const parseNumberLiteral = (chars: string[], tokens: LexerToken[]): boolean => {
-    if (isNumeric(chars[0])) {
+const parseNumberLiteral = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
+    if (isNumeric(chars[pos.pos])) {
+        const start = pos.pos
         const number: string[] = []
-        while (isNumeric(chars[0])) {
-            number.push(chars[0])
-            chars.splice(0, 1)
+        while (isNumeric(chars[pos.pos])) {
+            number.push(chars[pos.pos])
+            pos.pos++
         }
         // TODO: verify literal
-        tokens.push({name: 'number', value: number.join('')})
+        tokens.push(createToken('number', number.join(''), pos, start))
         return true
     }
     return false
@@ -125,18 +140,20 @@ const parseNumberLiteral = (chars: string[], tokens: LexerToken[]): boolean => {
  *
  * @param chars
  * @param tokens
+ * @param pos
  */
-const parseCharLiteral = (chars: string[], tokens: LexerToken[]): boolean => {
-    if (chars[0] === `'`) {
-        chars.splice(0, 1)
+const parseCharLiteral = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
+    if (chars[pos.pos] === `'`) {
+        const start = pos.pos
+        pos.pos++
         const charLiteral: string[] = []
-        while (chars[0] !== `'`) {
-            charLiteral.push(chars[0])
-            chars.splice(0, 1)
+        while (chars[pos.pos] !== `'`) {
+            charLiteral.push(chars[pos.pos])
+            pos.pos++
         }
-        chars.splice(0, 1)
+        pos.pos++
         // TODO: verify literal
-        tokens.push({name: 'char', value: charLiteral.join('')})
+        tokens.push(createToken('char', charLiteral.join(''), pos, start))
         return true
     }
     return false
@@ -147,24 +164,34 @@ const parseCharLiteral = (chars: string[], tokens: LexerToken[]): boolean => {
  *
  * @param chars
  * @param tokens
+ * @param pos
  */
-const parseStringLiteral = (chars: string[], tokens: LexerToken[]): boolean => {
-    if (chars[0] === '"') {
-        chars.splice(0, 1)
+const parseStringLiteral = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
+    if (chars[pos.pos] === '"') {
+        const start = pos.pos
+        pos.pos++
         const stringLiteral: string[] = []
-        while (chars[0] !== '"') {
-            if (chars.length === 0) {
+        while (chars[pos.pos] !== '"') {
+            if (chars.length === pos.pos) {
                 throw Error('no matching `"`')
             }
-            stringLiteral.push(chars[0])
-            chars.splice(0, 1)
+            stringLiteral.push(chars[pos.pos])
+            pos.pos++
         }
-        chars.splice(0, 1)
+        pos.pos++
         // TODO: verify literal
-        tokens.push({name: 'string', value: stringLiteral.join('')})
+        tokens.push(createToken('string', stringLiteral.join(''), pos, start))
         return true
     }
     return false
+}
+
+const createToken = (
+    name: LexerTokenName,
+    value: string, pos: { pos: number },
+    start: number = pos.pos - 1
+): LexerToken => {
+    return { name, value, location: { start, end: pos.pos - 1 } }
 }
 
 const isWhitespace = (char: string): boolean => char === ' ' || char === '\t'
