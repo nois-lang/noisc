@@ -22,7 +22,8 @@
     "skipLibCheck": true
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    "src/grammar.json"
   ],
   "ts-node": {
     "esm": true,

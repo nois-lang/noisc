@@ -1,8 +1,7 @@
-import { generateTransforms, generateTree, rules } from './parser/parser'
+import { compactToken, generateTransforms, generateTree, rules } from './parser/parser'
 import { followTokens, transformFirstTokens } from './parser/locate-token'
 import { generateParsingTable } from './parser/table'
 import { tokenize } from './lexer/lexer'
-import { inspect } from 'util'
 
 const transforms = [...rules.values()].flatMap(r => r.branches.map(b => ({ name: r.name, branch: b })))
 console.table(transforms.map(t => [t.name, transformFirstTokens(t), followTokens(t.name)]))
@@ -13,8 +12,10 @@ const code = `\
 fn main(): Unit {
 }`
 const tokens = tokenize(code)
-console.log({ tokens })
+console.dir({ tokens }, { depth: null, colors: true })
 const chain = generateTransforms(tokens)
-console.log(inspect({ chain }, { depth: null, colors: true }))
+console.dir({ chain }, { depth: null, colors: true })
 const rule = generateTree(tokens, chain)
-console.log(inspect({ rule }, { depth: null, colors: true }))
+console.dir({ rule }, { depth: null, colors: true })
+const compact = compactToken(rule)
+console.dir({ compact }, { depth: null, colors: true })
