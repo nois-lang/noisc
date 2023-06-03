@@ -1,6 +1,6 @@
-import {LexerToken, LexerTokenName} from '../lexer/lexer'
-import * as grammar from '../grammar.json' assert {type: 'json'}
-import {generateParsingTable} from './table'
+import { LexerToken, LexerTokenName, TokenLocation } from '../lexer/lexer'
+import * as grammar from '../grammar.json' assert { type: 'json' }
+import { generateParsingTable } from './table'
 
 export type ParserTokenName
     = 'program'
@@ -15,6 +15,7 @@ export type ParserTokenName
 
 export interface ParserToken {
     name: ParserTokenName,
+    location: TokenLocation,
     nodes: Token[]
 }
 
@@ -65,15 +66,22 @@ export const generateTransforms = (tokens: LexerToken[], root: ParserTokenName =
 
 export const generateTree = (tokens: LexerToken[], chain: Transform[]): Token => {
     const transform = chain.splice(0, 1)[0]
-    const token: Token = {name: transform.name, nodes: []}
+    const nodes: Token[] = []
     transform.branch.forEach(t => {
         if (t === tokens[0].name) {
-            token.nodes.push(tokens.splice(0, 1)[0])
+            nodes.push(tokens.splice(0, 1)[0])
         } else {
-            token.nodes.push(generateTree(tokens, chain))
+            nodes.push(generateTree(tokens, chain))
         }
     })
-    return token
+    return {
+        name: transform.name,
+        location: {
+            start: (nodes.at(0) ?? tokens[0]).location.start,
+            end: nodes.at(-1)?.location.end ?? tokens[0].location.start
+        },
+        nodes
+    }
 }
 
 export const compactToken = (token: Token): any => {
