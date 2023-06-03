@@ -24,12 +24,5 @@
   "include": [
     "src/**/*",
     "src/grammar.json"
-  ],
-  "ts-node": {
-    "esm": true,
-    "compilerOptions": {
-      "module": "esnext"
-    },
-    "experimentalSpecifierResolution": "node"
-  }
+  ]
 }

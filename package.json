@@ -21,7 +21,6 @@
   "homepage": "https://github.com/nois-lang/nois#readme",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "type": "module",
   "bin": {
     "nois": "dist/index.js"
   },
