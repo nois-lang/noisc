@@ -52,8 +52,7 @@ export const generateTransforms = (tokens: LexerToken[], root: ParserTokenName =
         } else {
             const transform = table.get(<ParserTokenName>stack.at(-1)!)?.get(buffer[0].name)
             if (!transform) {
-                console.error(buffer, stack)
-                throw Error(`syntax error, no value for ${stack.at(-1)}, ${buffer[0].name}`)
+                throw Error(`syntax error, expected ${stack.at(-1)}, got ${buffer[0].name}`)
             }
             chain.push(transform)
             stack.pop()
