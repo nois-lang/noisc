@@ -2,11 +2,19 @@ import { compactToken, flattenToken, parse } from './parser/parser'
 import { tokenize } from './lexer/lexer'
 import { inspect } from 'util'
 import { readFileSync } from 'fs'
-import { resolve } from 'path'
+import { join, resolve } from 'path'
+
+const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
+
+export const usage = `\
+Nois transpiler - v${version}
+
+Usage: nois file`
 
 const path = process.argv.slice(2).at(0)
 if (!path) {
-    throw Error('no file provided')
+    console.log(usage)
+    process.exit()
 }
 
 const code = readFileSync(resolve(path)).toString()
