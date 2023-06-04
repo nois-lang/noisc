@@ -2,17 +2,35 @@ import { LexerToken, LexerTokenName, TokenLocation } from '../lexer/lexer'
 import { generateParsingTable } from './table'
 import { readFileSync } from 'fs'
 import { join } from 'path'
+import { inspect } from 'util'
 
-export type ParserTokenName
-    = 'program'
-    | 'statement'
-    | 'function-expr'
-    | 'params'
-    | 'params_'
-    | 'param'
-    | 'trailing-comma'
-    | 'block'
-    | 'block_'
+export const parserTokenNames = <const>[
+    'program',
+    'statements',
+    'statement',
+    'variable-def',
+    'type-def',
+    'return-stmt',
+    'block',
+    'expr',
+    'expr_',
+    'sub-expr',
+    'unary-expr',
+    'paren-expr',
+    'operand',
+    'infix-operator',
+    'prefix-op',
+    'postfix-op',
+    'args',
+    'function-expr',
+    'params',
+    'param',
+    'trailing-comma',
+    'type',
+    'type-params',
+    'if-expr',
+]
+export type ParserTokenName = typeof parserTokenNames[number]
 
 export interface ParserToken {
     name: ParserTokenName,
@@ -58,6 +76,7 @@ export const generateTransforms = (tokens: LexerToken[], root: ParserTokenName =
         } else {
             const transform = table.get(<ParserTokenName>stack.at(-1)!)?.get(buffer[0].name)
             if (!transform) {
+                console.debug(inspect({ chain }, { depth: null, colors: true }))
                 throw Error(`syntax error, expected ${stack.at(-1)}, got ${buffer[0].name}, at ${buffer[0].location.start}`)
             }
             chain.push(transform)

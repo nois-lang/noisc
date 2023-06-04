@@ -62,27 +62,56 @@ describe('parser', () => {
         })
     })
 
+    it('parse unary-expr', () => {
+        const rule = parse('-3', 'unary-expr')
+        expect(compactToken(rule!)).toEqual({
+            'name': 'unary-expr',
+            'nodes': [
+                {
+                    'name': 'prefix-op',
+                    'nodes': [{
+                        'name': 'minus', 'value': '-'
+                    }]
+                },
+                {
+                    'name': 'operand',
+                    'nodes': [{
+                        'name': 'number', 'value': '3'
+                    }]
+                }]
+        })
+    })
+
     it('parse function-expr', () => {
         const code = `(): Unit {}`
-        const rule = parse(code, 'function-expr')
+        const rule = parse(code, 'expr')
         expect(compactToken(rule!)).toEqual({
-            'name': 'function-expr',
-            'nodes': [
-                { 'name': 'open-paren', 'value': '(' },
-                { 'name': 'close-paren', 'value': ')' },
-                { 'name': 'colon', 'value': ':' },
-                {
-                    'name': 'type',
-                    'nodes': [
-                        { 'name': 'identifier', 'value': 'Unit' }
-                    ]
-                }, {
-                    'name': 'block',
-                    'nodes': [
-                        { 'name': 'open-brace', 'value': '{' },
-                        { 'name': 'close-brace', 'value': '}' }
-                    ]
+            'name': 'expr', 'nodes': [{
+                'name': 'sub-expr', 'nodes': [{
+                    'name': 'operand', 'nodes': [{
+                        'name': 'function-expr',
+                        'nodes': [
+                            { 'name': 'open-paren', 'value': '(' },
+                            { 'name': 'close-paren', 'value': ')' },
+                            { 'name': 'colon', 'value': ':' },
+                            {
+                                'name': 'type',
+                                'nodes': [
+                                    { 'name': 'identifier', 'value': 'Unit' }
+                                ]
+                            },
+                            {
+                                'name': 'block',
+                                'nodes': [
+                                    { 'name': 'open-brace', 'value': '{' },
+                                    { 'name': 'close-brace', 'value': '}' }
+                                ]
+                            }
+                        ],
+                    }]
                 }]
+            }]
+
         })
     })
 

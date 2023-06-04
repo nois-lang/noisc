@@ -22,29 +22,23 @@ block           ::= OPEN-BRACE statements CLOSE-BRACE
                 | OPEN-BRACE CLOSE-BRACE
                 ;
 
-expr            ::= sub-expr expr_
+expr            ::= sub-expr infix-operator sub-expr
                 | sub-expr
-                ;
-
-expr_           ::= infix-operator sub-expr
                 ;
 
 sub-expr        ::= unary-expr
                 | operand
-//                | paren-expr
                 ;
 
-unary-expr      ::= prefix-op paren-expr
-                | paren-expr postfix-op
-                ;
-
-paren-expr      ::= OPEN-PAREN expr CLOSE-PAREN
+unary-expr      ::= prefix-op operand
+                | operand postfix-op
                 ;
 
 operand         ::= STRING
                 | CHAR
                 | NUMBER
                 | IDENTIFIER
+                | OPEN-PAREN expr CLOSE-PAREN
                 | type
                 | function-expr
                 | if-expr

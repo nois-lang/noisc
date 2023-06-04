@@ -88,18 +88,10 @@
       "branches": [
         [
           "sub-expr",
-          "expr_"
+          "infix-operator",
+          "sub-expr"
         ],
         [
-          "sub-expr"
-        ]
-      ]
-    },
-    {
-      "name": "expr_",
-      "branches": [
-        [
-          "infix-operator",
           "sub-expr"
         ]
       ]
@@ -120,21 +112,11 @@
       "branches": [
         [
           "prefix-op",
-          "paren-expr"
+          "operand"
         ],
         [
-          "paren-expr",
+          "operand",
           "postfix-op"
-        ]
-      ]
-    },
-    {
-      "name": "paren-expr",
-      "branches": [
-        [
-          "open-paren",
-          "expr",
-          "close-paren"
         ]
       ]
     },
@@ -152,6 +134,11 @@
         ],
         [
           "identifier"
+        ],
+        [
+          "open-paren",
+          "expr",
+          "close-paren"
         ],
         [
           "type"
