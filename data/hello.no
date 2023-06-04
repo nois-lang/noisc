@@ -1,0 +1,3 @@
+let main = (): Unit {
+    print("Hello, World!")
+}

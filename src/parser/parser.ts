@@ -130,6 +130,17 @@ export const flattenToken = (token: Token): Token => {
     }
 }
 
+export const parserTokensOnly = (token: ParserToken): ParserToken => {
+    const nodes = token.nodes.flatMap(n => {
+        if ('nodes' in n) {
+            return [parserTokensOnly(n)]
+        } else {
+            return []
+        }
+    })
+    return { name: token.name, nodes, location: token.location }
+}
+
 export const compactToken = (token: Token): any => {
     if ('nodes' in token) {
         return { name: token.name, nodes: token.nodes.map(n => compactToken(n)) }
