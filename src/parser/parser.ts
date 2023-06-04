@@ -6,7 +6,7 @@ import { join } from 'path'
 export type ParserTokenName
     = 'program'
     | 'statement'
-    | 'function-def'
+    | 'function-expr'
     | 'params'
     | 'params_'
     | 'param'
@@ -48,13 +48,17 @@ export const generateTransforms = (tokens: LexerToken[], root: ParserTokenName =
     stack.push(root)
 
     while (buffer.length > 0) {
+        if (stack.at(-1)! === 'e') {
+            stack.pop()
+            continue
+        }
         if (stack.at(-1)! === buffer[0].name) {
             buffer.splice(0, 1)
             stack.pop()
         } else {
             const transform = table.get(<ParserTokenName>stack.at(-1)!)?.get(buffer[0].name)
             if (!transform) {
-                throw Error(`syntax error, expected ${stack.at(-1)}, got ${buffer[0].name}`)
+                throw Error(`syntax error, expected ${stack.at(-1)}, got ${buffer[0].name}, at ${buffer[0].location.start}`)
             }
             chain.push(transform)
             stack.pop()
@@ -65,14 +69,20 @@ export const generateTransforms = (tokens: LexerToken[], root: ParserTokenName =
     return chain
 }
 
-export const generateTree = (tokens: LexerToken[], chain: Transform[]): Token => {
+export const generateTree = (tokens: LexerToken[], chain: Transform[]): Token | undefined => {
     const transform = chain.splice(0, 1)[0]
+    if (isEmptyBranch(transform.branch)) {
+        return
+    }
     const nodes: Token[] = []
     transform.branch.forEach(t => {
         if (t === tokens[0].name) {
             nodes.push(tokens.splice(0, 1)[0])
         } else {
-            nodes.push(generateTree(tokens, chain))
+            const child = generateTree(tokens, chain)
+            if (child) {
+                nodes.push(child)
+            }
         }
     })
     return {
@@ -92,3 +102,5 @@ export const compactToken = (token: Token): any => {
         return { name: token.name, value: token.value }
     }
 }
+
+const isEmptyBranch = (branch: ParseBranch): boolean => branch.length === 1 && branch[0] === 'e'

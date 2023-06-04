@@ -5,33 +5,17 @@ statements      ::= statement statements
                 | statement
                 ;
 
-statement       ::= function-def | variable-def | type-def
+statement       ::= variable-def | type-def | return-stmt | expr
                 ;
 
-function-def    ::= FN-KEYWORD IDENTIFIER params COLON IDENTIFIER block
+variable-def    ::= LET-KEYWORD IDENTIFIER EQUALS expr
                 ;
 
-variable-def    ::= CONST-KEYWORD IDENTIFIER EQUALS expr
+type-def        ::= TYPE-KEYWORD IDENTIFIER TODO
                 ;
 
-type-def        ::= TYPE-KEYWORD IDENTIFIER EQUALS type-expr
-                ;
-
-params          ::= OPEN-PAREN params_ CLOSE-PAREN
-                | OPEN-PAREN CLOSE-PAREN
-                ;
-
-params_         ::= param COMMA params_
-                | param trailing-comma
-                | param
-                ;
-
-param           ::= IDENTIFIER COLON IDENTIFIER
-                ;
-
-
-trailing-comma  ::= COMMA
-                | E
+return-stmt     ::= RETURN-KEYWORD expr
+                | RETURN-KEYWORD
                 ;
 
 block           ::= OPEN-BRACE statements CLOSE-BRACE
@@ -47,22 +31,23 @@ expr_           ::= infix-operator sub-expr
 
 sub-expr        ::= unary-expr
                 | operand
-                | paren-expr
+//                | paren-expr
                 ;
 
 unary-expr      ::= prefix-op paren-expr
                 | paren-expr postfix-op
                 ;
 
-paren-expr      ::= operand
-                | OPEN-PAREN expr CLOSE-PAREN
+paren-expr      ::= OPEN-PAREN expr CLOSE-PAREN
                 ;
 
 operand         ::= STRING
                 | CHAR
                 | NUMBER
                 | IDENTIFIER
-                | type-expr
+                | type
+                | function-expr
+                | if-expr
                 ;
 
 infix-operator  ::= PLUS | MINUS | ASTERISK | SLASH | CARET | PERCENT | PERIOD | EQUALS-OP | NOT-EQUALS-OP
@@ -72,18 +57,41 @@ infix-operator  ::= PLUS | MINUS | ASTERISK | SLASH | CARET | PERCENT | PERIOD |
 prefix-op       ::= PLUS | MINUS | EXCL | SPREAD
                 ;
 
-postfix-op      ::= args
+postfix-op      ::= OPEN-PAREN args CLOSE-PAREN
                 ;
 
-args            ::= OPEN-PAREN args_ CLOSE-PAREN
-                | OPEN-PAREN CLOSE-PAREN
-                ;
-
-args_           ::= IDENTIFIER COMMA args_
+args            ::= IDENTIFIER COMMA args
                 | IDENTIFIER trailing-comma
+                | IDENTIFIER
+                | E
+                ;
+
+function-expr   ::= OPEN-PAREN params CLOSE-PAREN COLON type block
+                ;
+
+params          ::= param COMMA params
+                | param trailing-comma
+                | param
+                | E
+                ;
+
+param           ::= IDENTIFIER COLON type
+                ;
+
+trailing-comma  ::= COMMA
+                | E
+                ;
+
+type            ::= IDENTIFIER OPEN-CHEVRON type-params CLOSE-CHEVRON
                 | IDENTIFIER
                 ;
 
-type-expr   ::= E
+type-params     ::= type COMMA type-params
+                | type trailing-comma
+                | type
+                | E
                 ;
 
+if-expr         ::= IF-KEYWORD expr block
+                | IF-KEYWORD expr block ELSE-KEYWORD block
+                ;

@@ -4,13 +4,14 @@ import { expect } from '@jest/globals'
 describe('lexer', () => {
     it('tokenize basic', () => {
         const code = `\
-fn main(): Unit {
+let main = (): Unit {
 	print(4)
 }`
         const tokens = tokenize(code)
         expect(tokens.map(t => [t.name, t.value])).toEqual([
-            ['fn-keyword', 'fn'],
+            ['let-keyword', 'let'],
             ['identifier', 'main'],
+            ['equals', '='],
             ['open-paren', '('],
             ['close-paren', ')'],
             ['colon', ':'],
@@ -23,8 +24,8 @@ fn main(): Unit {
             ['close-brace', '}'],
             ['eof', '']
         ])
-        expect(tokens.at(0)!.location).toEqual({ start: 0, end: 1 })
-        expect(tokens.at(-1)!.location).toEqual({ start: 29, end: 29 })
+        expect(tokens.at(0)!.location).toEqual({ start: 0, end: 2 })
+        expect(tokens.at(-1)!.location).toEqual({ start: 33, end: 33 })
     })
 
     it('tokenize number literal simple', () => {

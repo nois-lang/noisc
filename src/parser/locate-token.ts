@@ -1,4 +1,4 @@
-import { ParserTokenName, rules, TokenName, Transform } from './parser'
+import { ParseBranch, ParserTokenName, rules, TokenName, Transform } from './parser'
 
 export const firstTokens = (token: TokenName): Set<TokenName> => {
     const rule = rules.get(<ParserTokenName>token)
@@ -74,9 +74,17 @@ const appearsInRules = (name: TokenName) => [...rules.values()].filter(r => r.br
 const canMatchEmpty = (token: TokenName): boolean => {
     const rule = rules.get(<ParserTokenName>token)
     if (rule) {
-        return rule.branches.some(b => b.every(t => canMatchEmpty(t)))
+        return rule.branches.some(b => branchCanMatchEmpty(b))
     } else {
         return token === 'e'
     }
 }
 
+const branchCanMatchEmpty = (branch: ParseBranch): boolean => {
+    for (let t of branch) {
+        if (!canMatchEmpty(t)) {
+            return false
+        }
+    }
+    return true
+}

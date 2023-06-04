@@ -9,13 +9,13 @@ console.table(transforms.map(t => [t.name, transformFirstTokens(t), followTokens
 console.table([...generateParsingTable().entries()].map(([k, v]) => ({ k, ...Object.fromEntries([...v.entries()].map(([k, t]) => [k, t.branch])) })))
 
 const code = `\
-fn main(): Unit {
+let main = (): Unit {
 }`
 const tokens = tokenize(code)
 console.dir({ tokens }, { depth: null, colors: true })
 const chain = generateTransforms(tokens)
 console.dir({ chain }, { depth: null, colors: true })
-const rule = generateTree(tokens, chain)
+const rule = generateTree(tokens, chain)!
 console.dir({ rule }, { depth: null, colors: true })
 const compact = compactToken(rule)
 console.dir({ compact }, { depth: null, colors: true })

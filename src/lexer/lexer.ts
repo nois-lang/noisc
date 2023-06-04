@@ -1,10 +1,12 @@
 export const lexerTokenNames = <const>[
     // keywords
     'type-keyword',
-    'fn-keyword',
     'kind-keyword',
     'impl-keyword',
-    'const-keyword',
+    'let-keyword',
+    'if-keyword',
+    'else-keyword',
+    'return-keyword',
 
     // punctuation & operators
     'open-paren',
@@ -63,10 +65,12 @@ export interface TokenLocation {
 
 export const constTokenMap: Map<LexerTokenName, string> = new Map([
     ['type-keyword', 'type'],
-    ['fn-keyword', 'fn'],
     ['kind-keyword', 'kind'],
+    ['if-keyword', 'if'],
+    ['else-keyword', 'else'],
+    ['return-keyword', 'return'],
     ['impl-keyword', 'impl'],
-    ['const-keyword', 'const'],
+    ['let-keyword', 'let'],
     ['open-paren', '('],
     ['close-paren', ')'],
     ['open-bracket', '['],
