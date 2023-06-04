@@ -22,11 +22,11 @@ block           ::= OPEN-BRACE statements CLOSE-BRACE
                 | OPEN-BRACE CLOSE-BRACE
                 ;
 
-expr            ::= sub-expr infix-operator sub-expr
-                | sub-expr
+expr            ::= sub-expr_ infix-operator sub-expr_
+                | sub-expr_
                 ;
 
-sub-expr        ::= prefix-op operand
+sub-expr_       ::= prefix-op operand
                 | operand postfix-op
                 | operand
                 ;

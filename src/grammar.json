@@ -87,17 +87,17 @@
       "name": "expr",
       "branches": [
         [
-          "sub-expr",
+          "sub-expr_",
           "infix-operator",
-          "sub-expr"
+          "sub-expr_"
         ],
         [
-          "sub-expr"
+          "sub-expr_"
         ]
       ]
     },
     {
-      "name": "sub-expr",
+      "name": "sub-expr_",
       "branches": [
         [
           "prefix-op",

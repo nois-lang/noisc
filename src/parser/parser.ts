@@ -13,12 +13,8 @@ export const parserTokenNames = <const>[
     'return-stmt',
     'block',
     'expr',
-    'expr_',
-    'sub-expr',
-    'unary-expr',
-    'paren-expr',
     'operand',
-    'infix-operator',
+    'infix-op',
     'prefix-op',
     'postfix-op',
     'args',
@@ -28,7 +24,7 @@ export const parserTokenNames = <const>[
     'trailing-comma',
     'type',
     'type-params',
-    'if-expr',
+    'if-expr'
 ]
 export type ParserTokenName = typeof parserTokenNames[number]
 
@@ -111,6 +107,25 @@ export const generateTree = (tokens: LexerToken[], chain: Transform[]): Token | 
             end: nodes.at(-1)?.location.end ?? tokens[0].location.start
         },
         nodes
+    }
+}
+
+export const flattenToken = (token: Token): Token => {
+    if ('value' in token) {
+        return token
+    }
+    const nodes = token.nodes.flatMap(t => {
+        if (t.name.endsWith('_')) {
+            if ('value' in t) { throw Error('cannot flatten lexer token') }
+            return t.nodes.map(n => flattenToken(n))
+        }
+
+        return [flattenToken(t)]
+    })
+    return {
+        name: token.name,
+        nodes,
+        location: token.location
     }
 }
 

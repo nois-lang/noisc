@@ -1,13 +1,14 @@
 import { tokenize } from '../lexer/lexer'
 import { expect } from '@jest/globals'
-import { compactToken, generateTransforms, generateTree, ParserTokenName } from './parser'
+import { compactToken, flattenToken, generateTransforms, generateTree, ParserTokenName } from './parser'
 
 describe('parser', () => {
 
     const parse = (code: string, root: ParserTokenName = 'program') => {
         const tokens = tokenize(code)
         const chain = generateTransforms(tokens, root)
-        return generateTree(tokens, chain)
+        const token = generateTree(tokens, chain)!
+        return flattenToken(token)
     }
 
     it('parse basic', () => {
@@ -28,30 +29,27 @@ describe('parser', () => {
                             {
                                 'name': 'expr',
                                 'nodes': [{
-                                    'name': 'sub-expr',
+                                    'name': 'operand',
                                     'nodes': [{
-                                        'name': 'operand',
-                                        'nodes': [{
-                                            'name': 'function-expr',
-                                            'nodes': [
-                                                { 'name': 'open-paren', 'value': '(' },
-                                                { 'name': 'close-paren', 'value': ')' },
-                                                { 'name': 'colon', 'value': ':' },
-                                                {
-                                                    'name': 'type',
-                                                    'nodes': [
-                                                        { 'name': 'identifier', 'value': 'Unit' }
-                                                    ]
-                                                },
-                                                {
-                                                    'name': 'block',
-                                                    'nodes': [
-                                                        { 'name': 'open-brace', 'value': '{' },
-                                                        { 'name': 'close-brace', 'value': '}' }
-                                                    ]
-                                                }
-                                            ]
-                                        }]
+                                        'name': 'function-expr',
+                                        'nodes': [
+                                            { 'name': 'open-paren', 'value': '(' },
+                                            { 'name': 'close-paren', 'value': ')' },
+                                            { 'name': 'colon', 'value': ':' },
+                                            {
+                                                'name': 'type',
+                                                'nodes': [
+                                                    { 'name': 'identifier', 'value': 'Unit' }
+                                                ]
+                                            },
+                                            {
+                                                'name': 'block',
+                                                'nodes': [
+                                                    { 'name': 'open-brace', 'value': '{' },
+                                                    { 'name': 'close-brace', 'value': '}' }
+                                                ]
+                                            }
+                                        ]
                                     }]
                                 }]
                             }
@@ -66,21 +64,19 @@ describe('parser', () => {
         const rule = parse('-3', 'expr')
         expect(compactToken(rule!)).toEqual({
             'name': 'expr',
-            'nodes': [{
-                'name': 'sub-expr', 'nodes': [
-                    {
-                        'name': 'prefix-op',
-                        'nodes': [{
-                            'name': 'minus', 'value': '-'
-                        }]
-                    },
-                    {
-                        'name': 'operand',
-                        'nodes': [{
-                            'name': 'number', 'value': '3'
-                        }]
-                    }]
-            }]
+            'nodes': [
+                {
+                    'name': 'prefix-op',
+                    'nodes': [
+                        { 'name': 'minus', 'value': '-' }
+                    ]
+                },
+                {
+                    'name': 'operand',
+                    'nodes': [
+                        { 'name': 'number', 'value': '3' }
+                    ]
+                }]
         })
     })
 
@@ -89,28 +85,26 @@ describe('parser', () => {
         const rule = parse(code, 'expr')
         expect(compactToken(rule!)).toEqual({
             'name': 'expr', 'nodes': [{
-                'name': 'sub-expr', 'nodes': [{
-                    'name': 'operand', 'nodes': [{
-                        'name': 'function-expr',
-                        'nodes': [
-                            { 'name': 'open-paren', 'value': '(' },
-                            { 'name': 'close-paren', 'value': ')' },
-                            { 'name': 'colon', 'value': ':' },
-                            {
-                                'name': 'type',
-                                'nodes': [
-                                    { 'name': 'identifier', 'value': 'Unit' }
-                                ]
-                            },
-                            {
-                                'name': 'block',
-                                'nodes': [
-                                    { 'name': 'open-brace', 'value': '{' },
-                                    { 'name': 'close-brace', 'value': '}' }
-                                ]
-                            }
-                        ],
-                    }]
+                'name': 'operand', 'nodes': [{
+                    'name': 'function-expr',
+                    'nodes': [
+                        { 'name': 'open-paren', 'value': '(' },
+                        { 'name': 'close-paren', 'value': ')' },
+                        { 'name': 'colon', 'value': ':' },
+                        {
+                            'name': 'type',
+                            'nodes': [
+                                { 'name': 'identifier', 'value': 'Unit' }
+                            ]
+                        },
+                        {
+                            'name': 'block',
+                            'nodes': [
+                                { 'name': 'open-brace', 'value': '{' },
+                                { 'name': 'close-brace', 'value': '}' }
+                            ]
+                        }
+                    ],
                 }]
             }]
 

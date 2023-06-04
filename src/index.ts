@@ -1,4 +1,4 @@
-import { compactToken, generateTransforms, generateTree, rules } from './parser/parser'
+import { compactToken, flattenToken, generateTransforms, generateTree, rules } from './parser/parser'
 import { followTokens, transformFirstTokens } from './parser/locate-token'
 import { generateParsingTable } from './parser/table'
 import { tokenize } from './lexer/lexer'
@@ -15,7 +15,7 @@ const tokens = tokenize(code)
 console.dir({ tokens }, { depth: null, colors: true })
 const chain = generateTransforms(tokens)
 console.dir({ chain }, { depth: null, colors: true })
-const rule = generateTree(tokens, chain)!
-console.dir({ rule }, { depth: null, colors: true })
-const compact = compactToken(rule)
+const token = flattenToken(generateTree(tokens, chain)!)
+console.dir({ rule: token }, { depth: null, colors: true })
+const compact = compactToken(token)
 console.dir({ compact }, { depth: null, colors: true })
