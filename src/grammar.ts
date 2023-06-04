@@ -9,7 +9,7 @@ interface RawRule {
 }
 
 const buildGrammar = (bnf: string): RawRule[] => {
-    bnf = bnf.replace(/^\/\/.*$/, '')
+    bnf = bnf.replace(/\/\/.*/, '')
     return bnf
         .split(';')
         .map(r => r.trim())
