@@ -143,8 +143,8 @@ export const parserTokensOnly = (token: ParserToken): ParserToken => {
 
 export const compactToken = (token: Token): any => {
     if ('nodes' in token) {
-        return { name: token.name, nodes: token.nodes.map(n => compactToken(n)) }
+        return { [token.name]: token.nodes.map(n => compactToken(n)) }
     } else {
-        return { name: token.name, value: token.value }
+        return { [token.name]: token.value }
     }
 }
