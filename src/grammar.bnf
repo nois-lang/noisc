@@ -18,10 +18,6 @@ return-stmt     ::= RETURN-KEYWORD expr
                 | RETURN-KEYWORD
                 ;
 
-block           ::= OPEN-BRACE statements CLOSE-BRACE
-                | OPEN-BRACE CLOSE-BRACE
-                ;
-
 expr            ::= sub-expr_ infix-operator sub-expr_
                 | sub-expr_
                 ;
@@ -34,10 +30,10 @@ sub-expr_       ::= prefix-op operand
 operand         ::= STRING
                 | CHAR
                 | NUMBER
+                | function-expr
                 | IDENTIFIER
                 | OPEN-PAREN expr CLOSE-PAREN
                 | type
-                | function-expr
                 | if-expr
                 ;
 
@@ -48,16 +44,22 @@ infix-operator  ::= PLUS | MINUS | ASTERISK | SLASH | CARET | PERCENT | PERIOD |
 prefix-op       ::= PLUS | MINUS | EXCL | SPREAD
                 ;
 
-postfix-op      ::= OPEN-PAREN args CLOSE-PAREN
+postfix-op      ::= call-op
                 ;
 
-args            ::= IDENTIFIER COMMA args
-                | IDENTIFIER trailing-comma
-                | IDENTIFIER
+call-op         ::= OPEN-PAREN args CLOSE-PAREN
+                ;
+
+args            ::= expr COMMA args
+                | expr trailing-comma
                 | E
                 ;
 
 function-expr   ::= OPEN-PAREN params CLOSE-PAREN COLON type block
+                ;
+
+block           ::= OPEN-BRACE statements CLOSE-BRACE
+                | OPEN-BRACE CLOSE-BRACE
                 ;
 
 params          ::= param COMMA params

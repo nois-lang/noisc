@@ -29,22 +29,26 @@ const buildGrammar = (bnf: string): RawRule[] => {
         }))
 }
 
-const verifyGrammar = (grammar: RawRule[]) => {
+const verifyGrammar = (grammar: RawRule[]): boolean => {
+    let valid = true
     grammar.forEach(r => {
         r.branches.forEach(b => {
             b.forEach(t => {
                 if (!grammar.some(r => r.name === t) && !lexerTokenNames.includes(<LexerTokenName>t)) {
-                    throw Error(`unknown lexer token \`${t}\``)
+                    console.warn('unknown lexer token', t)
+                    valid = false
                 }
             })
         })
     })
+    return valid
 }
 
 const bnf = readFileSync('src/grammar.bnf').toString()
 const grammar = buildGrammar(bnf)
-console.log({ grammar })
-verifyGrammar(grammar)
+if (!verifyGrammar(grammar)) {
+    throw Error('invalid grammar')
+}
 const json = JSON.stringify({ rules: grammar }, undefined, 2)
 console.log('generated json grammar', json)
 writeFileSync('src/grammar.json', json)

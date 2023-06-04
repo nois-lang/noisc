@@ -1,19 +1,21 @@
 import { tokenize } from '../lexer/lexer'
 import { expect } from '@jest/globals'
-import { compactToken, flattenToken, generateTransforms, generateTree, ParserTokenName } from './parser'
+import { compactToken, flattenToken, parse, ParserTokenName, Token } from './parser'
 
 describe('parser', () => {
 
-    const parse = (code: string, root: ParserTokenName = 'program') => {
+    const parseToken = (code: string, root: ParserTokenName = 'program'): Token => {
         const tokens = tokenize(code)
-        const chain = generateTransforms(tokens, root)
-        const token = generateTree(tokens, chain)!
+        const token = parse(tokens, root)
+        if (typeof token === 'boolean') {
+            throw Error('parsing error')
+        }
         return flattenToken(token)
     }
 
     it('parse basic', () => {
         const code = `let main = (): Unit {}`
-        const rule = parse(code)
+        const rule = parseToken(code)
         expect(compactToken(rule!)).toEqual({
             'name': 'program',
             'nodes': [{
@@ -61,7 +63,7 @@ describe('parser', () => {
     })
 
     it('parse unary-expr', () => {
-        const rule = parse('-3', 'expr')
+        const rule = parseToken('-3', 'expr')
         expect(compactToken(rule!)).toEqual({
             'name': 'expr',
             'nodes': [
@@ -80,9 +82,80 @@ describe('parser', () => {
         })
     })
 
+    it('parse function call', () => {
+        const rule = parseToken('foo(12)', 'expr')
+        expect(compactToken(rule!)).toEqual({
+            'name': 'expr', 'nodes': [{ 'name': 'operand', 'nodes': [{ 'name': 'identifier', 'value': 'foo' }] }, {
+                'name': 'postfix-op', 'nodes': [{
+                    'name': 'call-op',
+                    'nodes': [{ 'name': 'open-paren', 'value': '(' }, {
+                        'name': 'args',
+                        'nodes': [{
+                            'name': 'expr',
+                            'nodes': [{ 'name': 'operand', 'nodes': [{ 'name': 'number', 'value': '12' }] }]
+                        }]
+                    }, { 'name': 'close-paren', 'value': ')' }]
+                }]
+            }]
+        })
+    })
+
+    it('parse expr1', () => {
+        const rule = parseToken('(foo(12) / 4)', 'expr')
+        expect(compactToken(rule!)).toEqual({
+            'name': 'expr', 'nodes': [{
+                'name': 'operand', 'nodes': [{ 'name': 'open-paren', 'value': '(' }, {
+                    'name': 'expr',
+                    'nodes': [{ 'name': 'operand', 'nodes': [{ 'name': 'identifier', 'value': 'foo' }] }, {
+                        'name': 'postfix-op', 'nodes': [{
+                            'name': 'call-op', 'nodes': [{ 'name': 'open-paren', 'value': '(' }, {
+                                'name': 'args',
+                                'nodes': [{
+                                    'name': 'expr',
+                                    'nodes': [{ 'name': 'operand', 'nodes': [{ 'name': 'number', 'value': '12' }] }]
+                                }]
+                            }, { 'name': 'close-paren', 'value': ')' }]
+                        }]
+                    }, { 'name': 'infix-operator', 'nodes': [{ 'name': 'slash', 'value': '/' }] }, {
+                        'name': 'operand',
+                        'nodes': [{ 'name': 'number', 'value': '4' }]
+                    }]
+                }, { 'name': 'close-paren', 'value': ')' }]
+            }]
+        })
+    })
+
+    it('parse expr2', () => {
+        const rule = parseToken('(foo(12) / 4) * "str".ok()', 'expr')
+        expect(compactToken(rule!)).toEqual({
+            'name': 'expr', 'nodes': [{
+                'name': 'operand', 'nodes': [{ 'name': 'open-paren', 'value': '(' }, {
+                    'name': 'expr',
+                    'nodes': [{ 'name': 'operand', 'nodes': [{ 'name': 'identifier', 'value': 'foo' }] }, {
+                        'name': 'postfix-op', 'nodes': [{
+                            'name': 'call-op', 'nodes': [{ 'name': 'open-paren', 'value': '(' }, {
+                                'name': 'args',
+                                'nodes': [{
+                                    'name': 'expr',
+                                    'nodes': [{ 'name': 'operand', 'nodes': [{ 'name': 'number', 'value': '12' }] }]
+                                }]
+                            }, { 'name': 'close-paren', 'value': ')' }]
+                        }]
+                    }, { 'name': 'infix-operator', 'nodes': [{ 'name': 'slash', 'value': '/' }] }, {
+                        'name': 'operand',
+                        'nodes': [{ 'name': 'number', 'value': '4' }]
+                    }]
+                }, { 'name': 'close-paren', 'value': ')' }]
+            }, { 'name': 'infix-operator', 'nodes': [{ 'name': 'asterisk', 'value': '*' }] }, {
+                'name': 'operand',
+                'nodes': [{ 'name': 'string', 'value': '"str"' }]
+            }]
+        })
+    })
+
     it('parse function-expr', () => {
         const code = `(): Unit {}`
-        const rule = parse(code, 'expr')
+        const rule = parseToken(code, 'expr')
         expect(compactToken(rule!)).toEqual({
             'name': 'expr', 'nodes': [{
                 'name': 'operand', 'nodes': [{

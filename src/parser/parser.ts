@@ -1,8 +1,6 @@
 import { LexerToken, LexerTokenName, TokenLocation } from '../lexer/lexer'
-import { generateParsingTable } from './table'
 import { readFileSync } from 'fs'
 import { join } from 'path'
-import { inspect } from 'util'
 
 export const parserTokenNames = <const>[
     'program',
@@ -11,14 +9,15 @@ export const parserTokenNames = <const>[
     'variable-def',
     'type-def',
     'return-stmt',
-    'block',
     'expr',
     'operand',
-    'infix-op',
+    'infix-operator',
     'prefix-op',
     'postfix-op',
+    'call-op',
     'args',
     'function-expr',
+    'block',
     'params',
     'param',
     'trailing-comma',
@@ -52,61 +51,49 @@ export type ParseBranch = TokenName[]
 const rawRules = JSON.parse(readFileSync(join(__dirname, '..', 'grammar.json')).toString()).rules
 export const rules: Map<ParserTokenName, Rule> = new Map(rawRules.map((r: Rule) => [r.name, r]))
 
-export const generateTransforms = (tokens: LexerToken[], root: ParserTokenName = 'program'): Transform[] => {
-    const table = generateParsingTable()
-    const buffer = structuredClone(tokens)
-    const chain: Transform[] = []
-
-    const stack: TokenName[] = []
-    stack.push('eof')
-    stack.push(root)
-
-    while (buffer.length > 0) {
-        if (stack.at(-1)! === 'e') {
-            stack.pop()
-            continue
-        }
-        if (stack.at(-1)! === buffer[0].name) {
-            buffer.splice(0, 1)
-            stack.pop()
-        } else {
-            const transform = table.get(<ParserTokenName>stack.at(-1)!)?.get(buffer[0].name)
-            if (!transform) {
-                console.debug(inspect({ chain }, { depth: null, colors: true }))
-                throw Error(`syntax error, expected ${stack.at(-1)}, got ${buffer[0].name}, at ${buffer[0].location.start}`)
+export const parse = (tokens: LexerToken[], node: TokenName = 'program', index: number = 0): Token | boolean => {
+    const rule = rules.get(<ParserTokenName>node)!
+    if (rule) {
+        for (const branch of rule.branches) {
+            if (isEmptyBranch(branch)) return true
+            const transform = { name: <ParserTokenName>node, branch }
+            const branchToken = parseTransform(transform, tokens, index)
+            if (branchToken) {
+                return branchToken
             }
-            chain.push(transform)
-            stack.pop()
-            stack.push(...structuredClone(transform.branch).reverse())
         }
+        return false
+    } else {
+        return node === tokens[index].name ? tokens[index] : false
     }
-
-    return chain
 }
 
-export const generateTree = (tokens: LexerToken[], chain: Transform[]): Token | undefined => {
-    const transform = chain.splice(0, 1)[0]
-    if (isEmptyBranch(transform.branch)) {
-        return
+const parseTransform = (transform: Transform, tokens: LexerToken[], index: number): Token | undefined => {
+    const nodes = []
+    for (const branchTokenName of transform.branch) {
+        const branchToken = parse(tokens, branchTokenName, index)
+        if (branchToken === true) continue
+        if (branchToken === false) return undefined
+        nodes.push(branchToken)
+        index += tokenSize(branchToken)
     }
-    const nodes: Token[] = []
-    transform.branch.forEach(t => {
-        if (t === tokens[0].name) {
-            nodes.push(tokens.splice(0, 1)[0])
-        } else {
-            const child = generateTree(tokens, chain)
-            if (child) {
-                nodes.push(child)
-            }
-        }
-    })
     return {
         name: transform.name,
+        nodes: nodes,
         location: {
             start: (nodes.at(0) ?? tokens[0]).location.start,
             end: nodes.at(-1)?.location.end ?? tokens[0].location.start
-        },
-        nodes
+        }
+    }
+}
+
+const isEmptyBranch = (branch: ParseBranch): boolean => branch.length === 1 && branch[0] === 'e'
+
+const tokenSize = (token: Token): number => {
+    if ('nodes' in token) {
+        return token.nodes.map(n => tokenSize(n)).reduce((a, b) => a + b, 0)
+    } else {
+        return 1
     }
 }
 
@@ -136,5 +123,3 @@ export const compactToken = (token: Token): any => {
         return { name: token.name, value: token.value }
     }
 }
-
-const isEmptyBranch = (branch: ParseBranch): boolean => branch.length === 1 && branch[0] === 'e'

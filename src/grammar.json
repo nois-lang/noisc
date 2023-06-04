@@ -70,20 +70,6 @@
       ]
     },
     {
-      "name": "block",
-      "branches": [
-        [
-          "open-brace",
-          "statements",
-          "close-brace"
-        ],
-        [
-          "open-brace",
-          "close-brace"
-        ]
-      ]
-    },
-    {
       "name": "expr",
       "branches": [
         [
@@ -125,6 +111,9 @@
           "number"
         ],
         [
+          "function-expr"
+        ],
+        [
           "identifier"
         ],
         [
@@ -134,9 +123,6 @@
         ],
         [
           "type"
-        ],
-        [
-          "function-expr"
         ],
         [
           "if-expr"
@@ -214,6 +200,14 @@
       "name": "postfix-op",
       "branches": [
         [
+          "call-op"
+        ]
+      ]
+    },
+    {
+      "name": "call-op",
+      "branches": [
+        [
           "open-paren",
           "args",
           "close-paren"
@@ -224,16 +218,13 @@
       "name": "args",
       "branches": [
         [
-          "identifier",
+          "expr",
           "comma",
           "args"
         ],
         [
-          "identifier",
+          "expr",
           "trailing-comma"
-        ],
-        [
-          "identifier"
         ],
         [
           "e"
@@ -250,6 +241,20 @@
           "colon",
           "type",
           "block"
+        ]
+      ]
+    },
+    {
+      "name": "block",
+      "branches": [
+        [
+          "open-brace",
+          "statements",
+          "close-brace"
+        ],
+        [
+          "open-brace",
+          "close-brace"
         ]
       ]
     },
