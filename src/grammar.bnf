@@ -26,12 +26,9 @@ expr            ::= sub-expr infix-operator sub-expr
                 | sub-expr
                 ;
 
-sub-expr        ::= unary-expr
-                | operand
-                ;
-
-unary-expr      ::= prefix-op operand
+sub-expr        ::= prefix-op operand
                 | operand postfix-op
+                | operand
                 ;
 
 operand         ::= STRING

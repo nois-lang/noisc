@@ -63,22 +63,24 @@ describe('parser', () => {
     })
 
     it('parse unary-expr', () => {
-        const rule = parse('-3', 'unary-expr')
+        const rule = parse('-3', 'expr')
         expect(compactToken(rule!)).toEqual({
-            'name': 'unary-expr',
-            'nodes': [
-                {
-                    'name': 'prefix-op',
-                    'nodes': [{
-                        'name': 'minus', 'value': '-'
+            'name': 'expr',
+            'nodes': [{
+                'name': 'sub-expr', 'nodes': [
+                    {
+                        'name': 'prefix-op',
+                        'nodes': [{
+                            'name': 'minus', 'value': '-'
+                        }]
+                    },
+                    {
+                        'name': 'operand',
+                        'nodes': [{
+                            'name': 'number', 'value': '3'
+                        }]
                     }]
-                },
-                {
-                    'name': 'operand',
-                    'nodes': [{
-                        'name': 'number', 'value': '3'
-                    }]
-                }]
+            }]
         })
     })
 

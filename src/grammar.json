@@ -100,23 +100,15 @@
       "name": "sub-expr",
       "branches": [
         [
-          "unary-expr"
-        ],
-        [
-          "operand"
-        ]
-      ]
-    },
-    {
-      "name": "unary-expr",
-      "branches": [
-        [
           "prefix-op",
           "operand"
         ],
         [
           "operand",
           "postfix-op"
+        ],
+        [
+          "operand"
         ]
       ]
     },
