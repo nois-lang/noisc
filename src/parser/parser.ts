@@ -48,32 +48,46 @@ export interface Rule {
 
 export type ParseBranch = TokenName[]
 
+export interface SyntaxErrorInfo {
+    expect: TokenName[],
+    got: TokenName,
+    location: TokenLocation
+}
+
 const rawRules = JSON.parse(readFileSync(join(__dirname, '..', 'grammar.json')).toString()).rules
 export const rules: Map<ParserTokenName, Rule> = new Map(rawRules.map((r: Rule) => [r.name, r]))
 
-export const parse = (tokens: LexerToken[], node: TokenName = 'program', index: number = 0): Token | boolean => {
+export const parse = (tokens: LexerToken[], node: TokenName = 'program', index: number = 0): Token | SyntaxErrorInfo | true => {
     const rule = rules.get(<ParserTokenName>node)!
     if (rule) {
+        const errorInfos: SyntaxErrorInfo[] = []
         for (const branch of rule.branches) {
             if (isEmptyBranch(branch)) return true
             const transform = { name: <ParserTokenName>node, branch }
             const branchToken = parseTransform(transform, tokens, index)
-            if (branchToken) {
+            if ('name' in branchToken) {
                 return branchToken
+            } else {
+                errorInfos.push(branchToken)
             }
         }
-        return false
+        return errorInfos.at(-1)!
     } else {
-        return node === tokens[index].name ? tokens[index] : false
+        const error = { expect: [node], got: tokens[index].name, location: tokens[index].location }
+        return node === tokens[index].name ? tokens[index] : error
     }
 }
 
-const parseTransform = (transform: Transform, tokens: LexerToken[], index: number): Token | undefined => {
+const parseTransform = (transform: Transform, tokens: LexerToken[], index: number): Token | SyntaxErrorInfo => {
     const nodes = []
     for (const branchTokenName of transform.branch) {
         const branchToken = parse(tokens, branchTokenName, index)
         if (branchToken === true) continue
-        if (branchToken === false) return undefined
+        if ('expect' in branchToken) return {
+            expect: [branchTokenName],
+            got: branchToken.got,
+            location: branchToken.location
+        }
         nodes.push(branchToken)
         index += tokenSize(branchToken)
     }

@@ -7,8 +7,11 @@ describe('parser', () => {
     const parseToken = (code: string, root: ParserTokenName = 'program'): Token => {
         const tokens = tokenize(code)
         const token = parse(tokens, root)
-        if (typeof token === 'boolean') {
-            throw Error('parsing error')
+        if (token === true) {
+            throw Error('parsing error: skipped root')
+        }
+        if ('expect' in token) {
+            throw Error(`parsing error: ${token}`)
         }
         return flattenToken(token)
     }
