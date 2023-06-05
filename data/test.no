@@ -1,0 +1,5 @@
+let main = (): Unit {
+    if 4 == 4 {
+        else 12
+    }
+}
