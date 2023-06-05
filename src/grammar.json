@@ -73,17 +73,25 @@
       "name": "expr",
       "branches": [
         [
-          "expr_",
-          "infix-operator",
-          "expr"
-        ],
-        [
           "expr_"
         ]
       ]
     },
     {
       "name": "expr_",
+      "branches": [
+        [
+          "expr__",
+          "infix-operator",
+          "expr_"
+        ],
+        [
+          "expr__"
+        ]
+      ]
+    },
+    {
+      "name": "expr__",
       "branches": [
         [
           "prefix-op",

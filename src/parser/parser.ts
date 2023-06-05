@@ -112,22 +112,22 @@ const tokenSize = (token: Token): number => {
 }
 
 export const flattenToken = (token: Token): Token => {
-    if ('value' in token) {
-        return token
-    }
-    const nodes = token.nodes.flatMap(t => {
-        if (t.name.endsWith('_')) {
-            if ('value' in t) { throw Error('cannot flatten lexer token') }
-            return t.nodes.map(n => flattenToken(n))
+    const flattenToken_ = (token: Token): Token[] => {
+        if ('value' in token) {
+            return [token]
         }
 
-        return [flattenToken(t)]
-    })
-    return {
-        name: token.name,
-        nodes,
-        location: token.location
+        if (token.name.endsWith('_')) {
+            return token.nodes.flatMap(n => flattenToken_(n))
+        } else {
+            return [{
+                name: token.name,
+                nodes: token.nodes.flatMap(n => flattenToken_(n)),
+                location: token.location
+            }]
+        }
     }
+    return flattenToken_(token)[0]
 }
 
 export const parserTokensOnly = (token: ParserToken): ParserToken => {

@@ -18,12 +18,14 @@ return-stmt     ::= RETURN-KEYWORD expr
                 | RETURN-KEYWORD
                 ;
 
-//TODO: flatten rhs expr so expr is a list [ex, op, ex, op, ex, ..]
-expr            ::= expr_ infix-operator expr
-                | expr_
+expr            ::= expr_
                 ;
 
-expr_           ::= prefix-op operand
+expr_           ::= expr__ infix-operator expr_
+                | expr__
+                ;
+
+expr__          ::= prefix-op operand
                 | operand postfix-op
                 | operand
                 ;

@@ -94,15 +94,14 @@ describe('parser', () => {
             'expr': [
                 { 'operand': [{ 'string': '"str"' }] },
                 { 'infix-operator': [{ 'period': '.' }] },
+                { 'operand': [{ 'identifier': 'ok' }] },
                 {
-                    'expr': [{ 'operand': [{ 'identifier': 'ok' }] }, {
-                        'postfix-op': [{
-                            'call-op': [
-                                { 'open-paren': '(' },
-                                { 'args': [{ 'expr': [{ 'operand': [{ 'number': '4' }] }] }] },
-                                { 'close-paren': ')' }
-                            ]
-                        }]
+                    'postfix-op': [{
+                        'call-op': [
+                            { 'open-paren': '(' },
+                            { 'args': [{ 'expr': [{ 'operand': [{ 'number': '4' }] }] }] },
+                            { 'close-paren': ')' }
+                        ]
                     }]
                 }
             ]
@@ -115,13 +114,9 @@ describe('parser', () => {
             'expr': [
                 { 'operand': [{ 'number': '1' }] },
                 { 'infix-operator': [{ 'plus': '+' }] },
-                {
-                    'expr': [
-                        { 'operand': [{ 'number': '2' }] },
-                        { 'infix-operator': [{ 'plus': '+' }] },
-                        { 'expr': [{ 'operand': [{ 'number': '3' }] }] }
-                    ]
-                }
+                { 'operand': [{ 'number': '2' }] },
+                { 'infix-operator': [{ 'plus': '+' }] },
+                { 'operand': [{ 'number': '3' }] }
             ]
         })
     })
@@ -143,7 +138,7 @@ describe('parser', () => {
                             }]
                         },
                         { 'infix-operator': [{ 'slash': '/' }] },
-                        { 'expr': [{ 'operand': [{ 'number': '4' }] }] }
+                        { 'operand': [{ 'number': '4' }] }
                     ]
                 }, { 'close-paren': ')' }]
             }]
@@ -168,26 +163,21 @@ describe('parser', () => {
                             }]
                         },
                         { 'infix-operator': [{ 'slash': '/' }] },
-                        { 'expr': [{ 'operand': [{ 'number': '4' }] }] }
+                        { 'operand': [{ 'number': '4' }] }
                     ]
                 },
                 { 'close-paren': ')' }
             ]
         }
-        const methodCallExpr = {
+        expect(compactToken(rule!)).toEqual({
             'expr': [
+                parenExpr,
+                { 'infix-operator': [{ 'asterisk': '*' }] },
                 { 'operand': [{ 'string': '"str"' }] },
                 { 'infix-operator': [{ 'period': '.' }] },
-                {
-                    'expr': [
-                        { 'operand': [{ 'identifier': 'ok' }] },
-                        { 'postfix-op': [{ 'call-op': [{ 'open-paren': '(' }, { 'close-paren': ')' }] }] }
-                    ]
-                }
+                { 'operand': [{ 'identifier': 'ok' }] },
+                { 'postfix-op': [{ 'call-op': [{ 'open-paren': '(' }, { 'close-paren': ')' }] }] }
             ]
-        }
-        expect(compactToken(rule!)).toEqual({
-            'expr': [parenExpr, { 'infix-operator': [{ 'asterisk': '*' }] }, methodCallExpr]
         })
     })
 
