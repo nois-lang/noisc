@@ -20,10 +20,6 @@ if (!path) {
 const source = { str: readFileSync(resolve(path)).toString(), filename: path }
 
 const token = parse(tokenize(source.str))
-if (token === true) {
-    console.error('parsing error: skipped root')
-    process.exit(1)
-}
 if ('expected' in token) {
     console.error(prettySourceMessage(prettySyntaxError(token), token.location.start, source))
     process.exit(1)

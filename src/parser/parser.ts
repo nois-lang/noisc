@@ -53,14 +53,33 @@ export type ParseBranch = TokenName[]
 const rawRules = JSON.parse(readFileSync(join(__dirname, '..', 'grammar.json')).toString()).rules
 export const rules: Map<ParserTokenName, Rule> = new Map(rawRules.map((r: Rule) => [r.name, r]))
 
-export const parse = (tokens: LexerToken[], node: TokenName = 'program', index: number = 0): Token | SyntaxErrorInfo | true => {
+export const parse = (tokens: LexerToken[], node: TokenName = 'program'): Token | SyntaxErrorInfo => {
+    const token = parseToken(tokens, node)
+    if (token === true) {
+        return { tokenChain: [node], expected: [node], got: tokens[0].name, location: tokens[0].location }
+    }
+    if ('expected' in token) {
+        return token
+    }
+    if (tokenSize(token) === tokens.length - 1) {
+        return token
+    } else {
+        return { tokenChain: [node], expected: ['eof'], got: tokens[0].name, location: tokens[0].location }
+    }
+}
+
+export const parseToken = (tokens: LexerToken[],
+                           node: TokenName = 'program',
+                           index: number = 0,
+                           tokenChain: TokenName[] = [node]
+): Token | SyntaxErrorInfo | true => {
     const rule = rules.get(<ParserTokenName>node)!
     if (rule) {
         let syntaxError: SyntaxErrorInfo | undefined
         for (const branch of rule.branches) {
             if (isEmptyBranch(branch)) return true
             const transform = { name: <ParserTokenName>node, branch }
-            const branchToken = parseTransform(transform, tokens, index)
+            const branchToken = parseTransform(transform, tokens, index, tokenChain)
             if ('name' in branchToken) {
                 return branchToken
             } else {
@@ -71,15 +90,24 @@ export const parse = (tokens: LexerToken[], node: TokenName = 'program', index: 
         }
         return syntaxError!
     } else {
-        const error = { expected: [node], got: tokens[index].name, location: tokens[index].location }
+        const error: SyntaxErrorInfo = {
+            tokenChain,
+            expected: [node],
+            got: tokens[index].name,
+            location: tokens[index].location
+        }
         return node === tokens[index].name ? tokens[index] : error
     }
 }
 
-const parseTransform = (transform: Transform, tokens: LexerToken[], index: number): Token | SyntaxErrorInfo => {
+const parseTransform = (transform: Transform,
+                        tokens: LexerToken[],
+                        index: number,
+                        tokenChain: TokenName[]
+): Token | SyntaxErrorInfo => {
     const nodes = []
     for (const branchTokenName of transform.branch) {
-        const branchToken = parse(tokens, branchTokenName, index)
+        const branchToken = parseToken(tokens, branchTokenName, index, [...tokenChain, transform.name])
         if (branchToken === true) continue
         if ('expected' in branchToken) return branchToken
         nodes.push(branchToken)
@@ -108,7 +136,7 @@ const tokenSize = (token: Token): number => {
 export const flattenToken = (token: Token): Token => {
     const flattenToken_ = (token: Token): Token[] => {
         if ('value' in token) {
-            return [token]
+            return token.name.endsWith('_') ? [] : [token]
         }
 
         if (token.name.endsWith('_')) {

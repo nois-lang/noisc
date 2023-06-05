@@ -4,19 +4,19 @@
       "name": "program",
       "branches": [
         [
-          "statements"
+          "statements_"
         ]
       ]
     },
     {
-      "name": "statements",
+      "name": "statements_",
       "branches": [
         [
           "statement",
-          "statements"
+          "statements_"
         ],
         [
-          "statement"
+          "e"
         ]
       ]
     },
@@ -41,9 +41,9 @@
       "name": "variable-def",
       "branches": [
         [
-          "let-keyword",
+          "let-keyword_",
           "identifier",
-          "equals",
+          "equals_",
           "expr"
         ]
       ]
@@ -52,7 +52,7 @@
       "name": "type-def",
       "branches": [
         [
-          "type-keyword",
+          "type-keyword_",
           "identifier"
         ]
       ]
@@ -61,11 +61,11 @@
       "name": "return-stmt",
       "branches": [
         [
-          "return-keyword",
+          "return-keyword_",
           "expr"
         ],
         [
-          "return-keyword"
+          "return-keyword_"
         ]
       ]
     },
@@ -116,9 +116,9 @@
           "function-expr"
         ],
         [
-          "open-paren",
+          "open-paren_",
           "expr",
-          "close-paren"
+          "close-paren_"
         ],
         [
           "string"
@@ -140,6 +140,12 @@
     {
       "name": "infix-operator",
       "branches": [
+        [
+          "greater-eq"
+        ],
+        [
+          "less-eq"
+        ],
         [
           "plus"
         ],
@@ -168,22 +174,32 @@
           "not-equals-op"
         ],
         [
-          "close-chevron"
+          "greater"
         ],
         [
-          "greater-eq"
-        ],
-        [
-          "open-chevron"
-        ],
-        [
-          "less-eq"
+          "less"
         ],
         [
           "and"
         ],
         [
           "or"
+        ]
+      ]
+    },
+    {
+      "name": "greater",
+      "branches": [
+        [
+          "close-chevron_"
+        ]
+      ]
+    },
+    {
+      "name": "less",
+      "branches": [
+        [
+          "open-chevron_"
         ]
       ]
     },
@@ -216,9 +232,9 @@
       "name": "call-op",
       "branches": [
         [
-          "open-paren",
+          "open-paren_",
           "args",
-          "close-paren"
+          "close-paren_"
         ]
       ]
     },
@@ -235,12 +251,12 @@
       "branches": [
         [
           "expr",
-          "comma",
+          "comma_",
           "args_"
         ],
         [
           "expr",
-          "trailing-comma"
+          "trailing-comma_"
         ],
         [
           "e"
@@ -251,10 +267,10 @@
       "name": "function-expr",
       "branches": [
         [
-          "open-paren",
+          "open-paren_",
           "params",
-          "close-paren",
-          "colon",
+          "close-paren_",
+          "colon_",
           "type",
           "block"
         ]
@@ -264,13 +280,13 @@
       "name": "block",
       "branches": [
         [
-          "open-brace",
-          "statements",
-          "close-brace"
+          "open-brace_",
+          "statements_",
+          "close-brace_"
         ],
         [
-          "open-brace",
-          "close-brace"
+          "open-brace_",
+          "close-brace_"
         ]
       ]
     },
@@ -287,12 +303,12 @@
       "branches": [
         [
           "param",
-          "comma",
+          "comma_",
           "params_"
         ],
         [
           "param",
-          "trailing-comma"
+          "trailing-comma_"
         ],
         [
           "param"
@@ -307,16 +323,16 @@
       "branches": [
         [
           "identifier",
-          "colon",
+          "colon_",
           "type"
         ]
       ]
     },
     {
-      "name": "trailing-comma",
+      "name": "trailing-comma_",
       "branches": [
         [
-          "comma"
+          "comma_"
         ],
         [
           "e"
@@ -328,9 +344,9 @@
       "branches": [
         [
           "identifier",
-          "open-chevron",
+          "open-chevron_",
           "type-params",
-          "close-chevron"
+          "close-chevron_"
         ],
         [
           "identifier"
@@ -341,16 +357,24 @@
       "name": "type-params",
       "branches": [
         [
+          "type-params_"
+        ],
+        [
+          "e"
+        ]
+      ]
+    },
+    {
+      "name": "type-params_",
+      "branches": [
+        [
           "type",
-          "comma",
-          "type-params"
+          "comma_",
+          "type-params_"
         ],
         [
           "type",
-          "trailing-comma"
-        ],
-        [
-          "type"
+          "trailing-comma_"
         ],
         [
           "e"
@@ -361,16 +385,22 @@
       "name": "if-expr",
       "branches": [
         [
-          "if-keyword",
+          "if-keyword_",
           "expr",
           "block",
-          "else-keyword",
+          "else-expr_"
+        ]
+      ]
+    },
+    {
+      "name": "else-expr_",
+      "branches": [
+        [
+          "else-keyword_",
           "block"
         ],
         [
-          "if-keyword",
-          "expr",
-          "block"
+          "e"
         ]
       ]
     }

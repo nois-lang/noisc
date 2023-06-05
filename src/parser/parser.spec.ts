@@ -8,10 +8,7 @@ describe('parser', () => {
     const parseToken = (source: string, root: ParserTokenName = 'program'): Token => {
         const tokens = tokenize(source)
         const token = parse(tokens, root)
-        if (token === true) {
-            throw Error('skipped root')
-        }
-        if ('expect' in token) {
+        if ('expected' in token) {
             throw Error(prettySyntaxError(token))
         }
         return flattenToken(token)
@@ -22,21 +19,16 @@ describe('parser', () => {
         const rule = parseToken(code)
         expect(compactToken(rule!)).toEqual({
             'program': [{
-                'statements': [{
-                    'statement': [{
-                        'variable-def': [{ 'let-keyword': 'let' }, { 'identifier': 'main' }, { 'equals': '=' }, {
-                            'expr': [{
-                                'operand': [{
-                                    'function-expr': [
-                                        { 'open-paren': '(' },
-                                        { 'params': [] },
-                                        { 'close-paren': ')' },
-                                        { 'colon': ':' },
-                                        { 'type': [{ 'identifier': 'Unit' }] },
-                                        { 'block': [{ 'open-brace': '{' }, { 'close-brace': '}' }] }
-                                    ]
-                                }]
-                            }]
+                'statement': [{
+                    'variable-def': [{ 'identifier': 'main' }, {
+                        'expr': [{
+                            'operand': [{
+                                'function-expr': [
+                                    { 'params': [] },
+                                    { 'type': [{ 'identifier': 'Unit' }] },
+                                    { 'block': [] }]
+                            }
+                            ]
                         }]
                     }]
                 }]
@@ -59,15 +51,7 @@ describe('parser', () => {
         expect(compactToken(rule!)).toEqual({
             'expr': [
                 { 'operand': [{ 'identifier': 'foo' }] },
-                {
-                    'postfix-op': [{
-                        'call-op': [
-                            { 'open-paren': '(' },
-                            { 'args': [{ 'expr': [{ 'operand': [{ 'number': '12' }] }] }] },
-                            { 'close-paren': ')' }
-                        ]
-                    }]
-                }
+                { 'postfix-op': [{ 'call-op': [{ 'args': [{ 'expr': [{ 'operand': [{ 'number': '12' }] }] }] }] }] }
             ]
         })
     })
@@ -79,12 +63,9 @@ describe('parser', () => {
             'expr': [{
                 'operand': [{
                     'function-expr': [
-                        { 'open-paren': '(' },
                         { 'params': [] },
-                        { 'close-paren': ')' },
-                        { 'colon': ':' },
                         { 'type': [{ 'identifier': 'Unit' }] },
-                        { 'block': [{ 'open-brace': '{' }, { 'close-brace': '}' }] }
+                        { 'block': [] }
                     ]
                 }]
             }]
@@ -100,11 +81,7 @@ describe('parser', () => {
                 { 'operand': [{ 'identifier': 'ok' }] },
                 {
                     'postfix-op': [{
-                        'call-op': [
-                            { 'open-paren': '(' },
-                            { 'args': [{ 'expr': [{ 'operand': [{ 'number': '4' }] }] }] },
-                            { 'close-paren': ')' }
-                        ]
+                        'call-op': [{ 'args': [{ 'expr': [{ 'operand': [{ 'number': '4' }] }] }] },]
                     }]
                 }
             ]
@@ -128,22 +105,20 @@ describe('parser', () => {
         const rule = parseToken('(foo(12) / 4)', 'expr')
         expect(compactToken(rule!)).toEqual({
             'expr': [{
-                'operand': [{ 'open-paren': '(' }, {
+                'operand': [{
                     'expr': [
                         { 'operand': [{ 'identifier': 'foo' }] },
                         {
                             'postfix-op': [{
                                 'call-op': [
-                                    { 'open-paren': '(' },
                                     { 'args': [{ 'expr': [{ 'operand': [{ 'number': '12' }] }] }] },
-                                    { 'close-paren': ')' }
                                 ]
                             }]
                         },
                         { 'infix-operator': [{ 'slash': '/' }] },
                         { 'operand': [{ 'number': '4' }] }
                     ]
-                }, { 'close-paren': ')' }]
+                }]
             }]
         })
     })
@@ -152,16 +127,13 @@ describe('parser', () => {
         const rule = parseToken('(foo(12) / 4) * "str".ok()', 'expr')
         const parenExpr = {
             'operand': [
-                { 'open-paren': '(' },
                 {
                     'expr': [
                         { 'operand': [{ 'identifier': 'foo' }] },
                         {
                             'postfix-op': [{
                                 'call-op': [
-                                    { 'open-paren': '(' },
                                     { 'args': [{ 'expr': [{ 'operand': [{ 'number': '12' }] }] }] },
-                                    { 'close-paren': ')' }
                                 ]
                             }]
                         },
@@ -169,7 +141,6 @@ describe('parser', () => {
                         { 'operand': [{ 'number': '4' }] }
                     ]
                 },
-                { 'close-paren': ')' }
             ]
         }
         expect(compactToken(rule!)).toEqual({
@@ -179,14 +150,7 @@ describe('parser', () => {
                 { 'operand': [{ 'string': '"str"' }] },
                 { 'infix-operator': [{ 'period': '.' }] },
                 { 'operand': [{ 'identifier': 'ok' }] },
-                {
-                    'postfix-op': [{
-                        'call-op': [
-                            { 'open-paren': '(' },
-                            { 'args': [] },
-                            { 'close-paren': ')' }]
-                    }]
-                }
+                { 'postfix-op': [{ 'call-op': [{ 'args': [] }] }] }
             ]
         })
     })
@@ -197,30 +161,24 @@ describe('parser', () => {
             'expr': [{
                 'operand': [{
                     'function-expr': [
-                        { 'open-paren': '(' },
                         {
                             'params': [
-                                { 'param': [{ 'identifier': 'a' }, { 'colon': ':' }, { 'type': [{ 'identifier': 'Int' }] }] },
-                                { 'comma': ',' },
-                                { 'param': [{ 'identifier': 'b' }, { 'colon': ':' }, { 'type': [{ 'identifier': 'Int' }] }] },
-                                { 'comma': ',' },
+                                { 'param': [{ 'identifier': 'a' }, { 'type': [{ 'identifier': 'Int' }] }] },
+                                { 'param': [{ 'identifier': 'b' }, { 'type': [{ 'identifier': 'Int' }] }] },
                                 {
                                     'param': [
-                                        { 'identifier': 'c' }, { 'colon': ':' }, {
+                                        { 'identifier': 'c' },
+                                        {
                                             'type': [
                                                 { 'identifier': 'Option' },
-                                                { 'open-chevron': '<' },
                                                 { 'type-params': [{ 'type': [{ 'identifier': 'String' }] }] },
-                                                { 'close-chevron': '>' }
                                             ]
                                         }
                                     ]
                                 }]
                         },
-                        { 'close-paren': ')' },
-                        { 'colon': ':' },
                         { 'type': [{ 'identifier': 'Unit' }] },
-                        { 'block': [{ 'open-brace': '{' }, { 'close-brace': '}' }] }
+                        { 'block': [] }
                     ]
                 }]
             }]
@@ -233,33 +191,20 @@ describe('parser', () => {
             'expr': [{
                 'operand': [{
                     'if-expr': [
-                        { 'if-keyword': 'if' }, {
+                        {
                             'expr': [
                                 { 'operand': [{ 'number': '4' }] },
                                 { 'infix-operator': [{ 'equals-op': '==' }] },
                                 { 'operand': [{ 'number': '4' }] }
                             ]
                         },
+                        { 'block': [{ 'statement': [{ 'expr': [{ 'operand': [{ 'identifier': 'a' }] }] }] },] },
                         {
                             'block': [
-                                { 'open-brace': '{' },
-                                {
-                                    'statements': [{
-                                        'statement': [{ 'expr': [{ 'operand': [{ 'identifier': 'a' }] }] }]
-                                    }]
-                                },
-                                { 'close-brace': '}' }]
-                        },
-                        { 'else-keyword': 'else' }, {
-                            'block': [
-                                { 'open-brace': '{' },
-                                {
-                                    'statements': [{
-                                        'statement': [{ 'expr': [{ 'operand': [{ 'identifier': 'b' }] }] }]
-                                    }]
-                                },
-                                { 'close-brace': '}' }]
-                        }]
+                                { 'statement': [{ 'expr': [{ 'operand': [{ 'identifier': 'b' }] }] }] },
+                            ]
+                        }
+                    ]
                 }]
             }]
         })

@@ -9,19 +9,19 @@ let main = (): Unit {
 }`
         const tokens = tokenize(code)
         expect(tokens.map(t => [t.name, t.value])).toEqual([
-            ['let-keyword', 'let'],
+            ['let-keyword_', 'let'],
             ['identifier', 'main'],
-            ['equals', '='],
-            ['open-paren', '('],
-            ['close-paren', ')'],
-            ['colon', ':'],
+            ['equals_', '='],
+            ['open-paren_', '('],
+            ['close-paren_', ')'],
+            ['colon_', ':'],
             ['identifier', 'Unit'],
-            ['open-brace', '{'],
+            ['open-brace_', '{'],
             ['identifier', 'print'],
-            ['open-paren', '('],
+            ['open-paren_', '('],
             ['number', '4'],
-            ['close-paren', ')'],
-            ['close-brace', '}'],
+            ['close-paren_', ')'],
+            ['close-brace_', '}'],
             ['eof', '']
         ])
         expect(tokens.at(0)!.location).toEqual({ start: 0, end: 2 })
@@ -55,21 +55,21 @@ let main = (): Unit {
             ['number', '1'],
             ['plus', '+'],
             ['identifier', 'call'],
-            ['open-paren', '('],
+            ['open-paren_', '('],
             ['string', '"str"'],
-            ['close-paren', ')'],
+            ['close-paren_', ')'],
             ['period', '.'],
             ['identifier', 'ok'],
-            ['open-paren', '('],
-            ['close-paren', ')'],
+            ['open-paren_', '('],
+            ['close-paren_', ')'],
             ['slash', '/'],
-            ['open-paren', '('],
+            ['open-paren_', '('],
             ['number', '12'],
             ['minus', '-'],
             ['identifier', 'a'],
-            ['open-paren', '('],
-            ['close-paren', ')'],
-            ['close-paren', ')'],
+            ['open-paren_', '('],
+            ['close-paren_', ')'],
+            ['close-paren_', ')'],
             ['eof', '']
         ])
     })

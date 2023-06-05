@@ -2,23 +2,23 @@ import { LocationRange } from '../location'
 
 export const lexerTokenNames = <const>[
     // keywords
-    'type-keyword',
-    'kind-keyword',
-    'impl-keyword',
-    'let-keyword',
-    'if-keyword',
-    'else-keyword',
-    'return-keyword',
+    'type-keyword_',
+    'kind-keyword_',
+    'impl-keyword_',
+    'let-keyword_',
+    'if-keyword_',
+    'else-keyword_',
+    'return-keyword_',
 
     // punctuation & operators
-    'open-paren',
-    'close-paren',
-    'open-bracket',
-    'close-bracket',
-    'open-brace',
-    'close-brace',
-    'open-chevron',
-    'close-chevron',
+    'open-paren_',
+    'close-paren_',
+    'open-bracket_',
+    'close-bracket_',
+    'open-brace_',
+    'close-brace_',
+    'open-chevron_',
+    'close-chevron_',
 
     'plus',
     'minus',
@@ -35,11 +35,12 @@ export const lexerTokenNames = <const>[
     'or',
     'excl',
     'spread',
-
-    'colon',
-    'comma',
     'period',
-    'equals',
+
+    'colon_',
+    'comma_',
+    'equals_',
+    'semicolon_',
 
     // dynamic
     'identifier',
@@ -60,21 +61,21 @@ export interface LexerToken {
 }
 
 export const constTokenMap: Map<LexerTokenName, string> = new Map([
-    ['type-keyword', 'type'],
-    ['kind-keyword', 'kind'],
-    ['if-keyword', 'if'],
-    ['else-keyword', 'else'],
-    ['return-keyword', 'return'],
-    ['impl-keyword', 'impl'],
-    ['let-keyword', 'let'],
-    ['open-paren', '('],
-    ['close-paren', ')'],
-    ['open-bracket', '['],
-    ['close-bracket', ']'],
-    ['open-brace', '{'],
-    ['close-brace', '}'],
-    ['open-chevron', '<'],
-    ['close-chevron', '>'],
+    ['type-keyword_', 'type'],
+    ['kind-keyword_', 'kind'],
+    ['if-keyword_', 'if'],
+    ['else-keyword_', 'else'],
+    ['return-keyword_', 'return'],
+    ['impl-keyword_', 'impl'],
+    ['let-keyword_', 'let'],
+    ['open-paren_', '('],
+    ['close-paren_', ')'],
+    ['open-bracket_', '['],
+    ['close-bracket_', ']'],
+    ['open-brace_', '{'],
+    ['close-brace_', '}'],
+    ['open-chevron_', '<'],
+    ['close-chevron_', '>'],
 
     ['equals-op', '=='],
     ['plus', '+'],
@@ -90,11 +91,11 @@ export const constTokenMap: Map<LexerTokenName, string> = new Map([
     ['or', '||'],
     ['excl', '!'],
     ['spread', '..'],
-
-    ['colon', ':'],
-    ['comma', ','],
     ['period', '.'],
-    ['equals', '='],
+
+    ['colon_', ':'],
+    ['comma_', ','],
+    ['equals_', '='],
 ])
 
 export const isWhitespace = (char: string): boolean => char === ' ' || char === '\t'
