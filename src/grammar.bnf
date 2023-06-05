@@ -53,7 +53,10 @@ postfix-op      ::= call-op
 call-op         ::= OPEN-PAREN args CLOSE-PAREN
                 ;
 
-args            ::= expr COMMA args
+args            ::= args_
+                ;
+
+args_           ::= expr COMMA args_
                 | expr trailing-comma
                 | E
                 ;
@@ -65,7 +68,10 @@ block           ::= OPEN-BRACE statements CLOSE-BRACE
                 | OPEN-BRACE CLOSE-BRACE
                 ;
 
-params          ::= param COMMA params
+params          ::= params_
+                ;
+
+params_         ::= param COMMA params_
                 | param trailing-comma
                 | param
                 | E

@@ -226,9 +226,17 @@
       "name": "args",
       "branches": [
         [
+          "args_"
+        ]
+      ]
+    },
+    {
+      "name": "args_",
+      "branches": [
+        [
           "expr",
           "comma",
-          "args"
+          "args_"
         ],
         [
           "expr",
@@ -270,9 +278,17 @@
       "name": "params",
       "branches": [
         [
+          "params_"
+        ]
+      ]
+    },
+    {
+      "name": "params_",
+      "branches": [
+        [
           "param",
           "comma",
-          "params"
+          "params_"
         ],
         [
           "param",

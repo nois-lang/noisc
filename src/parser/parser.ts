@@ -148,3 +148,5 @@ export const compactToken = (token: Token): any => {
         return { [token.name]: token.value }
     }
 }
+
+export const prettySyntaxError = (error: SyntaxErrorInfo): string => `Expected ${error.expect}, got: ${error.got} at ${error.location}`

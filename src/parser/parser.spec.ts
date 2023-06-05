@@ -1,6 +1,6 @@
 import { tokenize } from '../lexer/lexer'
 import { expect } from '@jest/globals'
-import { compactToken, flattenToken, parse, ParserTokenName, Token } from './parser'
+import { compactToken, flattenToken, parse, ParserTokenName, prettySyntaxError, Token } from './parser'
 
 describe('parser', () => {
 
@@ -11,7 +11,7 @@ describe('parser', () => {
             throw Error('parsing error: skipped root')
         }
         if ('expect' in token) {
-            throw Error(`parsing error: ${token}`)
+            throw Error(`parsing error: ${prettySyntaxError(token)}`)
         }
         return flattenToken(token)
     }
@@ -28,6 +28,7 @@ describe('parser', () => {
                                 'operand': [{
                                     'function-expr': [
                                         { 'open-paren': '(' },
+                                        { 'params': [] },
                                         { 'close-paren': ')' },
                                         { 'colon': ':' },
                                         { 'type': [{ 'identifier': 'Unit' }] },
@@ -78,6 +79,7 @@ describe('parser', () => {
                 'operand': [{
                     'function-expr': [
                         { 'open-paren': '(' },
+                        { 'params': [] },
                         { 'close-paren': ')' },
                         { 'colon': ':' },
                         { 'type': [{ 'identifier': 'Unit' }] },
@@ -176,8 +178,51 @@ describe('parser', () => {
                 { 'operand': [{ 'string': '"str"' }] },
                 { 'infix-operator': [{ 'period': '.' }] },
                 { 'operand': [{ 'identifier': 'ok' }] },
-                { 'postfix-op': [{ 'call-op': [{ 'open-paren': '(' }, { 'close-paren': ')' }] }] }
+                {
+                    'postfix-op': [{
+                        'call-op': [
+                            { 'open-paren': '(' },
+                            { 'args': [] },
+                            { 'close-paren': ')' }]
+                    }]
+                }
             ]
+        })
+    })
+
+    it('parse args', () => {
+        const rule = parseToken('(a: Int, b: Int, c: Option<String>): Unit {}', 'expr')
+        expect(compactToken(rule!)).toEqual({
+            'expr': [{
+                'operand': [{
+                    'function-expr': [
+                        { 'open-paren': '(' },
+                        {
+                            'params': [
+                                { 'param': [{ 'identifier': 'a' }, { 'colon': ':' }, { 'type': [{ 'identifier': 'Int' }] }] },
+                                { 'comma': ',' },
+                                { 'param': [{ 'identifier': 'b' }, { 'colon': ':' }, { 'type': [{ 'identifier': 'Int' }] }] },
+                                { 'comma': ',' },
+                                {
+                                    'param': [
+                                        { 'identifier': 'c' }, { 'colon': ':' }, {
+                                            'type': [
+                                                { 'identifier': 'Option' },
+                                                { 'open-chevron': '<' },
+                                                { 'type-params': [{ 'type': [{ 'identifier': 'String' }] }] },
+                                                { 'close-chevron': '>' }
+                                            ]
+                                        }
+                                    ]
+                                }]
+                        },
+                        { 'close-paren': ')' },
+                        { 'colon': ':' },
+                        { 'type': [{ 'identifier': 'Unit' }] },
+                        { 'block': [{ 'open-brace': '{' }, { 'close-brace': '}' }] }
+                    ]
+                }]
+            }]
         })
     })
 
