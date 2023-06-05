@@ -56,7 +56,7 @@ export const rules: Map<ParserTokenName, Rule> = new Map(rawRules.map((r: Rule) 
 export const parse = (tokens: LexerToken[], node: TokenName = 'program', index: number = 0): Token | SyntaxErrorInfo | true => {
     const rule = rules.get(<ParserTokenName>node)!
     if (rule) {
-        const errorInfos: SyntaxErrorInfo[] = []
+        let syntaxError: SyntaxErrorInfo | undefined
         for (const branch of rule.branches) {
             if (isEmptyBranch(branch)) return true
             const transform = { name: <ParserTokenName>node, branch }
@@ -64,10 +64,11 @@ export const parse = (tokens: LexerToken[], node: TokenName = 'program', index: 
             if ('name' in branchToken) {
                 return branchToken
             } else {
-                errorInfos.push(branchToken)
+                if (branchToken.location.start > (syntaxError?.location.start ?? -1))
+                    syntaxError = branchToken
             }
         }
-        return errorInfos.at(-1)!
+        return syntaxError!
     } else {
         const error = { expect: [node], got: tokens[index].name, location: tokens[index].location }
         return node === tokens[index].name ? tokens[index] : error
