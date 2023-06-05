@@ -24,7 +24,7 @@ if (token === true) {
     console.error('parsing error: skipped root')
     process.exit(1)
 }
-if ('expect' in token) {
+if ('expected' in token) {
     console.error(prettySourceMessage(prettySyntaxError(token), token.location.start, source))
     process.exit(1)
 }

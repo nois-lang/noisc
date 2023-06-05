@@ -3,13 +3,13 @@ import { indexToLocation, LocationRange, prettyIndex, prettyLocation } from './l
 import { Source } from './source'
 
 export interface SyntaxErrorInfo {
-    expect: TokenName[],
+    expected: TokenName[],
     got: TokenName,
     location: LocationRange
 }
 
 export const prettySyntaxError = (error: SyntaxErrorInfo): string =>
-    `syntax error: expected \`${error.expect}\`, got \`${error.got}\``
+    `syntax error: expected \`${error.expected}\`, got \`${error.got}\``
 
 export const prettySourceMessage = (message: string, index: number, source: Source): string => {
     const location = indexToLocation(index, source)

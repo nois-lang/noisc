@@ -64,13 +64,14 @@ export const parse = (tokens: LexerToken[], node: TokenName = 'program', index: 
             if ('name' in branchToken) {
                 return branchToken
             } else {
-                if (branchToken.location.start > (syntaxError?.location.start ?? -1))
+                if (!syntaxError || branchToken.location.start > syntaxError.location.start) {
                     syntaxError = branchToken
+                }
             }
         }
         return syntaxError!
     } else {
-        const error = { expect: [node], got: tokens[index].name, location: tokens[index].location }
+        const error = { expected: [node], got: tokens[index].name, location: tokens[index].location }
         return node === tokens[index].name ? tokens[index] : error
     }
 }
@@ -80,11 +81,7 @@ const parseTransform = (transform: Transform, tokens: LexerToken[], index: numbe
     for (const branchTokenName of transform.branch) {
         const branchToken = parse(tokens, branchTokenName, index)
         if (branchToken === true) continue
-        if ('expect' in branchToken) return {
-            expect: [branchTokenName],
-            got: branchToken.got,
-            location: branchToken.location
-        }
+        if ('expected' in branchToken) return branchToken
         nodes.push(branchToken)
         index += tokenSize(branchToken)
     }
