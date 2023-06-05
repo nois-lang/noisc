@@ -1,3 +1,5 @@
+import { LocationRange } from '../location'
+
 export const lexerTokenNames = <const>[
     // keywords
     'type-keyword',
@@ -54,14 +56,8 @@ export type LexerTokenName = typeof lexerTokenNames[number]
 export interface LexerToken {
     name: LexerTokenName
     value: string
-    location: TokenLocation
+    location: LocationRange
 }
-
-export interface TokenLocation {
-    start: number
-    end: number
-}
-
 
 export const constTokenMap: Map<LexerTokenName, string> = new Map([
     ['type-keyword', 'type'],
@@ -100,6 +96,10 @@ export const constTokenMap: Map<LexerTokenName, string> = new Map([
     ['period', '.'],
     ['equals', '='],
 ])
+
+export const isWhitespace = (char: string): boolean => char === ' ' || char === '\t'
+
+export const isNewline = (char: string): boolean => char === '\n' || char === '\r'
 
 export const tokenize = (code: String): LexerToken[] => {
     const pos = { pos: 0 }
@@ -247,11 +247,6 @@ const createToken = (
 ): LexerToken => {
     return { name, value, location: { start, end: pos.pos - 1 } }
 }
-
-const isWhitespace = (char: string): boolean => char === ' ' || char === '\t'
-
-const isNewline = (char: string): boolean => char === '\n' || char === '\r'
-
 
 const isAlpha = (char: string): boolean =>
     (char >= 'A' && char <= 'Z') ||

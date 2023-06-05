@@ -1,8 +1,8 @@
 import { compactToken, flattenToken, parse } from './parser/parser'
 import { tokenize } from './lexer/lexer'
-import { inspect } from 'util'
 import { readFileSync } from 'fs'
 import { join, resolve } from 'path'
+import { prettySourceMessage, prettySyntaxError } from './error'
 
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
 
@@ -17,14 +17,16 @@ if (!path) {
     process.exit()
 }
 
-const code = readFileSync(resolve(path)).toString()
+const source = { str: readFileSync(resolve(path)).toString(), filename: path }
 
-const token = parse(tokenize(code))
+const token = parse(tokenize(source.str))
 if (token === true) {
-    throw Error('parsing error: skipped root')
+    console.error('parsing error: skipped root')
+    process.exit(1)
 }
 if ('expect' in token) {
-    throw Error(`parsing error: ${inspect(token, { depth: null, colors: true })}`)
+    console.error(prettySourceMessage(prettySyntaxError(token), token.location.start, source))
+    process.exit(1)
 }
 
 console.dir(compactToken(flattenToken(token)), { depth: null, colors: true, compact: true })

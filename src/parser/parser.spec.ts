@@ -1,17 +1,18 @@
 import { tokenize } from '../lexer/lexer'
 import { expect } from '@jest/globals'
-import { compactToken, flattenToken, parse, ParserTokenName, prettySyntaxError, Token } from './parser'
+import { compactToken, flattenToken, parse, ParserTokenName, Token } from './parser'
+import { prettySyntaxError } from '../error'
 
 describe('parser', () => {
 
-    const parseToken = (code: string, root: ParserTokenName = 'program'): Token => {
-        const tokens = tokenize(code)
+    const parseToken = (source: string, root: ParserTokenName = 'program'): Token => {
+        const tokens = tokenize(source)
         const token = parse(tokens, root)
         if (token === true) {
-            throw Error('parsing error: skipped root')
+            throw Error('skipped root')
         }
         if ('expect' in token) {
-            throw Error(`parsing error: ${prettySyntaxError(token)}`)
+            throw Error(prettySyntaxError(token))
         }
         return flattenToken(token)
     }

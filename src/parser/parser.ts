@@ -1,6 +1,8 @@
-import { LexerToken, LexerTokenName, TokenLocation } from '../lexer/lexer'
+import { LexerToken, LexerTokenName } from '../lexer/lexer'
 import { readFileSync } from 'fs'
 import { join } from 'path'
+import { SyntaxErrorInfo } from '../error'
+import { LocationRange } from '../location'
 
 export const parserTokenNames = <const>[
     'program',
@@ -29,7 +31,7 @@ export type ParserTokenName = typeof parserTokenNames[number]
 
 export interface ParserToken {
     name: ParserTokenName,
-    location: TokenLocation,
+    location: LocationRange,
     nodes: Token[]
 }
 
@@ -47,12 +49,6 @@ export interface Rule {
 }
 
 export type ParseBranch = TokenName[]
-
-export interface SyntaxErrorInfo {
-    expect: TokenName[],
-    got: TokenName,
-    location: TokenLocation
-}
 
 const rawRules = JSON.parse(readFileSync(join(__dirname, '..', 'grammar.json')).toString()).rules
 export const rules: Map<ParserTokenName, Rule> = new Map(rawRules.map((r: Rule) => [r.name, r]))
@@ -149,4 +145,3 @@ export const compactToken = (token: Token): any => {
     }
 }
 
-export const prettySyntaxError = (error: SyntaxErrorInfo): string => `Expected ${error.expect}, got: ${error.got} at ${error.location}`
