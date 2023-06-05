@@ -30,14 +30,14 @@ expr__          ::= prefix-op operand
                 | operand
                 ;
 
-operand         ::= STRING
+operand         ::= if-expr
+                | function-expr
+                | OPEN-PAREN expr CLOSE-PAREN
+                | STRING
                 | CHAR
                 | NUMBER
-                | function-expr
                 | IDENTIFIER
-                | OPEN-PAREN expr CLOSE-PAREN
                 | type
-                | if-expr
                 ;
 
 infix-operator  ::= PLUS | MINUS | ASTERISK | SLASH | CARET | PERCENT | PERIOD | EQUALS-OP | NOT-EQUALS-OP
@@ -94,6 +94,6 @@ type-params     ::= type COMMA type-params
                 | E
                 ;
 
-if-expr         ::= IF-KEYWORD expr block
-                | IF-KEYWORD expr block ELSE-KEYWORD block
+if-expr         ::= IF-KEYWORD expr block ELSE-KEYWORD block
+                | IF-KEYWORD expr block
                 ;

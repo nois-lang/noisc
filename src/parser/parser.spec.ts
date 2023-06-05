@@ -227,4 +227,42 @@ describe('parser', () => {
         })
     })
 
+    it('parse if-expr', () => {
+        const rule = parseToken('if 4 == 4 {a} else {b}', 'expr')
+        expect(compactToken(rule!)).toEqual({
+            'expr': [{
+                'operand': [{
+                    'if-expr': [
+                        { 'if-keyword': 'if' }, {
+                            'expr': [
+                                { 'operand': [{ 'number': '4' }] },
+                                { 'infix-operator': [{ 'equals-op': '==' }] },
+                                { 'operand': [{ 'number': '4' }] }
+                            ]
+                        },
+                        {
+                            'block': [
+                                { 'open-brace': '{' },
+                                {
+                                    'statements': [{
+                                        'statement': [{ 'expr': [{ 'operand': [{ 'identifier': 'a' }] }] }]
+                                    }]
+                                },
+                                { 'close-brace': '}' }]
+                        },
+                        { 'else-keyword': 'else' }, {
+                            'block': [
+                                { 'open-brace': '{' },
+                                {
+                                    'statements': [{
+                                        'statement': [{ 'expr': [{ 'operand': [{ 'identifier': 'b' }] }] }]
+                                    }]
+                                },
+                                { 'close-brace': '}' }]
+                        }]
+                }]
+            }]
+        })
+    })
+
 })

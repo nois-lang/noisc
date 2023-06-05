@@ -110,6 +110,17 @@
       "name": "operand",
       "branches": [
         [
+          "if-expr"
+        ],
+        [
+          "function-expr"
+        ],
+        [
+          "open-paren",
+          "expr",
+          "close-paren"
+        ],
+        [
           "string"
         ],
         [
@@ -119,21 +130,10 @@
           "number"
         ],
         [
-          "function-expr"
-        ],
-        [
           "identifier"
         ],
         [
-          "open-paren",
-          "expr",
-          "close-paren"
-        ],
-        [
           "type"
-        ],
-        [
-          "if-expr"
         ]
       ]
     },
@@ -363,13 +363,13 @@
         [
           "if-keyword",
           "expr",
+          "block",
+          "else-keyword",
           "block"
         ],
         [
           "if-keyword",
           "expr",
-          "block",
-          "else-keyword",
           "block"
         ]
       ]
