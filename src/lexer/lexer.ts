@@ -40,7 +40,6 @@ export const lexerTokenNames = <const>[
     'colon_',
     'comma_',
     'equals_',
-    'semicolon_',
 
     // dynamic
     'identifier',
@@ -102,7 +101,7 @@ export const isWhitespace = (char: string): boolean => char === ' ' || char === 
 
 export const isNewline = (char: string): boolean => char === '\n' || char === '\r'
 
-export const tokenize = (code: String): LexerToken[] => {
+export const tokenize = (code: String): LexerToken[] | LexerToken => {
     const pos = { pos: 0 }
     const chars = code.split('')
     const tokens: LexerToken[] = []
@@ -127,11 +126,11 @@ export const tokenize = (code: String): LexerToken[] => {
         if (parseStringLiteral(chars, tokens, pos)) {
             continue
         }
-        throw Error(`unknown token \`${chars[pos.pos]}\``)
+        return createToken(<LexerTokenName>'unknown', chars[pos.pos], pos)
     }
 
     pos.pos++
-    tokens.push(createToken('eof', '', pos))
+    tokens.push(createToken('eof', '', pos, pos.pos - 1))
 
     return tokens
 }
@@ -244,7 +243,7 @@ const parseStringLiteral = (chars: string[], tokens: LexerToken[], pos: { pos: n
 const createToken = (
     name: LexerTokenName,
     value: string, pos: { pos: number },
-    start: number = pos.pos - 1
+    start: number = pos.pos
 ): LexerToken => {
     return { name, value, location: { start, end: pos.pos - 1 } }
 }

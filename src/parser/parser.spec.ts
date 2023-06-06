@@ -1,12 +1,15 @@
 import { tokenize } from '../lexer/lexer'
 import { expect } from '@jest/globals'
 import { compactToken, flattenToken, parse, ParserTokenName, Token } from './parser'
-import { prettySyntaxError } from '../error'
+import { prettyLexerError, prettySyntaxError } from '../error'
 
 describe('parser', () => {
 
     const parseToken = (source: string, root: ParserTokenName = 'program'): Token => {
         const tokens = tokenize(source)
+        if ('name' in tokens) {
+            throw Error(prettyLexerError(tokens))
+        }
         const token = parse(tokens, root)
         if ('expected' in token) {
             throw Error(prettySyntaxError(token))

@@ -3,6 +3,7 @@ import { readFileSync } from 'fs'
 import { join } from 'path'
 import { SyntaxErrorInfo } from '../error'
 import { LocationRange } from '../location'
+import { firstTokens } from './locate'
 
 export const parserTokenNames = <const>[
     'program',
@@ -53,25 +54,29 @@ export type ParseBranch = TokenName[]
 const rawRules = JSON.parse(readFileSync(join(__dirname, '..', 'grammar.json')).toString()).rules
 export const rules: Map<ParserTokenName, Rule> = new Map(rawRules.map((r: Rule) => [r.name, r]))
 
+export const firstTokensMap: Map<ParserTokenName, Set<LexerTokenName>> =
+    new Map([...rules.keys()].map((n) => [<ParserTokenName>n, firstTokens(n)]))
+
 export const parse = (tokens: LexerToken[], node: TokenName = 'program'): Token | SyntaxErrorInfo => {
     const token = parseToken(tokens, node)
     if (token === true) {
-        return { tokenChain: [node], expected: [node], got: tokens[0].name, location: tokens[0].location }
+        return { expected: [node], got: tokens[0].name, location: tokens[0].location }
     }
     if ('expected' in token) {
         return token
     }
+    console.dir(compactToken(flattenToken(token)), { depth: null, colors: true, compact: true })
     if (tokenSize(token) === tokens.length - 1) {
         return token
     } else {
-        return { tokenChain: [node], expected: ['eof'], got: tokens[0].name, location: tokens[0].location }
+        const lastParsed = tokens[tokenSize(token)]
+        return { expected: ['eof'], got: lastParsed.name, location: lastParsed.location }
     }
 }
 
 export const parseToken = (tokens: LexerToken[],
                            node: TokenName = 'program',
-                           index: number = 0,
-                           tokenChain: TokenName[] = [node]
+                           index: number = 0
 ): Token | SyntaxErrorInfo | true => {
     const rule = rules.get(<ParserTokenName>node)!
     if (rule) {
@@ -79,7 +84,7 @@ export const parseToken = (tokens: LexerToken[],
         for (const branch of rule.branches) {
             if (isEmptyBranch(branch)) return true
             const transform = { name: <ParserTokenName>node, branch }
-            const branchToken = parseTransform(transform, tokens, index, tokenChain)
+            const branchToken = parseTransform(transform, tokens, index)
             if ('name' in branchToken) {
                 return branchToken
             } else {
@@ -91,7 +96,6 @@ export const parseToken = (tokens: LexerToken[],
         return syntaxError!
     } else {
         const error: SyntaxErrorInfo = {
-            tokenChain,
             expected: [node],
             got: tokens[index].name,
             location: tokens[index].location
@@ -103,11 +107,10 @@ export const parseToken = (tokens: LexerToken[],
 const parseTransform = (transform: Transform,
                         tokens: LexerToken[],
                         index: number,
-                        tokenChain: TokenName[]
 ): Token | SyntaxErrorInfo => {
     const nodes = []
     for (const branchTokenName of transform.branch) {
-        const branchToken = parseToken(tokens, branchTokenName, index, [...tokenChain, transform.name])
+        const branchToken = parseToken(tokens, branchTokenName, index)
         if (branchToken === true) continue
         if ('expected' in branchToken) return branchToken
         nodes.push(branchToken)

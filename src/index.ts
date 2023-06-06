@@ -2,7 +2,8 @@ import { compactToken, flattenToken, parse } from './parser/parser'
 import { tokenize } from './lexer/lexer'
 import { readFileSync } from 'fs'
 import { join, resolve } from 'path'
-import { prettySourceMessage, prettySyntaxError } from './error'
+import { prettyLexerError, prettySourceMessage, prettySyntaxError } from './error'
+
 
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
 
@@ -16,10 +17,14 @@ if (!path) {
     console.log(usage)
     process.exit()
 }
-
 const source = { str: readFileSync(resolve(path)).toString(), filename: path }
 
-const token = parse(tokenize(source.str))
+const tokens = tokenize(source.str)
+if ('name' in tokens) {
+    console.error(prettySourceMessage(prettyLexerError(tokens), tokens.location.start, source))
+    process.exit(1)
+}
+const token = parse(tokens)
 if ('expected' in token) {
     console.error(prettySourceMessage(prettySyntaxError(token), token.location.start, source))
     process.exit(1)
