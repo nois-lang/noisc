@@ -20,7 +20,7 @@ statement           ::= variable-def | type-def | return-stmt | expr
                     | CHAR
                     | NUMBER
                     | IDENTIFIER
-                    | type
+                    | type-expr
                     ;
     infix-op        ::= add-op | sub-op | mul-op | div-op | exp-op | mod-op | access-op | eq-op | ne-op
                     | ge-op | le-op | gt-op | lt-op | and-op | or-op;
@@ -53,18 +53,18 @@ statement           ::= variable-def | type-def | return-stmt | expr
                     ;
         args        ::= expr (COMMA expr)* COMMA?
                     ;
-    fn-expr         ::= O-PAREN params C-PAREN COLON type block
+    fn-expr         ::= PIPE params PIPE COLON type-expr block
                     ;
       params        ::= param (COMMA param)* COMMA?
                     ;
-        param       ::= IDENTIFIER COLON type
+        param       ::= IDENTIFIER COLON type-expr
                     ;
 block               ::= O-BRACE statement* C-BRACE
                     | O-BRACE C-BRACE
                     ;
-type                ::= IDENTIFIER (O-ANGLE type-params C-ANGLE)?
+type-expr           ::= IDENTIFIER (O-ANGLE type-params C-ANGLE)?
                     ;
-  type-params       ::= type (COMMA type)* COMMA?
+  type-params       ::= type-expr (COMMA type-expr)* COMMA?
                     ;
 if-expr             ::= IF-KEYWORD expr block (ELSE-KEYWORD block)?
                     ;
