@@ -1,15 +1,15 @@
-import { TokenName } from './parser/parser'
+import { TokenKind } from './parser/parser'
 import { indexToLocation, LocationRange, prettyIndex, prettyLocation } from './location'
 import { Source } from './source'
-import { LexerToken } from './lexer/lexer'
+import { Token } from './lexer/lexer'
 
 export interface SyntaxErrorInfo {
-    expected: TokenName[],
-    got: TokenName,
+    expected: TokenKind[],
+    got: TokenKind,
     location: LocationRange
 }
 
-export const prettyLexerError = (token: LexerToken): string => {
+export const prettyLexerError = (token: Token): string => {
     return `lexer error: unknown token \`${token.value}\``
 }
 

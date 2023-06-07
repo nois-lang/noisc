@@ -1,45 +1,39 @@
 import { LocationRange } from '../location'
 
-export const lexerTokenNames = <const>[
+export const lexerTokenKinds = <const>[
     // keywords
-    'type-keyword_',
-    'kind-keyword_',
-    'impl-keyword_',
-    'let-keyword_',
-    'if-keyword_',
-    'else-keyword_',
-    'return-keyword_',
+    'type-keyword',
+    'kind-keyword',
+    'impl-keyword',
+    'let-keyword',
+    'if-keyword',
+    'else-keyword',
+    'return-keyword',
 
-    // punctuation & operators
-    'open-paren_',
-    'close-paren_',
-    'open-bracket_',
-    'close-bracket_',
-    'open-brace_',
-    'close-brace_',
-    'open-chevron_',
-    'close-chevron_',
+    // punctuation
+    'o-paren',
+    'c-paren',
+    'o-bracket',
+    'c-bracket',
+    'o-brace',
+    'c-brace',
+    'o-angle',
+    'c-angle',
+    'colon',
+    'comma',
+    'equals',
 
+    // operators
     'plus',
     'minus',
     'asterisk',
     'slash',
     'caret',
     'percent',
-    'equals-op',
-    'not-equals-op',
-    'greater-eq',
-    'open-chevron',
-    'less-eq',
-    'and',
-    'or',
+    'ampersand',
+    'pipe',
     'excl',
-    'spread',
     'period',
-
-    'colon_',
-    'comma_',
-    'equals_',
 
     // dynamic
     'identifier',
@@ -48,85 +42,108 @@ export const lexerTokenNames = <const>[
     'number',
 
     // special
-    'eof',
-    'e',
+    'unknown',
+    'eof'
 ]
-export type LexerTokenName = typeof lexerTokenNames[number]
+export type LexerTokenKind = typeof lexerTokenKinds[number]
 
-export interface LexerToken {
-    name: LexerTokenName
+export interface Token {
+    kind: LexerTokenKind
     value: string
     location: LocationRange
 }
 
-export const constTokenMap: Map<LexerTokenName, string> = new Map([
-    ['type-keyword_', 'type'],
-    ['kind-keyword_', 'kind'],
-    ['if-keyword_', 'if'],
-    ['else-keyword_', 'else'],
-    ['return-keyword_', 'return'],
-    ['impl-keyword_', 'impl'],
-    ['let-keyword_', 'let'],
-    ['open-paren_', '('],
-    ['close-paren_', ')'],
-    ['open-bracket_', '['],
-    ['close-bracket_', ']'],
-    ['open-brace_', '{'],
-    ['close-brace_', '}'],
-    ['open-chevron_', '<'],
-    ['close-chevron_', '>'],
+export const constLexerTokenMap: Map<LexerTokenKind, string> = new Map([
+    ['type-keyword', 'type'],
+    ['kind-keyword', 'kind'],
+    ['if-keyword', 'if'],
+    ['else-keyword', 'else'],
+    ['return-keyword', 'return'],
+    ['impl-keyword', 'impl'],
+    ['let-keyword', 'let'],
 
-    ['equals-op', '=='],
+    ['o-paren', '('],
+    ['c-paren', ')'],
+    ['o-bracket', '['],
+    ['c-bracket', ']'],
+    ['o-brace', '{'],
+    ['c-brace', '}'],
+    ['o-angle', '<'],
+    ['c-angle', '>'],
+
     ['plus', '+'],
     ['minus', '-'],
     ['asterisk', '*'],
     ['slash', '/'],
     ['caret', '^'],
     ['percent', '%'],
-    ['not-equals-op', '!='],
-    ['greater-eq', '>='],
-    ['less-eq', '<='],
-    ['and', '&&'],
-    ['or', '||'],
+    ['ampersand', '&'],
+    ['pipe', '|'],
     ['excl', '!'],
-    ['spread', '..'],
     ['period', '.'],
 
-    ['colon_', ':'],
-    ['comma_', ','],
-    ['equals_', '='],
+    ['colon', ':'],
+    ['comma', ','],
+    ['equals', '='],
 ])
 
 export const isWhitespace = (char: string): boolean => char === ' ' || char === '\t'
 
 export const isNewline = (char: string): boolean => char === '\n' || char === '\r'
 
-export const tokenize = (code: String): LexerToken[] | LexerToken => {
+export const tokenize = (code: String): Token[] => {
     const pos = { pos: 0 }
     const chars = code.split('')
-    const tokens: LexerToken[] = []
+    const tokens: Token[] = []
+
+    let unknownToken: Token | undefined = undefined
+
+    const flushUnknown = () => {
+        if (unknownToken) {
+            unknownToken.value = code.slice(unknownToken.location.start, unknownToken.location.end + 1)
+            tokens.push(unknownToken)
+            unknownToken = undefined
+        }
+    }
 
     while (pos.pos < chars.length) {
         if (isWhitespace(chars[pos.pos]) || isNewline(chars[pos.pos])) {
             pos.pos++
+            flushUnknown()
             continue
         }
         if (parseConstToken(chars, tokens, pos)) {
+            flushUnknown()
             continue
         }
         if (parseIdentifier(chars, tokens, pos)) {
+            flushUnknown()
             continue
         }
         if (parseNumberLiteral(chars, tokens, pos)) {
+            flushUnknown()
             continue
         }
         if (parseCharLiteral(chars, tokens, pos)) {
+            flushUnknown()
             continue
         }
         if (parseStringLiteral(chars, tokens, pos)) {
+            flushUnknown()
             continue
         }
-        return createToken(<LexerTokenName>'unknown', chars[pos.pos], pos)
+
+        if (unknownToken) {
+            unknownToken!.value += chars[pos.pos]
+            unknownToken!.location.end++
+        } else {
+            unknownToken = {
+                kind: 'unknown',
+                value: '',
+                location: { start: pos.pos, end: pos.pos }
+            }
+        }
+        pos.pos++
     }
 
     pos.pos++
@@ -135,20 +152,20 @@ export const tokenize = (code: String): LexerToken[] | LexerToken => {
     return tokens
 }
 
-const parseConstToken = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
+const parseConstToken = (chars: string[], tokens: Token[], pos: { pos: number }): boolean => {
     let codeLeft = chars.slice(pos.pos).join('')
-    let pair = [...constTokenMap.entries()].find(([, v]) => codeLeft.startsWith(v))
+    let pair = [...constLexerTokenMap.entries()].find(([, v]) => codeLeft.startsWith(v))
     if (pair) {
-        const [name, value] = pair
+        const [kind, value] = pair
         const start = pos.pos
         pos.pos += value.length
-        tokens.push(createToken(name, value, pos, start))
+        tokens.push(createToken(kind, value, pos, start))
         return true
     }
     return false
 }
 
-const parseIdentifier = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
+const parseIdentifier = (chars: string[], tokens: Token[], pos: { pos: number }): boolean => {
     if (isAlpha(chars[pos.pos])) {
         const start = pos.pos
         const identifier: string[] = []
@@ -172,7 +189,7 @@ const parseIdentifier = (chars: string[], tokens: LexerToken[], pos: { pos: numb
  * @param tokens
  * @param pos
  */
-const parseNumberLiteral = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
+const parseNumberLiteral = (chars: string[], tokens: Token[], pos: { pos: number }): boolean => {
     if (isNumeric(chars[pos.pos])) {
         const start = pos.pos
         const number: string[] = []
@@ -194,7 +211,7 @@ const parseNumberLiteral = (chars: string[], tokens: LexerToken[], pos: { pos: n
  * @param tokens
  * @param pos
  */
-const parseCharLiteral = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
+const parseCharLiteral = (chars: string[], tokens: Token[], pos: { pos: number }): boolean => {
     const quote = `'`
     if (chars[pos.pos] === quote) {
         const start = pos.pos
@@ -219,7 +236,7 @@ const parseCharLiteral = (chars: string[], tokens: LexerToken[], pos: { pos: num
  * @param tokens
  * @param pos
  */
-const parseStringLiteral = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
+const parseStringLiteral = (chars: string[], tokens: Token[], pos: { pos: number }): boolean => {
     const quote = '"'
     if (chars[pos.pos] === quote) {
         const start = pos.pos
@@ -241,17 +258,17 @@ const parseStringLiteral = (chars: string[], tokens: LexerToken[], pos: { pos: n
 }
 
 const createToken = (
-    name: LexerTokenName,
+    name: LexerTokenKind,
     value: string, pos: { pos: number },
     start: number = pos.pos
-): LexerToken => {
-    return { name, value, location: { start, end: pos.pos - 1 } }
+): Token => {
+    return { kind: name, value, location: { start, end: pos.pos - 1 } }
 }
 
 const isAlpha = (char: string): boolean =>
     (char >= 'A' && char <= 'Z') ||
     (char >= 'a' && char <= 'z') ||
     (char >= 'a' && char <= 'z') ||
-    char === '_'
+    char === ''
 
 const isNumeric = (char: string): boolean => (char >= '0' && char <= '9')

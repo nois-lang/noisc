@@ -1,37 +1,28 @@
-import { LexerToken, tokenize } from './lexer'
+import { tokenize } from './lexer'
 import { expect } from '@jest/globals'
-import { prettyLexerError } from '../error'
 
 describe('lexer', () => {
-
-    const testTokenize = (code: string): LexerToken[] => {
-        const tokens = tokenize(code)
-        if ('name' in tokens) {
-            throw Error(prettyLexerError(tokens))
-        }
-        return tokens
-    }
 
     it('tokenize basic', () => {
         const code = `\
 let main = (): Unit {
 	print(4)
 }`
-        const tokens = testTokenize(code)
-        expect(tokens.map(t => [t.name, t.value])).toEqual([
-            ['let-keyword_', 'let'],
+        const tokens = tokenize(code)
+        expect(tokens.map(t => [t.kind, t.value])).toEqual([
+            ['let-keyword', 'let'],
             ['identifier', 'main'],
-            ['equals_', '='],
-            ['open-paren_', '('],
-            ['close-paren_', ')'],
-            ['colon_', ':'],
+            ['equals', '='],
+            ['o-paren', '('],
+            ['c-paren', ')'],
+            ['colon', ':'],
             ['identifier', 'Unit'],
-            ['open-brace_', '{'],
+            ['o-brace', '{'],
             ['identifier', 'print'],
-            ['open-paren_', '('],
+            ['o-paren', '('],
             ['number', '4'],
-            ['close-paren_', ')'],
-            ['close-brace_', '}'],
+            ['c-paren', ')'],
+            ['c-brace', '}'],
             ['eof', '']
         ])
         expect(tokens.at(0)!.location).toEqual({ start: 0, end: 2 })
@@ -39,48 +30,57 @@ let main = (): Unit {
     })
 
     it('tokenize number literal simple', () => {
-        expect(testTokenize('14')).toEqual([
-            { name: 'number', value: '14', location: { start: 0, end: 1 } },
-            { name: 'eof', value: '', location: { start: 2, end: 2 } }
+        expect(tokenize('14')).toEqual([
+            { kind: 'number', value: '14', location: { start: 0, end: 1 } },
+            { kind: 'eof', value: '', location: { start: 2, end: 2 } }
         ])
     })
 
     it('tokenize string literal', () => {
-        expect(testTokenize(`"string 123 \n ok"`)).toEqual([
-            { name: 'string', value: `"string 123 \n ok"`, location: { start: 0, end: 16 } },
-            { name: 'eof', value: '', location: { start: 17, end: 17 } }
+        expect(tokenize(`"string 123 \n ok"`)).toEqual([
+            { kind: 'string', value: `"string 123 \n ok"`, location: { start: 0, end: 16 } },
+            { kind: 'eof', value: '', location: { start: 17, end: 17 } }
         ])
     })
 
     it('tokenize char literal', () => {
-        expect(testTokenize(`'?'`)).toEqual([
-            { name: 'char', value: `'?'`, location: { start: 0, end: 2 } },
-            { name: 'eof', value: '', location: { start: 3, end: 3 } }
+        expect(tokenize(`'?'`)).toEqual([
+            { kind: 'char', value: `'?'`, location: { start: 0, end: 2 } },
+            { kind: 'eof', value: '', location: { start: 3, end: 3 } }
         ])
     })
 
     it('tokenize expression', () => {
-        const tokens = testTokenize(`1+call("str").ok() / (12 - a())`)
-        expect(tokens.map(t => [t.name, t.value])).toEqual([
+        const tokens = tokenize(`1+call("str").ok() / (12 - a())`)
+        expect(tokens.map(t => [t.kind, t.value])).toEqual([
             ['number', '1'],
             ['plus', '+'],
             ['identifier', 'call'],
-            ['open-paren_', '('],
+            ['o-paren', '('],
             ['string', '"str"'],
-            ['close-paren_', ')'],
+            ['c-paren', ')'],
             ['period', '.'],
             ['identifier', 'ok'],
-            ['open-paren_', '('],
-            ['close-paren_', ')'],
+            ['o-paren', '('],
+            ['c-paren', ')'],
             ['slash', '/'],
-            ['open-paren_', '('],
+            ['o-paren', '('],
             ['number', '12'],
             ['minus', '-'],
             ['identifier', 'a'],
-            ['open-paren_', '('],
-            ['close-paren_', ')'],
-            ['close-paren_', ')'],
+            ['o-paren', '('],
+            ['c-paren', ')'],
+            ['c-paren', ')'],
             ['eof', '']
+        ])
+    })
+
+    it('tokenize with unknown literal', () => {
+        expect(tokenize(`hello ~~~ 123`)).toEqual([
+            { kind: 'identifier', value: 'hello', location: { start: 0, end: 4 } },
+            { kind: 'unknown', value: '~~~', location: { start: 6, end: 8 } },
+            { kind: 'number', value: '123', location: { start: 10, end: 12 } },
+            { kind: 'eof', value: '', location: { start: 13, end: 13 } }
         ])
     })
 

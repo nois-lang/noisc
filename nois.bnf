@@ -1,0 +1,70 @@
+module              ::= statement*
+                    ;
+statement           ::= variable-def | type-def | return-stmt | expr
+                    ;
+  variable-def      ::= LET-KEYWORD IDENTIFIER EQUALS expr
+                    ;
+  type-def          ::= TYPE-KEYWORD IDENTIFIER TODO
+                    ;
+  return-stmt       ::= RETURN-KEYWORD expr?
+                    ;
+  expr              ::= sub-expr (infix-op sub-expr)*
+                    ;
+    sub-expr        ::= prefix-op operand
+                    | operand postfix-op?
+                    ;
+      operand       ::= if-expr
+                    | fn-expr
+                    | O-PAREN expr C-PAREN
+                    | STRING
+                    | CHAR
+                    | NUMBER
+                    | IDENTIFIER
+                    | type
+                    ;
+    infix-op        ::= add-op | sub-op | mul-op | div-op | exp-op | mod-op | access-op | eq-op | ne-op
+                    | ge-op | le-op | gt-op | lt-op | and-op | or-op;
+      add-op        ::= PLUS;
+      sub-op        ::= MINUS;
+      mul-op        ::= ASTERISK;
+      div-op        ::= SLASH;
+      exp-op        ::= CARET;
+      mod-op        ::= PERCENT;
+      access-op     ::= PERIOD;
+      eq-op         ::= EQUALS EQUALS;
+      ne-op         ::= EXCL EQUALS;
+      ge-op         ::= GREATER-EQ;
+      le-op         ::= LESS-EQ;
+      gt-op         ::= C-ANGLE;
+      lt-op         ::= O-ANGLE;
+      and-op        ::= AMPERSAND AMPERSAND;
+      or-op         ::= PIPE PIPE;
+
+    prefix-op       ::= add-op | sub-op | not-op | spread-op
+                    ;
+      not-op        ::= EXCL
+                    ;
+      spread-op     ::= PERIOD PERIOD
+                    ;
+
+    postfix-op      ::= call-op
+                    ;
+      call-op       ::= O-PAREN args C-PAREN
+                    ;
+        args        ::= expr (COMMA expr)* COMMA?
+                    ;
+    fn-expr         ::= O-PAREN params C-PAREN COLON type block
+                    ;
+      params        ::= param (COMMA param)* COMMA?
+                    ;
+        param       ::= IDENTIFIER COLON type
+                    ;
+block               ::= O-BRACE statement* C-BRACE
+                    | O-BRACE C-BRACE
+                    ;
+type                ::= IDENTIFIER (O-ANGLE type-params C-ANGLE)?
+                    ;
+  type-params       ::= type (COMMA type)* COMMA?
+                    ;
+if-expr             ::= IF-KEYWORD expr block (ELSE-KEYWORD block)?
+                    ;
