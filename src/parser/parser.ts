@@ -102,6 +102,7 @@ export class Parser {
         this.fuel = 256
         this.events.push({ type: 'advance' })
         this.pos++
+        // TODO: attach comments to the preceding tree instead
         if (skipIndependent && !this.eof() && independentTokenKinds.has(this.tokens[this.pos].kind)) {
             this.advance()
         }
@@ -302,11 +303,9 @@ const parseTypeDef = (parser: Parser): void => {
  */
 const parseConstrParams = (parser: Parser): void => {
     const mark = parser.open()
-    parser.expect('o-paren')
     if (!parser.at('c-paren')) {
         parseParams(parser)
     }
-    parser.expect('c-paren')
     parser.close(mark, 'constr-params')
 }
 
