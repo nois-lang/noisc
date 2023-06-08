@@ -194,6 +194,8 @@ const parseTodo = (parser: Parser): void => {
 
 const prefixOpFirstTokens: TokenKind[] = ['excl', 'minus', 'period', 'plus']
 const postfixOpFirstTokens: TokenKind[] = ['o-paren']
+const infixOpFirstTokens: TokenKind[] = ['ampersand', 'asterisk', 'c-angle', 'caret', 'equals', 'excl', 'minus',
+    'o-angle', 'percent', 'period', 'pipe', 'plus', 'slash']
 const exprFirstTokens: TokenKind[] = ['char', 'identifier', 'if-keyword', 'number', 'o-paren', 'string', ...prefixOpFirstTokens]
 const statementFirstTokens: TokenKind[] = ['let-keyword', 'fn-keyword', 'return-keyword', 'type-keyword', ...exprFirstTokens]
 
@@ -347,7 +349,7 @@ const parseReturnStmt = (parser: Parser): void => {
 const parseExpr = (parser: Parser): void => {
     const mark = parser.open()
     parseSubExpr(parser)
-    while (!parser.atAny(exprFollowTokens) && !parser.eof()) {
+    while (parser.atAny(infixOpFirstTokens) && !parser.eof()) {
         parseInfixOp(parser)
         parseSubExpr(parser)
     }
