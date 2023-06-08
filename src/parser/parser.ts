@@ -1,11 +1,16 @@
 import { ParseToken, TokenKind } from '../lexer/lexer'
+import { SyntaxError } from '../error'
 
 export const treeKinds = <const>[
     'error',
     'module',
     'statement',
-    'variable-def',
+    'var-def',
+    'fn-def',
     'type-def',
+    'constr-params',
+    'constr-list',
+    'constructor',
     'return-stmt',
     'expr',
     'sub-expr',
@@ -32,11 +37,13 @@ export const treeKinds = <const>[
     'postfix-op',
     'call-op',
     'args',
-    'fn-expr',
+    'lambda-expr',
+    'lambda-params',
     'params',
     'param',
     'block',
-    'type',
+    'type-annot',
+    'type-expr',
     'type-params',
     'if-expr',
 ]
@@ -58,6 +65,14 @@ export interface OpenEvent {
     kind: TreeKind
 }
 
+export const compactNode = (node: ParseNode): any => {
+    if ('value' in node) {
+        return { [node.kind]: node.value }
+    } else {
+        return { [node.kind]: node.nodes.map(n => compactNode(n)) }
+    }
+}
+
 /**
  * @see https://matklad.github.io/2023/05/21/resilient-ll-parsing-tutorial.html
  */
@@ -65,8 +80,9 @@ export class Parser {
 
     constructor(
         public tokens: ParseToken[],
-        public pos: number,
-        public events: ParseEvent[],
+        public pos: number = 0,
+        public events: ParseEvent[] = [],
+        public errors: SyntaxError[] = [],
         public fuel: number = 256
     ) {}
 
@@ -82,14 +98,14 @@ export class Parser {
     }
 
     advance(): void {
-        if (!this.eof()) throw Error('eof')
+        if (this.eof()) throw Error('eof')
         this.fuel = 256
         this.events.push({ type: 'advance' })
         this.pos++
     }
 
     eof(): boolean {
-        return this.pos === this.tokens.length
+        return this.tokens[this.pos].kind === 'eof'
     }
 
     nth(lookahead: number): TokenKind {
@@ -122,8 +138,7 @@ export class Parser {
             return
         }
 
-        // TODO: error reporting
-        console.error('expected', kind)
+        this.errors.push({ expected: [kind], got: this.tokens[this.pos] })
     }
 
     expectAny(kinds: TokenKind[]): void {
@@ -133,15 +148,13 @@ export class Parser {
             }
         }
 
-        // TODO: error reporting
-        console.error('expected', kinds)
+        this.errors.push({ expected: kinds, got: this.tokens[this.pos] })
     }
 
     advanceWithError(message: string): void {
         const mark = this.open()
 
-        // TODO: error reporting
-        console.error(message)
+        this.errors.push({ expected: [], got: this.tokens[this.pos], message })
 
         this.advance()
         this.close(mark, 'error')
@@ -163,7 +176,7 @@ export class Parser {
                 stack.at(-1)!.nodes.push(tree)
             }
             if (event.type === 'advance') {
-                const token = tokens[0]
+                const token = tokens.splice(0, 1)[0]
                 stack.at(-1)!.nodes.push(token)
             }
         }
@@ -176,20 +189,22 @@ export class Parser {
 }
 
 const parseTodo = (parser: Parser): void => {
-    parser.advanceWithError('TODO')
+    parser.advanceWithError('todo')
 }
 
 const prefixOpFirstTokens: TokenKind[] = ['excl', 'minus', 'period', 'plus']
 const postfixOpFirstTokens: TokenKind[] = ['o-paren']
 const exprFirstTokens: TokenKind[] = ['char', 'identifier', 'if-keyword', 'number', 'o-paren', 'string', ...prefixOpFirstTokens]
-const statementFirstTokens: TokenKind[] = ['let-keyword', 'return-keyword', 'type-keyword', ...exprFirstTokens]
+const statementFirstTokens: TokenKind[] = ['let-keyword', 'fn-keyword', 'return-keyword', 'type-keyword', ...exprFirstTokens]
 
 const exprFollowTokens: TokenKind[] = ['c-brace', 'c-paren', 'char', 'comma', 'excl', 'identifier', 'if-keyword',
     'let-keyword', 'minus', 'number', 'o-brace', 'o-paren', 'period', 'plus', 'return-keyword', 'string', 'type-keyword']
 
-const parseModule = (parser: Parser): void => {
+/**
+ * module ::= statement*
+ */
+export const parseModule = (parser: Parser): void => {
     const mark = parser.open()
-
     while (!parser.eof()) {
         if (parser.atAny(statementFirstTokens)) {
             parseStatement(parser)
@@ -197,12 +212,19 @@ const parseModule = (parser: Parser): void => {
             parser.advanceWithError('expected statement')
         }
     }
+    parser.close(mark, 'module')
 }
+
+/**
+ * statement ::= var-def | fn-def | type-def | return-stmt | expr
+ */
 const parseStatement = (parser: Parser): void => {
     const mark = parser.open()
 
     if (parser.at('let-keyword')) {
-        parseVariableDef(parser)
+        parseVarDef(parser)
+    } else if (parser.at('fn-keyword')) {
+        parseFnDef(parser)
     } else if (parser.at('type-keyword')) {
         parseTypeDef(parser)
     } else if (parser.at('return-keyword')) {
@@ -214,24 +236,101 @@ const parseStatement = (parser: Parser): void => {
     parser.close(mark, 'statement')
 }
 
-const parseVariableDef = (parser: Parser): void => {
+/**
+ * var-def ::= LET-KEYWORD IDENTIFIER type-annot? EQUALS expr
+ */
+const parseVarDef = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('let-keyword')
     parser.expect('identifier')
+    if (parser.at('colon')) {
+        parseTypeAnnot(parser)
+    }
     parser.expect('equals')
     parseExpr(parser)
-    parser.close(mark, 'variable-def')
+    parser.close(mark, 'var-def')
 }
 
+/**
+ * fn-def ::= FN-KEYWORD IDENTIFIER O-PAREN params? C-PAREN type-annot? block?
+ */
+const parseFnDef = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('fn-keyword')
+    parser.expect('identifier')
+    parser.expect('o-paren')
+    if (!parser.at('c-paren')) {
+        parseParams(parser)
+    }
+    parser.expect('c-paren')
+    if (parser.at('colon')) {
+        parseTypeAnnot(parser)
+    }
+    if (parser.at('o-brace')) {
+        parseBlock(parser)
+    }
+    parser.close(mark, 'fn-def')
+}
+
+/**
+ * type-def ::= TYPE-KEYWORD type-expr (constr-params | constr-list)
+ */
 const parseTypeDef = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('type-keyword')
-    parser.expect('identifier')
-    parseTodo(parser)
+    parseTypeExpr(parser)
+    if (parser.at('o-paren')) {
+        parseConstrParams(parser)
+    } else if (parser.at('o-brace')) {
+        parseConstrList(parser)
+    } else {
+        parser.advanceWithError('expected `(` or `{`')
+    }
     parser.close(mark, 'type-def')
 }
 
+/**
+ * constr-params ::= O-PAREN params? C-PAREN
+ */
+const parseConstrParams = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('o-paren')
+    if (!parser.at('c-paren')) {
+        parseParams(parser)
+    }
+    parser.expect('c-paren')
+    parser.close(mark, 'constr-params')
+}
 
+/**
+ * constr-list ::= O-BRACE (constructor (COMMA constructor)* COMMA?)? C-BRACE
+ */
+const parseConstrList = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('o-brace')
+    while (!parser.at('c-brace') && !parser.eof()) {
+        parseConstructor(parser)
+        parser.consume('comma')
+    }
+    parser.expect('c-brace')
+    parser.close(mark, 'constr-list')
+}
+
+/**
+ * constructor ::= IDENTIFIER constr-params?
+ */
+const parseConstructor = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('identifier')
+    if (!parser.atAny(['comma', 'c-paren'])) {
+        parseConstrParams(parser)
+    }
+    parser.close(mark, 'constructor')
+}
+
+/**
+ * return-stmt ::= RETURN-KEYWORD expr?
+ */
 const parseReturnStmt = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('return-keyword')
@@ -242,6 +341,9 @@ const parseReturnStmt = (parser: Parser): void => {
     parser.close(mark, 'return-stmt')
 }
 
+/**
+ * expr ::= sub-expr (infix-op sub-expr)*
+ */
 const parseExpr = (parser: Parser): void => {
     const mark = parser.open()
     parseSubExpr(parser)
@@ -252,6 +354,9 @@ const parseExpr = (parser: Parser): void => {
     parser.close(mark, 'expr')
 }
 
+/**
+ * sub-expr ::= prefix-op operand | operand postfix-op?
+ */
 const parseSubExpr = (parser: Parser): void => {
     const mark = parser.open()
     if (parser.atAny(prefixOpFirstTokens)) {
@@ -265,18 +370,22 @@ const parseSubExpr = (parser: Parser): void => {
     }
     parser.close(mark, 'sub-expr')
 }
+
+/**
+ * operand ::= if-expr | lambda-expr | O-PAREN expr C-PAREN | STRING | CHAR | NUMBER | IDENTIFIER | type-expr
+ */
 const parseOperand = (parser: Parser): void => {
     const mark = parser.open()
     if (parser.at('if-keyword')) {
         parseIfExpr(parser)
     } else if (parser.at('pipe')) {
-        parseFnExpr(parser)
+        parseLambdaExpr(parser)
     } else if (parser.at('o-paren')) {
         parser.expect('o-paren')
         parseExpr(parser)
         parser.expect('c-paren')
     } else if (parser.at('identifier') && parser.nth(1) === 'o-angle') {
-        parseType(parser)
+        parseTypeExpr(parser)
     } else {
         const dynamicTokens: TokenKind[] = ['string', 'char', 'number', 'identifier']
         if (parser.atAny(dynamicTokens)) {
@@ -286,50 +395,254 @@ const parseOperand = (parser: Parser): void => {
     parser.close(mark, 'operand')
 }
 
+/**
+ * infix-op ::= add-op | sub-op | mul-op | div-op | exp-op | mod-op | access-op | eq-op | ne-op | ge-op | le-op | gt-op
+ * | lt-op | and-op | or-op;
+ */
 const parseInfixOp = (parser: Parser): void => {
     const mark = parser.open()
-    parseTodo(parser)
-    parser.close(mark, 'infix-op')
+    if (parser.consume('plus')) {
+        parser.close(mark, 'add-op')
+        return
+    }
+    if (parser.consume('minus')) {
+        parser.close(mark, 'sub-op')
+        return
+    }
+    if (parser.consume('asterisk')) {
+        parser.close(mark, 'mul-op')
+        return
+    }
+    if (parser.consume('slash')) {
+        parser.close(mark, 'div-op')
+        return
+    }
+    if (parser.consume('caret')) {
+        parser.close(mark, 'exp-op')
+        return
+    }
+    if (parser.consume('percent')) {
+        parser.close(mark, 'mod-op')
+        return
+    }
+    if (parser.consume('period')) {
+        parser.close(mark, 'access-op')
+        return
+    }
+    if (parser.nth(0) === 'equals' && parser.nth(1) === 'equals') {
+        parser.advance()
+        parser.close(mark, 'eq-op')
+        return
+    }
+    if (parser.consume('excl')) {
+        parser.close(mark, 'ne-op')
+        return
+    }
+    if (parser.consume('c-angle')) {
+        if (parser.consume('equals')) {
+            parser.close(mark, 'ge-op')
+        } else {
+            parser.close(mark, 'gt-op')
+        }
+        return
+    }
+    if (parser.consume('o-angle')) {
+        if (parser.consume('equals')) {
+            parser.close(mark, 'le-op')
+        } else {
+            parser.close(mark, 'lt-op')
+        }
+        return
+    }
+    if (parser.consume('ampersand')) {
+        parser.advance()
+        parser.close(mark, 'and-op')
+        return
+    }
+    if (parser.consume('pipe')) {
+        parser.advance()
+        parser.close(mark, 'or-op')
+        return
+    }
+
+    parser.advanceWithError('expected infix operator')
 }
 
+/**
+ * prefix-op ::= add-op | sub-op | not-op | spread-op
+ */
 const parsePrefixOp = (parser: Parser): void => {
     const mark = parser.open()
-    parseTodo(parser)
-    parser.close(mark, 'prefix-op')
+
+    if (parser.consume('plus')) {
+        parser.close(mark, 'add-op')
+        return
+    }
+    if (parser.consume('minus')) {
+        parser.close(mark, 'sub-op')
+        return
+    }
+    if (parser.consume('excl')) {
+        parser.close(mark, 'not-op')
+        return
+    }
+    if (parser.consume('period')) {
+        parser.advance()
+        parser.close(mark, 'spread-op')
+        return
+    }
+
+    parser.advanceWithError('expected prefix operator')
 }
 
+/**
+ * postfix-op ::= call-op
+ */
 const parsePostfixOp = (parser: Parser): void => {
-    const mark = parser.open()
-    parseTodo(parser)
-    parser.close(mark, 'postfix-op')
+    if (parser.at('o-paren')) {
+        parseCallOp(parser)
+    }
+
+    parser.advanceWithError('expected postfix operator')
 }
 
+/**
+ * call-op ::= args
+ */
+const parseCallOp = (parser: Parser): void => {
+    if (parser.at('o-paren')) {
+        parseArgs(parser)
+    }
+
+    parser.advanceWithError('expected call operator')
+}
+
+/**
+ * args ::= O-PAREN (expr (COMMA expr)*)? COMMA? C-PAREN
+ */
+const parseArgs = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('o-paren')
+    while (!parser.at('c-paren') && !parser.eof()) {
+        parseExpr(parser)
+        parser.consume('comma')
+    }
+    parser.expect('c-paren')
+    parser.close(mark, 'args')
+}
+
+/**
+ * lambda-expr ::= lambda-params type-annot? block
+ */
+const parseLambdaExpr = (parser: Parser): void => {
+    const mark = parser.open()
+    parseLambdaParams(parser)
+    if (parser.at('colon')) {
+        parseTypeAnnot(parser)
+    }
+    parseBlock(parser)
+    parser.close(mark, 'lambda-expr')
+}
+
+/**
+ * lambda-params ::= PIPE (param (COMMA param)*)? COMMA? PIPE
+ */
+const parseLambdaParams = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('pipe')
+    while (!parser.at('pipe') && !parser.eof()) {
+        parseParam(parser)
+        parser.consume('comma')
+    }
+    parser.expect('pipe')
+    parser.close(mark, 'lambda-params')
+}
+
+/**
+ * params ::= O-PAREN (param (COMMA param)*)? COMMA? C-PAREN
+ */
+const parseParams = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('o-paren')
+    while (!parser.at('c-paren') && !parser.eof()) {
+        parseParam(parser)
+        parser.consume('comma')
+    }
+    parser.expect('c-paren')
+    parser.close(mark, 'params')
+}
+
+/**
+ * param ::= IDENTIFIER type-annot?
+ */
+const parseParam = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('identifier')
+    if (parser.at('colon')) {
+        parseTypeAnnot(parser)
+    }
+    parser.close(mark, 'param')
+}
+
+/**
+ * block ::= O-BRACE statement* C-BRACE | O-BRACE C-BRACE
+ */
+const parseBlock = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('o-brace')
+    while (!parser.at('c-brace') && !parser.eof()) {
+        parseStatement(parser)
+    }
+    parser.expect('c-brace')
+    parser.close(mark, 'block')
+}
+
+/**
+ * type-annot ::= COLON type-expr
+ */
+const parseTypeAnnot = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('colon')
+    parseTypeExpr(parser)
+    parser.close(mark, 'type-annot')
+}
+
+/**
+ * type-expr ::= IDENTIFIER type-params?
+ */
+const parseTypeExpr = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('identifier')
+    if (parser.at('o-angle')) {
+        parseTypeParams(parser)
+    }
+    parser.close(mark, 'type-expr')
+}
+
+/**
+ * type-params ::= O-ANGLE (type-expr (COMMA type-expr)* COMMA?)? C-ANGLE
+ */
+const parseTypeParams = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('o-angle')
+    while (!parser.at('c-angle') && !parser.eof()) {
+        parseTypeExpr(parser)
+        parser.consume('comma')
+    }
+    parser.expect('c-angle')
+    parser.close(mark, 'params')
+}
+
+/**
+ * if-expr ::= IF-KEYWORD expr block (ELSE-KEYWORD block)?
+ */
 const parseIfExpr = (parser: Parser): void => {
     const mark = parser.open()
-    parseTodo(parser)
+    parser.expect('if-keyword')
+    parseExpr(parser)
+    parseBlock(parser)
+    if (parser.consume('else-keyword')) {
+        parseBlock(parser)
+    }
     parser.close(mark, 'if-expr')
-}
-
-const parseFnExpr = (parser: Parser): void => {
-    const mark = parser.open()
-    parseTodo(parser)
-    parser.close(mark, 'fn-expr')
-}
-
-const parseParenExpr = (parser: Parser): void => {
-    const mark = parser.open()
-    parseTodo(parser)
-    parser.close(mark, 'expr')
-}
-
-const parseType = (parser: Parser): void => {
-    const mark = parser.open()
-    parseTodo(parser)
-    parser.close(mark, 'type')
-}
-
-const parseA = (parser: Parser): void => {
-    const mark = parser.open()
-    parseTodo(parser)
-    parser.close(mark, 'error')
 }

@@ -1,19 +1,22 @@
-import { indexToLocation, LocationRange, prettyIndex, prettyLocation } from './location'
+import { indexToLocation, prettyIndex, prettyLocation } from './location'
 import { Source } from './source'
 import { ParseToken, TokenKind } from './lexer/lexer'
 
-export interface SyntaxErrorInfo {
+export interface SyntaxError {
     expected: TokenKind[],
-    got: TokenKind,
-    location: LocationRange
+    got: ParseToken,
+    message?: string
 }
 
 export const prettyLexerError = (token: ParseToken): string => {
     return `lexer error: unknown token \`${token.value}\``
 }
 
-export const prettySyntaxError = (error: SyntaxErrorInfo): string => {
-    return `syntax error: expected \`${error.expected}\`, got \`${error.got}\``
+export const prettySyntaxError = (error: SyntaxError): string => {
+    if (error.message) {
+        return `syntax error: ${error.message}`
+    }
+    return `syntax error: expected \`${error.expected}\`, got \`${error.got.kind}\``
 }
 
 export const prettySourceMessage = (message: string, index: number, source: Source): string => {

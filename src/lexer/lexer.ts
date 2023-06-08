@@ -6,6 +6,7 @@ export const lexerTokenKinds = <const>[
     'kind-keyword',
     'impl-keyword',
     'let-keyword',
+    'fn-keyword',
     'if-keyword',
     'else-keyword',
     'return-keyword',
@@ -61,6 +62,7 @@ export const constTokenKindMap: Map<TokenKind, string> = new Map([
     ['return-keyword', 'return'],
     ['impl-keyword', 'impl'],
     ['let-keyword', 'let'],
+    ['fn-keyword', 'fn'],
 
     ['o-paren', '('],
     ['c-paren', ')'],

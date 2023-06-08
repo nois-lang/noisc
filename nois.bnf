@@ -1,20 +1,27 @@
 module              ::= statement*
                     ;
-statement           ::= variable-def | type-def | return-stmt | expr
+statement           ::= var-def | fn-def | type-def | return-stmt | expr
                     ;
-  variable-def      ::= LET-KEYWORD IDENTIFIER EQUALS expr
+  var-def           ::= LET-KEYWORD IDENTIFIER type-annot? EQUALS expr
                     ;
-  type-def          ::= TYPE-KEYWORD IDENTIFIER TODO
+  fn-def            ::= FN-KEYWORD IDENTIFIER O-PAREN params? C-PAREN type-annot? block?
+                    ;
+  type-def          ::= TYPE-KEYWORD type-expr (constr-params | constr-list)
+                    ;
+    constr-params   ::= O-PAREN params? C-PAREN
+                    ;
+    constr-list     ::= O-BRACE (constructor (COMMA constructor)* COMMA?)? C-BRACE
+                    ;
+      constructor   ::= IDENTIFIER constr-params?
                     ;
   return-stmt       ::= RETURN-KEYWORD expr?
                     ;
   expr              ::= sub-expr (infix-op sub-expr)*
                     ;
-    sub-expr        ::= prefix-op operand
-                    | operand postfix-op?
+    sub-expr        ::= prefix-op operand | operand postfix-op?
                     ;
       operand       ::= if-expr
-                    | fn-expr
+                    | lambda-expr
                     | O-PAREN expr C-PAREN
                     | STRING
                     | CHAR
@@ -49,22 +56,25 @@ statement           ::= variable-def | type-def | return-stmt | expr
 
     postfix-op      ::= call-op
                     ;
-      call-op       ::= O-PAREN args C-PAREN
+      call-op       ::= args
                     ;
-        args        ::= expr (COMMA expr)* COMMA?
+        args        ::= O-PAREN (expr (COMMA expr)*)? COMMA? C-PAREN
                     ;
-    fn-expr         ::= PIPE params PIPE COLON type-expr block
+    lambda-expr     ::= lambda-params type-annot? block
                     ;
-      params        ::= param (COMMA param)* COMMA?
+      lambda-params ::= PIPE (param (COMMA param)*)? COMMA? PIPE
                     ;
-        param       ::= IDENTIFIER COLON type-expr
+    params          ::= O-PAREN (param (COMMA param)*)? COMMA? C-PAREN
                     ;
-block               ::= O-BRACE statement* C-BRACE
-                    | O-BRACE C-BRACE
+        param       ::= IDENTIFIER type-annot?
                     ;
-type-expr           ::= IDENTIFIER (O-ANGLE type-params C-ANGLE)?
+block               ::= O-BRACE statement* C-BRACE | O-BRACE C-BRACE
                     ;
-  type-params       ::= type-expr (COMMA type-expr)* COMMA?
+type-annot          ::= COLON type-expr
+                    ;
+  type-expr         ::= IDENTIFIER type-params?
+                    ;
+    type-params     ::= O-ANGLE (type-expr (COMMA type-expr)* COMMA?)? C-ANGLE
                     ;
 if-expr             ::= IF-KEYWORD expr block (ELSE-KEYWORD block)?
                     ;
