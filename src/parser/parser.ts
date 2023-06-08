@@ -202,6 +202,7 @@ const infixOpFirstTokens: TokenKind[] = ['ampersand', 'asterisk', 'c-angle', 'ca
     'o-angle', 'percent', 'period', 'pipe', 'plus', 'slash']
 const exprFirstTokens: TokenKind[] = ['char', 'identifier', 'if-keyword', 'number', 'o-paren', 'string', ...prefixOpFirstTokens]
 const statementFirstTokens: TokenKind[] = ['let-keyword', 'fn-keyword', 'return-keyword', 'type-keyword', ...exprFirstTokens]
+const paramFirstTokens: TokenKind[] = ['identifier']
 
 const exprFollowTokens: TokenKind[] = ['c-brace', 'c-paren', 'char', 'comma', 'excl', 'identifier', 'if-keyword',
     'let-keyword', 'minus', 'number', 'o-brace', 'o-paren', 'period', 'plus', 'return-keyword', 'string', 'type-keyword']
@@ -303,7 +304,7 @@ const parseTypeDef = (parser: Parser): void => {
  */
 const parseConstrParams = (parser: Parser): void => {
     const mark = parser.open()
-    if (!parser.at('c-paren')) {
+    if (parser.at('o-paren')) {
         parseParams(parser)
     }
     parser.close(mark, 'constr-params')
@@ -317,7 +318,9 @@ const parseConstrList = (parser: Parser): void => {
     parser.expect('o-brace')
     while (!parser.at('c-brace') && !parser.eof()) {
         parseConstructor(parser)
-        parser.consume('comma')
+        if (!parser.at('c-brace')) {
+            parser.consume('comma')
+        }
     }
     parser.expect('c-brace')
     parser.close(mark, 'constr-list')
@@ -331,6 +334,8 @@ const parseConstructor = (parser: Parser): void => {
     parser.expect('identifier')
     if (!parser.atAny(['comma', 'c-paren'])) {
         parseConstrParams(parser)
+    } else {
+        parser.advanceWithError('expected constructor')
     }
     parser.close(mark, 'constructor')
 }
@@ -534,7 +539,9 @@ const parseArgs = (parser: Parser): void => {
     parser.expect('o-paren')
     while (!parser.at('c-paren') && !parser.eof()) {
         parseExpr(parser)
-        parser.consume('comma')
+        if (!parser.at('c-paren')) {
+            parser.consume('comma')
+        }
     }
     parser.expect('c-paren')
     parser.close(mark, 'args')
@@ -561,7 +568,9 @@ const parseLambdaParams = (parser: Parser): void => {
     parser.expect('pipe')
     while (!parser.at('pipe') && !parser.eof()) {
         parseParam(parser)
-        parser.consume('comma')
+        if (!parser.at('pipe')) {
+            parser.consume('comma')
+        }
     }
     parser.expect('pipe')
     parser.close(mark, 'lambda-params')
@@ -573,9 +582,11 @@ const parseLambdaParams = (parser: Parser): void => {
 const parseParams = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('o-paren')
-    while (!parser.at('c-paren') && !parser.eof()) {
+    while (parser.atAny(paramFirstTokens) && !parser.eof()) {
         parseParam(parser)
-        parser.consume('comma')
+        if (!parser.at('c-paren')) {
+            parser.expect('comma')
+        }
     }
     parser.expect('c-paren')
     parser.close(mark, 'params')
@@ -636,7 +647,9 @@ const parseTypeParams = (parser: Parser): void => {
     parser.expect('o-angle')
     while (!parser.at('c-angle') && !parser.eof()) {
         parseTypeExpr(parser)
-        parser.consume('comma')
+        if (!parser.at('c-angle')) {
+            parser.consume('comma')
+        }
     }
     parser.expect('c-angle')
     parser.close(mark, 'params')
