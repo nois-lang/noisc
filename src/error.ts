@@ -13,10 +13,8 @@ export const prettyLexerError = (token: ParseToken): string => {
 }
 
 export const prettySyntaxError = (error: SyntaxError): string => {
-    if (error.message) {
-        return `syntax error: ${error.message}`
-    }
-    return `syntax error: expected \`${error.expected}\`, got \`${error.got.kind}\``
+    const msg = error.message ?? `expected \`${error.expected.join(', ')}\``
+    return `syntax error: ${msg}, got \`${error.got.kind}\``
 }
 
 export const prettySourceMessage = (message: string, index: number, source: Source): string => {
