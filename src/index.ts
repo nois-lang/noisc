@@ -1,5 +1,5 @@
 import { tokenize } from './lexer/lexer'
-import { readFileSync } from 'fs'
+import { existsSync, readFileSync } from 'fs'
 import { join, resolve } from 'path'
 import { compactNode, parseModule, Parser } from './parser/parser'
 import { prettySourceMessage, prettySyntaxError } from './error'
@@ -17,7 +17,12 @@ if (!path) {
     console.log(usage)
     process.exit()
 }
-const source = { str: readFileSync(resolve(path)).toString(), filename: path }
+const sourcePath = resolve(path)
+if (!existsSync(sourcePath)) {
+    console.error(`no such file \`${path}\``)
+    process.exit()
+}
+const source = { str: readFileSync(sourcePath).toString(), filename: path }
 
 const tokens = tokenize(source.str)
 const parser = new Parser(tokens)

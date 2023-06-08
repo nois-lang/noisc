@@ -27,4 +27,75 @@ describe('parser', () => {
             }]
         })
     })
+
+    it('parse if-expr', () => {
+        const { tree, errors } = parse('if a { b } else { c }')
+        expect(errors.length).toEqual(0)
+        expect(tree).toEqual({
+            'module': [{
+                'statement': [{
+                    'expr': [{
+                        'sub-expr': [{
+                            'operand': [{
+                                'if-expr': [
+                                    { 'if-keyword': 'if' },
+                                    { 'expr': [{ 'sub-expr': [{ 'operand': [{ 'identifier': 'a' }] }] }] },
+                                    {
+                                        'block': [
+                                            { 'o-brace': '{' },
+                                            {
+                                                'statement': [{
+                                                    'expr': [{ 'sub-expr': [{ 'operand': [{ 'identifier': 'b' }] }] }]
+                                                }]
+                                            },
+                                            { 'c-brace': '}' }
+                                        ]
+                                    },
+                                    { 'else-keyword': 'else' },
+                                    {
+                                        'block': [
+                                            { 'o-brace': '{' },
+                                            {
+                                                'statement': [{
+                                                    'expr': [{ 'sub-expr': [{ 'operand': [{ 'identifier': 'c' }] }] }]
+                                                }]
+                                            },
+                                            { 'c-brace': '}' }
+                                        ]
+                                    }
+                                ]
+                            }]
+                        }]
+                    }]
+                }]
+            }]
+        })
+    })
+
+    it('parse var-def miss identifier', () => {
+        const { errors } = parse('let = 4')
+        expect(errors.length).toEqual(1)
+        expect(errors[0]).toEqual({
+            'expected': ['identifier'],
+            'got': {
+                'kind': 'equals',
+                'location': {
+                    'end': 4,
+                    'start': 4
+                },
+                'value': '='
+            }
+        })
+    })
+
+    it('parse if-expr mismatch paren', () => {
+        const { errors } = parse('if a { b) }')
+        expect(errors.length).toEqual(1)
+        expect(errors[0]).toEqual({
+            'expected': [],
+            'got': { 'kind': 'c-paren', 'location': { 'end': 8, 'start': 8 }, 'value': ')' },
+            'message': 'expected operand'
+        })
+    })
+
 })

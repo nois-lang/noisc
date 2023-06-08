@@ -375,6 +375,8 @@ const parseSubExpr = (parser: Parser): void => {
  * operand ::= if-expr | lambda-expr | O-PAREN expr C-PAREN | STRING | CHAR | NUMBER | IDENTIFIER | type-expr
  */
 const parseOperand = (parser: Parser): void => {
+    const dynamicTokens: TokenKind[] = ['string', 'char', 'number', 'identifier']
+
     const mark = parser.open()
     if (parser.at('if-keyword')) {
         parseIfExpr(parser)
@@ -386,12 +388,12 @@ const parseOperand = (parser: Parser): void => {
         parser.expect('c-paren')
     } else if (parser.at('identifier') && parser.nth(1) === 'o-angle') {
         parseTypeExpr(parser)
+    } else if (parser.atAny(dynamicTokens)) {
+        parser.expectAny(dynamicTokens)
     } else {
-        const dynamicTokens: TokenKind[] = ['string', 'char', 'number', 'identifier']
-        if (parser.atAny(dynamicTokens)) {
-            parser.expectAny(dynamicTokens)
-        }
+        parser.advanceWithError('expected operand')
     }
+
     parser.close(mark, 'operand')
 }
 
@@ -501,9 +503,9 @@ const parsePrefixOp = (parser: Parser): void => {
 const parsePostfixOp = (parser: Parser): void => {
     if (parser.at('o-paren')) {
         parseCallOp(parser)
+    } else {
+        parser.advanceWithError('expected postfix operator')
     }
-
-    parser.advanceWithError('expected postfix operator')
 }
 
 /**
@@ -512,9 +514,9 @@ const parsePostfixOp = (parser: Parser): void => {
 const parseCallOp = (parser: Parser): void => {
     if (parser.at('o-paren')) {
         parseArgs(parser)
+    } else {
+        parser.advanceWithError('expected call operator')
     }
-
-    parser.advanceWithError('expected call operator')
 }
 
 /**
