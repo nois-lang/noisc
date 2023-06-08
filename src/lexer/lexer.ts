@@ -23,6 +23,7 @@ export const lexerTokenKinds = <const>[
     'colon',
     'comma',
     'equals',
+    'underscore',
 
     // operators
     'plus',
@@ -87,6 +88,7 @@ export const constTokenKindMap: Map<TokenKind, string> = new Map([
     ['colon', ':'],
     ['comma', ','],
     ['equals', '='],
+    ['underscore', '_'],
 ])
 
 export const isWhitespace = (char: string): boolean => char === ' ' || char === '\t'

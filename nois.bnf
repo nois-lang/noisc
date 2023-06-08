@@ -78,3 +78,5 @@ type-annot          ::= COLON type-expr
                     ;
 if-expr             ::= IF-KEYWORD expr block (ELSE-KEYWORD block)?
                     ;
+hole                ::= UNDERSCORE
+                    ;
