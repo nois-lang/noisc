@@ -21,7 +21,7 @@ describe('parser', () => {
                         'fn-def': [
                             { 'fn-keyword': 'fn' },
                             { 'identifier': 'main' },
-                            { 'o-paren': '(' }, { 'c-paren': ')' },
+                            { 'params': [{ 'o-paren': '(' }, { 'c-paren': ')' }] },
                             { 'block': [{ 'o-brace': '{' }, { 'c-brace': '}' }] }
                         ]
                     }]
@@ -30,7 +30,7 @@ describe('parser', () => {
         })
     })
 
-    describe('parse fn-def', () => {
+    describe('parse var-def', () => {
         it('miss identifier', () => {
             const { errors } = parse('let = 4')
             expect(errors.length).toEqual(1)
@@ -96,11 +96,10 @@ describe('parser', () => {
         it('mismatch paren', () => {
 
             const { errors } = parse('if a { b) }')
-            expect(errors.length).toEqual(1)
+            expect(errors.length).toEqual(3)
             expect(errors[0]).toEqual({
-                'expected': [],
-                'got': { 'kind': 'c-paren', 'location': { 'end': 8, 'start': 8 }, 'value': ')' },
-                'message': 'expected operand'
+                'expected': ['c-brace'],
+                'got': { 'kind': 'c-paren', 'location': { 'end': 8, 'start': 8 }, 'value': ')' }
             })
         })
 

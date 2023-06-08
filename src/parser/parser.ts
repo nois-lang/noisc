@@ -231,8 +231,10 @@ const parseStatement = (parser: Parser): void => {
         parseTypeDef(parser)
     } else if (parser.at('return-keyword')) {
         parseReturnStmt(parser)
-    } else {
+    } else if (parser.atAny(exprFirstTokens)) {
         parseExpr(parser)
+    } else {
+        parser.advanceWithError('expected statement')
     }
 
     parser.close(mark, 'statement')
@@ -254,17 +256,18 @@ const parseVarDef = (parser: Parser): void => {
 }
 
 /**
- * fn-def ::= FN-KEYWORD IDENTIFIER O-PAREN params? C-PAREN type-annot? block?
+ * fn-def ::= FN-KEYWORD IDENTIFIER type-params? O-PAREN params? C-PAREN type-annot? block?
  */
 const parseFnDef = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('fn-keyword')
     parser.expect('identifier')
-    parser.expect('o-paren')
-    if (!parser.at('c-paren')) {
+    if (parser.at('o-angle')) {
+        parseTypeParams(parser)
+    }
+    if (parser.at('o-paren')) {
         parseParams(parser)
     }
-    parser.expect('c-paren')
     if (parser.at('colon')) {
         parseTypeAnnot(parser)
     }
@@ -477,48 +480,48 @@ const parseInfixOp = (parser: Parser): void => {
  */
 const parsePrefixOp = (parser: Parser): void => {
     const mark = parser.open()
+    const m = parser.open()
 
     if (parser.consume('plus')) {
-        parser.close(mark, 'add-op')
-        return
-    }
-    if (parser.consume('minus')) {
-        parser.close(mark, 'sub-op')
-        return
-    }
-    if (parser.consume('excl')) {
-        parser.close(mark, 'not-op')
-        return
-    }
-    if (parser.consume('period')) {
+        parser.close(m, 'add-op')
+    } else if (parser.consume('minus')) {
+        parser.close(m, 'sub-op')
+    } else if (parser.consume('excl')) {
+        parser.close(m, 'not-op')
+    } else if (parser.consume('period')) {
         parser.advance()
-        parser.close(mark, 'spread-op')
-        return
+        parser.close(m, 'spread-op')
+    } else {
+        parser.advanceWithError('expected prefix operator')
     }
 
-    parser.advanceWithError('expected prefix operator')
+    parser.close(mark, 'prefix-op')
 }
 
 /**
  * postfix-op ::= call-op
  */
 const parsePostfixOp = (parser: Parser): void => {
+    const mark = parser.open()
     if (parser.at('o-paren')) {
         parseCallOp(parser)
     } else {
         parser.advanceWithError('expected postfix operator')
     }
+    parser.close(mark, 'postfix-op')
 }
 
 /**
  * call-op ::= args
  */
 const parseCallOp = (parser: Parser): void => {
+    const mark = parser.open()
     if (parser.at('o-paren')) {
         parseArgs(parser)
     } else {
         parser.advanceWithError('expected call operator')
     }
+    parser.close(mark, 'call-op')
 }
 
 /**
@@ -594,7 +597,7 @@ const parseParam = (parser: Parser): void => {
 const parseBlock = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('o-brace')
-    while (!parser.at('c-brace') && !parser.eof()) {
+    while (parser.atAny(statementFirstTokens) && !parser.eof()) {
         parseStatement(parser)
     }
     parser.expect('c-brace')

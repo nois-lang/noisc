@@ -4,7 +4,7 @@ statement           ::= var-def | fn-def | type-def | return-stmt | expr
                     ;
   var-def           ::= LET-KEYWORD IDENTIFIER type-annot? EQUALS expr
                     ;
-  fn-def            ::= FN-KEYWORD IDENTIFIER O-PAREN params? C-PAREN type-annot? block?
+  fn-def            ::= FN-KEYWORD IDENTIFIER type-params? O-PAREN params? C-PAREN type-annot? block?
                     ;
   type-def          ::= TYPE-KEYWORD type-expr (constr-params | constr-list)
                     ;
