@@ -43,6 +43,10 @@ export const lexerTokenKinds = <const>[
     'char',
     'number',
 
+    // parse independent
+    'newline',
+    'comment',
+
     // special
     'unknown',
     'eof'
@@ -91,6 +95,11 @@ export const constTokenKindMap: Map<TokenKind, string> = new Map([
     ['underscore', '_'],
 ])
 
+/**
+ * Independent tokens are automatically advanced by parser by default
+ */
+export const independentTokenKinds: Set<TokenKind> = new Set(['newline', 'comment'])
+
 export const isWhitespace = (char: string): boolean => char === ' ' || char === '\t'
 
 export const isNewline = (char: string): boolean => char === '\n' || char === '\r'
@@ -111,49 +120,71 @@ export const tokenize = (code: String): ParseToken[] => {
     }
 
     while (pos.pos < chars.length) {
-        if (isWhitespace(chars[pos.pos]) || isNewline(chars[pos.pos])) {
+        if (isWhitespace(chars[pos.pos])) {
             pos.pos++
             flushUnknown()
             continue
         }
-        if (parseConstToken(chars, tokens, pos)) {
-            flushUnknown()
-            continue
-        }
-        if (parseIdentifier(chars, tokens, pos)) {
-            flushUnknown()
-            continue
-        }
-        if (parseNumberLiteral(chars, tokens, pos)) {
-            flushUnknown()
-            continue
-        }
-        if (parseCharLiteral(chars, tokens, pos)) {
-            flushUnknown()
-            continue
-        }
-        if (parseStringLiteral(chars, tokens, pos)) {
-            flushUnknown()
-            continue
-        }
 
-        if (unknownToken) {
-            unknownToken!.value += chars[pos.pos]
-            unknownToken!.location.end++
-        } else {
-            unknownToken = {
-                kind: 'unknown',
-                value: '',
-                location: { start: pos.pos, end: pos.pos }
+        const fns = [parseComment, parseNewline, parseConstToken, parseIdentifier, parseNumberLiteral, parseCharLiteral,
+            parseStringLiteral]
+
+        let parsed = false
+        for (const f of fns) {
+            if (f(chars, tokens, pos)) {
+                flushUnknown()
+                parsed = true
+                break
             }
         }
-        pos.pos++
+
+        if (!parsed) {
+            if (unknownToken) {
+                unknownToken!.value += chars[pos.pos]
+                unknownToken!.location.end++
+            } else {
+                unknownToken = {
+                    kind: 'unknown',
+                    value: '',
+                    location: { start: pos.pos, end: pos.pos }
+                }
+            }
+            pos.pos++
+        }
     }
 
     pos.pos++
     tokens.push(createToken('eof', '', pos, pos.pos - 1))
 
     return tokens
+}
+
+const parseComment = (chars: string[], tokens: ParseToken[], pos: { pos: number }): boolean => {
+    if (chars.slice(pos.pos, pos.pos + 2).join('') === '//') {
+        const start = pos.pos
+        let buffer: string[] = []
+        while (!isNewline(chars[pos.pos])) {
+            buffer.push(chars[pos.pos])
+            pos.pos++
+        }
+        tokens.push(createToken('comment', buffer.join(''), pos, start))
+        return true
+    }
+    return false
+}
+
+const parseNewline = (chars: string[], tokens: ParseToken[], pos: { pos: number }): boolean => {
+    if (isNewline(chars[pos.pos])) {
+        const start = pos.pos
+        let buffer: string[] = []
+        while (isNewline(chars[pos.pos])) {
+            buffer.push(chars[pos.pos])
+            pos.pos++
+        }
+        tokens.push(createToken('newline', buffer.join(''), pos, start))
+        return true
+    }
+    return false
 }
 
 const parseConstToken = (chars: string[], tokens: ParseToken[], pos: { pos: number }): boolean => {

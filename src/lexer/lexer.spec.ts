@@ -18,10 +18,12 @@ let main = (): Unit {
             ['colon', ':'],
             ['identifier', 'Unit'],
             ['o-brace', '{'],
+            ['newline', '\n'],
             ['identifier', 'print'],
             ['o-paren', '('],
             ['number', '4'],
             ['c-paren', ')'],
+            ['newline', '\n'],
             ['c-brace', '}'],
             ['eof', '']
         ])
@@ -75,12 +77,21 @@ let main = (): Unit {
         ])
     })
 
-    it('tokenize with unknown literal', () => {
+    it('tokenize unknown literal', () => {
         expect(tokenize(`hello ~~~ 123`)).toEqual([
             { kind: 'identifier', value: 'hello', location: { start: 0, end: 4 } },
             { kind: 'unknown', value: '~~~', location: { start: 6, end: 8 } },
             { kind: 'number', value: '123', location: { start: 10, end: 12 } },
             { kind: 'eof', value: '', location: { start: 13, end: 13 } }
+        ])
+    })
+
+    it('tokenize comment', () => {
+        expect(tokenize(`//this is 4\n4`)).toEqual([
+            { 'kind': 'comment', 'location': { 'end': 10, 'start': 0 }, 'value': '//this is 4' },
+            { 'kind': 'newline', 'location': { 'end': 11, 'start': 11 }, 'value': '\n' },
+            { 'kind': 'number', 'location': { 'end': 12, 'start': 12 }, 'value': '4' },
+            { 'kind': 'eof', 'location': { 'end': 13, 'start': 13 }, 'value': '' }
         ])
     })
 

@@ -33,6 +33,7 @@ if (unknownTokens.length > 0) {
     process.exit(1)
 }
 
+console.log(tokens)
 const parser = new Parser(tokens)
 parseModule(parser)
 const root = parser.buildTree()

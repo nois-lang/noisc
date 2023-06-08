@@ -1,4 +1,4 @@
-import { ParseToken, TokenKind } from '../lexer/lexer'
+import { independentTokenKinds, ParseToken, TokenKind } from '../lexer/lexer'
 import { SyntaxError } from '../error'
 
 export const treeKinds = <const>[
@@ -97,11 +97,14 @@ export class Parser {
         this.events.push({ type: 'close' })
     }
 
-    advance(): void {
+    advance(skipIndependent: boolean = true): void {
         if (this.eof()) throw Error('eof')
         this.fuel = 256
         this.events.push({ type: 'advance' })
         this.pos++
+        if (skipIndependent && !this.eof() && independentTokenKinds.has(this.tokens[this.pos].kind)) {
+            this.advance()
+        }
     }
 
     eof(): boolean {
