@@ -2,7 +2,7 @@ import { tokenize } from './lexer/lexer'
 import { existsSync, readFileSync } from 'fs'
 import { join, resolve } from 'path'
 import { compactNode, parseModule, Parser } from './parser/parser'
-import { prettySourceMessage, prettySyntaxError } from './error'
+import { prettyLexerError, prettySourceMessage, prettySyntaxError } from './error'
 
 
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
@@ -25,6 +25,14 @@ if (!existsSync(sourcePath)) {
 const source = { str: readFileSync(sourcePath).toString(), filename: path }
 
 const tokens = tokenize(source.str)
+const unknownTokens = tokens.filter(t => t.kind === 'unknown')
+if (unknownTokens.length > 0) {
+    for (const t of unknownTokens) {
+        console.error(prettySourceMessage(prettyLexerError(t), t.location.start, source))
+    }
+    process.exit(1)
+}
+
 const parser = new Parser(tokens)
 parseModule(parser)
 const root = parser.buildTree()

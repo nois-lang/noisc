@@ -35,7 +35,7 @@ export const prettyIndex = (index: number, source: Source): string => {
     const lines = source.str.split('\n')
     const line = lines[start.line]
     const highlight = ' '.repeat(start.column) + '^'
-    const lineNum = `${start.line + 1} | `
+    const lineNum = `${(start.line + 1).toString()} | `.padStart(6)
     return `\
     
 ${lineNum}${line}
