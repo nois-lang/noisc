@@ -60,7 +60,7 @@ statement           ::= var-def | fn-def | type-def | return-stmt | expr
                     ;
         args        ::= O-PAREN (expr (COMMA expr)*)? COMMA? C-PAREN
                     ;
-    lambda-expr     ::= lambda-params type-annot? block
+    lambda-expr     ::= lambda-params type-annot? (block | expr)
                     ;
       lambda-params ::= PIPE (param (COMMA param)*)? COMMA? PIPE
                     ;
@@ -68,7 +68,7 @@ statement           ::= var-def | fn-def | type-def | return-stmt | expr
                     ;
         param       ::= IDENTIFIER type-annot?
                     ;
-block               ::= O-BRACE statement* C-BRACE | O-BRACE C-BRACE
+block               ::= O-BRACE statement* C-BRACE
                     ;
 type-annot          ::= COLON type-expr
                     ;

@@ -548,7 +548,7 @@ const parseArgs = (parser: Parser): void => {
 }
 
 /**
- * lambda-expr ::= lambda-params type-annot? block
+ * lambda-expr ::= lambda-params type-annot? (block | expr)
  */
 const parseLambdaExpr = (parser: Parser): void => {
     const mark = parser.open()
@@ -556,7 +556,13 @@ const parseLambdaExpr = (parser: Parser): void => {
     if (parser.at('colon')) {
         parseTypeAnnot(parser)
     }
-    parseBlock(parser)
+    if (parser.at('o-brace')) {
+        parseBlock(parser)
+    } else if (parser.atAny(exprFirstTokens)) {
+        parseExpr(parser)
+    } else {
+        parser.advanceWithError('block or expression expected')
+    }
     parser.close(mark, 'lambda-expr')
 }
 
@@ -605,7 +611,7 @@ const parseParam = (parser: Parser): void => {
 }
 
 /**
- * block ::= O-BRACE statement* C-BRACE | O-BRACE C-BRACE
+ * block ::= O-BRACE statement* C-BRACE
  */
 const parseBlock = (parser: Parser): void => {
     const mark = parser.open()
