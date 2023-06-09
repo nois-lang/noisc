@@ -21,6 +21,7 @@ export const lexerTokenKinds = <const>[
     'o-angle',
     'c-angle',
     'colon',
+    'semi',
     'comma',
     'equals',
     'underscore',
@@ -90,6 +91,7 @@ export const constTokenKindMap: Map<TokenKind, string> = new Map([
     ['period', '.'],
 
     ['colon', ':'],
+    ['semi', ';'],
     ['comma', ','],
     ['equals', '='],
     ['underscore', '_'],
@@ -98,7 +100,7 @@ export const constTokenKindMap: Map<TokenKind, string> = new Map([
 /**
  * Independent tokens are automatically advanced by parser by default
  */
-export const independentTokenKinds: Set<TokenKind> = new Set(['newline', 'comment'])
+export const independentTokenKinds: TokenKind[] = ['newline', 'comment']
 
 export const isWhitespace = (char: string): boolean => char === ' ' || char === '\t'
 

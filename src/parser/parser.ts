@@ -103,7 +103,7 @@ export class Parser {
         this.events.push({ type: 'advance' })
         this.pos++
         // TODO: attach comments to the preceding tree instead
-        if (skipIndependent && !this.eof() && independentTokenKinds.has(this.tokens[this.pos].kind)) {
+        if (skipIndependent && !this.eof() && independentTokenKinds.some(t => t === this.tokens[this.pos].kind)) {
             this.advance()
         }
     }
@@ -319,7 +319,7 @@ const parseConstrList = (parser: Parser): void => {
     while (!parser.at('c-brace') && !parser.eof()) {
         parseConstructor(parser)
         if (!parser.at('c-brace')) {
-            parser.consume('comma')
+            parser.expect('comma')
         }
     }
     parser.expect('c-brace')
@@ -540,7 +540,7 @@ const parseArgs = (parser: Parser): void => {
     while (!parser.at('c-paren') && !parser.eof()) {
         parseExpr(parser)
         if (!parser.at('c-paren')) {
-            parser.consume('comma')
+            parser.expect('comma')
         }
     }
     parser.expect('c-paren')
@@ -575,7 +575,7 @@ const parseLambdaParams = (parser: Parser): void => {
     while (!parser.at('pipe') && !parser.eof()) {
         parseParam(parser)
         if (!parser.at('pipe')) {
-            parser.consume('comma')
+            parser.expect('comma')
         }
     }
     parser.expect('pipe')
@@ -611,13 +611,16 @@ const parseParam = (parser: Parser): void => {
 }
 
 /**
- * block ::= O-BRACE statement* C-BRACE
+ * block ::= O-BRACE (statement (SEMI statement)* SEMI?)? C-BRACE
  */
 const parseBlock = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('o-brace')
-    while (parser.atAny(statementFirstTokens) && !parser.eof()) {
+    while (!parser.at('c-brace') && !parser.eof()) {
         parseStatement(parser)
+        if (!parser.at('c-brace')) {
+            parser.expect('semi')
+        }
     }
     parser.expect('c-brace')
     parser.close(mark, 'block')
@@ -654,7 +657,7 @@ const parseTypeParams = (parser: Parser): void => {
     while (!parser.at('c-angle') && !parser.eof()) {
         parseTypeExpr(parser)
         if (!parser.at('c-angle')) {
-            parser.consume('comma')
+            parser.expect('comma')
         }
     }
     parser.expect('c-angle')

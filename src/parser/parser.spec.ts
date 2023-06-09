@@ -96,9 +96,10 @@ describe('parser', () => {
         it('mismatch paren', () => {
 
             const { errors } = parse('if a { b) }')
-            expect(errors.length).toEqual(3)
+            // TODO: reduce multiple errors on the same symbol to the last one
+            expect(errors.length).toEqual(2)
             expect(errors[0]).toEqual({
-                'expected': ['c-brace'],
+                'expected': ['semi'],
                 'got': { 'kind': 'c-paren', 'location': { 'end': 8, 'start': 8 }, 'value': ')' }
             })
         })
