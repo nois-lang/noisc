@@ -28,6 +28,9 @@ export const indexToLocation = (index: number, source: Source): Location | undef
     return undefined
 }
 
+/**
+ * TODO: context lines parameter
+ */
 export const prettyIndex = (index: number, source: Source): string => {
     const start = indexToLocation(index, source)
     if (!start) return '<outside of a file>'

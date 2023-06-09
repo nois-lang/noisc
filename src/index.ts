@@ -37,8 +37,10 @@ const parser = new Parser(tokens)
 parseModule(parser)
 const root = parser.buildTree()
 
-for (const error of parser.errors) {
-    console.error(prettySourceMessage(prettySyntaxError(error), error.got.location.start, source))
+if (parser.errors.length > 0) {
+    for (const error of parser.errors) {
+        console.error(prettySourceMessage(prettySyntaxError(error), error.got.location.start, source))
+    }
     process.exit(1)
 }
 
