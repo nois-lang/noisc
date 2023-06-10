@@ -1,8 +1,9 @@
 import { tokenize } from './lexer/lexer'
 import { existsSync, readFileSync } from 'fs'
 import { join, resolve } from 'path'
-import { compactNode, parseModule, Parser } from './parser/parser'
+import { compactNode, Parser } from './parser/parser'
 import { prettyLexerError, prettySourceMessage, prettySyntaxError } from './error'
+import { parseModule } from './parser/parser-fns'
 
 
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version

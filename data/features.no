@@ -24,7 +24,6 @@ fn foo(): Unit {
     // constructor
     // TODO: floats
     // let vec = Vec2(x: 2., y: 4.)
-    let vec = Vec2(x: 2, y: 4)
 
     // field accessor
     vec.x
