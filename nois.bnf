@@ -71,7 +71,7 @@ statement           ::= var-def | fn-def | type-def | return-stmt | expr
                     ;
         param       ::= IDENTIFIER type-annot?
                     ;
-block               ::= O-BRACE (statement (SEMI statement)* SEMI?)? C-BRACE
+block               ::= O-BRACE statement* C-BRACE
                     ;
 type-annot          ::= COLON type-expr
                     ;

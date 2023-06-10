@@ -21,7 +21,6 @@ export const lexerTokenKinds = <const>[
     'o-angle',
     'c-angle',
     'colon',
-    'semi',
     'comma',
     'equals',
     'underscore',
@@ -91,7 +90,6 @@ export const constTokenKindMap: Map<TokenKind, string> = new Map([
     ['period', '.'],
 
     ['colon', ':'],
-    ['semi', ';'],
     ['comma', ','],
     ['equals', '='],
     ['underscore', '_'],

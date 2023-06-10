@@ -617,15 +617,16 @@ const parseParam = (parser: Parser): void => {
 }
 
 /**
- * block ::= O-BRACE (statement (SEMI statement)* SEMI?)? C-BRACE
+ * block ::= O-BRACE statement* C-BRACE
  */
 const parseBlock = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('o-brace')
     while (!parser.at('c-brace') && !parser.eof()) {
-        parseStatement(parser)
-        if (!parser.at('c-brace')) {
-            parser.expect('semi')
+        if (parser.atAny(statementFirstTokens)) {
+            parseStatement(parser)
+        } else {
+            parser.advanceWithError('expected statement or `}`')
         }
     }
     parser.expect('c-brace')

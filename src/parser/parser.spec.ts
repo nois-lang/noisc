@@ -98,8 +98,9 @@ describe('parser', () => {
             const { errors } = parse('if a { b) }')
             expect(errors.length).toEqual(1)
             expect(errors[0]).toEqual({
-                'expected': ['semi'],
-                'got': { 'kind': 'c-paren', 'location': { 'end': 8, 'start': 8 }, 'value': ')' }
+                'expected': [],
+                'got': { 'kind': 'c-paren', 'location': { 'end': 8, 'start': 8 }, 'value': ')' },
+                'message': 'expected statement or `}`'
             })
         })
 
