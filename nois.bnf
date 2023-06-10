@@ -3,15 +3,21 @@
 // TODO: match expression
 module              ::= statement*
                     ;
-statement           ::= var-def | fn-def | type-def | return-stmt | expr
+statement           ::= var-def | fn-def | kind-def | impl-def | type-def | return-stmt | expr
                     ;
   var-def           ::= LET-KEYWORD IDENTIFIER type-annot? EQUALS expr
                     ;
-  fn-def            ::= FN-KEYWORD IDENTIFIER type-params? O-PAREN params? C-PAREN type-annot? block?
+  fn-def            ::= FN-KEYWORD type-expr params? type-annot? block?
                     ;
-  type-def          ::= TYPE-KEYWORD type-expr (constr-params | constr-list)
+  kind-def          ::= KIND-KEYWORD type-expr block
                     ;
-    constr-params   ::= O-PAREN params? C-PAREN
+  impl-def          ::= IMPL-KEYWORD type-expr impl-for? block
+                    ;
+    impl-for        ::= FOR-KEYWORD type-expr
+                    ;
+  type-def          ::= TYPE-KEYWORD type-expr (constr-list | constr-params?)
+                    ;
+    constr-params   ::= O-BRACE (param (COMMA param)*)? COMMA? C-BRACE
                     ;
     constr-list     ::= O-BRACE (constructor (COMMA constructor)* COMMA?)? C-BRACE
                     ;
