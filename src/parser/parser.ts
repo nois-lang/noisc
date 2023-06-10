@@ -142,7 +142,7 @@ export class Parser {
             return
         }
 
-        this.errors.push({ expected: [kind], got: this.tokens[this.pos] })
+        this.error({ expected: [kind], got: this.tokens[this.pos] })
     }
 
     expectAny(kinds: TokenKind[]): void {
@@ -152,16 +152,22 @@ export class Parser {
             }
         }
 
-        this.errors.push({ expected: kinds, got: this.tokens[this.pos] })
+        this.error({ expected: kinds, got: this.tokens[this.pos] })
     }
 
     advanceWithError(message: string): void {
         const mark = this.open()
 
-        this.errors.push({ expected: [], got: this.tokens[this.pos], message })
+        this.error({ expected: [], got: this.tokens[this.pos], message })
 
         this.advance()
         this.close(mark, 'error')
+    }
+
+    error(e: SyntaxError): void {
+        if (this.errors.at(-1)?.got.location.start !== e.got.location.start) {
+            this.errors.push(e)
+        }
     }
 
     buildTree(): ParseTree {
