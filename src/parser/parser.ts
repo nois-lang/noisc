@@ -452,7 +452,7 @@ const parseSubExpr = (parser: Parser): void => {
 }
 
 /**
- * operand ::= if-expr | lambda-expr | O-PAREN expr C-PAREN | STRING | CHAR | NUMBER | identifier
+ * operand ::= if-expr | lambda-expr | O-PAREN expr C-PAREN | STRING | CHAR | NUMBER
  * | IDENTIFIER | type-expr
  */
 const parseOperand = (parser: Parser): void => {
@@ -469,8 +469,6 @@ const parseOperand = (parser: Parser): void => {
         parser.expect('c-paren')
     } else if (parser.at('identifier') && parser.nth(1) === 'o-angle') {
         parseTypeExpr(parser)
-    } else if (parser.at('identifier') && parser.nth(1) === 'o-brace') {
-        parseConstructor(parser)
     } else if (parser.atAny(dynamicTokens)) {
         parser.expectAny(dynamicTokens)
     } else {
@@ -581,7 +579,9 @@ const parsePrefixOp = (parser: Parser): void => {
  */
 const parsePostfixOp = (parser: Parser): void => {
     const mark = parser.open()
-    if (parser.at('o-paren')) {
+    if (parser.at('o-paren') && parser.nth(1) === 'identifier' && parser.nth(2) === 'colon') {
+        parseConOp(parser)
+    } else if (parser.at('o-paren')) {
         parseCallOp(parser)
     } else {
         parser.advanceWithError('expected postfix operator')
@@ -654,30 +654,18 @@ const parseLambdaParams = (parser: Parser): void => {
 }
 
 /**
- * constructor ::= IDENTIFIER con-params?
+ * con-op ::= O-PAREN (field-init (COMMA field-init)*)? COMMA? C-PAREN
  */
-const parseConstructor = (parser: Parser): void => {
+const parseConOp = (parser: Parser): void => {
     const mark = parser.open()
-    parser.expect('identifier')
-    if (parser.at('o-brace')) {
-        parseConParams(parser)
-    }
-    parser.close(mark, 'constructor')
-}
-
-/**
- * con-params ::= O-BRACE (field-init (COMMA field-init)*)? COMMA? C-BRACE
- */
-const parseConParams = (parser: Parser): void => {
-    const mark = parser.open()
-    parser.expect('o-brace')
+    parser.expect('o-paren')
     while (parser.atAny(paramFirstTokens) && !parser.eof()) {
         parseFieldInit(parser)
-        if (!parser.at('c-brace')) {
+        if (!parser.at('c-paren')) {
             parser.expect('comma')
         }
     }
-    parser.expect('c-brace')
+    parser.expect('c-paren')
     parser.close(mark, 'con-params')
 }
 

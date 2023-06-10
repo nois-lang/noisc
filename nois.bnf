@@ -34,7 +34,6 @@ statement           ::= var-def | fn-def | kind-def | impl-def | type-def | retu
                     | STRING
                     | CHAR
                     | NUMBER
-                    | constructor
                     | IDENTIFIER
                     | type-expr
                     ;
@@ -63,21 +62,19 @@ statement           ::= var-def | fn-def | kind-def | impl-def | type-def | retu
       spread-op     ::= PERIOD PERIOD
                     ;
 
-    postfix-op      ::= call-op
+    postfix-op      ::= call-op | con-op
                     ;
       call-op       ::= args
                     ;
         args        ::= O-PAREN (expr (COMMA expr)*)? COMMA? C-PAREN
                     ;
+      con-op        ::= O-PAREN (field-init (COMMA field-init)*)? COMMA? C-PAREN
+                    ;
+        field-init  ::= IDENTIFIER COLON expr
+                    ;
     lambda-expr     ::= lambda-params type-annot? (block | expr)
                     ;
       lambda-params ::= PIPE (param (COMMA param)*)? COMMA? PIPE
-                    ;
-    constructor     ::= IDENTIFIER con-params?
-                    ;
-      con-params    ::= O-BRACE (field-init (COMMA field-init)*)? COMMA? C-BRACE
-                    ;
-      field-init    ::= IDENTIFIER COLON expr
                     ;
     params          ::= O-PAREN (param (COMMA param)*)? COMMA? C-PAREN
                     ;
