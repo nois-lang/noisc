@@ -33,8 +33,10 @@ export const prettyIndex = (index: number, source: Source, context: number = 0):
     const start = indexToLocation(index, source)
     if (!start) return '<outside of a file>'
     const highlight = ' '.repeat(6 + start.column) + '^'
-    const linesBefore = range(0, context).map(i => start.line + i - context).map(i => prettyLine(i, source))
-    const linesAfter = range(0, context).map(i => start.line + i + context).map(i => prettyLine(i, source))
+    const linesBefore = range(0, Math.min(context, start.line)).map(i => start.line + i - context).map(i => prettyLine(i, source))
+    const totalLines = source.str.split('\n').filter(l => l.length === 0).length
+    const linesAfterCount = Math.min(context, Math.max(0, totalLines - 1 - start.line))
+    const linesAfter = range(0, linesAfterCount).map(i => start.line + i + context).map(i => prettyLine(i, source))
 
     return [linesBefore.join('\n'), prettyLine(start.line, source), highlight, linesAfter.join('\n')].join('\n')
 }
