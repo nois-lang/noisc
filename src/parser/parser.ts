@@ -89,6 +89,7 @@ export class Parser {
     open(): number {
         const mark = this.events.length
         this.events.push({ type: 'open', kind: 'error' })
+        this.advanceIndependent()
         return mark
     }
 
@@ -97,13 +98,19 @@ export class Parser {
         this.events.push({ type: 'close' })
     }
 
-    advance(skipIndependent: boolean = true): void {
+    advance(independent: boolean = true): void {
         if (this.eof()) throw Error('eof')
         this.fuel = 256
         this.events.push({ type: 'advance' })
         this.pos++
+        if (independent) {
+            this.advanceIndependent()
+        }
+    }
+
+    advanceIndependent(): void {
         // TODO: attach comments to the preceding tree instead
-        if (skipIndependent && !this.eof() && independentTokenKinds.some(t => t === this.tokens[this.pos].kind)) {
+        if (!this.eof() && independentTokenKinds.some(t => t === this.tokens[this.pos].kind)) {
             this.advance()
         }
     }
@@ -267,15 +274,12 @@ const parseVarDef = (parser: Parser): void => {
 }
 
 /**
- * fn-def ::= FN-KEYWORD IDENTIFIER type-params? O-PAREN params? C-PAREN type-annot? block?
+ * fn-def ::= FN-KEYWORD type-expr O-PAREN params? C-PAREN type-annot? block?
  */
 const parseFnDef = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('fn-keyword')
-    parser.expect('identifier')
-    if (parser.at('o-angle')) {
-        parseTypeParams(parser)
-    }
+    parseTypeExpr(parser)
     if (parser.at('o-paren')) {
         parseParams(parser)
     }
