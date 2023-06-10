@@ -12,15 +12,15 @@ statement           ::= var-def | fn-def | kind-def | impl-def | type-def | retu
                     ;
     impl-for        ::= FOR-KEYWORD type-expr
                     ;
-  type-def          ::= TYPE-KEYWORD type-expr (constr-list | constr-params?)
+  type-def          ::= TYPE-KEYWORD type-expr (type-con-list | type-con-params?)
                     ;
-    constr-params   ::= O-PAREN (field-def (COMMA field-def)*)? COMMA? C-PAREN
+    type-con-params ::= O-PAREN (field-def (COMMA field-def)*)? COMMA? C-PAREN
                     ;
       field-def     ::= IDENTIFIER type-annot
                     ;
-    constr-list     ::= O-BRACE (constructor (COMMA constructor)* COMMA?)? C-BRACE
+    type-con-list   ::= O-BRACE (type-con (COMMA type-con)* COMMA?)? C-BRACE
                     ;
-      constructor   ::= IDENTIFIER constr-params?
+      type-con      ::= IDENTIFIER type-con-params?
                     ;
   return-stmt       ::= RETURN-KEYWORD expr?
                     ;

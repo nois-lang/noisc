@@ -11,10 +11,10 @@ export const treeKinds = <const>[
     'impl-def',
     'impl-for',
     'type-def',
-    'constr-params',
+    'type-con-params',
     'field-def',
-    'constr-list',
-    'constructor',
+    'type-con-list',
+    'type-con',
     'return-stmt',
     'expr',
     'sub-expr',
@@ -336,24 +336,24 @@ const parseImplFor = (parser: Parser): void => {
 }
 
 /**
- * type-def ::= TYPE-KEYWORD type-expr (constr-params? | constr-list)
+ * type-def ::= TYPE-KEYWORD type-expr (type-con-params? | type-con-list)
  */
 const parseTypeDef = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('type-keyword')
     parseTypeExpr(parser)
     if (parser.at('o-paren')) {
-        parseConstrParams(parser)
+        parseTypeConParams(parser)
     } else if (parser.at('o-brace')) {
-        parseConstrList(parser)
+        parseTypeConList(parser)
     }
     parser.close(mark, 'type-def')
 }
 
 /**
- * constr-params ::= O-PAREN (field-def (COMMA field-def)*)? COMMA? C-PAREN
+ * type-con-params ::= O-PAREN (field-def (COMMA field-def)*)? COMMA? C-PAREN
  */
-const parseConstrParams = (parser: Parser): void => {
+const parseTypeConParams = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('o-paren')
     while (parser.atAny(paramFirstTokens) && !parser.eof()) {
@@ -363,7 +363,7 @@ const parseConstrParams = (parser: Parser): void => {
         }
     }
     parser.expect('c-paren')
-    parser.close(mark, 'constr-params')
+    parser.close(mark, 'type-con-params')
 }
 
 /**
@@ -377,31 +377,31 @@ const parseFieldDef = (parser: Parser): void => {
 }
 
 /**
- * constr-list ::= O-BRACE (constructor (COMMA constructor)* COMMA?)? C-BRACE
+ * type-con-list ::= O-BRACE (type-con (COMMA type-con)* COMMA?)? C-BRACE
  */
-const parseConstrList = (parser: Parser): void => {
+const parseTypeConList = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('o-brace')
     while (!parser.at('c-brace') && !parser.eof()) {
-        parseConstructor(parser)
+        parseTypeCon(parser)
         if (!parser.at('c-brace')) {
             parser.expect('comma')
         }
     }
     parser.expect('c-brace')
-    parser.close(mark, 'constr-list')
+    parser.close(mark, 'type-con-list')
 }
 
 /**
- * constructor ::= IDENTIFIER constr-params?
+ * type-con ::= IDENTIFIER con-params?
  */
-const parseConstructor = (parser: Parser): void => {
+const parseTypeCon = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('identifier')
     if (parser.at('o-paren')) {
-        parseConstrParams(parser)
+        parseTypeConParams(parser)
     }
-    parser.close(mark, 'constructor')
+    parser.close(mark, 'type-con')
 }
 
 /**
