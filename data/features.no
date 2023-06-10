@@ -1,0 +1,112 @@
+// type
+type Unit
+
+// sum type
+type Vec2(x: Float, y: Float)
+
+// variant type
+type Option<T> {
+    Some(value: T),
+    None
+}
+
+// function
+fn add(a: Int, b: Int): Int { a + b }
+
+// function generics
+fn pushIf<T>(flag: Bool, l: List<T>, item: T): Unit {
+    if (flag) {
+        l.push(item)
+    }
+}
+
+fn foo(): Unit {
+    // constructor
+    // TODO: floats
+    // let vec = Vec2(x: 2., y: 4.)
+    let vec = Vec2(x: 2, y: 4)
+
+    // field accessor
+    vec.x
+
+    // function call
+    print("hello")
+
+    // method call
+    vec.fmt()
+
+    // alternative syntax
+    Vec2.fmt(vec)
+
+    // TODO: method call syntax for ambiguous methods
+    // Vec2.Display.fmt(vec)
+
+    // if
+    let a = if True { 4 } else { 2 + 6 }
+
+    // TODO: loops
+
+    // TODO: destructuring
+    // let Vec { x } = vec
+
+    // TODO: match
+    // let b = match 4 {
+    //     1 -> "one",
+    //     n if n % 2 == 0 -> {
+    //         if (n > 5) { "good" } else { "not good" }
+    //     },
+    //     _ -> "whatever",
+    // }
+
+    // TODO: destructuring & patterns
+    // match type
+    // let b = match vec {
+    //     Vec { x: 1, y: 1 } -> "one",
+    //     Vec { x: 1, .. } -> "x one whatever",
+    //     Vec { x } if x != 4  -> format("x is {} not 4", x),
+    //     _ -> "whatever",
+    // }
+
+    // TODO: if match
+    // if let Option { value } = Some(42) {
+    //     print("value is {}", value)
+    // } else {
+    //     print("no value")
+    // }
+
+    // lambda
+    let square = |a| a^2
+    let here = || print("here")
+
+    // fn reference
+    let p = print
+
+    // method reference
+    // equivalent to |v: Vec2| v.fmt()
+    let p = Vec2.fmt
+}
+
+// define variable
+let a = 4
+
+// literals
+let i = 12
+let f = 12.34
+let c = 'a'
+let s = "abc"
+let b = True // note: this is a type constructor of a variant type Bool and technically not a literal
+// TODO: list literals
+// let l = [1, 2, 3]
+
+// kind
+kind Display {
+    fn fmt(self, args: List<Display>): String
+}
+
+// impl
+impl Display for Vec2 {
+    fn fmt(self): String {
+        formatStruct(self)
+    }
+}
+
