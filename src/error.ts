@@ -21,10 +21,6 @@ export const prettySyntaxError = (error: SyntaxError): string => {
 export const prettySourceMessage = (message: string, index: number, source: Source): string => {
     const location = indexToLocation(index, source)
     const locationStr = `${location ? `${source.filename}:${prettyLocation(location)}` : '<unknwon location>'}`
-    const indent = ' '.repeat(4)
-    return `\
-${prettyIndex(index, source)}
-${message}
-${indent}at ${locationStr}
-`
+    const locationMsg = `${' '.repeat(2)}at ${locationStr}`
+    return [message, locationMsg, '\n' + prettyIndex(index, source, 1) + '\n'].join('\n')
 }
