@@ -221,7 +221,8 @@ const postfixOpFirstTokens: TokenKind[] = ['o-paren']
 const infixOpFirstTokens: TokenKind[] = ['ampersand', 'asterisk', 'c-angle', 'caret', 'equals', 'excl', 'minus',
     'o-angle', 'percent', 'period', 'pipe', 'plus', 'slash']
 const exprFirstTokens: TokenKind[] = ['char', 'identifier', 'if-keyword', 'number', 'o-paren', 'string', ...prefixOpFirstTokens]
-const statementFirstTokens: TokenKind[] = ['let-keyword', 'fn-keyword', 'return-keyword', 'type-keyword', ...exprFirstTokens]
+const statementFirstTokens: TokenKind[] = ['let-keyword', 'fn-keyword', 'kind-keyword', 'impl-keyword', 'type-keyword',
+    'return-keyword', 'type-keyword', ...exprFirstTokens]
 const paramFirstTokens: TokenKind[] = ['identifier']
 
 const exprFollowTokens: TokenKind[] = ['c-brace', 'c-paren', 'char', 'comma', 'excl', 'identifier', 'if-keyword',
@@ -308,7 +309,7 @@ const parseFnDef = (parser: Parser): void => {
  */
 const parseKindDef = (parser: Parser): void => {
     const mark = parser.open()
-    parser.expect('type-keyword')
+    parser.expect('kind-keyword')
     parseTypeExpr(parser)
     parseBlock(parser)
     parser.close(mark, 'kind-def')
@@ -319,7 +320,7 @@ const parseKindDef = (parser: Parser): void => {
  */
 const parseImplDef = (parser: Parser): void => {
     const mark = parser.open()
-    parser.expect('type-keyword')
+    parser.expect('impl-keyword')
     parseTypeExpr(parser)
     if (parser.at('for-keyword')) {
         parseImplFor(parser)

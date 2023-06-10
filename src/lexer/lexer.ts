@@ -69,6 +69,7 @@ export const constTokenKindMap: Map<TokenKind, string> = new Map([
     ['impl-keyword', 'impl'],
     ['let-keyword', 'let'],
     ['fn-keyword', 'fn'],
+    ['for-keyword', 'for'],
 
     ['o-paren', '('],
     ['c-paren', ')'],
