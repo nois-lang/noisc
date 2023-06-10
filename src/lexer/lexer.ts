@@ -191,7 +191,14 @@ const parseNewline = (chars: string[], tokens: ParseToken[], pos: { pos: number 
 
 const parseConstToken = (chars: string[], tokens: ParseToken[], pos: { pos: number }): boolean => {
     let codeLeft = chars.slice(pos.pos).join('')
-    let pair = [...constTokenKindMap.entries()].find(([, v]) => codeLeft.startsWith(v))
+    let pair = [...constTokenKindMap.entries()].find(([, v]) => {
+        if (!isAlpha(v[0])) {
+            return codeLeft.startsWith(v)
+        } else {
+            const trailingChar = codeLeft.at(v.length)
+            return codeLeft.startsWith(v) && (!trailingChar || !isAlpha(trailingChar))
+        }
+    })
     if (pair) {
         const [kind, value] = pair
         const start = pos.pos
