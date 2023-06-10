@@ -43,6 +43,9 @@ export const treeKinds = <const>[
     'args',
     'lambda-expr',
     'lambda-params',
+    'constructor',
+    'con-params',
+    'field-init',
     'params',
     'param',
     'block',
@@ -448,7 +451,8 @@ const parseSubExpr = (parser: Parser): void => {
 }
 
 /**
- * operand ::= if-expr | lambda-expr | O-PAREN expr C-PAREN | STRING | CHAR | NUMBER | IDENTIFIER | type-expr
+ * operand ::= if-expr | lambda-expr | O-PAREN expr C-PAREN | STRING | CHAR | NUMBER | identifier
+ * | IDENTIFIER | type-expr
  */
 const parseOperand = (parser: Parser): void => {
     const dynamicTokens: TokenKind[] = ['string', 'char', 'number', 'identifier']
@@ -464,6 +468,8 @@ const parseOperand = (parser: Parser): void => {
         parser.expect('c-paren')
     } else if (parser.at('identifier') && parser.nth(1) === 'o-angle') {
         parseTypeExpr(parser)
+    } else if (parser.at('identifier') && parser.nth(1) === 'o-brace') {
+        parseConstructor(parser)
     } else if (parser.atAny(dynamicTokens)) {
         parser.expectAny(dynamicTokens)
     } else {
@@ -644,6 +650,45 @@ const parseLambdaParams = (parser: Parser): void => {
     }
     parser.expect('pipe')
     parser.close(mark, 'lambda-params')
+}
+
+/**
+ * constructor ::= IDENTIFIER con-params?
+ */
+const parseConstructor = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('identifier')
+    if (parser.at('o-brace')) {
+        parseConParams(parser)
+    }
+    parser.close(mark, 'constructor')
+}
+
+/**
+ * con-params ::= O-BRACE (field-init (COMMA field-init)*)? COMMA? C-BRACE
+ */
+const parseConParams = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('o-brace')
+    while (parser.atAny(paramFirstTokens) && !parser.eof()) {
+        parseFieldInit(parser)
+        if (!parser.at('c-brace')) {
+            parser.expect('comma')
+        }
+    }
+    parser.expect('c-brace')
+    parser.close(mark, 'con-params')
+}
+
+/**
+ * field-init ::= IDENTIFIER COLON expr
+ */
+const parseFieldInit = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('identifier')
+    parser.expect('colon')
+    parseExpr(parser)
+    parser.close(mark, 'field-init')
 }
 
 /**
