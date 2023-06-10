@@ -10,6 +10,7 @@ export const lexerTokenKinds = <const>[
     'if-keyword',
     'else-keyword',
     'return-keyword',
+    'for-keyword',
 
     // punctuation
     'o-paren',

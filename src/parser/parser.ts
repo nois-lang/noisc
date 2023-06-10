@@ -7,6 +7,9 @@ export const treeKinds = <const>[
     'statement',
     'var-def',
     'fn-def',
+    'kind-def',
+    'impl-def',
+    'impl-for',
     'type-def',
     'constr-params',
     'constr-list',
@@ -236,7 +239,7 @@ export const parseModule = (parser: Parser): void => {
 }
 
 /**
- * statement ::= var-def | fn-def | type-def | return-stmt | expr
+ * statement ::= var-def | fn-def | kind-def | impl-def | type-def | return-stmt | expr
  */
 const parseStatement = (parser: Parser): void => {
     const mark = parser.open()
@@ -245,6 +248,10 @@ const parseStatement = (parser: Parser): void => {
         parseVarDef(parser)
     } else if (parser.at('fn-keyword')) {
         parseFnDef(parser)
+    } else if (parser.at('kind-keyword')) {
+        parseKindDef(parser)
+    } else if (parser.at('impl-keyword')) {
+        parseImplDef(parser)
     } else if (parser.at('type-keyword')) {
         parseTypeDef(parser)
     } else if (parser.at('return-keyword')) {
@@ -290,6 +297,41 @@ const parseFnDef = (parser: Parser): void => {
         parseBlock(parser)
     }
     parser.close(mark, 'fn-def')
+}
+
+/**
+ * kind-def ::= KIND-KEYWORD type-expr block
+ */
+const parseKindDef = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('type-keyword')
+    parseTypeExpr(parser)
+    parseBlock(parser)
+    parser.close(mark, 'kind-def')
+}
+
+/**
+ * impl-def ::= IMPL-KEYWORD type-expr impl-for? block
+ */
+const parseImplDef = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('type-keyword')
+    parseTypeExpr(parser)
+    if (parser.at('for-keyword')) {
+        parseImplFor(parser)
+    }
+    parseBlock(parser)
+    parser.close(mark, 'impl-def')
+}
+
+/**
+ * impl-for ::= FOR-KEYWORD type-expr
+ */
+const parseImplFor = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('for-keyword')
+    parseTypeExpr(parser)
+    parser.close(mark, 'impl-for')
 }
 
 /**

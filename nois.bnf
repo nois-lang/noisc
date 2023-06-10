@@ -1,6 +1,3 @@
-// TODO: boolean
-// TODO: list constructor
-// TODO: match expression
 module              ::= statement*
                     ;
 statement           ::= var-def | fn-def | kind-def | impl-def | type-def | return-stmt | expr
