@@ -20,7 +20,7 @@ describe('parser', () => {
                     'statement': [{
                         'fn-def': [
                             { 'fn-keyword': 'fn' },
-                            { 'identifier': 'main' },
+                            { 'type-expr': [{ 'identifier': 'main' }] },
                             { 'params': [{ 'o-paren': '(' }, { 'c-paren': ')' }] },
                             { 'block': [{ 'o-brace': '{' }, { 'c-brace': '}' }] }
                         ]

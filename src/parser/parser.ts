@@ -310,14 +310,19 @@ const parseTypeDef = (parser: Parser): void => {
 }
 
 /**
- * constr-params ::= O-PAREN params? C-PAREN
+ * constr-params ::= O-BRACE (param (COMMA param)*)? COMMA? C-BRACE
  */
 const parseConstrParams = (parser: Parser): void => {
     const mark = parser.open()
-    if (parser.at('o-paren')) {
-        parseParams(parser)
+    parser.expect('o-brace')
+    while (parser.atAny(paramFirstTokens) && !parser.eof()) {
+        parseParam(parser)
+        if (!parser.at('c-brace')) {
+            parser.expect('comma')
+        }
     }
-    parser.close(mark, 'constr-params')
+    parser.expect('c-brace')
+    parser.close(mark, 'params')
 }
 
 /**
