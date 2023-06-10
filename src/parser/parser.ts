@@ -12,6 +12,7 @@ export const treeKinds = <const>[
     'impl-for',
     'type-def',
     'constr-params',
+    'field-def',
     'constr-list',
     'constructor',
     'return-stmt',
@@ -335,7 +336,7 @@ const parseImplFor = (parser: Parser): void => {
 }
 
 /**
- * type-def ::= TYPE-KEYWORD type-expr (constr-params | constr-list)
+ * type-def ::= TYPE-KEYWORD type-expr (constr-params? | constr-list)
  */
 const parseTypeDef = (parser: Parser): void => {
     const mark = parser.open()
@@ -345,26 +346,34 @@ const parseTypeDef = (parser: Parser): void => {
         parseConstrParams(parser)
     } else if (parser.at('o-brace')) {
         parseConstrList(parser)
-    } else {
-        parser.advanceWithError('expected `(` or `{`')
     }
     parser.close(mark, 'type-def')
 }
 
 /**
- * constr-params ::= O-BRACE (param (COMMA param)*)? COMMA? C-BRACE
+ * constr-params ::= O-PAREN (field-def (COMMA field-def)*)? COMMA? C-PAREN
  */
 const parseConstrParams = (parser: Parser): void => {
     const mark = parser.open()
-    parser.expect('o-brace')
+    parser.expect('o-paren')
     while (parser.atAny(paramFirstTokens) && !parser.eof()) {
-        parseParam(parser)
-        if (!parser.at('c-brace')) {
+        parseFieldDef(parser)
+        if (!parser.at('c-paren')) {
             parser.expect('comma')
         }
     }
-    parser.expect('c-brace')
-    parser.close(mark, 'params')
+    parser.expect('c-paren')
+    parser.close(mark, 'constr-params')
+}
+
+/**
+ * field-def ::= IDENTIFIER type-annot
+ */
+const parseFieldDef = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('identifier')
+    parseTypeAnnot(parser)
+    parser.close(mark, 'field-def')
 }
 
 /**
@@ -389,10 +398,8 @@ const parseConstrList = (parser: Parser): void => {
 const parseConstructor = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('identifier')
-    if (!parser.atAny(['comma', 'c-paren'])) {
+    if (parser.at('o-paren')) {
         parseConstrParams(parser)
-    } else {
-        parser.advanceWithError('expected constructor')
     }
     parser.close(mark, 'constructor')
 }

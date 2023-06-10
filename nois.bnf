@@ -14,7 +14,9 @@ statement           ::= var-def | fn-def | kind-def | impl-def | type-def | retu
                     ;
   type-def          ::= TYPE-KEYWORD type-expr (constr-list | constr-params?)
                     ;
-    constr-params   ::= O-BRACE (param (COMMA param)*)? COMMA? C-BRACE
+    constr-params   ::= O-PAREN (field-def (COMMA field-def)*)? COMMA? C-PAREN
+                    ;
+      field-def     ::= IDENTIFIER type-annot
                     ;
     constr-list     ::= O-BRACE (constructor (COMMA constructor)* COMMA?)? C-BRACE
                     ;
