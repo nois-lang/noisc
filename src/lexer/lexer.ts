@@ -99,7 +99,7 @@ export const constTokenKindMap: Map<TokenKind, string> = new Map([
 ])
 
 const intRegex = /^\d+/
-const floatRegex = /^((\d+\.\d*)|(\d*\.\d+)|(\d+e[+-]?\d+))/
+const floatRegex = /^((\d+(\.\d*)?e[+-]?\d+)|(\d+\.\d*)|(\d*\.\d+))/
 
 /**
  * Independent tokens are automatically advanced by parser by default
@@ -132,7 +132,7 @@ export const tokenize = (code: String): ParseToken[] => {
             continue
         }
 
-        const fns = [parseComment, parseNewline, parseConstToken, parseIdentifier, parseFloat, parseInt,
+        const fns = [parseFloat, parseInt, parseComment, parseNewline, parseConstToken, parseIdentifier,
             parseCharLiteral, parseStringLiteral]
 
         let parsed = false

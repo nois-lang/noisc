@@ -32,7 +32,7 @@ let main = (): Unit {
     })
 
     describe('tokenize int', () => {
-        it('tokenize int simple', () => {
+        it('simple', () => {
             expect(tokenize('14 2 0')).toEqual([
                 { kind: 'int', value: '14', location: { start: 0, end: 1 } },
                 { kind: 'int', value: '2', location: { start: 3, end: 3 } },
@@ -43,12 +43,31 @@ let main = (): Unit {
     })
 
     describe('tokenize float', () => {
-        it('tokenize float simple', () => {
+        it('simple', () => {
             expect(tokenize('14.0 2.0 0.0')).toEqual([
                 { kind: 'float', value: '14.0', location: { start: 0, end: 3 } },
                 { kind: 'float', value: '2.0', location: { start: 5, end: 7 } },
                 { kind: 'float', value: '0.0', location: { start: 9, end: 11 } },
                 { kind: 'eof', value: '', location: { start: 12, end: 12 } }
+            ])
+        })
+
+        it('shorthand', () => {
+            expect(tokenize('14. .0 0. .11')).toEqual([
+                { kind: 'float', value: '14.', location: { start: 0, end: 2 } },
+                { kind: 'float', value: '.0', location: { start: 4, end: 5 } },
+                { kind: 'float', value: '0.', location: { start: 7, end: 8 } },
+                { kind: 'float', value: '.11', location: { start: 10, end: 12 } },
+                { kind: 'eof', value: '', location: { start: 13, end: 13 } }
+            ])
+        })
+
+        it('scientific', () => {
+            expect(tokenize('1e5 0e2 123.54e-1034')).toEqual([
+                { kind: 'float', value: '1e5', location: { start: 0, end: 2 } },
+                { kind: 'float', value: '0e2', location: { start: 4, end: 6 } },
+                { kind: 'float', value: '123.54e-1034', location: { start: 8, end: 19 } },
+                { kind: 'eof', value: '', location: { start: 20, end: 20 } }
             ])
         })
     })
