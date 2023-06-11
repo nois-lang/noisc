@@ -235,8 +235,7 @@ const parseSubExpr = (parser: Parser): void => {
 }
 
 /**
- * operand ::= if-expr | lambda-expr | O-PAREN expr C-PAREN | STRING | CHAR | NUMBER
- * | IDENTIFIER | type-expr
+ * operand ::= if-expr | lambda-expr | O-PAREN expr C-PAREN | list-expr | STRING | CHAR | NUMBER | IDENTIFIER | type-expr
  */
 const parseOperand = (parser: Parser): void => {
     const dynamicTokens: TokenKind[] = ['string', 'char', 'int', 'float', 'identifier']
@@ -250,6 +249,8 @@ const parseOperand = (parser: Parser): void => {
         parser.expect('o-paren')
         parseExpr(parser)
         parser.expect('c-paren')
+    } else if (parser.at('o-bracket')) {
+        parseListExpr(parser)
     } else if (parser.at('identifier') && parser.nth(1) === 'o-angle') {
         parseTypeExpr(parser)
     } else if (parser.atAny(dynamicTokens)) {
@@ -259,6 +260,22 @@ const parseOperand = (parser: Parser): void => {
     }
 
     parser.close(mark, 'operand')
+}
+
+/**
+ * list-expr ::= O-BRACKET (expr (COMMA expr)*)? COMMA? C-BRACKET
+ */
+const parseListExpr = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('o-bracket')
+    while (parser.atAny(exprFirstTokens) && !parser.eof()) {
+        parseExpr(parser)
+        if (!parser.at('c-bracket')) {
+            parser.expect('comma')
+        }
+    }
+    parser.expect('c-bracket')
+    parser.close(mark, 'list-expr')
 }
 
 /**

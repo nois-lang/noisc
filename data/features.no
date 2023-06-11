@@ -41,8 +41,8 @@ let f = 12.34
 let c = 'a'
 let s = "abc"
 let b = True // note: this is a constructor of a variant type Bool and technically not a literal
-// TODO: list literals
-// let l = [1, 2, 3]
+// list literals
+let l = [1, 2, 3]
 
 // constructor
 let vec = Vec2(x: 2., y: 4.)

@@ -19,6 +19,7 @@ export const treeKinds = <const>[
     'expr',
     'sub-expr',
     'operand',
+    'list-expr',
     'infix-op',
     'add-op',
     'sub-op',

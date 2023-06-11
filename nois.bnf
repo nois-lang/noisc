@@ -31,11 +31,14 @@ statement           ::= var-def | fn-def | kind-def | impl-def | type-def | retu
       operand       ::= if-expr
                     | lambda-expr
                     | O-PAREN expr C-PAREN
+                    | list-expr
                     | STRING
                     | CHAR
                     | NUMBER
                     | IDENTIFIER
                     | type-expr
+                    ;
+        list-expr   ::= O-BRACKET (expr (COMMA expr)*)? COMMA? C-BRACKET
                     ;
     infix-op        ::= add-op | sub-op | mul-op | div-op | exp-op | mod-op | access-op | eq-op | ne-op
                     | ge-op | le-op | gt-op | lt-op | and-op | or-op;
