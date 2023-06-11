@@ -21,7 +21,7 @@ let main = (): Unit {
             ['newline', '\n'],
             ['identifier', 'print'],
             ['o-paren', '('],
-            ['number', '4'],
+            ['int', '4'],
             ['c-paren', ')'],
             ['newline', '\n'],
             ['c-brace', '}'],
@@ -31,11 +31,26 @@ let main = (): Unit {
         expect(tokens.at(-1)!.location).toEqual({ start: 33, end: 33 })
     })
 
-    it('tokenize number literal simple', () => {
-        expect(tokenize('14')).toEqual([
-            { kind: 'number', value: '14', location: { start: 0, end: 1 } },
-            { kind: 'eof', value: '', location: { start: 2, end: 2 } }
-        ])
+    describe('tokenize int', () => {
+        it('tokenize int simple', () => {
+            expect(tokenize('14 2 0')).toEqual([
+                { kind: 'int', value: '14', location: { start: 0, end: 1 } },
+                { kind: 'int', value: '2', location: { start: 3, end: 3 } },
+                { kind: 'int', value: '0', location: { start: 5, end: 5 } },
+                { kind: 'eof', value: '', location: { start: 6, end: 6 } }
+            ])
+        })
+    })
+
+    describe('tokenize float', () => {
+        it('tokenize float simple', () => {
+            expect(tokenize('14.0 2.0 0.0')).toEqual([
+                { kind: 'float', value: '14.0', location: { start: 0, end: 3 } },
+                { kind: 'float', value: '2.0', location: { start: 5, end: 7 } },
+                { kind: 'float', value: '0.0', location: { start: 9, end: 11 } },
+                { kind: 'eof', value: '', location: { start: 12, end: 12 } }
+            ])
+        })
     })
 
     it('tokenize string literal', () => {
@@ -55,7 +70,7 @@ let main = (): Unit {
     it('tokenize expression', () => {
         const tokens = tokenize(`1+call("str").ok() / (12 - a())`)
         expect(tokens.map(t => [t.kind, t.value])).toEqual([
-            ['number', '1'],
+            ['int', '1'],
             ['plus', '+'],
             ['identifier', 'call'],
             ['o-paren', '('],
@@ -67,7 +82,7 @@ let main = (): Unit {
             ['c-paren', ')'],
             ['slash', '/'],
             ['o-paren', '('],
-            ['number', '12'],
+            ['int', '12'],
             ['minus', '-'],
             ['identifier', 'a'],
             ['o-paren', '('],
@@ -81,7 +96,7 @@ let main = (): Unit {
         expect(tokenize(`hello ~~~ 123`)).toEqual([
             { kind: 'identifier', value: 'hello', location: { start: 0, end: 4 } },
             { kind: 'unknown', value: '~~~', location: { start: 6, end: 8 } },
-            { kind: 'number', value: '123', location: { start: 10, end: 12 } },
+            { kind: 'int', value: '123', location: { start: 10, end: 12 } },
             { kind: 'eof', value: '', location: { start: 13, end: 13 } }
         ])
     })
@@ -90,7 +105,7 @@ let main = (): Unit {
         expect(tokenize(`//this is 4\n4`)).toEqual([
             { 'kind': 'comment', 'location': { 'end': 10, 'start': 0 }, 'value': '//this is 4' },
             { 'kind': 'newline', 'location': { 'end': 11, 'start': 11 }, 'value': '\n' },
-            { 'kind': 'number', 'location': { 'end': 12, 'start': 12 }, 'value': '4' },
+            { 'kind': 'int', 'location': { 'end': 12, 'start': 12 }, 'value': '4' },
             { 'kind': 'eof', 'location': { 'end': 13, 'start': 13 }, 'value': '' }
         ])
     })

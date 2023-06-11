@@ -42,7 +42,8 @@ export const lexerTokenKinds = <const>[
     'identifier',
     'string',
     'char',
-    'number',
+    'int',
+    'float',
 
     // parse independent
     'newline',
@@ -97,6 +98,9 @@ export const constTokenKindMap: Map<TokenKind, string> = new Map([
     ['underscore', '_'],
 ])
 
+const intRegex = /^\d+/
+const floatRegex = /^((\d+\.\d*)|(\d*\.\d+)|(\d+e[+-]?\d+))/
+
 /**
  * Independent tokens are automatically advanced by parser by default
  */
@@ -128,8 +132,8 @@ export const tokenize = (code: String): ParseToken[] => {
             continue
         }
 
-        const fns = [parseComment, parseNewline, parseConstToken, parseIdentifier, parseNumberLiteral, parseCharLiteral,
-            parseStringLiteral]
+        const fns = [parseComment, parseNewline, parseConstToken, parseIdentifier, parseFloat, parseInt,
+            parseCharLiteral, parseStringLiteral]
 
         let parsed = false
         for (const f of fns) {
@@ -223,33 +227,33 @@ const parseIdentifier = (chars: string[], tokens: ParseToken[], pos: { pos: numb
     return false
 }
 
-/**
- *
- * TODO: floats
- * TODO: sign
- * TODO: scientific notation
- *
- * @param chars
- * @param tokens
- * @param pos
- */
-const parseNumberLiteral = (chars: string[], tokens: ParseToken[], pos: { pos: number }): boolean => {
-    if (isNumeric(chars[pos.pos])) {
-        const start = pos.pos
-        const number: string[] = []
-        while (isNumeric(chars[pos.pos])) {
-            number.push(chars[pos.pos])
-            pos.pos++
-        }
-        // TODO: verify literal
-        tokens.push(createToken('number', number.join(''), pos, start))
-        return true
-    }
-    return false
+const parseFloat = (chars: string[], tokens: ParseToken[], pos: { pos: number }): boolean => {
+    const leftCode = chars.slice(pos.pos).join('')
+    const match = leftCode.match(floatRegex)
+    if (!match) return false
+
+    const float = match[0]
+    const start = pos.pos
+    pos.pos += float.length
+    tokens.push(createToken('float', float, pos, start))
+    return true
+}
+
+const parseInt = (chars: string[], tokens: ParseToken[], pos: { pos: number }): boolean => {
+    const leftCode = chars.slice(pos.pos).join('')
+    const match = leftCode.match(intRegex)
+    if (!match) return false
+
+    const int = match[0]
+    const start = pos.pos
+    pos.pos += int.length
+    tokens.push(createToken('int', int, pos, start))
+    return true
 }
 
 /**
  * TODO: escape characters
+ * TODO: UTF characters
  *
  * @param chars
  * @param tokens
@@ -275,6 +279,7 @@ const parseCharLiteral = (chars: string[], tokens: ParseToken[], pos: { pos: num
 
 /**
  * TODO: escape characters
+ * TODO: UTF characters
  *
  * @param chars
  * @param tokens

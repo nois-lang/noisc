@@ -5,13 +5,11 @@ const prefixOpFirstTokens: TokenKind[] = ['excl', 'minus', 'period', 'plus']
 const postfixOpFirstTokens: TokenKind[] = ['o-paren']
 const infixOpFirstTokens: TokenKind[] = ['ampersand', 'asterisk', 'c-angle', 'caret', 'equals', 'excl', 'minus',
     'o-angle', 'percent', 'period', 'pipe', 'plus', 'slash']
-const exprFirstTokens: TokenKind[] = ['char', 'identifier', 'if-keyword', 'number', 'o-paren', 'string', ...prefixOpFirstTokens]
+const exprFirstTokens: TokenKind[] = ['char', 'identifier', 'if-keyword', 'int', 'float', 'o-paren',
+    'string', ...prefixOpFirstTokens]
 const statementFirstTokens: TokenKind[] = ['let-keyword', 'fn-keyword', 'kind-keyword', 'impl-keyword', 'type-keyword',
     'return-keyword', 'type-keyword', ...exprFirstTokens]
 const paramFirstTokens: TokenKind[] = ['identifier']
-
-const exprFollowTokens: TokenKind[] = ['c-brace', 'c-paren', 'char', 'comma', 'excl', 'identifier', 'if-keyword',
-    'let-keyword', 'minus', 'number', 'o-brace', 'o-paren', 'period', 'plus', 'return-keyword', 'string', 'type-keyword']
 
 /**
  * module ::= statement*
@@ -241,7 +239,7 @@ const parseSubExpr = (parser: Parser): void => {
  * | IDENTIFIER | type-expr
  */
 const parseOperand = (parser: Parser): void => {
-    const dynamicTokens: TokenKind[] = ['string', 'char', 'number', 'identifier']
+    const dynamicTokens: TokenKind[] = ['string', 'char', 'int', 'float', 'identifier']
 
     const mark = parser.open()
     if (parser.at('if-keyword')) {
