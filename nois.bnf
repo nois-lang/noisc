@@ -2,7 +2,7 @@ module              ::= statement*
                     ;
 statement           ::= var-def | fn-def | kind-def | impl-def | type-def | return-stmt | expr
                     ;
-  var-def           ::= LET-KEYWORD IDENTIFIER type-annot? EQUALS expr
+  var-def           ::= LET-KEYWORD pattern type-annot? EQUALS expr
                     ;
   fn-def            ::= FN-KEYWORD type-expr params? type-annot? block?
                     ;
@@ -78,7 +78,7 @@ statement           ::= var-def | fn-def | kind-def | impl-def | type-def | retu
                     ;
     params          ::= O-PAREN (param (COMMA param)*)? COMMA? C-PAREN
                     ;
-        param       ::= IDENTIFIER type-annot?
+        param       ::= pattern type-annot?
                     ;
 block               ::= O-BRACE statement* C-BRACE
                     ;
@@ -90,5 +90,13 @@ type-annot          ::= COLON type-expr
                     ;
 if-expr             ::= IF-KEYWORD expr block (ELSE-KEYWORD block)?
                     ;
-hole                ::= UNDERSCORE
+pattern             ::= con-pattern | IDENTIFIER | hole
+                    ;
+  con-pattern       ::= IDENTIFIER con-pattern-params
+                    ;
+  con-pattern-params::= O-PAREN (field-pattern (COMMA field-pattern)*)? COMMA? C-PAREN
+                    ;
+    field-pattern   ::= IDENTIFIER (COLON pattern)? | spread-op
+                    ;
+  hole              ::= UNDERSCORE
                     ;

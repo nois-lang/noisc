@@ -36,16 +36,19 @@ fn foo(): Unit {
     // alternative syntax
     Vec2.fmt(vec)
 
-    // TODO: method call syntax for ambiguous methods
-    // Vec2.Display.fmt(vec)
+    // method call syntax for ambiguous methods
+    Vec2.Display.fmt(vec)
 
     // if
     let a = if True { 4 } else { 2 + 6 }
 
     // TODO: loops
 
-    // TODO: destructuring
-    // let Vec { x } = vec
+    // destructuring
+    let Vec(x) = vec
+
+    // destructuring alias
+    let Vec(x: b) = vec
 
     // TODO: match
     // let b = match 4 {

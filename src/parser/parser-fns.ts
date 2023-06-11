@@ -54,12 +54,12 @@ const parseStatement = (parser: Parser): void => {
 }
 
 /**
- * var-def ::= LET-KEYWORD IDENTIFIER type-annot? EQUALS expr
+ * var-def ::= LET-KEYWORD pattern type-annot? EQUALS expr
  */
 const parseVarDef = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('let-keyword')
-    parser.expect('identifier')
+    parsePattern(parser)
     if (parser.at('colon')) {
         parseTypeAnnot(parser)
     }
@@ -357,6 +357,13 @@ const parsePrefixOp = (parser: Parser): void => {
     parser.close(mark, 'prefix-op')
 }
 
+const parseSpreadOp = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('period')
+    parser.expect('period')
+    parser.close(mark, 'spread-op')
+}
+
 /**
  * postfix-op ::= call-op
  */
@@ -484,7 +491,7 @@ const parseParams = (parser: Parser): void => {
  */
 const parseParam = (parser: Parser): void => {
     const mark = parser.open()
-    parser.expect('identifier')
+    parsePattern(parser)
     if (parser.at('colon')) {
         parseTypeAnnot(parser)
     }
@@ -558,6 +565,74 @@ const parseIfExpr = (parser: Parser): void => {
         parseBlock(parser)
     }
     parser.close(mark, 'if-expr')
+}
+
+/**
+ * pattern ::= con-pattern | IDENTIFIER | hole
+ */
+const parsePattern = (parser: Parser): void => {
+    const mark = parser.open()
+    if (parser.at('identifier') && parser.nth(1) === 'o-paren') {
+        parseConPattern(parser)
+    } else if (parser.at('identifier')) {
+        parser.expect('identifier')
+    } else if (parser.at('underscore')) {
+        parseHole(parser)
+    } else {
+        parser.advanceWithError('expected pattern')
+    }
+    parser.close(mark, 'pattern')
+}
+
+/**
+ * con-pattern ::= IDENTIFIER con-pattern-params
+ */
+const parseConPattern = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('identifier')
+    parseConPatternParams(parser)
+    parser.close(mark, 'con-pattern')
+}
+
+/**
+ * con-pattern-params::= O-PAREN (field-pattern (COMMA field-pattern)*)? COMMA? C-PAREN
+ */
+const parseConPatternParams = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('o-paren')
+    while (!parser.at('c-paren') && !parser.eof()) {
+        parseFieldPattern(parser)
+        if (!parser.at('c-paren')) {
+            parser.expect('comma')
+        }
+    }
+    parser.expect('c-paren')
+    parser.close(mark, 'con-pattern-params')
+}
+
+/**
+ * field-pattern ::= IDENTIFIER (COLON pattern) | spread-op
+ */
+const parseFieldPattern = (parser: Parser): void => {
+    const mark = parser.open()
+    if (parser.at('identifier')) {
+        parser.expect('identifier')
+        if (parser.consume('colon')) {
+            parsePattern(parser)
+        }
+    } else if (parser.at('period')) {
+        parseSpreadOp(parser)
+    }
+    parser.close(mark, 'field-pattern')
+}
+
+/**
+ * hole ::= UNDERSCORE
+ */
+const parseHole = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('underscore')
+    parser.close(mark, 'hole')
 }
 
 const parseTodo = (parser: Parser): void => {
