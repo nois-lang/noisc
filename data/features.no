@@ -73,23 +73,22 @@ let Vec(x) = vec
 // destructuring alias
 let Vec(x: b) = vec
 
-// TODO: match
-// let b = match 4 {
-//     1 -> "one",
-//     n if n % 2 == 0 -> {
-//         if (n > 5) { "good" } else { "not good" }
-//     },
-//     _ -> "whatever",
-// }
+// match
+let b = match 4 {
+    1 -> "one",
+    n if n % 2 == 0 -> {
+        if (n > 5) { "good" } else { "not good" }
+    },
+    _ -> "whatever",
+}
 
-// TODO: destructuring & patterns
 // match type
-// let b = match vec {
-//     Vec { x: 1, y: 1 } -> "one",
-//     Vec { x: 1, .. } -> "x one whatever",
-//     Vec { x } if x != 4  -> format("x is {} not 4", x),
-//     _ -> "whatever",
-// }
+let b = match vec {
+    Vec(x: 1, y: 1) -> "one",
+    Vec(x: 1, ..) -> "x one whatever",
+    Vec(x) if x != 4  -> format("x is {} not 4", x),
+    _ -> "whatever",
+}
 
 // TODO: if match
 // if let Option { value } = Some(42) {

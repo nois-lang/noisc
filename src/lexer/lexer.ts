@@ -11,6 +11,7 @@ export const lexerTokenKinds = <const>[
     'else-keyword',
     'return-keyword',
     'for-keyword',
+    'match-keyword',
 
     // punctuation
     'o-paren',
@@ -25,6 +26,7 @@ export const lexerTokenKinds = <const>[
     'comma',
     'equals',
     'underscore',
+    'arrow',
 
     // operators
     'plus',
@@ -75,6 +77,7 @@ export const constTokenKindMap: Map<TokenKind, string> = new Map([
     ['let-keyword', 'let'],
     ['fn-keyword', 'fn'],
     ['for-keyword', 'for'],
+    ['match-keyword', 'match'],
 
     ['o-paren', '('],
     ['c-paren', ')'],
@@ -84,6 +87,8 @@ export const constTokenKindMap: Map<TokenKind, string> = new Map([
     ['c-brace', '}'],
     ['o-angle', '<'],
     ['c-angle', '>'],
+
+    ['arrow', '->'],
 
     ['plus', '+'],
     ['minus', '-'],

@@ -29,12 +29,14 @@ statement           ::= var-def | fn-def | kind-def | impl-def | type-def | retu
     sub-expr        ::= prefix-op operand | operand postfix-op?
                     ;
       operand       ::= if-expr
+                    | match-expr
                     | lambda-expr
                     | O-PAREN expr C-PAREN
                     | list-expr
                     | STRING
                     | CHAR
-                    | NUMBER
+                    | INT
+                    | FLOAT
                     | IDENTIFIER
                     | type-expr
                     ;
@@ -64,7 +66,6 @@ statement           ::= var-def | fn-def | kind-def | impl-def | type-def | retu
                     ;
       spread-op     ::= PERIOD PERIOD
                     ;
-
     postfix-op      ::= call-op | con-op
                     ;
       call-op       ::= args
@@ -93,7 +94,15 @@ type-annot          ::= COLON type-expr
                     ;
 if-expr             ::= IF-KEYWORD expr block (ELSE-KEYWORD block)?
                     ;
-pattern             ::= con-pattern | IDENTIFIER | hole
+match-expr          ::= MATCH-KEYWORD expr match-clauses
+                    ;
+  match-clauses     ::= O-BRACE (match-clause (COMMA match-clause)*)? COMMA? C-BRACE
+                    ;
+    match-clause    ::= pattern guard? ARROW (block | expr)
+                    ;
+      guard         ::= IF-KEYWORD expr
+                    ;
+pattern             ::= con-pattern | STRING | CHAR | prefix-op? (INT | FLOAT) | IDENTIFIER | hole
                     ;
   con-pattern       ::= IDENTIFIER con-pattern-params
                     ;

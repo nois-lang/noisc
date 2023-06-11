@@ -235,7 +235,8 @@ const parseSubExpr = (parser: Parser): void => {
 }
 
 /**
- * operand ::= if-expr | lambda-expr | O-PAREN expr C-PAREN | list-expr | STRING | CHAR | NUMBER | IDENTIFIER | type-expr
+ * operand ::= if-expr | match-expr | lambda-expr | O-PAREN expr C-PAREN | list-expr | STRING | CHAR | INT | FLOAT
+ * | IDENTIFIER | type-expr
  */
 const parseOperand = (parser: Parser): void => {
     const dynamicTokens: TokenKind[] = ['string', 'char', 'int', 'float', 'identifier']
@@ -243,6 +244,8 @@ const parseOperand = (parser: Parser): void => {
     const mark = parser.open()
     if (parser.at('if-keyword')) {
         parseIfExpr(parser)
+    } else if (parser.at('match-keyword')) {
+        parseMatchExpr(parser)
     } else if (parser.at('pipe')) {
         parseLambdaExpr(parser)
     } else if (parser.at('o-paren')) {
@@ -312,12 +315,15 @@ const parseInfixOp = (parser: Parser): void => {
         parser.close(mark, 'access-op')
         return
     }
-    if (parser.nth(0) === 'equals' && parser.nth(1) === 'equals') {
+    if (parser.at('equals') && parser.nth(1) === 'equals') {
+        parser.advance()
         parser.advance()
         parser.close(mark, 'eq-op')
         return
     }
-    if (parser.consume('excl')) {
+    if (parser.at('excl') && parser.nth(1) === 'equals') {
+        parser.advance()
+        parser.advance()
         parser.close(mark, 'ne-op')
         return
     }
@@ -587,14 +593,77 @@ const parseIfExpr = (parser: Parser): void => {
 }
 
 /**
- * pattern ::= con-pattern | IDENTIFIER | hole
+ * match-expr ::= MATCH-KEYWORD expr match-clauses
+ */
+const parseMatchExpr = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('match-keyword')
+    parseExpr(parser)
+    parseMatchClauses(parser)
+    parser.close(mark, 'match-expr')
+}
+
+/**
+ * match-clauses ::= O-BRACE (match-clause (COMMA match-clause)*)? COMMA? C-BRACE
+ */
+const parseMatchClauses = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('o-brace')
+    while (!parser.at('c-brace') && !parser.eof()) {
+        parseMatchClause(parser)
+        if (!parser.at('c-brace')) {
+            parser.expect('comma')
+        }
+    }
+    parser.expect('c-brace')
+    parser.close(mark, 'match-clauses')
+}
+
+/**
+ * match-clause ::= pattern guard? ARROW (block | expr)
+ */
+const parseMatchClause = (parser: Parser): void => {
+    const mark = parser.open()
+    parsePattern(parser)
+    if (parser.at('if-keyword')) {
+        parseGuard(parser)
+    }
+    parser.expect('arrow')
+    if (parser.at('o-brace')) {
+        parseBlock(parser)
+    } else {
+        parseExpr(parser)
+    }
+    parser.close(mark, 'match-clause')
+}
+
+/**
+ * guard ::= IF-KEYWORD expr
+ */
+const parseGuard = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('if-keyword')
+    parseExpr(parser)
+    parser.close(mark, 'guard')
+}
+
+/**
+ * pattern ::= con-pattern | STRING | CHAR | prefix-op? (INT | FLOAT) | IDENTIFIER | hole
  */
 const parsePattern = (parser: Parser): void => {
     const mark = parser.open()
     if (parser.at('identifier') && parser.nth(1) === 'o-paren') {
         parseConPattern(parser)
-    } else if (parser.at('identifier')) {
-        parser.expect('identifier')
+    } else if (parser.consume('string')) {
+    } else if (parser.consume('char')) {
+    } else if (parser.atAny(prefixOpFirstTokens) || parser.at('int') || parser.at('float')) {
+        if (parser.atAny(prefixOpFirstTokens)) {
+            parsePrefixOp(parser)
+        }
+        if (parser.consume('int')) {
+        } else if (parser.consume('float')) {
+        }
+    } else if (parser.consume('identifier')) {
     } else if (parser.at('underscore')) {
         parseHole(parser)
     } else {
