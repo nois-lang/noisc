@@ -1,4 +1,4 @@
-import { tokenize } from './lexer/lexer'
+import { erroneousTokenKinds, tokenize } from './lexer/lexer'
 import { existsSync, readFileSync } from 'fs'
 import { join, resolve } from 'path'
 import { compactNode, Parser } from './parser/parser'
@@ -26,9 +26,9 @@ if (!existsSync(sourcePath)) {
 const source = { str: readFileSync(sourcePath).toString(), filename: path }
 
 const tokens = tokenize(source.str)
-const unknownTokens = tokens.filter(t => t.kind === 'unknown')
-if (unknownTokens.length > 0) {
-    for (const t of unknownTokens) {
+const errorTokens = tokens.filter(t => erroneousTokenKinds.includes(t.kind))
+if (errorTokens.length > 0) {
+    for (const t of errorTokens) {
         console.error(prettySourceMessage(prettyLexerError(t), t.location.start, source))
     }
     process.exit(1)

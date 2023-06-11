@@ -10,7 +10,7 @@ export interface SyntaxError {
 }
 
 export const prettyLexerError = (token: ParseToken): string => {
-    return red(`lexer error: unknown token \`${token.value}\``)
+    return red(`lexer error: ${token.kind} token \`${token.value}\``)
 }
 
 export const prettySyntaxError = (error: SyntaxError): string => {

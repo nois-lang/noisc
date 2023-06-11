@@ -73,9 +73,9 @@ let main = (): Unit {
     })
 
     it('tokenize string literal', () => {
-        expect(tokenize(`"string 123 \n ok"`)).toEqual([
-            { kind: 'string', value: `"string 123 \n ok"`, location: { start: 0, end: 16 } },
-            { kind: 'eof', value: '', location: { start: 17, end: 17 } }
+        expect(tokenize(`"string 123 ok"`)).toEqual([
+            { kind: 'string', value: `"string 123 ok"`, location: { start: 0, end: 14 } },
+            { kind: 'eof', value: '', location: { start: 15, end: 15 } }
         ])
     })
 

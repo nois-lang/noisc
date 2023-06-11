@@ -51,9 +51,13 @@ export const lexerTokenKinds = <const>[
 
     // special
     'unknown',
+    'unterminated-string',
+    'unterminated-char',
     'eof'
 ]
 export type TokenKind = typeof lexerTokenKinds[number]
+
+export const erroneousTokenKinds: TokenKind[] = ['unknown', 'unterminated-char', 'unterminated-string']
 
 export interface ParseToken {
     kind: TokenKind
@@ -266,6 +270,11 @@ const parseCharLiteral = (chars: string[], tokens: ParseToken[], pos: { pos: num
         pos.pos++
         const charLiteral: string[] = []
         while (chars[pos.pos] !== quote) {
+            if (isNewline(chars[pos.pos]) || pos.pos === chars.length) {
+                pos.pos++
+                tokens.push(createToken('unterminated-char', quote + charLiteral.join(''), pos, start))
+                return true
+            }
             charLiteral.push(chars[pos.pos])
             pos.pos++
         }
@@ -292,8 +301,10 @@ const parseStringLiteral = (chars: string[], tokens: ParseToken[], pos: { pos: n
         pos.pos++
         const stringLiteral: string[] = []
         while (chars[pos.pos] !== quote) {
-            if (chars.length === pos.pos) {
-                throw Error(`no matching \`${quote}\``)
+            if (isNewline(chars[pos.pos]) || pos.pos === chars.length) {
+                pos.pos++
+                tokens.push(createToken('unterminated-string', quote + stringLiteral.join(''), pos, start))
+                return true
             }
             stringLiteral.push(chars[pos.pos])
             pos.pos++
