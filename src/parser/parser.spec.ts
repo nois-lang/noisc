@@ -1,6 +1,5 @@
 import { compactNode, Parser } from './parser'
 import { tokenize } from '../lexer/lexer'
-import { expect } from '@jest/globals'
 import { parseModule } from './parser-fns'
 
 describe('parser', () => {
