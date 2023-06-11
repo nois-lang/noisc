@@ -347,11 +347,13 @@ const parsePrefixOp = (parser: Parser): void => {
         parser.close(m, 'sub-op')
     } else if (parser.consume('excl')) {
         parser.close(m, 'not-op')
-    } else if (parser.consume('period')) {
+    } else if (parser.at('period') && parser.nth(1) === 'period') {
+        parser.advance()
         parser.advance()
         parser.close(m, 'spread-op')
     } else {
         parser.advanceWithError('expected prefix operator')
+        parser.close(m, 'error')
     }
 
     parser.close(mark, 'prefix-op')
