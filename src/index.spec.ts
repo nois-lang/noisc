@@ -1,7 +1,7 @@
 import { tokenize } from './lexer/lexer'
 import { readFileSync } from 'fs'
 import { Parser } from './parser/parser'
-import { parseModule } from './parser/parser-fns'
+import { parseModule } from './parser/fns'
 
 describe('nois', () => {
     it('parse features', () => {

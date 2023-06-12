@@ -1,6 +1,6 @@
 import { compactNode, Parser } from './parser'
 import { tokenize } from '../lexer/lexer'
-import { parseModule } from './parser-fns'
+import { parseModule } from './fns'
 
 describe('parser', () => {
 
@@ -80,7 +80,6 @@ describe('parser', () => {
         })
 
         it('mismatch paren', () => {
-
             const { errors } = parse('if a { b) }')
             expect(errors.length).toEqual(1)
             expect(errors[0]).toEqual({
