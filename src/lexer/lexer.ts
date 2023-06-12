@@ -10,7 +10,9 @@ export const lexerTokenKinds = <const>[
     'if-keyword',
     'else-keyword',
     'return-keyword',
+    'while-keyword',
     'for-keyword',
+    'in-keyword',
     'match-keyword',
 
     // punctuation
@@ -76,7 +78,9 @@ export const constTokenKindMap: Map<TokenKind, string> = new Map([
     ['impl-keyword', 'impl'],
     ['let-keyword', 'let'],
     ['fn-keyword', 'fn'],
+    ['while-keyword', 'while'],
     ['for-keyword', 'for'],
+    ['in-keyword', 'in'],
     ['match-keyword', 'match'],
 
     ['o-paren', '('],

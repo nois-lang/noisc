@@ -51,7 +51,7 @@ let vec = Vec2(x: 2., y: 4.)
 vec.x
 
 // function call
-print("hello")
+println("hello")
 
 // method call
 vec.fmt()
@@ -65,7 +65,17 @@ Vec2.Display.fmt(vec)
 // if
 let d = if True { 4 } else { 2 + 6 }
 
-// TODO: loops
+// while loop
+let e = while a < 5 {
+    a = a + 1
+}
+
+// TODO: while let loop
+
+// for loop
+let f = for g in [1, 2, 3] {
+    println(g)
+}
 
 // destructuring
 let Vec(x) = vec
@@ -92,17 +102,17 @@ let b = match vec {
 
 // TODO: if match
 // if let Option { value } = Some(42) {
-//     print("value is {}", value)
+//     println("value is {}", value)
 // } else {
-//     print("no value")
+//     println("no value")
 // }
 
 // lambda
 let square = |a| a^2
-let here = || print("here")
+let here = || println("here")
 
 // fn reference
-let p = print
+let p = println
 
 // method reference
 // equivalent to |v: Vec2| v.fmt()

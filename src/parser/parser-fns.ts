@@ -5,10 +5,8 @@ const prefixOpFirstTokens: TokenKind[] = ['excl', 'minus', 'period', 'plus']
 const postfixOpFirstTokens: TokenKind[] = ['o-paren']
 const infixOpFirstTokens: TokenKind[] = ['ampersand', 'asterisk', 'c-angle', 'caret', 'equals', 'excl', 'minus',
     'o-angle', 'percent', 'period', 'pipe', 'plus', 'slash']
-const exprFirstTokens: TokenKind[] = ['char', 'identifier', 'if-keyword', 'int', 'float', 'o-paren',
-    'string', ...prefixOpFirstTokens]
-const statementFirstTokens: TokenKind[] = ['let-keyword', 'fn-keyword', 'kind-keyword', 'impl-keyword', 'type-keyword',
-    'return-keyword', 'type-keyword', ...exprFirstTokens]
+const exprFirstTokens: TokenKind[] = ['char', 'identifier', 'if-keyword', 'while-keyword', 'for-keyword',
+    'match-keyword', 'int', 'float', 'o-paren', 'string', ...prefixOpFirstTokens]
 const paramFirstTokens: TokenKind[] = ['identifier']
 
 /**
@@ -17,11 +15,7 @@ const paramFirstTokens: TokenKind[] = ['identifier']
 export const parseModule = (parser: Parser): void => {
     const mark = parser.open()
     while (!parser.eof()) {
-        if (parser.atAny(statementFirstTokens)) {
-            parseStatement(parser)
-        } else {
-            parser.advanceWithError('expected statement')
-        }
+        parseStatement(parser)
     }
     parser.close(mark, 'module')
 }
@@ -244,6 +238,10 @@ const parseOperand = (parser: Parser): void => {
     const mark = parser.open()
     if (parser.at('if-keyword')) {
         parseIfExpr(parser)
+    } else if (parser.at('while-keyword')) {
+        parseWhileExpr(parser)
+    } else if (parser.at('for-keyword')) {
+        parseForExpr(parser)
     } else if (parser.at('match-keyword')) {
         parseMatchExpr(parser)
     } else if (parser.at('pipe')) {
@@ -254,8 +252,6 @@ const parseOperand = (parser: Parser): void => {
         parser.expect('c-paren')
     } else if (parser.at('o-bracket')) {
         parseListExpr(parser)
-    } else if (parser.at('identifier') && parser.nth(1) === 'o-angle') {
-        parseTypeExpr(parser)
     } else if (parser.atAny(dynamicTokens)) {
         parser.expectAny(dynamicTokens)
     } else {
@@ -283,7 +279,7 @@ const parseListExpr = (parser: Parser): void => {
 
 /**
  * infix-op ::= add-op | sub-op | mul-op | div-op | exp-op | mod-op | access-op | eq-op | ne-op | ge-op | le-op | gt-op
- * | lt-op | and-op | or-op;
+ * | lt-op | and-op | or-op | assign-op;
  */
 const parseInfixOp = (parser: Parser): void => {
     const mark = parser.open()
@@ -351,6 +347,10 @@ const parseInfixOp = (parser: Parser): void => {
     if (parser.consume('pipe')) {
         parser.advance()
         parser.close(mark, 'or-op')
+        return
+    }
+    if (parser.consume('equals')) {
+        parser.close(mark, 'assign-op')
         return
     }
 
@@ -530,11 +530,7 @@ const parseBlock = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('o-brace')
     while (!parser.at('c-brace') && !parser.eof()) {
-        if (parser.atAny(statementFirstTokens)) {
-            parseStatement(parser)
-        } else {
-            parser.advanceWithError('expected statement or `}`')
-        }
+        parseStatement(parser)
     }
     parser.expect('c-brace')
     parser.close(mark, 'block')
@@ -590,6 +586,30 @@ const parseIfExpr = (parser: Parser): void => {
         parseBlock(parser)
     }
     parser.close(mark, 'if-expr')
+}
+
+/**
+ * while-expr ::= WHILE-KEYWORD expr block
+ */
+const parseWhileExpr = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('while-keyword')
+    parseExpr(parser)
+    parseBlock(parser)
+    parser.close(mark, 'while-expr')
+}
+
+/**
+ * for-expr ::= FOR-KEYWORD pattern IN-KEYWORD expr block
+ */
+const parseForExpr = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('for-keyword')
+    parsePattern(parser)
+    parser.expect('in-keyword')
+    parseExpr(parser)
+    parseBlock(parser)
+    parser.close(mark, 'for-expr')
 }
 
 /**

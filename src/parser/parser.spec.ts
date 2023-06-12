@@ -86,7 +86,7 @@ describe('parser', () => {
             expect(errors[0]).toEqual({
                 'expected': [],
                 'got': { 'kind': 'c-paren', 'location': { 'end': 8, 'start': 8 }, 'value': ')' },
-                'message': 'expected statement or `}`'
+                'message': 'expected statement'
             })
         })
 
