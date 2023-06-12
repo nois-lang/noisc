@@ -338,6 +338,6 @@ const isAlpha = (char: string): boolean =>
     (char >= 'A' && char <= 'Z') ||
     (char >= 'a' && char <= 'z') ||
     (char >= 'a' && char <= 'z') ||
-    char === ''
+    char === '_'
 
 const isNumeric = (char: string): boolean => (char >= '0' && char <= '9')
