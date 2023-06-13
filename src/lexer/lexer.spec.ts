@@ -72,18 +72,75 @@ let main = (): Unit {
         })
     })
 
-    it('tokenize string literal', () => {
-        expect(tokenize(`"string 123 ok"`)).toEqual([
-            { kind: 'string', value: `"string 123 ok"`, location: { start: 0, end: 14 } },
-            { kind: 'eof', value: '', location: { start: 15, end: 15 } }
-        ])
+    describe('tokenize char', () => {
+        it('plain', () => {
+            expect(tokenize(`'?'`)).toEqual([
+                { kind: 'char', value: `'?'`, location: { start: 0, end: 2 } },
+                { kind: 'eof', value: '', location: { start: 3, end: 3 } }
+            ])
+        })
+
+        it('escape', () => {
+            expect(tokenize(`'\\n''\\r''\\\\'`)).toEqual([
+                { kind: 'char', location: { end: 3, start: 0 }, value: '\'\\n\'' },
+                { kind: 'char', location: { end: 7, start: 4 }, value: '\'\\r\'' },
+                { kind: 'char', location: { end: 11, start: 8 }, value: '\'\\\\\'' },
+                { kind: 'eof', location: { end: 12, start: 12 }, value: '' }])
+        })
+
+        it('escape char', () => {
+            expect(tokenize(`'\\''`)).toEqual([
+                { kind: 'char', value: `'\\''`, location: { start: 0, end: 3 } },
+                { kind: 'eof', value: '', location: { start: 4, end: 4 } }
+            ])
+        })
+
+        it('unterminated', () => {
+            expect(tokenize(`'h`)).toEqual([
+                { kind: 'unterminated-char', value: `'h`, location: { start: 0, end: 2 } },
+                { kind: 'eof', value: '', location: { start: 3, end: 3 } }
+            ])
+        })
     })
 
-    it('tokenize char literal', () => {
-        expect(tokenize(`'?'`)).toEqual([
-            { kind: 'char', value: `'?'`, location: { start: 0, end: 2 } },
-            { kind: 'eof', value: '', location: { start: 3, end: 3 } }
-        ])
+    describe('tokenize string', () => {
+
+        it('plain', () => {
+            expect(tokenize(`"string 123 ok"`)).toEqual([
+                { kind: 'string', value: `"string 123 ok"`, location: { start: 0, end: 14 } },
+                { kind: 'eof', value: '', location: { start: 15, end: 15 } }
+            ])
+        })
+
+        it('escape', () => {
+            expect(tokenize(`"escape\\n \\r \\\\"`)).toEqual([
+                { kind: 'string', value: `"escape\\n \\r \\\\"`, location: { start: 0, end: 15 } },
+                { kind: 'eof', value: '', location: { start: 16, end: 16 } }
+            ])
+        })
+
+        it('escape string', () => {
+            expect(tokenize(`"\\""`)).toEqual([
+                { kind: 'string', value: `"\\""`, location: { start: 0, end: 3 } },
+                { kind: 'eof', value: '', location: { start: 4, end: 4 } }
+            ])
+        })
+
+        it('quotes', () => {
+            expect(tokenize(`"quotes '\`\\""`)).toEqual([
+                { kind: 'string', value: `"quotes '\`\\""`, location: { start: 0, end: 12 } },
+                { kind: 'eof', value: '', location: { start: 13, end: 13 } }
+            ])
+        })
+
+        it('unterminated', () => {
+            expect(tokenize(`"string 123 ok\n`)).toEqual([
+                { kind: 'unterminated-string', value: `"string 123 ok`, location: { start: 0, end: 13 } },
+                { kind: 'newline', value: `\n`, location: { start: 14, end: 14 } },
+                { kind: 'eof', value: '', location: { start: 15, end: 15 } }
+            ])
+        })
+
     })
 
     it('tokenize expression', () => {
