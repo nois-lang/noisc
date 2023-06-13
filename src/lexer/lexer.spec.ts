@@ -148,7 +148,6 @@ let main = (): Unit {
             ])
         })
 
-
         it('unterminated', () => {
             expect(tokenize(`"string 123 ok\n`)).toEqual([
                 { kind: 'unterminated-string', value: `"string 123 ok`, location: { start: 0, end: 13 } },

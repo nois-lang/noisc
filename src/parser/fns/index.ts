@@ -40,11 +40,11 @@ export const parseArgs = (parser: Parser): void => {
 }
 
 /**
- * lambda-expr ::= lambda-params type-annot? (block | expr)
+ * closure-expr ::= closure-params type-annot? (block | expr)
  */
-export const parseLambdaExpr = (parser: Parser): void => {
+export const parseClosureExpr = (parser: Parser): void => {
     const mark = parser.open()
-    parseLambdaParams(parser)
+    parseClosureParams(parser)
     if (parser.at('colon')) {
         parseTypeAnnot(parser)
     }
@@ -55,13 +55,13 @@ export const parseLambdaExpr = (parser: Parser): void => {
     } else {
         parser.advanceWithError('block or expression expected')
     }
-    parser.close(mark, 'lambda-expr')
+    parser.close(mark, 'closure-expr')
 }
 
 /**
- * lambda-params ::= PIPE (param (COMMA param)*)? COMMA? PIPE
+ * closure-params ::= PIPE (param (COMMA param)*)? COMMA? PIPE
  */
-export const parseLambdaParams = (parser: Parser): void => {
+export const parseClosureParams = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('pipe')
     while (!parser.at('pipe') && !parser.eof()) {
@@ -71,7 +71,7 @@ export const parseLambdaParams = (parser: Parser): void => {
         }
     }
     parser.expect('pipe')
-    parser.close(mark, 'lambda-params')
+    parser.close(mark, 'closure-params')
 }
 
 /**

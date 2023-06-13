@@ -107,7 +107,7 @@ let b = match vec {
 //     println("no value")
 // }
 
-// lambda
+// closure
 let square = |a| a^2
 let here = || println("here")
 

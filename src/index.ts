@@ -5,7 +5,6 @@ import { compactNode, Parser } from './parser/parser'
 import { prettyLexerError, prettySourceMessage, prettySyntaxError } from './error'
 import { parseModule } from './parser/fns'
 
-
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
 
 export const usage = `\

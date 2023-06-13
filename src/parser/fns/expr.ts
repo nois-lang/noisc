@@ -3,7 +3,7 @@ import { TokenKind } from '../../lexer/lexer'
 import {
     exprFirstTokens,
     infixOpFirstTokens,
-    parseLambdaExpr,
+    parseClosureExpr,
     parseTypeParams,
     postfixOpFirstTokens,
     prefixOpFirstTokens
@@ -43,7 +43,7 @@ export const parseSubExpr = (parser: Parser): void => {
 }
 
 /**
- * operand ::= if-expr | match-expr | lambda-expr | O-PAREN expr C-PAREN | list-expr | STRING | CHAR | INT | FLOAT
+ * operand ::= if-expr | match-expr | closure-expr | O-PAREN expr C-PAREN | list-expr | STRING | CHAR | INT | FLOAT
  * | IDENTIFIER | type-expr
  */
 export const parseOperand = (parser: Parser): void => {
@@ -59,7 +59,7 @@ export const parseOperand = (parser: Parser): void => {
     } else if (parser.at('match-keyword')) {
         parseMatchExpr(parser)
     } else if (parser.at('pipe')) {
-        parseLambdaExpr(parser)
+        parseClosureExpr(parser)
     } else if (parser.at('o-paren')) {
         parser.expect('o-paren')
         parseExpr(parser)

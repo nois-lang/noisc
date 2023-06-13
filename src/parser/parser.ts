@@ -43,8 +43,8 @@ export const treeKinds = <const>[
     'postfix-op',
     'call-op',
     'args',
-    'lambda-expr',
-    'lambda-params',
+    'closure-expr',
+    'closure-params',
     'constructor',
     'con-params',
     'field-init',
@@ -129,7 +129,7 @@ export class Parser {
     }
 
     advanceIndependent(): void {
-        // TODO: attach comments to the preceding tree instead
+        // TODO: attach comments to the subsequent tree instead
         if (!this.eof() && independentTokenKinds.some(t => t === this.tokens[this.pos].kind)) {
             this.advance()
         }

@@ -32,7 +32,7 @@ statement           ::= var-def | fn-def | kind-def | impl-def | type-def | retu
                     | while-expr
                     | for-expr
                     | match-expr
-                    | lambda-expr
+                    | closure-expr
                     | O-PAREN expr C-PAREN
                     | list-expr
                     | STRING
@@ -78,9 +78,9 @@ statement           ::= var-def | fn-def | kind-def | impl-def | type-def | retu
                     ;
         field-init  ::= IDENTIFIER COLON expr
                     ;
-    lambda-expr     ::= lambda-params type-annot? (block | expr)
+    closure-expr    ::= closure-params type-annot? (block | expr)
                     ;
-      lambda-params ::= PIPE (param (COMMA param)*)? COMMA? PIPE
+      closure-params::= PIPE (param (COMMA param)*)? COMMA? PIPE
                     ;
     params          ::= O-PAREN (param (COMMA param)*)? COMMA? C-PAREN
                     ;
