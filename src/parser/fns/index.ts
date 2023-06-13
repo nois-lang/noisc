@@ -9,7 +9,7 @@ export const postfixOpFirstTokens: TokenKind[] = ['o-paren']
 export const infixOpFirstTokens: TokenKind[] = ['ampersand', 'asterisk', 'c-angle', 'caret', 'equals', 'excl', 'minus',
     'o-angle', 'percent', 'period', 'pipe', 'plus', 'slash']
 export const exprFirstTokens: TokenKind[] = ['char', 'identifier', 'if-keyword', 'while-keyword', 'for-keyword',
-    'match-keyword', 'int', 'float', 'o-paren', 'string', ...prefixOpFirstTokens]
+    'match-keyword', 'int', 'float', 'o-bracket', 'o-paren', 'string', ...prefixOpFirstTokens]
 export const paramFirstTokens: TokenKind[] = ['identifier']
 
 /**
