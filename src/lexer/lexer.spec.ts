@@ -95,6 +95,14 @@ let main = (): Unit {
             ])
         })
 
+        it('unicode', () => {
+            expect(tokenize(`'\\u{1}' '\\u{ffff}'`)).toEqual([
+                { kind: 'char', value: `'\\u{1}'`, location: { start: 0, end: 6 } },
+                { kind: 'char', value: `'\\u{ffff}'`, location: { start: 8, end: 17 } },
+                { kind: 'eof', value: '', location: { start: 18, end: 18 } }
+            ])
+        })
+
         it('unterminated', () => {
             expect(tokenize(`'h`)).toEqual([
                 { kind: 'unterminated-char', value: `'h`, location: { start: 0, end: 2 } },
@@ -132,6 +140,14 @@ let main = (): Unit {
                 { kind: 'eof', value: '', location: { start: 13, end: 13 } }
             ])
         })
+
+        it('unicode', () => {
+            expect(tokenize(`"\\u{1} \\u{ffff}"`)).toEqual([
+                { kind: 'string', value: `"\\u{1} \\u{ffff}"`, location: { start: 0, end: 15 } },
+                { kind: 'eof', value: '', location: { start: 16, end: 16 } }
+            ])
+        })
+
 
         it('unterminated', () => {
             expect(tokenize(`"string 123 ok\n`)).toEqual([
