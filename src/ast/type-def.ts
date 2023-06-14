@@ -5,7 +5,7 @@ import { todo } from '../todo'
 import { Identifier } from './operand'
 
 export interface TypeDef extends AstNode<'type-def'> {
-    name: Identifier
+    identifier: Identifier
     typeParams: Param[]
     variants: TypeCon[]
 }
@@ -19,7 +19,7 @@ export interface TypeCon extends AstNode<'type-con'> {
 }
 
 export interface FieldDef extends AstNode<'field-def'> {
-    name: Identifier
+    identifier: Identifier
     fieldType: Type
 }
 

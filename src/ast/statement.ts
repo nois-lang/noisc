@@ -42,7 +42,7 @@ export const buildVarDef = (node: ParseNode): VarDef => {
 
 export interface FnDef extends AstNode<'fn-def'> {
     type: 'fn-def'
-    name: Identifier
+    identifier: Identifier
     typeParams: Type[]
     params: Param[]
     block?: Block
@@ -54,7 +54,7 @@ export const buildFnDef = (node: ParseNode): VarDef => {
 }
 
 export interface KindDef extends AstNode<'kind-def'> {
-    name: Identifier
+    identifier: Identifier
     kindParams: Type[]
     block: Block
 }
@@ -64,7 +64,7 @@ export const buildKindDef = (node: ParseNode): VarDef => {
 }
 
 export interface ImplDef extends AstNode<'impl-def'> {
-    name: Identifier
+    identifier: Identifier
     implParams: Type[]
     forKind?: Type
     block: Block
@@ -84,4 +84,8 @@ export const buildReturnStmt = (node: ParseNode): VarDef => {
 
 export interface Block extends AstNode<'block'> {
     statements: Statement[]
+}
+
+export const buildBlock = (node: ParseNode): Block => {
+    return todo()
 }

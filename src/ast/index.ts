@@ -19,6 +19,8 @@ export type AstNodeKind
     | 'field-def'
     | 'type-con'
     | 'return-stmt'
+    | 'spread-op'
+    | 'operand-expr'
     | 'unary-expr'
     | 'binary-expr'
     | 'block'
@@ -32,6 +34,7 @@ export type AstNodeKind
     | 'match-expr'
     | 'match-clause'
     | 'con-pattern'
+    | 'field-pattern'
     | 'hole'
     | 'identifier'
     | 'string-literal'
@@ -55,7 +58,7 @@ export const buildModule = (node: ParseNode): Module => {
 }
 
 export interface Type extends AstNode<'type'> {
-    name: Identifier
+    identifier: Identifier
     typeParams: Type[]
 }
 
@@ -66,7 +69,7 @@ export const buildType = (node: ParseNode): Type => {
     return {
         type: 'type',
         parseNode: node,
-        name: buildIdentifier(nameNode),
+        identifier: buildIdentifier(nameNode),
         typeParams: paramsNode
             ? (<ParseTree>paramsNode).nodes
                 .filter(n => n.kind === 'type-params')
