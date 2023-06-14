@@ -1,9 +1,10 @@
 import { erroneousTokenKinds, tokenize } from './lexer/lexer'
 import { existsSync, readFileSync } from 'fs'
 import { join, resolve } from 'path'
-import { compactNode, Parser } from './parser/parser'
+import { Parser } from './parser/parser'
 import { prettyLexerError, prettySourceMessage, prettySyntaxError } from './error'
 import { parseModule } from './parser/fns'
+import { buildModule } from './ast'
 
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
 
@@ -44,4 +45,6 @@ if (parser.errors.length > 0) {
     process.exit(1)
 }
 
-console.dir(compactNode(root), { depth: null, colors: true, compact: true })
+const moduleAst = buildModule(root)
+
+console.dir(moduleAst, { depth: null, colors: true, compact: true })

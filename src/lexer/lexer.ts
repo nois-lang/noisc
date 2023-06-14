@@ -1,4 +1,5 @@
 import { LocationRange } from '../location'
+import { NodeKind } from '../parser/parser'
 
 export const lexerTokenKinds = <const>[
     // keywords
@@ -120,7 +121,7 @@ const stringRegex = new RegExp(`^"((\\")|` + singleCharRegex.source + `)+"`)
 /**
  * Independent tokens are automatically advanced by parser by default
  */
-export const independentTokenKinds: TokenKind[] = ['newline', 'comment']
+export const independentTokenKinds: NodeKind[] = ['newline', 'comment']
 
 export const isWhitespace = (char: string): boolean => char === ' ' || char === '\t'
 

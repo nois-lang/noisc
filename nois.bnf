@@ -41,8 +41,6 @@ statement           ::= var-def | fn-def | kind-def | impl-def | type-def | retu
                     | FLOAT
                     | IDENTIFIER
                     ;
-        list-expr   ::= O-BRACKET (expr (COMMA expr)*)? COMMA? C-BRACKET
-                    ;
     infix-op        ::= add-op | sub-op | mul-op | div-op | exp-op | mod-op | access-op | eq-op | ne-op
                     | ge-op | le-op | gt-op | lt-op | and-op | or-op | assign-op;
       add-op        ::= PLUS;
@@ -78,15 +76,17 @@ statement           ::= var-def | fn-def | kind-def | impl-def | type-def | retu
                     ;
         field-init  ::= IDENTIFIER COLON expr
                     ;
-    closure-expr    ::= closure-params type-annot? (block | expr)
-                    ;
-      closure-params::= PIPE (param (COMMA param)*)? COMMA? PIPE
-                    ;
-    params          ::= O-PAREN (param (COMMA param)*)? COMMA? C-PAREN
-                    ;
-        param       ::= pattern type-annot?
-                    ;
 block               ::= O-BRACE statement* C-BRACE
+                    ;
+closure-expr        ::= closure-params type-annot? (block | expr)
+                    ;
+  closure-params    ::= PIPE (param (COMMA param)*)? COMMA? PIPE
+                    ;
+list-expr           ::= O-BRACKET (expr (COMMA expr)*)? COMMA? C-BRACKET
+                    ;
+params              ::= O-PAREN (param (COMMA param)*)? COMMA? C-PAREN
+                    ;
+  param             ::= pattern type-annot?
                     ;
 type-annot          ::= COLON type-expr
                     ;
