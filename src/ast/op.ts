@@ -13,7 +13,7 @@ export const buildUnaryOp = (node: ParseNode): UnaryOp => {
         return buildConOp(n)
     }
     if (!['add-op', 'sub-op', 'not-op', 'spread-op'].includes(n.kind)) {
-        throw Error(`expected binary-op, got ${node.kind}`)
+        throw Error(`expected unary-op, got ${node.kind}`)
     }
     return { type: <any>n.kind, parseNode: node }
 }

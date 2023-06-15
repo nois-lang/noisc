@@ -31,10 +31,16 @@ export interface BinaryExpr extends AstNode<'binary-expr'> {
 export const buildExpr = (node: ParseNode): Expr => {
     const nodes = filterNonAstNodes(node)
     if (nodes.length === 1) {
-        return buildSubExpr(nodes[0])
-    } else {
-        return buildBinaryExpr(node)
+        if (node.kind === 'expr') {
+            return buildExpr(nodes[0])
+        } else {
+            return buildSubExpr(node)
+        }
     }
+    if (nodes.length === 2) {
+        return buildSubExpr(node)
+    }
+    return buildBinaryExpr(node)
 }
 
 export const buildSubExpr = (node: ParseNode): Expr => {
@@ -43,7 +49,7 @@ export const buildSubExpr = (node: ParseNode): Expr => {
         return {
             type: 'operand-expr',
             parseNode: node,
-            operand: buildOperandExpr(node)
+            operand: buildOperandExpr(nodes[0])
         }
     }
     const isPrefix = nodes[0].kind === 'prefix-op'
@@ -89,7 +95,7 @@ export const buildBinaryExpr = (node: ParseNode): Expr => {
             }
             operatorStack.push(o1)
         } else {
-            const expr = buildExpr(n)
+            const expr = buildSubExpr(n)
             exprStack.push(expr)
         }
     }

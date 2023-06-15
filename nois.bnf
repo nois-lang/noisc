@@ -12,7 +12,7 @@ statement           ::= var-def | fn-def | kind-def | impl-def | type-def | retu
                     ;
     impl-for        ::= FOR-KEYWORD type-expr
                     ;
-  type-def          ::= TYPE-KEYWORD type-expr (type-con-list | type-con-params?)
+  type-def          ::= TYPE-KEYWORD type-expr (type-con-list | type-con-params)?
                     ;
     type-con-params ::= O-PAREN (field-def (COMMA field-def)*)? COMMA? C-PAREN
                     ;

@@ -103,7 +103,7 @@ export const buildClosureExpr = (node: ParseNode): ClosureExpr => {
     const identifier = buildIdentifier(nodes[0])
     const typeParams = filterNonAstNodes(nodes[1]).filter(n => n.kind === 'type-expr').map(n => buildType(n))
     const params = filterNonAstNodes(nodes[2]).filter(n => n.kind === 'param').map(n => buildParam(n))
-    const block = buildBlock(nodes[3])
+    const block = nodes[3].kind === 'expr' ? <Block>{ statements: [buildExpr(nodes[3])] } : buildBlock(nodes[3])
     const returnType = nodes.at(4) ? buildType(nodes[4]) : undefined
     return { type: 'closure-expr', parseNode: node, identifier, typeParams, params, block, returnType }
 }

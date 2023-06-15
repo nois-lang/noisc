@@ -87,7 +87,7 @@ export const parseConOp = (parser: Parser): void => {
         }
     }
     parser.expect('c-paren')
-    parser.close(mark, 'con-params')
+    parser.close(mark, 'con-op')
 }
 
 /**

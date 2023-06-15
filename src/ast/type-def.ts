@@ -11,10 +11,10 @@ export interface TypeDef extends AstNode<'type-def'> {
 export const buildTypeDef = (node: ParseNode): TypeDef => {
     const nodes = filterNonAstNodes(node)
     const { identifier, typeParams } = buildType(nodes[0])
-    let variants: TypeCon[]
-    if (nodes[1].kind === 'type-con-list') {
+    let variants: TypeCon[] = []
+    if (nodes.at(1)?.kind === 'type-con-list') {
         variants = filterNonAstNodes(nodes[1]).map(buildTypeCon)
-    } else {
+    } else if (nodes.at(1)?.kind === 'type-con-params') {
         const fieldDefs = filterNonAstNodes(nodes[1]).map(buildFieldDef)
         variants = [{ type: 'type-con', parseNode: nodes[1], identifier, fieldDefs }]
     }
