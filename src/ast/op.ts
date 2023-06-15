@@ -1,6 +1,5 @@
-import { AstNode, AstNodeKind, FieldInit, filterNonAstNodes } from './index'
+import { AstNode, AstNodeKind, buildFieldInit, FieldInit, filterNonAstNodes } from './index'
 import { ParseNode, ParseTree } from '../parser/parser'
-import { todo } from '../todo'
 import { buildExpr, Expr } from './expr'
 
 export type UnaryOp = AddOp | SubOp | NotOp | SpreadOp | CallOp | ConOp
@@ -110,7 +109,12 @@ export interface ConOp extends AstNode<'con-op'> {
 }
 
 export const buildConOp = (node: ParseNode): ConOp => {
-    return todo()
+    const nodes = filterNonAstNodes(node)
+    return {
+        type: 'con-op',
+        parseNode: node,
+        fields: nodes.map(n => buildFieldInit(n))
+    }
 }
 
 export interface AddOp extends AstNode<'add-op'> {}

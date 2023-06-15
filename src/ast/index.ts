@@ -3,7 +3,7 @@ import { buildPattern, Pattern } from './match'
 import { ParseNode, ParseTree, treeKinds } from '../parser/parser'
 import { lexerDynamicKinds } from '../lexer/lexer'
 import { buildIdentifier, Identifier } from './operand'
-import { Expr } from './expr'
+import { buildExpr, Expr } from './expr'
 
 export interface AstNode<T extends AstNodeKind> {
     type: T
@@ -110,19 +110,21 @@ export interface Param extends AstNode<'param'> {
 
 export const buildParam = (node: ParseNode): Param => {
     const nodes = filterNonAstNodes(node)
-    const paramNode = nodes[0]
+    const pattern = buildPattern(nodes[0])
     const typeNode = nodes.at(1)
-    return {
-        type: 'param',
-        parseNode: node,
-        pattern: buildPattern(paramNode),
-        paramType: typeNode ? buildType(typeNode) : undefined,
-    }
+    return { type: 'param', parseNode: node, pattern, paramType: typeNode ? buildType(typeNode) : undefined, }
 }
 
 export interface FieldInit extends AstNode<'field-init'> {
     identifier: Identifier
     expr: Expr
+}
+
+export const buildFieldInit = (node: ParseNode): FieldInit => {
+    const nodes = filterNonAstNodes(node)
+    const identifier = buildIdentifier(nodes[0])
+    const expr = buildExpr(nodes[1])
+    return { type: 'field-init', parseNode: node, identifier, expr }
 }
 
 export const compactAstNode = (node: AstNode<any>): any => Object.fromEntries(

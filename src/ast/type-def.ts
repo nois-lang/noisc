@@ -1,21 +1,36 @@
-import { AstNode, Param, Type } from './index'
+import { AstNode, buildType, filterNonAstNodes, Type } from './index'
 import { ParseNode } from '../parser/parser'
-import { VarDef } from './statement'
-import { todo } from '../todo'
-import { Identifier } from './operand'
+import { buildIdentifier, Identifier } from './operand'
 
 export interface TypeDef extends AstNode<'type-def'> {
     identifier: Identifier
-    typeParams: Param[]
+    typeParams: Type[]
     variants: TypeCon[]
 }
 
-export const buildTypeDef = (node: ParseNode): VarDef => {
-    return todo()
+export const buildTypeDef = (node: ParseNode): TypeDef => {
+    const nodes = filterNonAstNodes(node)
+    const { identifier, typeParams } = buildType(nodes[0])
+    let variants: TypeCon[]
+    if (nodes[1].kind === 'type-con-list') {
+        variants = filterNonAstNodes(nodes[1]).map(buildTypeCon)
+    } else {
+        const fieldDefs = filterNonAstNodes(nodes[1]).map(buildFieldDef)
+        variants = [{ type: 'type-con', parseNode: nodes[1], identifier, fieldDefs }]
+    }
+    return { type: 'type-def', parseNode: node, identifier, typeParams, variants }
 }
 
 export interface TypeCon extends AstNode<'type-con'> {
+    identifier: Identifier
     fieldDefs: FieldDef[]
+}
+
+export const buildTypeCon = (node: ParseNode): TypeCon => {
+    const nodes = filterNonAstNodes(node)
+    const identifier = buildIdentifier(nodes[0])
+    const fieldDefs = nodes.at(1) ? filterNonAstNodes(nodes[1]).map(buildFieldDef) : []
+    return { type: 'type-con', parseNode: node, identifier, fieldDefs }
 }
 
 export interface FieldDef extends AstNode<'field-def'> {
@@ -23,3 +38,9 @@ export interface FieldDef extends AstNode<'field-def'> {
     fieldType: Type
 }
 
+export const buildFieldDef = (node: ParseNode): FieldDef => {
+    const nodes = filterNonAstNodes(node)
+    const identifier = buildIdentifier(nodes[0])
+    const fieldType = buildType(filterNonAstNodes(nodes[1])[0])
+    return { type: 'field-def', parseNode: node, identifier, fieldType }
+}
