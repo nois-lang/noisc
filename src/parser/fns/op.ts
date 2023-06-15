@@ -2,7 +2,7 @@ import { Parser } from '../parser'
 import { parseArgs, parseConOp } from './index'
 
 /**
- * infix-op ::= add-op | sub-op | mul-op | div-op | exp-op | mod-op | access-op | eq-op | ne-op | ge-op | le-op | gt-op
+ * infix-op ::= add-op | sub-op | mult-op | div-op | exp-op | mod-op | access-op | eq-op | ne-op | ge-op | le-op | gt-op
  * | lt-op | and-op | or-op | assign-op;
  */
 export const parseInfixOp = (parser: Parser): void => {
@@ -16,7 +16,7 @@ export const parseInfixOp = (parser: Parser): void => {
         return
     }
     if (parser.consume('asterisk')) {
-        parser.close(mark, 'mul-op')
+        parser.close(mark, 'mult-op')
         return
     }
     if (parser.consume('slash')) {
@@ -114,7 +114,7 @@ export const parseSpreadOp = (parser: Parser): void => {
 }
 
 /**
- * postfix-op ::= call-op
+ * postfix-op ::= call-op | con-op
  */
 export const parsePostfixOp = (parser: Parser): void => {
     const mark = parser.open()

@@ -1,6 +1,6 @@
 import { buildOperandExpr, Expr } from './expr'
 import { Block } from './statement'
-import { AstNode, filterIndependent } from './index'
+import { AstNode, filterNonAstNodes } from './index'
 import { ParseNode } from '../parser/parser'
 import { todo } from '../todo'
 import { buildOperand, Identifier } from './operand'
@@ -9,7 +9,7 @@ import { buildUnaryOp, SpreadOp } from './op'
 export type Pattern = ConPattern | Expr | Hole
 
 export const buildPattern = (node: ParseNode): Pattern => {
-    const nodes = filterIndependent(node)
+    const nodes = filterNonAstNodes(node)
     if (nodes[0].kind === 'con-pattern') {
         return buildConPattern(nodes[0])
     }

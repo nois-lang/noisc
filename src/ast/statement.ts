@@ -9,25 +9,24 @@ import { Identifier } from './operand'
 export type Statement = VarDef | FnDef | KindDef | ImplDef | TypeDef | ReturnStmt | Expr
 
 export const buildStatement = (node: ParseNode): Statement => {
-    const child = (<ParseTree>node).nodes[0]
-    switch (child.kind) {
+    const n = (<ParseTree>node).nodes[0]
+    switch (n.kind) {
         case 'var-def':
-            return buildVarDef(child)
+            return buildVarDef(n)
         case 'fn-def':
-            return buildFnDef(child)
+            return buildFnDef(n)
         case 'kind-def':
-            return buildKindDef(child)
+            return buildKindDef(n)
         case 'impl-def':
-            return buildImplDef(child)
+            return buildImplDef(n)
         case 'type-def':
-            return buildTypeDef(child)
+            return buildTypeDef(n)
         case 'return-stmt':
-            return buildReturnStmt(child)
+            return buildReturnStmt(n)
         case 'expr':
-            return buildExpr(child)
-        default:
-            throw Error(`expected statement, got ${node.kind}`)
+            return buildExpr(n)
     }
+    throw Error(`expected statement, got ${node.kind}`)
 }
 
 export interface VarDef extends AstNode<'var-def'> {

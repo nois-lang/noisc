@@ -1,22 +1,9 @@
 import { LocationRange } from '../location'
 import { NodeKind } from '../parser/parser'
 
-export const lexerTokenKinds = <const>[
-    // keywords
-    'type-keyword',
-    'kind-keyword',
-    'impl-keyword',
-    'let-keyword',
-    'fn-keyword',
-    'if-keyword',
-    'else-keyword',
-    'return-keyword',
-    'while-keyword',
-    'for-keyword',
-    'in-keyword',
-    'match-keyword',
+export const lexerOperatorKinds = ['plus', 'minus', 'asterisk', 'slash', 'caret', 'percent', 'ampersand', 'pipe', 'excl', 'period']
 
-    // punctuation
+export const lexerPunctuationKinds = [
     'o-paren',
     'c-paren',
     'o-bracket',
@@ -29,37 +16,38 @@ export const lexerTokenKinds = <const>[
     'comma',
     'equals',
     'underscore',
-    'arrow',
+    'arrow']
 
-    // operators
-    'plus',
-    'minus',
-    'asterisk',
-    'slash',
-    'caret',
-    'percent',
-    'ampersand',
-    'pipe',
-    'excl',
-    'period',
-
-    // dynamic
-    'identifier',
-    'string',
-    'char',
-    'int',
-    'float',
-
-    // parse independent
-    'newline',
-    'comment',
-
-    // special
-    'unknown',
-    'unterminated-string',
-    'unterminated-char',
-    'eof'
+export const lexerKeywordKinds = [
+    'type-keyword',
+    'kind-keyword',
+    'impl-keyword',
+    'let-keyword',
+    'fn-keyword',
+    'if-keyword',
+    'else-keyword',
+    'return-keyword',
+    'while-keyword',
+    'for-keyword',
+    'in-keyword',
+    'match-keyword'
 ]
+
+export const lexerDynamicKinds = ['identifier', 'string', 'char', 'int', 'float']
+
+const lexerParseIndependentKinds = ['newline', 'comment']
+
+const lexerSpecialKinds = ['unknown', 'unterminated-string', 'unterminated-char', 'eof']
+
+export const lexerTokenKinds = <const>[
+    ...lexerKeywordKinds,
+    ...lexerPunctuationKinds,
+    ...lexerOperatorKinds,
+    ...lexerDynamicKinds,
+    ...lexerParseIndependentKinds,
+    ...lexerSpecialKinds
+]
+
 export type TokenKind = typeof lexerTokenKinds[number]
 
 export const erroneousTokenKinds: TokenKind[] = ['unknown', 'unterminated-char', 'unterminated-string']

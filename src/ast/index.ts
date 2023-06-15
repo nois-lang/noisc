@@ -1,8 +1,9 @@
 import { buildStatement, Statement } from './statement'
 import { buildPattern, Pattern } from './match'
-import { ParseNode, ParseTree } from '../parser/parser'
-import { independentTokenKinds } from '../lexer/lexer'
+import { ParseNode, ParseTree, treeKinds } from '../parser/parser'
+import { lexerDynamicKinds } from '../lexer/lexer'
 import { buildIdentifier, Identifier } from './operand'
+import { Expr } from './expr'
 
 export interface AstNode<T extends AstNodeKind> {
     type: T
@@ -19,10 +20,10 @@ export type AstNodeKind
     | 'field-def'
     | 'type-con'
     | 'return-stmt'
-    | 'spread-op'
     | 'operand-expr'
     | 'unary-expr'
     | 'binary-expr'
+    | 'field-init'
     | 'block'
     | 'closure-expr'
     | 'list-expr'
@@ -42,8 +43,32 @@ export type AstNodeKind
     | 'int-literal'
     | 'float-literal'
 
-export const filterIndependent = (node: ParseNode): ParseNode[] =>
-    (<ParseTree>node).nodes.filter(n => !independentTokenKinds.includes(n.kind))
+    | 'not-op'
+    | 'spread-op'
+    | 'call-op'
+    | 'con-op'
+
+    | 'add-op'
+    | 'sub-op'
+    | 'mult-op'
+    | 'div-op'
+    | 'exp-op'
+    | 'mod-op'
+    | 'access-op'
+    | 'eq-op'
+    | 'ne-op'
+    | 'ge-op'
+    | 'le-op'
+    | 'gt-op'
+    | 'lt-op'
+    | 'and-op'
+    | 'or-op'
+    | 'assign-op'
+
+export const astNodes = [...lexerDynamicKinds, ...treeKinds]
+
+export const filterNonAstNodes = (node: ParseNode): ParseNode[] =>
+    (<ParseTree>node).nodes.filter(n => astNodes.includes(n.kind))
 
 export interface Module extends AstNode<'module'> {
     statements: Statement[]
@@ -53,7 +78,7 @@ export const buildModule = (node: ParseNode): Module => {
     return {
         type: 'module',
         parseNode: node,
-        statements: filterIndependent(node).filter(n => n.kind === 'statement').map(n => buildStatement(n))
+        statements: filterNonAstNodes(node).filter(n => n.kind === 'statement').map(n => buildStatement(n))
     }
 }
 
@@ -63,7 +88,7 @@ export interface Type extends AstNode<'type'> {
 }
 
 export const buildType = (node: ParseNode): Type => {
-    const nodes = filterIndependent(node)
+    const nodes = filterNonAstNodes(node)
     const nameNode = nodes[0]
     const paramsNode = nodes.at(1)
     return {
@@ -84,7 +109,7 @@ export interface Param extends AstNode<'param'> {
 }
 
 export const buildParam = (node: ParseNode): Param => {
-    const nodes = filterIndependent(node)
+    const nodes = filterNonAstNodes(node)
     const paramNode = nodes[0]
     const typeNode = nodes.at(1)
     return {
@@ -94,3 +119,23 @@ export const buildParam = (node: ParseNode): Param => {
         paramType: typeNode ? buildType(typeNode) : undefined,
     }
 }
+
+export interface FieldInit extends AstNode<'field-init'> {
+    identifier: Identifier
+    expr: Expr
+}
+
+export const compactAstNode = (node: AstNode<any>): any => Object.fromEntries(
+    Object.entries(node)
+        .filter(([p,]) => p !== 'parseNode')
+        .map(([p, v]) => {
+            if (Array.isArray(v)) {
+                return [p, v.map(compactAstNode)]
+            }
+            if (typeof v === 'object' && 'parseNode' in v) {
+                return [p, compactAstNode(v)]
+            }
+            return [p, v]
+        })
+)
+

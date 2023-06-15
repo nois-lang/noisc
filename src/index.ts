@@ -4,7 +4,7 @@ import { join, resolve } from 'path'
 import { Parser } from './parser/parser'
 import { prettyLexerError, prettySourceMessage, prettySyntaxError } from './error'
 import { parseModule } from './parser/fns'
-import { buildModule } from './ast'
+import { buildModule, compactAstNode } from './ast'
 
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
 
@@ -47,4 +47,4 @@ if (parser.errors.length > 0) {
 
 const moduleAst = buildModule(root)
 
-console.dir(moduleAst, { depth: null, colors: true, compact: true })
+console.dir(compactAstNode(moduleAst), { depth: null, colors: true, compact: true })

@@ -1,4 +1,4 @@
-import { compactNode, Parser } from './parser'
+import { compactParseNode, Parser } from './parser'
 import { tokenize } from '../lexer/lexer'
 import { parseModule } from './fns'
 
@@ -8,7 +8,7 @@ describe('parser', () => {
         const p = new Parser(tokenize(code))
         parseModule(p)
         const tree = p.buildTree()
-        return { tree: compactNode(tree), errors: p.errors }
+        return { tree: compactParseNode(tree), errors: p.errors }
     }
 
     describe('parse fn-def', () => {

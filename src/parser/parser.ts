@@ -23,7 +23,7 @@ export const treeKinds = <const>[
     'infix-op',
     'add-op',
     'sub-op',
-    'mul-op',
+    'mult-op',
     'div-op',
     'exp-op',
     'mod-op',
@@ -42,6 +42,7 @@ export const treeKinds = <const>[
     'spread-op',
     'postfix-op',
     'call-op',
+    'con-op',
     'args',
     'closure-expr',
     'closure-params',
@@ -85,11 +86,11 @@ export interface OpenEvent {
     kind: TreeKind
 }
 
-export const compactNode = (node: ParseNode): any => {
+export const compactParseNode = (node: ParseNode): any => {
     if ('value' in node) {
         return { [node.kind]: node.value }
     } else {
-        return { [node.kind]: node.nodes.map(n => compactNode(n)) }
+        return { [node.kind]: node.nodes.map(n => compactParseNode(n)) }
     }
 }
 

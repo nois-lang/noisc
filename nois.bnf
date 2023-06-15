@@ -41,11 +41,11 @@ statement           ::= var-def | fn-def | kind-def | impl-def | type-def | retu
                     | FLOAT
                     | IDENTIFIER
                     ;
-    infix-op        ::= add-op | sub-op | mul-op | div-op | exp-op | mod-op | access-op | eq-op | ne-op
+    infix-op        ::= add-op | sub-op | mult-op | div-op | exp-op | mod-op | access-op | eq-op | ne-op
                     | ge-op | le-op | gt-op | lt-op | and-op | or-op | assign-op;
       add-op        ::= PLUS;
       sub-op        ::= MINUS;
-      mul-op        ::= ASTERISK;
+      mult-op       ::= ASTERISK;
       div-op        ::= SLASH;
       exp-op        ::= CARET;
       mod-op        ::= PERCENT;
