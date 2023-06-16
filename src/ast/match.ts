@@ -1,7 +1,7 @@
 import { buildExpr, buildOperandExpr, Expr } from './expr'
 import { AstNode, filterNonAstNodes } from './index'
 import { ParseNode } from '../parser/parser'
-import { buildIdentifier, buildOperand, Identifier } from './operand'
+import { buildIdentifier, buildName, buildOperand, Identifier, Name } from './operand'
 import { buildUnaryOp, SpreadOp } from './op'
 import { Block, buildBlock } from './statement'
 
@@ -63,7 +63,7 @@ export const buildConPattern = (node: ParseNode): ConPattern => {
 }
 
 export interface FieldPattern extends AstNode<'field-pattern'> {
-    identifier: Identifier
+    name: Name
     pattern?: Pattern
 }
 
@@ -72,9 +72,9 @@ export const buildFieldPattern = (node: ParseNode): FieldPattern | SpreadOp => {
     if (nodes[0].kind === 'spread-op') {
         return { type: 'spread-op', parseNode: node }
     }
-    const identifier = buildIdentifier(nodes[0])
+    const name = buildName(nodes[0])
     const pattern = nodes.at(1) ? buildPattern(nodes[1]) : undefined
-    return { type: 'field-pattern', parseNode: node, identifier, pattern }
+    return { type: 'field-pattern', parseNode: node, name, pattern }
 }
 
 export interface Hole extends AstNode<'hole'> {

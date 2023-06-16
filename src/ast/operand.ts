@@ -148,9 +148,21 @@ export const buildFloatLiteral = (node: ParseNode): FloatLiteral => {
 }
 
 export interface Identifier extends AstNode<'identifier'> {
-    value: string
+    scope: Name[]
+    name: Name
 }
 
 export const buildIdentifier = (node: ParseNode): Identifier => {
-    return { type: 'identifier', parseNode: node, value: (<ParseToken>node).value }
+    const names = filterNonAstNodes(node).map(buildName)
+    const scope = names.slice(0, -1)
+    const name = names.at(-1)!
+    return { type: 'identifier', parseNode: node, scope, name }
+}
+
+export interface Name extends AstNode<'name'> {
+    value: string
+}
+
+export const buildName = (node: ParseNode): Name => {
+    return { type: 'name', parseNode: node, value: (<ParseToken>node).value }
 }
