@@ -2,6 +2,7 @@ import { tokenize } from './lexer/lexer'
 import { readFileSync } from 'fs'
 import { Parser } from './parser/parser'
 import { parseModule } from './parser/fns'
+import { buildModule } from './ast'
 
 describe('nois', () => {
     it('parse features', () => {
@@ -19,5 +20,9 @@ describe('nois', () => {
         const root = parser.buildTree()
 
         expect(root.kind).toEqual('module')
+
+        const astRoot = buildModule(root)
+
+        expect(astRoot.type).toEqual('module')
     })
 })
