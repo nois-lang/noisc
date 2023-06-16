@@ -29,6 +29,7 @@ export type AstNodeKind
     | 'list-expr'
     | 'param'
     | 'type'
+    | 'type-param'
     | 'if-expr'
     | 'while-expr'
     | 'for-expr'
@@ -84,11 +85,19 @@ export const buildModule = (node: ParseNode): Module => {
 
 export interface Type extends AstNode<'type'> {
     identifier: Identifier
-    typeParams: Type[]
+    typeParams: TypeParam[]
+}
+
+export interface TypeParam extends AstNode<'type-param'> {
+    identifier: Identifier
+    bounds: Type[]
 }
 
 export const buildType = (node: ParseNode): Type => {
     const nodes = filterNonAstNodes(node)
+    if (node.kind === 'type-annot') {
+        return buildType(nodes[0])
+    }
     const nameNode = nodes[0]
     const paramsNode = nodes.at(1)
     return {
@@ -97,9 +106,21 @@ export const buildType = (node: ParseNode): Type => {
         identifier: buildIdentifier(nameNode),
         typeParams: paramsNode
             ? (<ParseTree>paramsNode).nodes
-                .filter(n => n.kind === 'type-params')
-                .map(n => buildType((<ParseTree>n).nodes[0]))
+                .filter(n => n.kind === 'type-param')
+                .map(buildTypeParam)
             : [],
+    }
+}
+
+export const buildTypeParam = (node: ParseNode): TypeParam => {
+    const nodes = filterNonAstNodes(node)
+    if (nodes[0].kind === 'type-expr') {
+        const { identifier } = buildType(nodes[0])
+        return { type: 'type-param', parseNode: node, identifier, bounds: [] }
+    } else {
+        const identifier = buildIdentifier(nodes[0])
+        const bounds = filterNonAstNodes(nodes[1]).map(buildType)
+        return { type: 'type-param', parseNode: node, identifier, bounds }
     }
 }
 

@@ -92,7 +92,11 @@ type-annot          ::= COLON type-expr
                     ;
   type-expr         ::= IDENTIFIER type-params?
                     ;
-    type-params     ::= O-ANGLE (type-expr (COMMA type-expr)* COMMA?)? C-ANGLE
+    type-params     ::= O-ANGLE (type-param (COMMA type-param)* COMMA?)? C-ANGLE
+                    ;
+      type-param    ::= type-expr | IDENTIFIER COLON type-bounds
+                    ;
+      type-bounds   ::= type-expr (PLUS type-expr)*
                     ;
 if-expr             ::= IF-KEYWORD expr block (ELSE-KEYWORD block)?
                     ;

@@ -140,19 +140,47 @@ export const parseTypeAnnot = (parser: Parser): void => {
 }
 
 /**
- * type-params ::= O-ANGLE (type-expr (COMMA type-expr)* COMMA?)? C-ANGLE
+ * type-params ::= O-ANGLE (type-param (COMMA type-param)* COMMA?)? C-ANGLE
  */
 export const parseTypeParams = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('o-angle')
     while (!parser.at('c-angle') && !parser.eof()) {
-        parseTypeExpr(parser)
+        parseTypeParam(parser)
         if (!parser.at('c-angle')) {
             parser.expect('comma')
         }
     }
     parser.expect('c-angle')
-    parser.close(mark, 'params')
+    parser.close(mark, 'type-params')
+}
+
+/**
+ * type-param ::= type-expr | IDENTIFIER COLON type-bounds
+ */
+export const parseTypeParam = (parser: Parser): void => {
+    const mark = parser.open()
+    if (parser.nth(1) === 'colon') {
+        parser.expect('identifier')
+        parser.expect('colon')
+        parseTypeBounds(parser)
+    } else {
+        parseTypeExpr(parser)
+    }
+    parser.close(mark, 'type-param')
+}
+
+/**
+ * type-bounds ::= type-expr (PLUS type-expr)*
+ */
+export const parseTypeBounds = (parser: Parser): void => {
+    const mark = parser.open()
+    parseTypeExpr(parser)
+    while (parser.at('plus') && !parser.eof()) {
+        parser.expect('plus')
+        parseTypeExpr(parser)
+    }
+    parser.close(mark, 'type-bounds')
 }
 
 export const parseTodo = (parser: Parser): void => {

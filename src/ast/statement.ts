@@ -1,4 +1,4 @@
-import { AstNode, buildParam, buildType, filterNonAstNodes, Param, Type } from './index'
+import { AstNode, buildParam, buildType, filterNonAstNodes, Param, Type, TypeParam } from './index'
 import { buildTypeDef, TypeDef } from './type-def'
 import { buildExpr, Expr } from './expr'
 import { buildPattern, Pattern } from './match'
@@ -46,7 +46,7 @@ export const buildVarDef = (node: ParseNode): VarDef => {
 export interface FnDef extends AstNode<'fn-def'> {
     type: 'fn-def'
     identifier: Identifier
-    typeParams: Type[]
+    typeParams: TypeParam[]
     params: Param[]
     block?: Block
     returnType?: Type
@@ -64,7 +64,7 @@ export const buildFnDef = (node: ParseNode): FnDef => {
 
 export interface KindDef extends AstNode<'kind-def'> {
     identifier: Identifier
-    kindParams: Type[]
+    kindParams: TypeParam[]
     block: Block
 }
 
@@ -77,7 +77,7 @@ export const buildKindDef = (node: ParseNode): KindDef => {
 
 export interface ImplDef extends AstNode<'impl-def'> {
     identifier: Identifier
-    implParams: Type[]
+    implParams: TypeParam[]
     forKind?: Type
     block: Block
 }

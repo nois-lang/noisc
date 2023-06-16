@@ -25,11 +25,9 @@ impl Display for Vec2 {
 // function
 fn add(a: Int, b: Int): Int { a + b }
 
-// function generics
-fn pushIf<T>(flag: Bool, l: List<T>, item: T): Unit {
-    if (flag) {
-        l.push(item)
-    }
+// function generics and generic bounds
+fn foo<T: Add + Div>(a: T, b: T): T {
+    a.add(b).div(b)
 }
 
 // define variable
