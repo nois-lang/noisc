@@ -91,8 +91,6 @@ export const buildForExpr = (node: ParseNode): ForExpr => {
 }
 
 export interface ClosureExpr extends AstNode<'closure-expr'> {
-    identifier: Identifier
-    typeParams: Type[]
     params: Param[]
     block: Block
     returnType?: Type
@@ -100,12 +98,11 @@ export interface ClosureExpr extends AstNode<'closure-expr'> {
 
 export const buildClosureExpr = (node: ParseNode): ClosureExpr => {
     const nodes = filterNonAstNodes(node)
-    const identifier = buildIdentifier(nodes[0])
-    const typeParams = filterNonAstNodes(nodes[1]).filter(n => n.kind === 'type-expr').map(n => buildType(n))
-    const params = filterNonAstNodes(nodes[2]).filter(n => n.kind === 'param').map(n => buildParam(n))
-    const block = nodes[3].kind === 'expr' ? <Block>{ statements: [buildExpr(nodes[3])] } : buildBlock(nodes[3])
-    const returnType = nodes.at(4) ? buildType(nodes[4]) : undefined
-    return { type: 'closure-expr', parseNode: node, identifier, typeParams, params, block, returnType }
+    let idx = 0
+    const params = filterNonAstNodes(nodes[idx++]).filter(n => n.kind === 'param').map(n => buildParam(n))
+    const block = nodes[idx].kind === 'expr' ? <Block>{ statements: [buildExpr(nodes[idx++])] } : buildBlock(nodes[idx++])
+    const returnType = nodes.at(idx) ? buildType(nodes[idx++]) : undefined
+    return { type: 'closure-expr', parseNode: node, params, block, returnType }
 }
 
 export interface ListExpr extends AstNode<'list-expr'> {
