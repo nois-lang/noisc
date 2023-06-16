@@ -1,5 +1,5 @@
 import { Parser } from '../parser'
-import { parseTypeExpr } from './expr'
+import { parseIdentifier, parseTypeExpr } from './expr'
 import { paramFirstTokens, parseTypeAnnot } from './index'
 
 /**
@@ -34,11 +34,11 @@ export const parseTypeConParams = (parser: Parser): void => {
 }
 
 /**
- * field-def ::= IDENTIFIER type-annot
+ * field-def ::= identifier type-annot
  */
 export const parseFieldDef = (parser: Parser): void => {
     const mark = parser.open()
-    parser.expect('identifier')
+    parseIdentifier(parser)
     parseTypeAnnot(parser)
     parser.close(mark, 'field-def')
 }
@@ -60,11 +60,11 @@ export const parseTypeConList = (parser: Parser): void => {
 }
 
 /**
- * type-con ::= IDENTIFIER con-params?
+ * type-con ::= identifier con-params?
  */
 export const parseTypeCon = (parser: Parser): void => {
     const mark = parser.open()
-    parser.expect('identifier')
+    parseIdentifier(parser)
     if (parser.at('o-paren')) {
         parseTypeConParams(parser)
     }

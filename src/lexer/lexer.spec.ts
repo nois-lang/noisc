@@ -11,15 +11,15 @@ let main = (): Unit {
         const tokens = tokenize(code)
         expect(tokens.map(t => [t.kind, t.value])).toEqual([
             ['let-keyword', 'let'],
-            ['identifier', 'main'],
+            ['name', 'main'],
             ['equals', '='],
             ['o-paren', '('],
             ['c-paren', ')'],
             ['colon', ':'],
-            ['identifier', 'Unit'],
+            ['name', 'Unit'],
             ['o-brace', '{'],
             ['newline', '\n'],
-            ['identifier', 'print'],
+            ['name', 'print'],
             ['o-paren', '('],
             ['int', '4'],
             ['c-paren', ')'],
@@ -163,19 +163,19 @@ let main = (): Unit {
         expect(tokens.map(t => [t.kind, t.value])).toEqual([
             ['int', '1'],
             ['plus', '+'],
-            ['identifier', 'call'],
+            ['name', 'call'],
             ['o-paren', '('],
             ['string', '"str"'],
             ['c-paren', ')'],
             ['period', '.'],
-            ['identifier', 'ok'],
+            ['name', 'ok'],
             ['o-paren', '('],
             ['c-paren', ')'],
             ['slash', '/'],
             ['o-paren', '('],
             ['int', '12'],
             ['minus', '-'],
-            ['identifier', 'a'],
+            ['name', 'a'],
             ['o-paren', '('],
             ['c-paren', ')'],
             ['c-paren', ')'],
@@ -185,7 +185,7 @@ let main = (): Unit {
 
     it('tokenize unknown literal', () => {
         expect(tokenize(`hello ~~~ 123`)).toEqual([
-            { kind: 'identifier', value: 'hello', location: { start: 0, end: 4 } },
+            { kind: 'name', value: 'hello', location: { start: 0, end: 4 } },
             { kind: 'unknown', value: '~~~', location: { start: 6, end: 8 } },
             { kind: 'int', value: '123', location: { start: 10, end: 12 } },
             { kind: 'eof', value: '', location: { start: 13, end: 13 } }

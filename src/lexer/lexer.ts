@@ -33,7 +33,7 @@ export const lexerKeywordKinds = [
     'match-keyword'
 ]
 
-export const lexerDynamicKinds = ['identifier', 'string', 'char', 'int', 'float']
+export const lexerDynamicKinds = ['name', 'string', 'char', 'int', 'float']
 
 const lexerParseIndependentKinds = ['newline', 'comment']
 
@@ -137,7 +137,7 @@ export const tokenize = (code: String): ParseToken[] => {
             continue
         }
 
-        const fns = [parseFloat, parseInt, parseComment, parseNewline, parseConstToken, parseIdentifier,
+        const fns = [parseFloat, parseInt, parseComment, parseNewline, parseConstToken, parseName,
             parseCharLiteral, parseStringLiteral]
 
         let parsed = false
@@ -218,15 +218,15 @@ const parseConstToken = (chars: string[], tokens: ParseToken[], pos: { pos: numb
     return false
 }
 
-const parseIdentifier = (chars: string[], tokens: ParseToken[], pos: { pos: number }): boolean => {
+const parseName = (chars: string[], tokens: ParseToken[], pos: { pos: number }): boolean => {
     if (isAlpha(chars[pos.pos])) {
         const start = pos.pos
-        const identifier: string[] = []
+        const name: string[] = []
         while (isAlpha(chars[pos.pos]) || isNumeric(chars[pos.pos])) {
-            identifier.push(chars[pos.pos])
+            name.push(chars[pos.pos])
             pos.pos++
         }
-        tokens.push(createToken('identifier', identifier.join(''), pos, start))
+        tokens.push(createToken('name', name.join(''), pos, start))
         return true
     }
     return false

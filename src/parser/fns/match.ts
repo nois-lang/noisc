@@ -1,5 +1,5 @@
 import { Parser } from '../parser'
-import { parseExpr } from './expr'
+import { parseExpr, parseIdentifier } from './expr'
 import { parseBlock } from './statement'
 import { prefixOpFirstTokens } from './index'
 import { parsePrefixOp, parseSpreadOp } from './op'
@@ -60,11 +60,11 @@ export const parseGuard = (parser: Parser): void => {
 }
 
 /**
- * pattern ::= con-pattern | STRING | CHAR | prefix-op? (INT | FLOAT) | IDENTIFIER | hole
+ * pattern ::= con-pattern | STRING | CHAR | prefix-op? (INT | FLOAT) | identifier | hole
  */
 export const parsePattern = (parser: Parser): void => {
     const mark = parser.open()
-    if (parser.at('identifier') && parser.nth(1) === 'o-paren') {
+    if (parser.at('name') && parser.nth(1) === 'o-paren') {
         parseConPattern(parser)
     } else if (parser.consume('string')) {
     } else if (parser.consume('char')) {
@@ -75,7 +75,8 @@ export const parsePattern = (parser: Parser): void => {
         if (parser.consume('int')) {
         } else if (parser.consume('float')) {
         }
-    } else if (parser.consume('identifier')) {
+    } else if (parser.at('name')) {
+        parseIdentifier(parser)
     } else if (parser.at('underscore')) {
         parseHole(parser)
     } else {
@@ -85,11 +86,11 @@ export const parsePattern = (parser: Parser): void => {
 }
 
 /**
- * con-pattern ::= IDENTIFIER con-pattern-params
+ * con-pattern ::= identifier con-pattern-params
  */
 export const parseConPattern = (parser: Parser): void => {
     const mark = parser.open()
-    parser.expect('identifier')
+    parseIdentifier(parser)
     parseConPatternParams(parser)
     parser.close(mark, 'con-pattern')
 }
@@ -111,12 +112,12 @@ export const parseConPatternParams = (parser: Parser): void => {
 }
 
 /**
- * field-pattern ::= IDENTIFIER (COLON pattern) | spread-op
+ * field-pattern ::= NAME (COLON pattern) | spread-op
  */
 export const parseFieldPattern = (parser: Parser): void => {
     const mark = parser.open()
-    if (parser.at('identifier')) {
-        parser.expect('identifier')
+    if (parser.at('name')) {
+        parser.expect('name')
         if (parser.consume('colon')) {
             parsePattern(parser)
         }

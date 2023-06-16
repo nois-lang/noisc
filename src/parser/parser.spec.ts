@@ -20,7 +20,7 @@ describe('parser', () => {
                     'statement': [{
                         'fn-def': [
                             { 'fn-keyword': 'fn' },
-                            { 'type-expr': [{ 'identifier': 'main' }] },
+                            { 'type-expr': [{ 'identifier': [{ 'name': 'main' }] }] },
                             { 'params': [{ 'o-paren': '(' }, { 'c-paren': ')' }] },
                             { 'block': [{ 'o-brace': '{' }, { 'c-brace': '}' }] }
                         ]
@@ -54,11 +54,11 @@ describe('parser', () => {
                                 'operand': [{
                                     'if-expr': [
                                         { 'if-keyword': 'if' },
-                                        { 'expr': [{ 'sub-expr': [{ 'operand': [{ 'identifier': 'a' }] }] }] },
+                                        { 'expr': [{ 'sub-expr': [{ 'operand': [{ 'identifier': [{ 'name': 'a' }] }] }] }] },
                                         {
                                             'block': [
                                                 { 'o-brace': '{' },
-                                                { 'statement': [{ 'expr': [{ 'sub-expr': [{ 'operand': [{ 'identifier': 'b' }] }] }] }] },
+                                                { 'statement': [{ 'expr': [{ 'sub-expr': [{ 'operand': [{ 'identifier': [{ 'name': 'b' }] }] }] }] }] },
                                                 { 'c-brace': '}' }
                                             ]
                                         },
@@ -66,7 +66,7 @@ describe('parser', () => {
                                         {
                                             'block': [
                                                 { 'o-brace': '{' },
-                                                { 'statement': [{ 'expr': [{ 'sub-expr': [{ 'operand': [{ 'identifier': 'c' }] }] }] }] },
+                                                { 'statement': [{ 'expr': [{ 'sub-expr': [{ 'operand': [{ 'identifier': [{ 'name': 'c' }] }] }] }] }] },
                                                 { 'c-brace': '}' }
                                             ]
                                         }

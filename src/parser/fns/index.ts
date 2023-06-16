@@ -1,6 +1,6 @@
 import { TokenKind } from '../../lexer/lexer'
 import { Parser } from '../parser'
-import { parseExpr, parseTypeExpr } from './expr'
+import { parseExpr, parseIdentifier, parseTypeExpr } from './expr'
 import { parseBlock, parseStatement } from './statement'
 import { parsePattern } from './match'
 
@@ -8,9 +8,9 @@ export const prefixOpFirstTokens: TokenKind[] = ['excl', 'minus', 'period', 'plu
 export const postfixOpFirstTokens: TokenKind[] = ['o-paren']
 export const infixOpFirstTokens: TokenKind[] = ['ampersand', 'asterisk', 'c-angle', 'caret', 'equals', 'excl', 'minus',
     'o-angle', 'percent', 'period', 'pipe', 'plus', 'slash']
-export const exprFirstTokens: TokenKind[] = ['char', 'identifier', 'if-keyword', 'while-keyword', 'for-keyword',
+export const exprFirstTokens: TokenKind[] = ['char', 'name', 'if-keyword', 'while-keyword', 'for-keyword',
     'match-keyword', 'int', 'float', 'o-bracket', 'o-paren', 'string', ...prefixOpFirstTokens]
-export const paramFirstTokens: TokenKind[] = ['identifier']
+export const paramFirstTokens: TokenKind[] = ['name']
 
 /**
  * module ::= statement*
@@ -91,11 +91,11 @@ export const parseConOp = (parser: Parser): void => {
 }
 
 /**
- * field-init ::= IDENTIFIER COLON expr
+ * field-init ::= NAME COLON expr
  */
 export const parseFieldInit = (parser: Parser): void => {
     const mark = parser.open()
-    parser.expect('identifier')
+    parser.expect('name')
     parser.expect('colon')
     parseExpr(parser)
     parser.close(mark, 'field-init')
@@ -156,12 +156,12 @@ export const parseTypeParams = (parser: Parser): void => {
 }
 
 /**
- * type-param ::= type-expr | IDENTIFIER COLON type-bounds
+ * type-param ::= type-expr | identifier COLON type-bounds
  */
 export const parseTypeParam = (parser: Parser): void => {
     const mark = parser.open()
     if (parser.nth(1) === 'colon') {
-        parser.expect('identifier')
+        parseIdentifier(parser)
         parser.expect('colon')
         parseTypeBounds(parser)
     } else {

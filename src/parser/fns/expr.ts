@@ -44,10 +44,10 @@ export const parseSubExpr = (parser: Parser): void => {
 
 /**
  * operand ::= if-expr | match-expr | closure-expr | O-PAREN expr C-PAREN | list-expr | STRING | CHAR | INT | FLOAT
- * | IDENTIFIER | type-expr
+ * | identifier | type-expr
  */
 export const parseOperand = (parser: Parser): void => {
-    const dynamicTokens: TokenKind[] = ['string', 'char', 'int', 'float', 'identifier']
+    const dynamicTokens: TokenKind[] = ['string', 'char', 'int', 'float']
 
     const mark = parser.open()
     if (parser.at('if-keyword')) {
@@ -66,6 +66,8 @@ export const parseOperand = (parser: Parser): void => {
         parser.expect('c-paren')
     } else if (parser.at('o-bracket')) {
         parseListExpr(parser)
+    } else if (parser.at('name')) {
+        parseIdentifier(parser)
     } else if (parser.atAny(dynamicTokens)) {
         parser.expectAny(dynamicTokens)
     } else {
@@ -92,11 +94,11 @@ export const parseListExpr = (parser: Parser): void => {
 }
 
 /**
- * type-expr ::= IDENTIFIER type-params?
+ * type-expr ::= identifier type-params?
  */
 export const parseTypeExpr = (parser: Parser): void => {
     const mark = parser.open()
-    parser.expect('identifier')
+    parseIdentifier(parser)
     if (parser.at('o-angle')) {
         parseTypeParams(parser)
     }
@@ -141,3 +143,16 @@ export const parseForExpr = (parser: Parser): void => {
     parser.close(mark, 'for-expr')
 }
 
+/**
+ * identifier ::= (NAME COLON COLON)* NAME
+ */
+export const parseIdentifier = (parser: Parser): void => {
+    const mark = parser.open()
+    while (parser.nth(1) === 'colon' && parser.nth(2) === 'colon' && !parser.eof()) {
+        parser.expect('name')
+        parser.expect('colon')
+        parser.expect('colon')
+    }
+    parser.expect('name')
+    parser.close(mark, 'identifier')
+}

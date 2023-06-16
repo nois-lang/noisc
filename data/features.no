@@ -1,3 +1,8 @@
+// imports
+// use std::Display
+// use std::io::{println}
+// use std::Option::*
+
 // type
 type Unit
 
@@ -55,10 +60,10 @@ println("hello")
 vec.fmt()
 
 // alternative syntax
-Vec2.fmt(vec)
+Vec2::fmt(vec)
 
 // method call syntax for ambiguous methods
-Vec2.Display.fmt(vec)
+Vec2::Display::fmt(vec)
 
 // if
 let d = if True { 4 } else { 2 + 6 }

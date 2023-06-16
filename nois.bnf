@@ -16,11 +16,11 @@ statement           ::= var-def | fn-def | kind-def | impl-def | type-def | retu
                     ;
     type-con-params ::= O-PAREN (field-def (COMMA field-def)*)? COMMA? C-PAREN
                     ;
-      field-def     ::= IDENTIFIER type-annot
+      field-def     ::= identifier type-annot
                     ;
     type-con-list   ::= O-BRACE (type-con (COMMA type-con)* COMMA?)? C-BRACE
                     ;
-      type-con      ::= IDENTIFIER type-con-params?
+      type-con      ::= identifier type-con-params?
                     ;
   return-stmt       ::= RETURN-KEYWORD expr?
                     ;
@@ -39,7 +39,7 @@ statement           ::= var-def | fn-def | kind-def | impl-def | type-def | retu
                     | CHAR
                     | INT
                     | FLOAT
-                    | IDENTIFIER
+                    | identifier
                     ;
     infix-op        ::= add-op | sub-op | mult-op | div-op | exp-op | mod-op | access-op | eq-op | ne-op
                     | ge-op | le-op | gt-op | lt-op | and-op | or-op | assign-op;
@@ -74,7 +74,9 @@ statement           ::= var-def | fn-def | kind-def | impl-def | type-def | retu
                     ;
       con-op        ::= O-PAREN (field-init (COMMA field-init)*)? COMMA? C-PAREN
                     ;
-        field-init  ::= IDENTIFIER COLON expr
+        field-init  ::= NAME COLON expr
+                    ;
+identifier          ::= (NAME COLON COLON)* NAME
                     ;
 block               ::= O-BRACE statement* C-BRACE
                     ;
@@ -90,11 +92,11 @@ params              ::= O-PAREN (param (COMMA param)*)? COMMA? C-PAREN
                     ;
 type-annot          ::= COLON type-expr
                     ;
-  type-expr         ::= IDENTIFIER type-params?
+  type-expr         ::= identifier type-params?
                     ;
     type-params     ::= O-ANGLE (type-param (COMMA type-param)* COMMA?)? C-ANGLE
                     ;
-      type-param    ::= type-expr | IDENTIFIER COLON type-bounds
+      type-param    ::= type-expr | NAME COLON type-bounds
                     ;
       type-bounds   ::= type-expr (PLUS type-expr)*
                     ;
@@ -112,13 +114,13 @@ match-expr          ::= MATCH-KEYWORD expr match-clauses
                     ;
       guard         ::= IF-KEYWORD expr
                     ;
-pattern             ::= con-pattern | STRING | CHAR | prefix-op? (INT | FLOAT) | IDENTIFIER | hole
+pattern             ::= con-pattern | STRING | CHAR | prefix-op? (INT | FLOAT) | identifier | hole
                     ;
-  con-pattern       ::= IDENTIFIER con-pattern-params
+  con-pattern       ::= identifier con-pattern-params
                     ;
   con-pattern-params::= O-PAREN (field-pattern (COMMA field-pattern)*)? COMMA? C-PAREN
                     ;
-    field-pattern   ::= IDENTIFIER (COLON pattern)? | spread-op
+    field-pattern   ::= NAME (COLON pattern)? | spread-op
                     ;
   hole              ::= UNDERSCORE
                     ;

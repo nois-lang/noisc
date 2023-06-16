@@ -49,6 +49,7 @@ export const treeKinds = <const>[
     'constructor',
     'con-params',
     'field-init',
+    'identifier',
     'params',
     'param',
     'block',
