@@ -1,6 +1,7 @@
-import { compactParseNode, Parser } from './parser'
+import { Parser } from './parser'
 import { tokenize } from '../lexer/lexer'
 import { parseModule } from './fns'
+import { compactParseNode } from './index'
 
 describe('parser', () => {
 

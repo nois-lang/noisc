@@ -1,6 +1,6 @@
 import { buildStatement, Statement } from './statement'
 import { buildPattern, Pattern } from './match'
-import { NodeKind, ParseNode, ParseTree, treeKinds } from '../parser/parser'
+import { NodeKind, ParseNode, ParseTree, treeKinds } from '../parser'
 import { lexerDynamicKinds } from '../lexer/lexer'
 import { buildIdentifier, buildName, Identifier, Name } from './operand'
 import { buildExpr, Expr } from './expr'
