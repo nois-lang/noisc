@@ -6,8 +6,12 @@ import { buildIdentifier, buildName, Identifier, Name } from './operand'
 import { buildExpr, Expr } from './expr'
 
 export interface AstNode<T extends AstNodeKind> {
-    type: T
+    kind: T
     parseNode: ParseNode
+}
+
+export interface Typed {
+    type: Type
 }
 
 export type AstNodeKind
@@ -74,13 +78,30 @@ export const astNodes: NodeKind[] = [...lexerDynamicKinds, ...treeKinds]
 export const filterNonAstNodes = (node: ParseNode): ParseNode[] =>
     (<ParseTree>node).nodes.filter(n => astNodes.includes(n.kind))
 
+export const compactAstNode = (node: AstNode<any>): any => {
+    if (typeof node !== 'object') return node
+    return Object.fromEntries(
+        Object.entries(node)
+            .filter(([p,]) => p !== 'parseNode')
+            .map(([p, v]) => {
+                if (Array.isArray(v)) {
+                    return [p, v.map(compactAstNode)]
+                }
+                if (typeof v === 'object' && 'parseNode' in v) {
+                    return [p, compactAstNode(v)]
+                }
+                return [p, v]
+            })
+    )
+}
+
 export interface Module extends AstNode<'module'> {
     statements: Statement[]
 }
 
 export const buildModule = (node: ParseNode): Module => {
     return {
-        type: 'module',
+        kind: 'module',
         parseNode: node,
         statements: filterNonAstNodes(node).filter(n => n.kind === 'statement').map(n => buildStatement(n))
     }
@@ -106,7 +127,7 @@ export const buildType = (node: ParseNode): Type => {
     const nameNode = nodes[0]
     const paramsNode = nodes.at(1)
     return {
-        type: 'type',
+        kind: 'type',
         parseNode: node,
         identifier: buildIdentifier(nameNode),
         typeParams: paramsNode
@@ -124,7 +145,7 @@ export const buildTypeParam = (node: ParseNode): TypeParam => {
     } else {
         const name = buildName(nodes[0])
         const bounds = filterNonAstNodes(nodes[1]).map(buildType)
-        return { type: 'generic', parseNode: node, name, bounds }
+        return { kind: 'generic', parseNode: node, name, bounds }
     }
 }
 
@@ -137,7 +158,7 @@ export const buildParam = (node: ParseNode): Param => {
     const nodes = filterNonAstNodes(node)
     const pattern = buildPattern(nodes[0])
     const typeNode = nodes.at(1)
-    return { type: 'param', parseNode: node, pattern, paramType: typeNode ? buildType(typeNode) : undefined, }
+    return { kind: 'param', parseNode: node, pattern, paramType: typeNode ? buildType(typeNode) : undefined, }
 }
 
 export interface FieldInit extends AstNode<'field-init'> {
@@ -149,23 +170,6 @@ export const buildFieldInit = (node: ParseNode): FieldInit => {
     const nodes = filterNonAstNodes(node)
     const name = buildName(nodes[0])
     const expr = buildExpr(nodes[1])
-    return { type: 'field-init', parseNode: node, name, expr }
-}
-
-export const compactAstNode = (node: AstNode<any>): any => {
-    if (typeof node !== 'object') return node
-    return Object.fromEntries(
-        Object.entries(node)
-            .filter(([p,]) => p !== 'parseNode')
-            .map(([p, v]) => {
-                if (Array.isArray(v)) {
-                    return [p, v.map(compactAstNode)]
-                }
-                if (typeof v === 'object' && 'parseNode' in v) {
-                    return [p, compactAstNode(v)]
-                }
-                return [p, v]
-            })
-    )
+    return { kind: 'field-init', parseNode: node, name, expr }
 }
 

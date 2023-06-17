@@ -1,5 +1,5 @@
 import { buildMatchExpr, buildPattern, MatchExpr, Pattern } from './match'
-import { AstNode, buildParam, buildType, filterNonAstNodes, Param, Type } from './index'
+import { AstNode, buildParam, buildType, filterNonAstNodes, Param, Type, Typed } from './index'
 import { Block, buildBlock } from './statement'
 import { buildExpr, Expr } from './expr'
 import { ParseNode } from '../parser/parser'
@@ -50,7 +50,7 @@ export const buildOperand = (node: ParseNode): Operand => {
     throw Error(`expected operand, got ${node.kind}`)
 }
 
-export interface IfExpr extends AstNode<'if-expr'> {
+export interface IfExpr extends AstNode<'if-expr'>, Partial<Typed> {
     condition: Expr
     thenBlock: Block
     elseBlock?: Block
@@ -61,10 +61,10 @@ export const buildIfExpr = (node: ParseNode): IfExpr => {
     const condition = buildExpr(nodes[0])
     const thenBlock = buildBlock(nodes[1])
     const elseBlock = nodes.at(2) ? buildBlock(nodes[1]) : undefined
-    return { type: 'if-expr', parseNode: node, condition, thenBlock, elseBlock }
+    return { kind: 'if-expr', parseNode: node, condition, thenBlock, elseBlock }
 }
 
-export interface WhileExpr extends AstNode<'while-expr'> {
+export interface WhileExpr extends AstNode<'while-expr'>, Partial<Typed> {
     condition: Expr
     block: Block
 }
@@ -73,10 +73,10 @@ export const buildWhileExpr = (node: ParseNode): WhileExpr => {
     const nodes = filterNonAstNodes(node)
     const condition = buildExpr(nodes[0])
     const block = buildBlock(nodes[1])
-    return { type: 'while-expr', parseNode: node, condition, block }
+    return { kind: 'while-expr', parseNode: node, condition, block }
 }
 
-export interface ForExpr extends AstNode<'for-expr'> {
+export interface ForExpr extends AstNode<'for-expr'>, Partial<Typed> {
     pattern: Pattern
     expr: Expr
     block: Block
@@ -87,10 +87,10 @@ export const buildForExpr = (node: ParseNode): ForExpr => {
     const pattern = buildPattern(nodes[0])
     const expr = buildExpr(nodes[1])
     const block = buildBlock(nodes[2])
-    return { type: 'for-expr', parseNode: node, pattern, expr, block }
+    return { kind: 'for-expr', parseNode: node, pattern, expr, block }
 }
 
-export interface ClosureExpr extends AstNode<'closure-expr'> {
+export interface ClosureExpr extends AstNode<'closure-expr'>, Partial<Typed> {
     params: Param[]
     block: Block
     returnType?: Type
@@ -102,52 +102,52 @@ export const buildClosureExpr = (node: ParseNode): ClosureExpr => {
     const params = filterNonAstNodes(nodes[idx++]).filter(n => n.kind === 'param').map(n => buildParam(n))
     const block = nodes[idx].kind === 'expr' ? <Block>{ statements: [buildExpr(nodes[idx++])] } : buildBlock(nodes[idx++])
     const returnType = nodes.at(idx) ? buildType(nodes[idx++]) : undefined
-    return { type: 'closure-expr', parseNode: node, params, block, returnType }
+    return { kind: 'closure-expr', parseNode: node, params, block, returnType }
 }
 
-export interface ListExpr extends AstNode<'list-expr'> {
+export interface ListExpr extends AstNode<'list-expr'>, Partial<Typed> {
     exprs: Expr[]
 }
 
 export const buildListExpr = (node: ParseNode): ListExpr => {
     const nodes = filterNonAstNodes(node)
     const exprs = filterNonAstNodes(nodes[0]).filter(n => n.kind === 'expr').map(n => buildExpr(n))
-    return { type: 'list-expr', parseNode: node, exprs }
+    return { kind: 'list-expr', parseNode: node, exprs }
 }
 
-export interface StringLiteral extends AstNode<'string-literal'> {
+export interface StringLiteral extends AstNode<'string-literal'>, Partial<Typed> {
     value: string
 }
 
 export const buildStringLiteral = (node: ParseNode): StringLiteral => {
-    return { type: 'string-literal', parseNode: node, value: (<ParseToken>node).value }
+    return { kind: 'string-literal', parseNode: node, value: (<ParseToken>node).value }
 }
 
-export interface CharLiteral extends AstNode<'char-literal'> {
+export interface CharLiteral extends AstNode<'char-literal'>, Partial<Typed> {
     value: string
 }
 
 export const buildCharLiteral = (node: ParseNode): CharLiteral => {
-    return { type: 'char-literal', parseNode: node, value: (<ParseToken>node).value }
+    return { kind: 'char-literal', parseNode: node, value: (<ParseToken>node).value }
 }
 
-export interface IntLiteral extends AstNode<'int-literal'> {
+export interface IntLiteral extends AstNode<'int-literal'>, Partial<Typed> {
     value: string
 }
 
 export const buildIntLiteral = (node: ParseNode): IntLiteral => {
-    return { type: 'int-literal', parseNode: node, value: (<ParseToken>node).value }
+    return { kind: 'int-literal', parseNode: node, value: (<ParseToken>node).value }
 }
 
-export interface FloatLiteral extends AstNode<'float-literal'> {
+export interface FloatLiteral extends AstNode<'float-literal'>, Partial<Typed> {
     value: string
 }
 
 export const buildFloatLiteral = (node: ParseNode): FloatLiteral => {
-    return { type: 'float-literal', parseNode: node, value: (<ParseToken>node).value }
+    return { kind: 'float-literal', parseNode: node, value: (<ParseToken>node).value }
 }
 
-export interface Identifier extends AstNode<'identifier'> {
+export interface Identifier extends AstNode<'identifier'>, Partial<Typed> {
     scope: Name[]
     name: Name
 }
@@ -156,7 +156,7 @@ export const buildIdentifier = (node: ParseNode): Identifier => {
     const names = filterNonAstNodes(node).map(buildName)
     const scope = names.slice(0, -1)
     const name = names.at(-1)!
-    return { type: 'identifier', parseNode: node, scope, name }
+    return { kind: 'identifier', parseNode: node, scope, name }
 }
 
 export interface Name extends AstNode<'name'> {
@@ -164,5 +164,5 @@ export interface Name extends AstNode<'name'> {
 }
 
 export const buildName = (node: ParseNode): Name => {
-    return { type: 'name', parseNode: node, value: (<ParseToken>node).value }
+    return { kind: 'name', parseNode: node, value: (<ParseToken>node).value }
 }

@@ -1,4 +1,4 @@
-import { AstNode, buildParam, buildType, filterNonAstNodes, Param, Type, TypeParam } from './index'
+import { AstNode, buildParam, buildType, filterNonAstNodes, Param, Type, Typed, TypeParam } from './index'
 import { buildTypeDef, TypeDef } from './type-def'
 import { buildExpr, Expr } from './expr'
 import { buildPattern, Pattern } from './match'
@@ -40,13 +40,13 @@ export const buildUseExpr = (node: ParseNode): UseExpr => {
     const names = nodes.filter(n => n.kind === 'name').map(buildName)
     if (nodes.at(-1)!.kind === 'wildcard') {
         const scope = names
-        return { type: 'use-expr', parseNode: node, scope, expr: { type: 'wildcard', parseNode: nodes.at(-1)! } }
+        return { kind: 'use-expr', parseNode: node, scope, expr: { kind: 'wildcard', parseNode: nodes.at(-1)! } }
     }
     if (nodes.at(-1)!.kind === 'use-list') {
         const scope = names
-        return { type: 'use-expr', parseNode: node, scope, expr: filterNonAstNodes(nodes.at(-1)!).map(buildUseExpr) }
+        return { kind: 'use-expr', parseNode: node, scope, expr: filterNonAstNodes(nodes.at(-1)!).map(buildUseExpr) }
     }
-    return { type: 'use-expr', parseNode: node, scope: names.slice(0, -1), expr: names.at(-1)! }
+    return { kind: 'use-expr', parseNode: node, scope: names.slice(0, -1), expr: names.at(-1)! }
 }
 
 export interface Wildcard extends AstNode<'wildcard'> {}
@@ -63,11 +63,11 @@ export const buildVarDef = (node: ParseNode): VarDef => {
     const pattern = buildPattern(nodes[idx++])
     const varType = nodes[idx].kind === 'type-annot' ? buildType(filterNonAstNodes(nodes[idx++])[0]) : undefined
     const expr = buildExpr(nodes[idx++])
-    return { type: 'var-def', parseNode: node, pattern, varType, expr }
+    return { kind: 'var-def', parseNode: node, pattern, varType, expr }
 }
 
 export interface FnDef extends AstNode<'fn-def'> {
-    type: 'fn-def'
+    kind: 'fn-def'
     identifier: Identifier
     typeParams: TypeParam[]
     params: Param[]
@@ -82,7 +82,7 @@ export const buildFnDef = (node: ParseNode): FnDef => {
     const params = nodes.at(idx)?.kind === 'params' ? filterNonAstNodes(nodes[idx++]).map(buildParam) : []
     const returnType = nodes.at(idx)?.kind === 'type-annot' ? buildType(nodes[idx++]) : undefined
     const block = nodes.at(idx)?.kind === 'block' ? buildBlock(nodes[idx++]) : undefined
-    return { type: 'fn-def', parseNode: node, identifier, typeParams, params, block, returnType }
+    return { kind: 'fn-def', parseNode: node, identifier, typeParams, params, block, returnType }
 }
 
 export interface KindDef extends AstNode<'kind-def'> {
@@ -95,7 +95,7 @@ export const buildKindDef = (node: ParseNode): KindDef => {
     const nodes = filterNonAstNodes(node)
     const { identifier, typeParams: kindParams } = buildType(nodes[0])
     const block = buildBlock(nodes[1])
-    return { type: 'kind-def', parseNode: node, identifier, kindParams, block }
+    return { kind: 'kind-def', parseNode: node, identifier, kindParams, block }
 }
 
 export interface ImplDef extends AstNode<'impl-def'> {
@@ -111,24 +111,24 @@ export const buildImplDef = (node: ParseNode): ImplDef => {
     const { identifier, typeParams: implParams } = buildType(nodes[idx++])
     const forKind = nodes.at(idx)?.kind === 'impl-for' ? buildType(filterNonAstNodes(nodes[idx++])[0]) : undefined
     const block = buildBlock(nodes[idx++])
-    return { type: 'impl-def', parseNode: node, identifier, implParams, forKind, block }
+    return { kind: 'impl-def', parseNode: node, identifier, implParams, forKind, block }
 }
 
-export interface ReturnStmt extends AstNode<'return-stmt'> {
+export interface ReturnStmt extends AstNode<'return-stmt'>, Partial<Typed> {
     returnExpr?: Expr
 }
 
 export const buildReturnStmt = (node: ParseNode): ReturnStmt => {
     const nodes = filterNonAstNodes(node)
     const returnExpr = nodes.at(0)?.kind === 'expr' ? buildExpr(nodes[0]) : undefined
-    return { type: 'return-stmt', parseNode: node, returnExpr }
+    return { kind: 'return-stmt', parseNode: node, returnExpr }
 }
 
-export interface Block extends AstNode<'block'> {
+export interface Block extends AstNode<'block'>, Partial<Typed> {
     statements: Statement[]
 }
 
 export const buildBlock = (node: ParseNode): Block => {
     const statements = filterNonAstNodes(node).map(buildStatement)
-    return { type: 'block', parseNode: node, statements }
+    return { kind: 'block', parseNode: node, statements }
 }

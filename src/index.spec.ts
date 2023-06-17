@@ -23,6 +23,6 @@ describe('nois', () => {
 
         const astRoot = buildModule(root)
 
-        expect(astRoot.type).toEqual('module')
+        expect(astRoot.kind).toEqual('module')
     })
 })

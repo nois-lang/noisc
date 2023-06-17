@@ -15,7 +15,7 @@ export const buildUnaryOp = (node: ParseNode): UnaryOp => {
     if (!['add-op', 'sub-op', 'not-op', 'spread-op'].includes(n.kind)) {
         throw Error(`expected unary-op, got ${node.kind}`)
     }
-    return { type: <any>n.kind, parseNode: node }
+    return { kind: <any>n.kind, parseNode: node }
 }
 
 export type BinaryOp
@@ -83,7 +83,7 @@ export const buildBinaryOp = (node: ParseNode): BinaryOp => {
     ].includes(node.kind)) {
         throw Error(`expected binary-op, got ${node.kind}`)
     }
-    return { type: <any>node.kind, parseNode: node }
+    return { kind: <any>node.kind, parseNode: node }
 }
 
 export interface NotOp extends AstNode<'not-op'> {}
@@ -98,7 +98,7 @@ export const buildCallOp = (node: ParseNode): CallOp => {
     const nodes = filterNonAstNodes(node)
     const argExprs = filterNonAstNodes(<ParseTree>nodes[0])
     return {
-        type: 'call-op',
+        kind: 'call-op',
         parseNode: node,
         args: argExprs.map(n => buildExpr(n))
     }
@@ -111,7 +111,7 @@ export interface ConOp extends AstNode<'con-op'> {
 export const buildConOp = (node: ParseNode): ConOp => {
     const nodes = filterNonAstNodes(node)
     return {
-        type: 'con-op',
+        kind: 'con-op',
         parseNode: node,
         fields: nodes.map(n => buildFieldInit(n))
     }

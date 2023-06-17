@@ -17,32 +17,32 @@ describe('ast', () => {
         expect(compactAstNode(ast)).toEqual({
             'operand': {
                 'operand': {
-                    'binaryOp': { 'type': 'add-op' },
+                    'binaryOp': { 'kind': 'add-op' },
                     'lOperand': {
                         'operand': {
-                            'operand': { 'type': 'int-literal', 'value': '1' },
-                            'type': 'operand-expr'
-                        }, 'type': 'operand-expr'
+                            'operand': { 'kind': 'int-literal', 'value': '1' },
+                            'kind': 'operand-expr'
+                        }, 'kind': 'operand-expr'
                     },
                     'rOperand': {
-                        'binaryOp': { 'type': 'mult-op' },
+                        'binaryOp': { 'kind': 'mult-op' },
                         'lOperand': {
                             'operand': {
-                                'operand': { 'type': 'int-literal', 'value': '2' },
-                                'type': 'operand-expr'
-                            }, 'type': 'operand-expr'
+                                'operand': { 'kind': 'int-literal', 'value': '2' },
+                                'kind': 'operand-expr'
+                            }, 'kind': 'operand-expr'
                         },
                         'rOperand': {
                             'operand': {
-                                'operand': { 'type': 'int-literal', 'value': '3' },
-                                'type': 'operand-expr'
-                            }, 'type': 'operand-expr'
+                                'operand': { 'kind': 'int-literal', 'value': '3' },
+                                'kind': 'operand-expr'
+                            }, 'kind': 'operand-expr'
                         },
-                        'type': 'binary-expr'
+                        'kind': 'binary-expr'
                     },
-                    'type': 'binary-expr'
-                }, 'type': 'operand-expr'
-            }, 'type': 'operand-expr'
+                    'kind': 'binary-expr'
+                }, 'kind': 'operand-expr'
+            }, 'kind': 'operand-expr'
         })
     })
 
