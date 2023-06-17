@@ -1,6 +1,6 @@
 import { AstNode, AstNodeKind, buildFieldInit, FieldInit, filterNonAstNodes } from './index'
-import { ParseNode, ParseTree } from '../parser/parser'
 import { buildExpr, Expr } from './expr'
+import { ParseNode, ParseTree } from '../parser'
 
 export type UnaryOp = AddOp | SubOp | NotOp | SpreadOp | CallOp | ConOp
 

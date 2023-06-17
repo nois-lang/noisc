@@ -1,7 +1,7 @@
 import { associativityMap, BinaryOp, buildBinaryOp, buildUnaryOp, precedenceMap, UnaryOp } from './op'
 import { AstNode, filterNonAstNodes, Typed } from './index'
-import { ParseNode } from '../parser/parser'
 import { buildOperand, Operand } from './operand'
+import { ParseNode } from '../parser'
 
 export type Expr = OperandExpr | UnaryExpr | BinaryExpr
 

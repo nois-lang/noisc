@@ -2,8 +2,8 @@ import { AstNode, buildParam, buildType, filterNonAstNodes, Param, Type, Typed, 
 import { buildTypeDef, TypeDef } from './type-def'
 import { buildExpr, Expr } from './expr'
 import { buildPattern, Pattern } from './match'
-import { ParseNode, ParseTree } from '../parser/parser'
 import { buildName, Identifier, Name } from './operand'
+import { ParseNode, ParseTree } from '../parser'
 
 export type Statement = UseExpr | VarDef | FnDef | KindDef | ImplDef | TypeDef | ReturnStmt | Expr
 

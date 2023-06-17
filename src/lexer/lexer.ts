@@ -1,5 +1,5 @@
 import { LocationRange } from '../location'
-import { NodeKind } from '../parser/parser'
+import { NodeKind } from '../parser'
 
 export const lexerOperatorKinds = <const>[
     'plus',

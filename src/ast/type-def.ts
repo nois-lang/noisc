@@ -1,6 +1,6 @@
 import { AstNode, buildType, filterNonAstNodes, Type, TypeParam } from './index'
-import { ParseNode } from '../parser/parser'
 import { buildIdentifier, Identifier } from './operand'
+import { ParseNode } from '../parser'
 
 export interface TypeDef extends AstNode<'type-def'> {
     identifier: Identifier
