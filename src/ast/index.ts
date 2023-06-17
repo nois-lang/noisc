@@ -1,4 +1,4 @@
-import { buildStatement, Statement } from './statement'
+import { buildStatement, buildUseExpr, Statement, UseExpr } from './statement'
 import { buildPattern, Pattern } from './match'
 import { NodeKind, ParseNode, ParseTree, treeKinds } from '../parser'
 import { lexerDynamicKinds } from '../lexer/lexer'
@@ -96,15 +96,14 @@ export const compactAstNode = (node: AstNode<any>): any => {
 }
 
 export interface Module extends AstNode<'module'> {
+    useExprs: UseExpr[]
     statements: Statement[]
 }
 
 export const buildModule = (node: ParseNode): Module => {
-    return {
-        kind: 'module',
-        parseNode: node,
-        statements: filterNonAstNodes(node).filter(n => n.kind === 'statement').map(n => buildStatement(n))
-    }
+    const useExprs = filterNonAstNodes(node).filter(n => n.kind === 'use-stmt').map(buildUseExpr)
+    const statements = filterNonAstNodes(node).filter(n => n.kind === 'statement').map(buildStatement)
+    return { kind: 'module', parseNode: node, useExprs, statements }
 }
 
 export interface Type extends AstNode<'type'> {

@@ -1,6 +1,6 @@
-module              ::= statement*
+module              ::= use-stmt* statement*
                     ;
-statement           ::= use-stmt | var-def | fn-def | kind-def | impl-def | type-def | return-stmt | expr
+statement           ::= var-def | fn-def | kind-def | impl-def | type-def | return-stmt | expr
                     ;
   use-stmt          ::= USE-KEYWORD use-expr
                     ;

@@ -5,13 +5,11 @@ import { buildPattern, Pattern } from './match'
 import { buildName, Identifier, Name } from './operand'
 import { ParseNode, ParseTree } from '../parser'
 
-export type Statement = UseExpr | VarDef | FnDef | KindDef | ImplDef | TypeDef | ReturnStmt | Expr
+export type Statement = VarDef | FnDef | KindDef | ImplDef | TypeDef | ReturnStmt | Expr
 
 export const buildStatement = (node: ParseNode): Statement => {
     const n = (<ParseTree>node).nodes[0]
     switch (n.kind) {
-        case 'use-stmt':
-            return buildUseExpr(n)
         case 'var-def':
             return buildVarDef(n)
         case 'fn-def':

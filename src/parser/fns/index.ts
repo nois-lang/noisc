@@ -1,7 +1,7 @@
 import { TokenKind } from '../../lexer/lexer'
 import { Parser } from '../parser'
 import { parseExpr, parseIdentifier, parseTypeExpr } from './expr'
-import { parseBlock, parseStatement } from './statement'
+import { parseBlock, parseStatement, parseUseStmt } from './statement'
 import { parsePattern } from './match'
 
 export const prefixOpFirstTokens: TokenKind[] = ['excl', 'minus', 'period', 'plus']
@@ -14,10 +14,13 @@ export const paramFirstTokens: TokenKind[] = ['name']
 export const useExprFirstTokens: TokenKind[] = ['name', 'asterisk', 'o-brace']
 
 /**
- * module ::= statement*
+ * module ::= use-stmt* statement*
  */
 export const parseModule = (parser: Parser): void => {
     const mark = parser.open()
+    while (parser.at('use-keyword') && !parser.eof()) {
+        parseUseStmt(parser)
+    }
     while (!parser.eof()) {
         parseStatement(parser)
     }

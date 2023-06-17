@@ -5,14 +5,12 @@ import { parseExpr, parseTypeExpr } from './expr'
 import { parsePattern } from './match'
 
 /**
- * statement ::= use-stmt | var-def | fn-def | kind-def | impl-def | type-def | return-stmt | expr
+ * statement ::= var-def | fn-def | kind-def | impl-def | type-def | return-stmt | expr
  */
 export const parseStatement = (parser: Parser): void => {
     const mark = parser.open()
 
-    if (parser.at('use-keyword')) {
-        parseUseStmt(parser)
-    } else if (parser.at('let-keyword')) {
+    if (parser.at('let-keyword')) {
         parseVarDef(parser)
     } else if (parser.at('fn-keyword')) {
         parseFnDef(parser)
