@@ -3,13 +3,15 @@ import { buildTypeDef, TypeDef } from './type-def'
 import { buildExpr, Expr } from './expr'
 import { buildPattern, Pattern } from './match'
 import { ParseNode, ParseTree } from '../parser/parser'
-import { Identifier } from './operand'
+import { buildName, Identifier, Name } from './operand'
 
-export type Statement = VarDef | FnDef | KindDef | ImplDef | TypeDef | ReturnStmt | Expr
+export type Statement = UseExpr | VarDef | FnDef | KindDef | ImplDef | TypeDef | ReturnStmt | Expr
 
 export const buildStatement = (node: ParseNode): Statement => {
     const n = (<ParseTree>node).nodes[0]
     switch (n.kind) {
+        case 'use-stmt':
+            return buildUseExpr(n)
         case 'var-def':
             return buildVarDef(n)
         case 'fn-def':
@@ -27,6 +29,27 @@ export const buildStatement = (node: ParseNode): Statement => {
     }
     throw Error(`expected statement, got ${node.kind}`)
 }
+
+export interface UseExpr extends AstNode<'use-expr'> {
+    scope: Name[]
+    expr: UseExpr[] | Name | Wildcard
+}
+
+export const buildUseExpr = (node: ParseNode): UseExpr => {
+    const nodes = filterNonAstNodes(node.kind === 'use-stmt' ? filterNonAstNodes(node)[0] : node)
+    const names = nodes.filter(n => n.kind === 'name').map(buildName)
+    if (nodes.at(-1)!.kind === 'wildcard') {
+        const scope = names
+        return { type: 'use-expr', parseNode: node, scope, expr: { type: 'wildcard', parseNode: nodes.at(-1)! } }
+    }
+    if (nodes.at(-1)!.kind === 'use-list') {
+        const scope = names
+        return { type: 'use-expr', parseNode: node, scope, expr: filterNonAstNodes(nodes.at(-1)!).map(buildUseExpr) }
+    }
+    return { type: 'use-expr', parseNode: node, scope: names.slice(0, -1), expr: names.at(-1)! }
+}
+
+export interface Wildcard extends AstNode<'wildcard'> {}
 
 export interface VarDef extends AstNode<'var-def'> {
     pattern: Pattern

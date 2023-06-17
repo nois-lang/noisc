@@ -1,7 +1,6 @@
-// TODO: imports
-// use std::Display
-// use std::io::{println}
-// use std::Option::*
+use std::Display
+use std::io::{println}
+use std::Option::*
 
 // type
 type Unit

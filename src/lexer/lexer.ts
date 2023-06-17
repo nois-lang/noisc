@@ -1,9 +1,20 @@
 import { LocationRange } from '../location'
 import { NodeKind } from '../parser/parser'
 
-export const lexerOperatorKinds = ['plus', 'minus', 'asterisk', 'slash', 'caret', 'percent', 'ampersand', 'pipe', 'excl', 'period']
+export const lexerOperatorKinds = <const>[
+    'plus',
+    'minus',
+    'asterisk',
+    'slash',
+    'caret',
+    'percent',
+    'ampersand',
+    'pipe',
+    'excl',
+    'period'
+]
 
-export const lexerPunctuationKinds = [
+export const lexerPunctuationKinds = <const>[
     'o-paren',
     'c-paren',
     'o-bracket',
@@ -18,7 +29,8 @@ export const lexerPunctuationKinds = [
     'underscore',
     'arrow']
 
-export const lexerKeywordKinds = [
+export const lexerKeywordKinds = <const>[
+    'use-keyword',
     'type-keyword',
     'kind-keyword',
     'impl-keyword',
@@ -33,11 +45,11 @@ export const lexerKeywordKinds = [
     'match-keyword'
 ]
 
-export const lexerDynamicKinds = ['name', 'string', 'char', 'int', 'float']
+export const lexerDynamicKinds = <const>['name', 'string', 'char', 'int', 'float']
 
-const lexerParseIndependentKinds = ['newline', 'comment']
+const lexerParseIndependentKinds = <const>['newline', 'comment']
 
-const lexerSpecialKinds = ['unknown', 'unterminated-string', 'unterminated-char', 'eof']
+const lexerSpecialKinds = <const>['unknown', 'unterminated-string', 'unterminated-char', 'eof']
 
 export const lexerTokenKinds = <const>[
     ...lexerKeywordKinds,
@@ -59,6 +71,7 @@ export interface ParseToken {
 }
 
 export const constTokenKindMap: Map<TokenKind, string> = new Map([
+    ['use-keyword', 'use'],
     ['type-keyword', 'type'],
     ['kind-keyword', 'kind'],
     ['if-keyword', 'if'],

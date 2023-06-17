@@ -1,6 +1,6 @@
 import { buildStatement, Statement } from './statement'
 import { buildPattern, Pattern } from './match'
-import { ParseNode, ParseTree, treeKinds } from '../parser/parser'
+import { NodeKind, ParseNode, ParseTree, treeKinds } from '../parser/parser'
 import { lexerDynamicKinds } from '../lexer/lexer'
 import { buildIdentifier, buildName, Identifier, Name } from './operand'
 import { buildExpr, Expr } from './expr'
@@ -12,6 +12,8 @@ export interface AstNode<T extends AstNodeKind> {
 
 export type AstNodeKind
     = 'module'
+    | 'use-expr'
+    | 'wildcard'
     | 'var-def'
     | 'fn-def'
     | 'kind-def'
@@ -67,7 +69,7 @@ export type AstNodeKind
     | 'or-op'
     | 'assign-op'
 
-export const astNodes = [...lexerDynamicKinds, ...treeKinds]
+export const astNodes: NodeKind[] = [...lexerDynamicKinds, ...treeKinds]
 
 export const filterNonAstNodes = (node: ParseNode): ParseNode[] =>
     (<ParseTree>node).nodes.filter(n => astNodes.includes(n.kind))

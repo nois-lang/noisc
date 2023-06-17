@@ -5,6 +5,9 @@ export const treeKinds = <const>[
     'error',
     'module',
     'statement',
+    'use-stmt',
+    'use-expr',
+    'use-list',
     'var-def',
     'fn-def',
     'kind-def',
@@ -70,6 +73,7 @@ export const treeKinds = <const>[
     'con-pattern-params',
     'field-pattern',
     'hole',
+    'wildcard',
 ]
 export type TreeKind = typeof treeKinds[number]
 

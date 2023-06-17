@@ -1,16 +1,18 @@
 import { Parser } from '../parser'
 import { parseTypeDef } from './type-def'
-import { exprFirstTokens, parseParams, parseTypeAnnot } from './index'
+import { exprFirstTokens, parseParams, parseTypeAnnot, useExprFirstTokens } from './index'
 import { parseExpr, parseTypeExpr } from './expr'
 import { parsePattern } from './match'
 
 /**
- * statement ::= var-def | fn-def | kind-def | impl-def | type-def | return-stmt | expr
+ * statement ::= use-stmt | var-def | fn-def | kind-def | impl-def | type-def | return-stmt | expr
  */
 export const parseStatement = (parser: Parser): void => {
     const mark = parser.open()
 
-    if (parser.at('let-keyword')) {
+    if (parser.at('use-keyword')) {
+        parseUseStmt(parser)
+    } else if (parser.at('let-keyword')) {
         parseVarDef(parser)
     } else if (parser.at('fn-keyword')) {
         parseFnDef(parser)
@@ -32,7 +34,54 @@ export const parseStatement = (parser: Parser): void => {
 }
 
 /**
- * var-def ::= LET-KEYWORD pattern type-annot? EQUALS expr
+ * use-stmt ::= USE-KEYWORD use-expr
+ */
+export const parseUseStmt = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('use-keyword')
+    parseUseExpr(parser)
+    parser.close(mark, 'use-stmt')
+}
+
+/**
+ * use-expr ::= (NAME COLON COLON)* (use-list | NAME | ASTERISK)
+ */
+export const parseUseExpr = (parser: Parser): void => {
+    const mark = parser.open()
+    while (parser.at('name') && parser.nth(1) === 'colon' && parser.nth(2) === 'colon' && !parser.eof()) {
+        parser.expect('name')
+        parser.expect('colon')
+        parser.expect('colon')
+    }
+    if (parser.at('o-brace')) {
+        parseUseList(parser)
+    } else if (parser.consume('name')) {
+    } else if (parser.at('asterisk')) {
+        parseWildcard(parser)
+    } else {
+        parser.advanceWithError('expected use-expr')
+    }
+    parser.close(mark, 'use-expr')
+}
+
+/**
+ * use-list ::= O-BRACE (use-expr (COMMA use-expr)*)? COMMA? C-BRACE
+ */
+export const parseUseList = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('o-brace')
+    while (parser.atAny(useExprFirstTokens) && !parser.eof()) {
+        parseUseExpr(parser)
+        if (!parser.at('c-brace')) {
+            parser.expect('comma')
+        }
+    }
+    parser.expect('c-brace')
+    parser.close(mark, 'use-list')
+}
+
+/**
+ * use-list ::= O-BRACE (use-expr (COMMA use-expr)*)? COMMA? C-BRACE
  */
 export const parseVarDef = (parser: Parser): void => {
     const mark = parser.open()
@@ -44,6 +93,15 @@ export const parseVarDef = (parser: Parser): void => {
     parser.expect('equals')
     parseExpr(parser)
     parser.close(mark, 'var-def')
+}
+
+/**
+ * wildcard ::= ASTERISK
+ */
+export const parseWildcard = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('asterisk')
+    parser.close(mark, 'wildcard')
 }
 
 /**
