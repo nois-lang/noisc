@@ -1,4 +1,4 @@
-import { indexToLocation, prettyIndex, prettyLocation } from './location'
+import { indexToLocation, Location, prettyIndex, prettyLocation } from './location'
 import { Source } from './source'
 import { ParseToken, TokenKind } from './lexer/lexer'
 import { red } from './output'

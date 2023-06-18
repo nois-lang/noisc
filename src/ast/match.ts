@@ -1,9 +1,10 @@
 import { buildExpr, buildOperandExpr, Expr } from './expr'
-import { AstNode, filterNonAstNodes, Typed } from './index'
+import { AstNode, filterNonAstNodes, } from './index'
 import { buildIdentifier, buildName, buildOperand, Identifier, Name } from './operand'
 import { buildUnaryOp, SpreadOp } from './op'
 import { Block, buildBlock } from './statement'
 import { ParseNode } from '../parser'
+import { Typed } from '../typecheck'
 
 export interface MatchExpr extends AstNode<'match-expr'>, Partial<Typed> {
     expr: Expr

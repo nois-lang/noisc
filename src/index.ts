@@ -4,7 +4,10 @@ import { join, resolve } from 'path'
 import { Parser } from './parser/parser'
 import { prettyLexerError, prettySourceMessage, prettySyntaxError } from './error'
 import { parseModule } from './parser/fns'
-import { buildModule, compactAstNode } from './ast'
+import { buildModule, compactAstNode, getAstLocation } from './ast'
+import { checkModule } from './semantic'
+import { Context } from './scope'
+import * as console from 'console'
 
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
 
@@ -45,6 +48,16 @@ if (parser.errors.length > 0) {
     process.exit(1)
 }
 
-const moduleAst = buildModule(root)
+const moduleAst = buildModule(root, {scope: [], name: 'test'})
 
 console.dir(compactAstNode(moduleAst), { depth: null, colors: true, compact: true })
+
+const ctx: Context = { modules: [moduleAst], scopeStack: [], errors: [] }
+checkModule(moduleAst, ctx)
+
+if (ctx.errors.length > 0) {
+    for (const error of ctx.errors) {
+        console.log(error)
+    }
+    process.exit(1)
+}

@@ -4,14 +4,13 @@ import { NodeKind, ParseNode, ParseTree, treeKinds } from '../parser'
 import { lexerDynamicKinds } from '../lexer/lexer'
 import { buildIdentifier, buildName, Identifier, Name } from './operand'
 import { buildExpr, Expr } from './expr'
+import { VirtualIdentifier } from '../scope'
+import { Location } from '../location'
+import { todo } from '../todo'
 
 export interface AstNode<T extends AstNodeKind> {
     kind: T
     parseNode: ParseNode
-}
-
-export interface Typed {
-    type: Type
 }
 
 export type AstNodeKind
@@ -51,6 +50,7 @@ export type AstNodeKind
     | 'int-literal'
     | 'float-literal'
 
+    | 'neg-op'
     | 'not-op'
     | 'spread-op'
     | 'call-op'
@@ -95,15 +95,20 @@ export const compactAstNode = (node: AstNode<any>): any => {
     )
 }
 
+export const getAstLocation = (node: AstNode<any>): Location => {
+    return todo()
+}
+
 export interface Module extends AstNode<'module'> {
+    identifier: VirtualIdentifier
     useExprs: UseExpr[]
     statements: Statement[]
 }
 
-export const buildModule = (node: ParseNode): Module => {
+export const buildModule = (node: ParseNode, id: VirtualIdentifier): Module => {
     const useExprs = filterNonAstNodes(node).filter(n => n.kind === 'use-stmt').map(buildUseExpr)
     const statements = filterNonAstNodes(node).filter(n => n.kind === 'statement').map(buildStatement)
-    return { kind: 'module', parseNode: node, useExprs, statements }
+    return { kind: 'module', identifier: id, parseNode: node, useExprs, statements }
 }
 
 export interface Type extends AstNode<'type'> {

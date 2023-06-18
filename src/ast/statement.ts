@@ -1,9 +1,10 @@
-import { AstNode, buildParam, buildType, filterNonAstNodes, Param, Type, Typed, TypeParam } from './index'
+import { AstNode, buildParam, buildType, filterNonAstNodes, Param, Type, TypeParam } from './index'
 import { buildTypeDef, TypeDef } from './type-def'
 import { buildExpr, Expr } from './expr'
 import { buildPattern, Pattern } from './match'
 import { buildName, Identifier, Name } from './operand'
 import { ParseNode, ParseTree } from '../parser'
+import { Typed } from '../typecheck'
 
 export type Statement = VarDef | FnDef | KindDef | ImplDef | TypeDef | ReturnStmt | Expr
 

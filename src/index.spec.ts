@@ -21,7 +21,7 @@ describe('nois', () => {
 
         expect(root.kind).toEqual('module')
 
-        const astRoot = buildModule(root)
+        const astRoot = buildModule(root, { scope: [], name: 'test' })
 
         expect(astRoot.kind).toEqual('module')
     })
