@@ -4,7 +4,6 @@ import {
     exprFirstTokens,
     infixOpFirstTokens,
     parseClosureExpr,
-    parseTypeParams,
     postfixOpFirstTokens,
     prefixOpFirstTokens
 } from './index'
@@ -44,7 +43,7 @@ export const parseSubExpr = (parser: Parser): void => {
 
 /**
  * operand ::= if-expr | match-expr | closure-expr | O-PAREN expr C-PAREN | list-expr | STRING | CHAR | INT | FLOAT
- * | identifier | type-expr
+ * | identifier | type
  */
 export const parseOperand = (parser: Parser): void => {
     const dynamicTokens: TokenKind[] = ['string', 'char', 'int', 'float']
@@ -91,18 +90,6 @@ export const parseListExpr = (parser: Parser): void => {
     }
     parser.expect('c-bracket')
     parser.close(mark, 'list-expr')
-}
-
-/**
- * type-expr ::= identifier type-params?
- */
-export const parseTypeExpr = (parser: Parser): void => {
-    const mark = parser.open()
-    parseIdentifier(parser)
-    if (parser.at('o-angle')) {
-        parseTypeParams(parser)
-    }
-    parser.close(mark, 'type-expr')
 }
 
 /**

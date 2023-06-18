@@ -1,8 +1,9 @@
 import { Parser } from '../parser'
 import { parseTypeDef } from './type-def'
-import { exprFirstTokens, parseParams, parseTypeAnnot, useExprFirstTokens } from './index'
-import { parseExpr, parseTypeExpr } from './expr'
+import { parseExpr } from './expr'
 import { parsePattern } from './match'
+import { exprFirstTokens, parseParams, useExprFirstTokens } from './index'
+import { parseTypeAnnot, parseVariantType } from './type'
 
 /**
  * statement ::= var-def | fn-def | kind-def | impl-def | type-def | return-stmt | expr
@@ -103,12 +104,12 @@ export const parseWildcard = (parser: Parser): void => {
 }
 
 /**
- * fn-def ::= FN-KEYWORD type-expr O-PAREN params? C-PAREN type-annot? block?
+ * fn-def ::= FN-KEYWORD variant-type O-PAREN params? C-PAREN type-annot? block?
  */
 export const parseFnDef = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('fn-keyword')
-    parseTypeExpr(parser)
+    parseVariantType(parser)
     if (parser.at('o-paren')) {
         parseParams(parser)
     }
@@ -122,23 +123,23 @@ export const parseFnDef = (parser: Parser): void => {
 }
 
 /**
- * kind-def ::= KIND-KEYWORD type-expr block
+ * kind-def ::= KIND-KEYWORD variant-type block
  */
 export const parseKindDef = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('kind-keyword')
-    parseTypeExpr(parser)
+    parseVariantType(parser)
     parseBlock(parser)
     parser.close(mark, 'kind-def')
 }
 
 /**
- * impl-def ::= IMPL-KEYWORD type-expr impl-for? block
+ * impl-def ::= IMPL-KEYWORD variant-type impl-for? block
  */
 export const parseImplDef = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('impl-keyword')
-    parseTypeExpr(parser)
+    parseVariantType(parser)
     if (parser.at('for-keyword')) {
         parseImplFor(parser)
     }
@@ -147,12 +148,12 @@ export const parseImplDef = (parser: Parser): void => {
 }
 
 /**
- * impl-for ::= FOR-KEYWORD type-expr
+ * impl-for ::= FOR-KEYWORD variant-type
  */
 export const parseImplFor = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('for-keyword')
-    parseTypeExpr(parser)
+    parseVariantType(parser)
     parser.close(mark, 'impl-for')
 }
 

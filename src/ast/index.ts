@@ -2,10 +2,11 @@ import { buildStatement, buildUseExpr, Statement, UseExpr } from './statement'
 import { buildPattern, Pattern } from './match'
 import { NodeKind, ParseNode, ParseTree, treeKinds } from '../parser'
 import { lexerDynamicKinds, ParseToken } from '../lexer/lexer'
-import { buildIdentifier, buildName, Identifier, Name } from './operand'
+import { buildName, Name } from './operand'
 import { buildExpr, Expr } from './expr'
 import { VirtualIdentifier } from '../scope'
 import { LocationRange } from '../location'
+import { buildType, Type } from './type'
 
 export interface AstNode<T extends AstNodeKind> {
     kind: T
@@ -32,7 +33,8 @@ export type AstNodeKind
     | 'closure-expr'
     | 'list-expr'
     | 'param'
-    | 'type'
+    | 'variant-type'
+    | 'fn-type'
     | 'generic'
     | 'if-expr'
     | 'while-expr'
@@ -122,48 +124,6 @@ export const buildModuleAst = (node: ParseNode, id: VirtualIdentifier): Module =
     const useExprs = filterNonAstNodes(node).filter(n => n.kind === 'use-stmt').map(buildUseExpr)
     const statements = filterNonAstNodes(node).filter(n => n.kind === 'statement').map(buildStatement)
     return { kind: 'module', identifier: id, parseNode: node, useExprs, statements }
-}
-
-export interface Type extends AstNode<'type'> {
-    identifier: Identifier
-    typeParams: TypeParam[]
-}
-
-export type TypeParam = Type | Generic
-
-export interface Generic extends AstNode<'generic'> {
-    name: Name
-    bounds: Type[]
-}
-
-export const buildType = (node: ParseNode): Type => {
-    const nodes = filterNonAstNodes(node)
-    if (node.kind === 'type-annot') {
-        return buildType(nodes[0])
-    }
-    const nameNode = nodes[0]
-    const paramsNode = nodes.at(1)
-    return {
-        kind: 'type',
-        parseNode: node,
-        identifier: buildIdentifier(nameNode),
-        typeParams: paramsNode
-            ? (<ParseTree>paramsNode).nodes
-                .filter(n => n.kind === 'type-param')
-                .map(buildTypeParam)
-            : [],
-    }
-}
-
-export const buildTypeParam = (node: ParseNode): TypeParam => {
-    const nodes = filterNonAstNodes(node)
-    if (nodes[0].kind === 'type-expr') {
-        return buildType(nodes[0])
-    } else {
-        const name = buildName(nodes[0])
-        const bounds = filterNonAstNodes(nodes[1]).map(buildType)
-        return { kind: 'generic', parseNode: node, name, bounds }
-    }
 }
 
 export interface Param extends AstNode<'param'> {

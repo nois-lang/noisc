@@ -1,10 +1,11 @@
 import { buildMatchExpr, buildPattern, MatchExpr, Pattern } from './match'
-import { AstNode, buildParam, buildType, filterNonAstNodes, Param, Type } from './index'
+import { AstNode, buildParam, filterNonAstNodes, Param } from './index'
 import { Block, buildBlock } from './statement'
 import { buildExpr, Expr } from './expr'
 import { ParseToken } from '../lexer/lexer'
 import { ParseNode } from '../parser'
 import { Typed } from '../typecheck'
+import { buildType, Type } from './type'
 
 export type Operand
     = IfExpr

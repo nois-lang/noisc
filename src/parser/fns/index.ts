@@ -1,8 +1,9 @@
 import { TokenKind } from '../../lexer/lexer'
 import { Parser } from '../parser'
-import { parseExpr, parseIdentifier, parseTypeExpr } from './expr'
+import { parseExpr } from './expr'
 import { parseBlock, parseStatement, parseUseStmt } from './statement'
 import { parsePattern } from './match'
+import { parseTypeAnnot } from './type'
 
 export const prefixOpFirstTokens: TokenKind[] = ['excl', 'minus', 'period', 'plus']
 export const postfixOpFirstTokens: TokenKind[] = ['o-paren']
@@ -131,60 +132,6 @@ export const parseParam = (parser: Parser): void => {
         parseTypeAnnot(parser)
     }
     parser.close(mark, 'param')
-}
-
-/**
- * type-annot ::= COLON type-expr
- */
-export const parseTypeAnnot = (parser: Parser): void => {
-    const mark = parser.open()
-    parser.expect('colon')
-    parseTypeExpr(parser)
-    parser.close(mark, 'type-annot')
-}
-
-/**
- * type-params ::= O-ANGLE (type-param (COMMA type-param)* COMMA?)? C-ANGLE
- */
-export const parseTypeParams = (parser: Parser): void => {
-    const mark = parser.open()
-    parser.expect('o-angle')
-    while (!parser.at('c-angle') && !parser.eof()) {
-        parseTypeParam(parser)
-        if (!parser.at('c-angle')) {
-            parser.expect('comma')
-        }
-    }
-    parser.expect('c-angle')
-    parser.close(mark, 'type-params')
-}
-
-/**
- * type-param ::= type-expr | identifier COLON type-bounds
- */
-export const parseTypeParam = (parser: Parser): void => {
-    const mark = parser.open()
-    if (parser.nth(1) === 'colon') {
-        parseIdentifier(parser)
-        parser.expect('colon')
-        parseTypeBounds(parser)
-    } else {
-        parseTypeExpr(parser)
-    }
-    parser.close(mark, 'type-param')
-}
-
-/**
- * type-bounds ::= type-expr (PLUS type-expr)*
- */
-export const parseTypeBounds = (parser: Parser): void => {
-    const mark = parser.open()
-    parseTypeExpr(parser)
-    while (parser.at('plus') && !parser.eof()) {
-        parser.expect('plus')
-        parseTypeExpr(parser)
-    }
-    parser.close(mark, 'type-bounds')
 }
 
 export const parseTodo = (parser: Parser): void => {

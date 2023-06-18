@@ -1,6 +1,7 @@
-import { AstNode, buildType, filterNonAstNodes, Type, TypeParam } from './index'
 import { buildIdentifier, Identifier } from './operand'
 import { ParseNode } from '../parser'
+import { AstNode, filterNonAstNodes } from './index'
+import { buildType, buildVariantType, Type, TypeParam } from './type'
 
 export interface TypeDef extends AstNode<'type-def'> {
     identifier: Identifier
@@ -10,7 +11,7 @@ export interface TypeDef extends AstNode<'type-def'> {
 
 export const buildTypeDef = (node: ParseNode): TypeDef => {
     const nodes = filterNonAstNodes(node)
-    const { identifier, typeParams } = buildType(nodes[0])
+    const { identifier, typeParams } = buildVariantType(nodes[0])
     let variants: TypeCon[] = []
     if (nodes.at(1)?.kind === 'type-con-list') {
         variants = filterNonAstNodes(nodes[1]).map(buildTypeCon)

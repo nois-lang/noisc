@@ -1,14 +1,15 @@
 import { Parser } from '../parser'
-import { parseIdentifier, parseTypeExpr } from './expr'
-import { paramFirstTokens, parseTypeAnnot } from './index'
+import { parseIdentifier } from './expr'
+import { paramFirstTokens } from './index'
+import { parseTypeAnnot, parseVariantType } from './type'
 
 /**
- * type-def ::= TYPE-KEYWORD type-expr (type-con-params? | type-con-list)
+ * type-def ::= TYPE-KEYWORD variant-type (type-con-params? | type-con-list)
  */
 export const parseTypeDef = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('type-keyword')
-    parseTypeExpr(parser)
+    parseVariantType(parser)
     if (parser.at('o-paren')) {
         parseTypeConParams(parser)
     } else if (parser.at('o-brace')) {

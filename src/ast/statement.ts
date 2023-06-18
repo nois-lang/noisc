@@ -1,10 +1,11 @@
-import { AstNode, buildParam, buildType, filterNonAstNodes, Param, Type, TypeParam } from './index'
+import { AstNode, buildParam, filterNonAstNodes, Param } from './index'
 import { buildTypeDef, TypeDef } from './type-def'
 import { buildExpr, Expr } from './expr'
 import { buildPattern, Pattern } from './match'
 import { buildName, Identifier, Name } from './operand'
 import { ParseNode, ParseTree } from '../parser'
 import { Typed } from '../typecheck'
+import { buildType, buildVariantType, Type, TypeParam } from './type'
 
 export type Statement = VarDef | FnDef | KindDef | ImplDef | TypeDef | ReturnStmt | Expr
 
@@ -77,7 +78,7 @@ export interface FnDef extends AstNode<'fn-def'> {
 export const buildFnDef = (node: ParseNode): FnDef => {
     const nodes = filterNonAstNodes(node)
     let idx = 0
-    const { identifier, typeParams } = buildType(nodes[idx++])
+    const { identifier, typeParams } = buildVariantType(nodes[idx++])
     const params = nodes.at(idx)?.kind === 'params' ? filterNonAstNodes(nodes[idx++]).map(buildParam) : []
     const returnType = nodes.at(idx)?.kind === 'type-annot' ? buildType(nodes[idx++]) : undefined
     const block = nodes.at(idx)?.kind === 'block' ? buildBlock(nodes[idx++]) : undefined
@@ -92,7 +93,7 @@ export interface KindDef extends AstNode<'kind-def'> {
 
 export const buildKindDef = (node: ParseNode): KindDef => {
     const nodes = filterNonAstNodes(node)
-    const { identifier, typeParams: kindParams } = buildType(nodes[0])
+    const { identifier, typeParams: kindParams } = buildVariantType(nodes[0])
     const block = buildBlock(nodes[1])
     return { kind: 'kind-def', parseNode: node, identifier, kindParams, block }
 }
@@ -107,8 +108,8 @@ export interface ImplDef extends AstNode<'impl-def'> {
 export const buildImplDef = (node: ParseNode): ImplDef => {
     const nodes = filterNonAstNodes(node)
     let idx = 0
-    const { identifier, typeParams: implParams } = buildType(nodes[idx++])
-    const forKind = nodes.at(idx)?.kind === 'impl-for' ? buildType(filterNonAstNodes(nodes[idx++])[0]) : undefined
+    const { identifier, typeParams: implParams } = buildVariantType(nodes[idx++])
+    const forKind = nodes.at(idx)?.kind === 'impl-for' ? buildType(nodes[idx++]) : undefined
     const block = buildBlock(nodes[idx++])
     return { kind: 'impl-def', parseNode: node, identifier, implParams, forKind, block }
 }

@@ -35,7 +35,9 @@ fn foo<T: Add + Div>(a: T, b: T): T {
 }
 
 // define variable
-let a = 4
+let n = 4
+// type hint
+let h: Int = 4
 
 // literals
 let i = 12
@@ -110,7 +112,7 @@ let b = match vec {
 // }
 
 // closure
-let square = |a| a^2
+let square: |Num|: Num = |a| a^2
 let here = || println("here")
 
 // fn reference
