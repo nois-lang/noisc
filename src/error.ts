@@ -1,4 +1,4 @@
-import { indexToLocation, Location, prettyIndex, prettyLocation } from './location'
+import { Location, locationToString, prettyLineAt } from './location'
 import { Source } from './source'
 import { ParseToken, TokenKind } from './lexer/lexer'
 import { red } from './output'
@@ -18,9 +18,12 @@ export const prettySyntaxError = (error: SyntaxError): string => {
     return red(`syntax error: ${msg}, got \`${error.got.kind}\``)
 }
 
-export const prettySourceMessage = (message: string, index: number, source: Source): string => {
-    const location = indexToLocation(index, source)
-    const locationStr = `${location ? `${source.filename}:${prettyLocation(location)}` : '<unknwon location>'}`
+export const prettyError = (message: string): string => {
+    return red(message)
+}
+
+export const prettySourceMessage = (message: string, location: Location, source: Source): string => {
+    const locationStr = `${location ? `${source.filename}:${locationToString(location)}` : '<unknwon location>'}`
     const locationMsg = `${' '.repeat(2)}at ${locationStr}`
-    return [message, locationMsg, '\n' + prettyIndex(index, source, 1) + '\n'].join('\n')
+    return [message, locationMsg, '\n' + prettyLineAt(location, source, 1) + '\n'].join('\n')
 }

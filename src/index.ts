@@ -2,12 +2,13 @@ import { erroneousTokenKinds, tokenize } from './lexer/lexer'
 import { existsSync, readFileSync } from 'fs'
 import { join, resolve } from 'path'
 import { Parser } from './parser/parser'
-import { prettyLexerError, prettySourceMessage, prettySyntaxError } from './error'
+import { prettyError, prettyLexerError, prettySourceMessage, prettySyntaxError } from './error'
 import { parseModule } from './parser/fns'
-import { buildModule, compactAstNode, getAstLocation } from './ast'
+import { buildModule, compactAstNode, getAstLocationRange, } from './ast'
 import { checkModule } from './semantic'
 import { Context } from './scope'
 import * as console from 'console'
+import { indexToLocation } from './location'
 
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
 
@@ -32,7 +33,9 @@ const tokens = tokenize(source.str)
 const errorTokens = tokens.filter(t => erroneousTokenKinds.includes(t.kind))
 if (errorTokens.length > 0) {
     for (const t of errorTokens) {
-        console.error(prettySourceMessage(prettyLexerError(t), t.location.start, source))
+        console.error(
+            prettySourceMessage(prettyLexerError(t), indexToLocation(t.location.start, source)!, source)
+        )
     }
     process.exit(1)
 }
@@ -43,12 +46,14 @@ const root = parser.buildTree()
 
 if (parser.errors.length > 0) {
     for (const error of parser.errors) {
-        console.error(prettySourceMessage(prettySyntaxError(error), error.got.location.start, source))
+        console.error(
+            prettySourceMessage(prettySyntaxError(error), indexToLocation(error.got.location.start, source)!, source)
+        )
     }
     process.exit(1)
 }
 
-const moduleAst = buildModule(root, {scope: [], name: 'test'})
+const moduleAst = buildModule(root, { scope: [], name: 'test' })
 
 console.dir(compactAstNode(moduleAst), { depth: null, colors: true, compact: true })
 
@@ -57,7 +62,11 @@ checkModule(moduleAst, ctx)
 
 if (ctx.errors.length > 0) {
     for (const error of ctx.errors) {
-        console.log(error)
+        console.error(prettySourceMessage(
+            prettyError(error.message),
+            indexToLocation(getAstLocationRange(error.node).start, source)!,
+            source
+        ))
     }
     process.exit(1)
 }

@@ -29,8 +29,7 @@ export const indexToLocation = (index: number, source: Source): Location | undef
     return undefined
 }
 
-export const prettyIndex = (index: number, source: Source, context: number = 0): string => {
-    const start = indexToLocation(index, source)
+export const prettyLineAt = (start: Location, source: Source, context: number = 0): string => {
     if (!start) return '<outside of a file>'
     const highlight = ' '.repeat(6 + start.column) + '^'
     const linesBefore = range(0, Math.min(context, start.line)).map(i => start.line + i - context).map(i => prettyLine(i, source))
@@ -48,4 +47,4 @@ export const prettyLine = (lineIndex: number, source: Source): string => {
     return lineNum + line
 }
 
-export const prettyLocation = (location: Location): string => `${location.line + 1}:${location.column + 1}`
+export const locationToString = (location: Location): string => `${location.line + 1}:${location.column + 1}`

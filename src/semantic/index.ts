@@ -67,7 +67,7 @@ const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     const impls = findImplsById(implId, ctx)
     if (impls.length === 0) {
         ctx.errors.push({
-            node: binaryExpr,
+            node: binaryExpr.binaryOp,
             message: `no suitable impl \
 ${vidToString(implId)}(\
 ${virtualTypeToString(binaryExpr.lOperand.type!)}, \
