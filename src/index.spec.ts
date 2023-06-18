@@ -2,7 +2,7 @@ import { tokenize } from './lexer/lexer'
 import { readFileSync } from 'fs'
 import { Parser } from './parser/parser'
 import { parseModule } from './parser/fns'
-import { buildModule } from './ast'
+import { buildModuleAst } from './ast'
 
 describe('nois', () => {
     it('parse features', () => {
@@ -21,7 +21,7 @@ describe('nois', () => {
 
         expect(root.kind).toEqual('module')
 
-        const astRoot = buildModule(root, { scope: [], name: 'test' })
+        const astRoot = buildModuleAst(root, { scope: [], name: 'test' })
 
         expect(astRoot.kind).toEqual('module')
     })

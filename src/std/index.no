@@ -1,0 +1,26 @@
+use std::op::*
+use std::native::op::*
+
+type Int
+
+impl Add for Int {
+    fn add(self, other: Self): Self {
+        addInt(self, other)
+    }
+}
+
+type Float
+
+impl Add for Float {
+    fn add(self, other: Self): Self {
+        addFloat(self, other)
+    }
+}
+
+type String
+
+impl Add for String {
+    fn add(self, other: Self): Self {
+        concatString(self, other)
+    }
+}

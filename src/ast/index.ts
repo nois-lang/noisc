@@ -118,7 +118,7 @@ export interface Module extends AstNode<'module'> {
     statements: Statement[]
 }
 
-export const buildModule = (node: ParseNode, id: VirtualIdentifier): Module => {
+export const buildModuleAst = (node: ParseNode, id: VirtualIdentifier): Module => {
     const useExprs = filterNonAstNodes(node).filter(n => n.kind === 'use-stmt').map(buildUseExpr)
     const statements = filterNonAstNodes(node).filter(n => n.kind === 'statement').map(buildStatement)
     return { kind: 'module', identifier: id, parseNode: node, useExprs, statements }

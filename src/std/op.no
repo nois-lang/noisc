@@ -1,0 +1,21 @@
+kind Add {
+    fn add(self, other: Self): T
+}
+
+kind Sub {
+    fn sub(self, other: Self): T
+}
+
+kind Mult {
+    fn mult(self, other: Self): T
+}
+
+kind Div {
+    fn div(self, other: Self): T
+}
+
+fn addInt(a: Int, b: Int): Int
+
+fn addFloat(a: Int, b: Int): Int
+
+fn addString(a: Int, b: Int): Int

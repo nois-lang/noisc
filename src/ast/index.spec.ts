@@ -1,8 +1,9 @@
-import { Parser, ParseTree } from '../parser/parser'
+import { Parser } from '../parser/parser'
 import { tokenize } from '../lexer/lexer'
 import { parseModule } from '../parser/fns'
 import { compactAstNode } from './index'
 import { buildExpr } from './expr'
+import { ParseTree } from '../parser'
 
 describe('ast', () => {
 

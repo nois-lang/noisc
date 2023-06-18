@@ -1,12 +1,9 @@
-import { erroneousTokenKinds, tokenize } from './lexer/lexer'
 import { existsSync, readFileSync } from 'fs'
 import { join, resolve } from 'path'
-import { Parser } from './parser/parser'
-import { prettyError, prettyLexerError, prettySourceMessage, prettySyntaxError } from './error'
-import { parseModule } from './parser/fns'
-import { buildModule, compactAstNode, getAstLocationRange, } from './ast'
+import { prettyError, prettySourceMessage } from './error'
+import { getAstLocationRange, } from './ast'
 import { checkModule } from './semantic'
-import { Context } from './scope'
+import { buildModule, buildStd, Context } from './scope'
 import * as console from 'console'
 import { indexToLocation } from './location'
 
@@ -29,35 +26,9 @@ if (!existsSync(sourcePath)) {
 }
 const source = { str: readFileSync(sourcePath).toString(), filename: path }
 
-const tokens = tokenize(source.str)
-const errorTokens = tokens.filter(t => erroneousTokenKinds.includes(t.kind))
-if (errorTokens.length > 0) {
-    for (const t of errorTokens) {
-        console.error(
-            prettySourceMessage(prettyLexerError(t), indexToLocation(t.location.start, source)!, source)
-        )
-    }
-    process.exit(1)
-}
+const moduleAst = buildModule(source, { scope: [], name: 'test' })
 
-const parser = new Parser(tokens)
-parseModule(parser)
-const root = parser.buildTree()
-
-if (parser.errors.length > 0) {
-    for (const error of parser.errors) {
-        console.error(
-            prettySourceMessage(prettySyntaxError(error), indexToLocation(error.got.location.start, source)!, source)
-        )
-    }
-    process.exit(1)
-}
-
-const moduleAst = buildModule(root, { scope: [], name: 'test' })
-
-console.dir(compactAstNode(moduleAst), { depth: null, colors: true, compact: true })
-
-const ctx: Context = { modules: [moduleAst], scopeStack: [], errors: [] }
+const ctx: Context = { modules: [...buildStd(), moduleAst], scopeStack: [], errors: [] }
 checkModule(moduleAst, ctx)
 
 if (ctx.errors.length > 0) {
