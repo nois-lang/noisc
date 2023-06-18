@@ -1,6 +1,5 @@
 import { isNewline } from './lexer/lexer'
 import { Source } from './source'
-import { range } from './util/array'
 
 export interface LocationRange {
     start: number
@@ -29,15 +28,10 @@ export const indexToLocation = (index: number, source: Source): Location | undef
     return undefined
 }
 
-export const prettyLineAt = (start: Location, source: Source, context: number = 0): string => {
+export const prettyLineAt = (start: Location, source: Source): string => {
     if (!start) return '<outside of a file>'
     const highlight = ' '.repeat(6 + start.column) + '^'
-    const linesBefore = range(0, Math.min(context, start.line)).map(i => start.line + i - context).map(i => prettyLine(i, source))
-    const totalLines = source.str.split('\n').filter(l => l.length === 0).length
-    const linesAfterCount = Math.min(context, Math.max(0, totalLines - 1 - start.line))
-    const linesAfter = range(0, linesAfterCount).map(i => start.line + i + context).map(i => prettyLine(i, source))
-
-    return [linesBefore.join('\n'), prettyLine(start.line, source), highlight, linesAfter.join('\n')].join('\n')
+    return [prettyLine(start.line, source), highlight].join('\n')
 }
 
 export const prettyLine = (lineIndex: number, source: Source): string => {
