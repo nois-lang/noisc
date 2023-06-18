@@ -30,8 +30,8 @@ export const vidToString = (vid: VirtualIdentifier) => [...vid.scope, vid.name].
 export const vidScopeToString = (vid: VirtualIdentifier) => vid.scope.join('::')
 
 export const findImplsById = (vId: VirtualIdentifier, ctx: Context): ImplDef[] => {
+    // TODO: go through imports only
     return ctx.modules
-        .filter(m => vidToString(m.identifier) === vidScopeToString(vId))
         .flatMap(m => m.statements.filter(s => s.kind === 'impl-def').map(s => <ImplDef>s))
         .filter(i => i.identifier.name.value === vId.name)
 }
