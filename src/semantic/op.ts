@@ -1,23 +1,22 @@
 import { AstNodeKind } from '../ast'
 import { VirtualIdentifier } from '../scope'
 
-const stdOpScope = ['std', 'op']
 export const operatorImplMap: Map<AstNodeKind, VirtualIdentifier> = new Map([
-    ['neg-op', { scope: stdOpScope, name: 'Neg' }],
-    ['not-op', { scope: stdOpScope, name: 'Not' }],
+    ['neg-op', { scope: ['std', 'op', 'Neg'], name: 'Neg' }],
+    ['not-op', { scope: ['std', 'op', 'Not'], name: 'Not' }],
 
-    ['add-op', { scope: stdOpScope, name: 'Add' }],
-    ['sub-op', { scope: stdOpScope, name: 'Sub' }],
-    ['mult-op', { scope: stdOpScope, name: 'Mult' }],
-    ['div-op', { scope: stdOpScope, name: 'Div' }],
-    ['exp-op', { scope: stdOpScope, name: 'Exp' }],
-    ['mod-op', { scope: stdOpScope, name: 'Mod' }],
-    ['eq-op', { scope: stdOpScope, name: 'Eq' }],
-    ['ne-op', { scope: stdOpScope, name: 'Eq' }],
-    ['ge-op', { scope: stdOpScope, name: 'Ord' }],
-    ['le-op', { scope: stdOpScope, name: 'Ord' }],
-    ['gt-op', { scope: stdOpScope, name: 'Ord' }],
-    ['lt-op', { scope: stdOpScope, name: 'Ord' }],
-    ['and-op', { scope: stdOpScope, name: 'And' }],
-    ['or-op', { scope: stdOpScope, name: 'Or' }],
+    ['add-op', { scope: ['std', 'op', 'Add'], name: 'add' }],
+    ['sub-op', { scope: ['std', 'op', 'Sub'], name: 'sub' }],
+    ['mult-op', { scope: ['std', 'op', 'Mult'], name: 'mult' }],
+    ['div-op', { scope: ['std', 'op', 'Div'], name: 'div' }],
+    ['exp-op', { scope: ['std', 'op', 'Exp'], name: 'exp' }],
+    ['mod-op', { scope: ['std', 'op', 'Mod'], name: 'mod' }],
+    ['eq-op', { scope: ['std', 'op', 'Eq'], name: 'eq' }],
+    ['ne-op', { scope: ['std', 'op', 'Eq'], name: 'ne' }],
+    ['ge-op', { scope: ['std', 'op', 'Ord'], name: 'ge' }],
+    ['le-op', { scope: ['std', 'op', 'Ord'], name: 'le' }],
+    ['gt-op', { scope: ['std', 'op', 'Ord'], name: 'gt' }],
+    ['lt-op', { scope: ['std', 'op', 'Ord'], name: 'lt' }],
+    ['and-op', { scope: ['std', 'op', 'And'], name: 'and' }],
+    ['or-op', { scope: ['std', 'op', 'Or'], name: 'or' }],
 ])

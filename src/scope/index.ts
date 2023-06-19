@@ -1,5 +1,5 @@
 import { buildModuleAst, Module } from '../ast'
-import { ImplDef, Statement } from '../ast/statement'
+import { FnDef, ImplDef, Statement } from '../ast/statement'
 import { SemanticError } from '../semantic'
 import { readdirSync, readFileSync, statSync } from 'fs'
 import { extname, join, relative } from 'path'
@@ -16,6 +16,7 @@ export interface Context {
     modules: Module[]
     scopeStack: Scope[]
     errors: SemanticError[]
+    implDef?: ImplDef
 }
 
 export interface Scope {
@@ -27,9 +28,14 @@ export interface VirtualIdentifier {
     name: string
 }
 
-export const vidToString = (vid: VirtualIdentifier) => [...vid.scope, vid.name].join('::')
+export const vidToString = (vid: VirtualIdentifier): string => [...vid.scope, vid.name].join('::')
 
 export const vidScopeToString = (vid: VirtualIdentifier) => vid.scope.join('::')
+
+export const vidFromScope = (vid: VirtualIdentifier): VirtualIdentifier => ({
+    scope: vid.scope.slice(0, -1),
+    name: vid.scope.at(-1)!
+})
 
 export const idToVid = (id: Identifier): VirtualIdentifier => ({
     scope: id.scope.map(s => s.value),
@@ -42,6 +48,12 @@ export const findImpl = (vId: VirtualIdentifier, type: VirtualType, ctx: Context
         .flatMap(m => m.statements.filter(s => s.kind === 'impl-def').map(s => <ImplDef>s))
         .filter(i => !i.forKind || isAssignable(type, typeToVirtual(i.forKind), ctx))
         .find(i => i.identifier.name.value === vId.name)
+}
+
+export const findImplFn = (implDef: ImplDef, vid: VirtualIdentifier, ctx: Context): FnDef | undefined => {
+    return implDef.block.statements
+        .filter(s => s.kind === 'fn-def' && s.identifier.name.value === vid.name)
+        .map(s => <FnDef>s).at(0)
 }
 
 export const buildStd = (): Module[] => {

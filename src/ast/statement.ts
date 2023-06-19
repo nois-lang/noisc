@@ -66,7 +66,7 @@ export const buildVarDef = (node: ParseNode): VarDef => {
     return { kind: 'var-def', parseNode: node, pattern, varType, expr }
 }
 
-export interface FnDef extends AstNode<'fn-def'> {
+export interface FnDef extends AstNode<'fn-def'>, Partial<Typed> {
     kind: 'fn-def'
     identifier: Identifier
     typeParams: TypeParam[]

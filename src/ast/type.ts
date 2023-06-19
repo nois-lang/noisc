@@ -59,6 +59,7 @@ export const buildTypeParam = (node: ParseNode): TypeParam => {
 }
 
 export interface FnType extends AstNode<'fn-type'> {
+    generics: Generic[]
     paramTypes: Type[]
     returnType: Type
 }
@@ -67,5 +68,6 @@ export const buildFnType = (node: ParseNode): FnType => {
     const nodes = filterNonAstNodes(node)
     const paramTypes = filterNonAstNodes(nodes[0]).map(buildType)
     const returnType = buildType(filterNonAstNodes(nodes[1])[0])
-    return { kind: 'fn-type', parseNode: node, paramTypes, returnType }
+    // TODO figure out fn-type syntax for generics
+    return { kind: 'fn-type', parseNode: node, generics: [], paramTypes, returnType }
 }
