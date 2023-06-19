@@ -1,10 +1,11 @@
-import { Context, findImplsById, vidToString } from '../scope'
+import { Context, findImpl, vidToString } from '../scope'
 import { AstNode, Module } from '../ast'
 import { Statement, UseExpr } from '../ast/statement'
 import { BinaryExpr, UnaryExpr } from '../ast/expr'
 import { operatorImplMap } from './op'
 import { Operand } from '../ast/operand'
 import { virtualTypeToString } from '../typecheck'
+import { CallOp } from '../ast/op'
 
 export interface SemanticError {
     node: AstNode<any>
@@ -56,6 +57,14 @@ const checkStatement = (statement: Statement, ctx: Context): void => {
     }
 }
 const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
+    if (unaryExpr.unaryOp.kind === 'call-op') {
+        checkCallExpr(unaryExpr, ctx)
+    }
+    // todo
+}
+const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
+    const callOp = <CallOp>unaryExpr.unaryOp
+    const operand = unaryExpr.operand
     // todo
 }
 
@@ -64,8 +73,8 @@ const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     checkOperand(binaryExpr.rOperand, ctx)
     const implId = operatorImplMap.get(binaryExpr.binaryOp.kind)
     if (!implId) return
-    const impls = findImplsById(implId, ctx)
-    if (impls.length === 0) {
+    const impl = findImpl(implId, binaryExpr.lOperand.type!, ctx)
+    if (!impl) {
         ctx.errors.push({
             node: binaryExpr.binaryOp,
             message: `no suitable impl \
@@ -108,16 +117,16 @@ const checkOperand = (operand: Operand, ctx: Context): void => {
             // todo
             break
         case 'string-literal':
-            operand.type = { identifier: { scope: ['std'], name: 'String' }, typeParams: [] }
+            operand.type = { kind: 'variant-type', identifier: { scope: ['std'], name: 'String' }, typeParams: [] }
             break
         case 'char-literal':
-            operand.type = { identifier: { scope: ['std'], name: 'Char' }, typeParams: [] }
+            operand.type = { kind: 'variant-type', identifier: { scope: ['std'], name: 'Char' }, typeParams: [] }
             break
         case 'int-literal':
-            operand.type = { identifier: { scope: ['std'], name: 'Int' }, typeParams: [] }
+            operand.type = { kind: 'variant-type', identifier: { scope: ['std'], name: 'Int' }, typeParams: [] }
             break
         case 'float-literal':
-            operand.type = { identifier: { scope: ['std'], name: 'Float' }, typeParams: [] }
+            operand.type = { kind: 'variant-type', identifier: { scope: ['std'], name: 'Float' }, typeParams: [] }
             break
         case 'identifier':
             // todo

@@ -9,6 +9,8 @@ import { prettyLexerError, prettySourceMessage, prettySyntaxError } from '../err
 import { indexToLocation } from '../location'
 import { Parser } from '../parser/parser'
 import { parseModule } from '../parser/fns'
+import { isAssignable, typeToVirtual, VirtualType } from '../typecheck'
+import { Identifier } from '../ast/operand'
 
 export interface Context {
     modules: Module[]
@@ -29,11 +31,17 @@ export const vidToString = (vid: VirtualIdentifier) => [...vid.scope, vid.name].
 
 export const vidScopeToString = (vid: VirtualIdentifier) => vid.scope.join('::')
 
-export const findImplsById = (vId: VirtualIdentifier, ctx: Context): ImplDef[] => {
+export const idToVid = (id: Identifier): VirtualIdentifier => ({
+    scope: id.scope.map(s => s.value),
+    name: id.name.value
+})
+
+export const findImpl = (vId: VirtualIdentifier, type: VirtualType, ctx: Context): ImplDef | undefined => {
     // TODO: go through imports only
     return ctx.modules
         .flatMap(m => m.statements.filter(s => s.kind === 'impl-def').map(s => <ImplDef>s))
-        .filter(i => i.identifier.name.value === vId.name)
+        .filter(i => !i.forKind || isAssignable(type, typeToVirtual(i.forKind), ctx))
+        .find(i => i.identifier.name.value === vId.name)
 }
 
 export const buildStd = (): Module[] => {
