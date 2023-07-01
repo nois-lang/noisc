@@ -13,7 +13,7 @@
     "sourceMap": true,
     "outDir": "./dist",
     "lib": [
-      "es5",
+      "es2022",
       "scripthost",
       "es2015.symbol.wellknown",
       "es2015.collection"
