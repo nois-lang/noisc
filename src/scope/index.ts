@@ -1,4 +1,4 @@
-import { buildModuleAst, Module } from '../ast'
+import { AstNode, buildModuleAst, Module } from '../ast'
 import { FnDef, ImplDef, Statement } from '../ast/statement'
 import { SemanticError } from '../semantic'
 import { readdirSync, readFileSync, statSync } from 'fs'
@@ -11,6 +11,7 @@ import { Parser } from '../parser/parser'
 import { parseModule } from '../parser/fns'
 import { isAssignable, typeToVirtual, VirtualType } from '../typecheck'
 import { Identifier } from '../ast/operand'
+import { todo } from '../util/todo'
 
 export interface Context {
     modules: Module[]
@@ -45,7 +46,7 @@ export const idToVid = (id: Identifier): VirtualIdentifier => ({
 export const findImpl = (vId: VirtualIdentifier, type: VirtualType, ctx: Context): ImplDef | undefined => {
     // TODO: go through imports only
     return ctx.modules
-        .flatMap(m => m.statements.filter(s => s.kind === 'impl-def').map(s => <ImplDef>s))
+        .flatMap(m => m.block.statements.filter(s => s.kind === 'impl-def').map(s => <ImplDef>s))
         .filter(i => !i.forKind || isAssignable(type, typeToVirtual(i.forKind), ctx))
         .find(i => i.identifier.name.value === vId.name)
 }
@@ -111,4 +112,8 @@ export const buildModule = (source: Source, vid: VirtualIdentifier): Module => {
     }
 
     return buildModuleAst(root, vid)
+}
+
+export const resolveVid = (vid: VirtualIdentifier, ctx: Context): AstNode<any> | undefined => {
+    return todo()
 }

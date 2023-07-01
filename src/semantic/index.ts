@@ -23,10 +23,10 @@ export interface SemanticError {
 }
 
 export const checkModule = (module: Module, ctx: Context): void => {
-    ctx.scopeStack.push({ statements: module.statements })
+    ctx.scopeStack.push({ statements: module.block.statements })
 
     module.useExprs.forEach(e => checkUseExpr(e, ctx))
-    module.statements.forEach(s => checkStatement(s, ctx))
+    module.block.statements.forEach(s => checkStatement(s, ctx))
 
     ctx.scopeStack.pop()
 }
@@ -109,7 +109,27 @@ const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
 const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const callOp = <CallOp>unaryExpr.unaryOp
     const operand = unaryExpr.operand
-    // todo
+    checkOperand(operand, ctx)
+
+    if (operand.type!.kind !== 'fn-type') {
+        const message = `type error: non-callable operand of type ${virtualTypeToString(operand.type!)}`
+        ctx.errors.push({ node: operand, message })
+        return
+    }
+    callOp.args.forEach(a => checkOperand(a, ctx))
+    const t: VirtualFnType = {
+        kind: 'fn-type',
+        generics: [],
+        paramTypes: callOp.args.map(a => a.type!),
+        returnType: anyType
+    }
+    if (!isAssignable(t, operand.type!, ctx)) {
+        const message = `\
+type error: expected ${virtualTypeToString(operand.type!)}
+            got      ${virtualTypeToString(t)}`
+        ctx.errors.push({ node: unaryExpr, message })
+        return
+    }
 }
 
 const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {

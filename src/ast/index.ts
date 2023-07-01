@@ -1,4 +1,4 @@
-import { buildStatement, buildUseExpr, Statement, UseExpr } from './statement'
+import { Block, buildStatement, buildUseExpr, UseExpr } from './statement'
 import { buildPattern, Pattern } from './match'
 import { NodeKind, ParseNode, ParseTree, treeKinds } from '../parser'
 import { lexerDynamicKinds, ParseToken } from '../lexer/lexer'
@@ -117,13 +117,14 @@ export const getAstLocationRange = (node: AstNode<any>): LocationRange => {
 export interface Module extends AstNode<'module'> {
     identifier: VirtualIdentifier
     useExprs: UseExpr[]
-    statements: Statement[]
+    block: Block
 }
 
 export const buildModuleAst = (node: ParseNode, id: VirtualIdentifier): Module => {
     const useExprs = filterNonAstNodes(node).filter(n => n.kind === 'use-stmt').map(buildUseExpr)
     const statements = filterNonAstNodes(node).filter(n => n.kind === 'statement').map(buildStatement)
-    return { kind: 'module', identifier: id, parseNode: node, useExprs, statements }
+    const block: Block = { kind: 'block', parseNode: node, statements }
+    return { kind: 'module', identifier: id, parseNode: node, useExprs, block }
 }
 
 export interface Param extends AstNode<'param'> {
