@@ -1,8 +1,6 @@
 import { AstNode, buildModuleAst, Module } from '../ast'
 import { FnDef, ImplDef, Statement } from '../ast/statement'
 import { SemanticError } from '../semantic'
-import { readdirSync, readFileSync, statSync } from 'fs'
-import { extname, join, relative } from 'path'
 import { Source } from '../source'
 import { erroneousTokenKinds, tokenize } from '../lexer/lexer'
 import { prettyLexerError, prettySourceMessage, prettySyntaxError } from '../error'
@@ -57,20 +55,8 @@ export const findImplFn = (implDef: ImplDef, vid: VirtualIdentifier, ctx: Contex
         .map(s => <FnDef>s).at(0)
 }
 
-export const buildStd = (): Module[] => {
-    const srcPath = join(__dirname, '..')
-    const stdPath = join(srcPath, 'std')
-    const modulePaths = listFiles(stdPath).filter(f => extname(f).toLowerCase() === '.no')
-    return modulePaths.map(path => {
-        const vid = pathToVid(srcPath, path)
-        const source = { str: readFileSync(path).toString(), filename: path }
-        return buildModule(source, vid)
-    })
-}
-
-export const pathToVid = (rootPath: string, path: string): VirtualIdentifier => {
-    const rPath = relative(rootPath, path)
-    const dirs = rPath.replace(/\.no$/, '').split('/')
+export const pathToVid = (path: string): VirtualIdentifier => {
+    const dirs = path.replace(/\.no$/, '').split('/')
     if (dirs.at(-1)!.toLowerCase() === 'index') {
         dirs.pop()
     }
@@ -79,14 +65,7 @@ export const pathToVid = (rootPath: string, path: string): VirtualIdentifier => 
     return { scope, name }
 }
 
-export const listFiles = (dir: string): string[] => {
-    return readdirSync(dir).flatMap(f => {
-        const fPath = join(dir, f)
-        return statSync(fPath).isDirectory() ? listFiles(fPath) : [fPath]
-    })
-}
-
-export const buildModule = (source: Source, vid: VirtualIdentifier): Module => {
+export const buildModule = (source: Source, vid: VirtualIdentifier): Module | undefined => {
     const tokens = tokenize(source.str)
     const errorTokens = tokens.filter(t => erroneousTokenKinds.includes(t.kind))
     if (errorTokens.length > 0) {
@@ -95,7 +74,7 @@ export const buildModule = (source: Source, vid: VirtualIdentifier): Module => {
                 prettySourceMessage(prettyLexerError(t), indexToLocation(t.location.start, source)!, source)
             )
         }
-        process.exit(1)
+        return undefined
     }
 
     const parser = new Parser(tokens)
@@ -108,7 +87,7 @@ export const buildModule = (source: Source, vid: VirtualIdentifier): Module => {
                 prettySourceMessage(prettySyntaxError(error), indexToLocation(error.got.location.start, source)!, source)
             )
         }
-        process.exit(1)
+        return undefined
     }
 
     return buildModuleAst(root, vid)

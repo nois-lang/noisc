@@ -14,6 +14,7 @@
     "outDir": "./dist",
     "lib": [
       "es2022",
+      "dom",
       "scripthost",
       "es2015.symbol.wellknown",
       "es2015.collection"
