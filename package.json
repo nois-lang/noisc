@@ -5,10 +5,10 @@
   "scripts": {
     "start": "ts-node src/index.ts",
     "build": "tsc",
-    "build:grammar": "ts-node src/grammar.ts",
+    "build:lib": "tsc",
     "test": "jest --watchAll",
     "ci": "jest --ci",
-    "postinstall": "npm run build"
+    "postinstall": "npm run build:lib"
   },
   "repository": {
     "type": "git",
