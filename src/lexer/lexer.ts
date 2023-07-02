@@ -115,7 +115,7 @@ export const constTokenKindMap: Map<TokenKind, string> = new Map([
 
 const intRegex = /^\d+/
 const floatRegex = /^((\d+(\.\d*)?e[+-]?\d+)|(\d+\.\d*)|(\d*\.\d+))/
-const singleCharRegex = /(([^\\\n\r])|(\\[abtnvfr\\'"])|(\\u{[0-9a-fA-F]{1,4}}))/
+const singleCharRegex = /(([^\\\n\r])|(\\[btnvfr\\'"])|(\\u{[0-9a-fA-F]{1,4}}))/
 const charRegex = new RegExp(`^'((\\')|` + singleCharRegex.source + `)'`)
 const stringRegex = new RegExp(`^"((\\")|` + singleCharRegex.source + `)+"`)
 
