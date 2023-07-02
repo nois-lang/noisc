@@ -1,13 +1,14 @@
 import { existsSync, readFileSync } from 'fs'
 import { join, resolve } from 'path'
 import { prettyError, prettySourceMessage } from './error'
-import { getAstLocationRange, Module, } from './ast'
+import { Module, } from './ast'
 import { checkModule } from './semantic'
 import { buildModule, Context, pathToVid } from './scope'
 import * as console from 'console'
 import { indexToLocation } from './location'
 import * as process from 'process'
 import { getPackageModuleSources } from './scope/io'
+import { getLocationRange } from './parser'
 
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
 
@@ -46,7 +47,7 @@ if (ctx.errors.length > 0) {
     for (const error of ctx.errors) {
         console.error(prettySourceMessage(
             prettyError(error.message),
-            indexToLocation(getAstLocationRange(error.node).start, source)!,
+            indexToLocation(getLocationRange(error.node.parseNode).start, source)!,
             source
         ))
     }

@@ -1,11 +1,10 @@
 import { Block, buildStatement, buildUseExpr, UseExpr } from './statement'
 import { buildPattern, Pattern } from './match'
 import { NodeKind, ParseNode, ParseTree, treeKinds } from '../parser'
-import { lexerDynamicKinds, ParseToken } from '../lexer/lexer'
+import { lexerDynamicKinds } from '../lexer/lexer'
 import { buildName, Name } from './operand'
 import { buildExpr, Expr } from './expr'
 import { VirtualIdentifier } from '../scope'
-import { LocationRange } from '../location'
 import { buildType, Type } from './type'
 
 export interface AstNode<T extends AstNodeKind> {
@@ -94,24 +93,6 @@ export const compactAstNode = (node: AstNode<any>): any => {
                 return [p, v]
             })
     )
-}
-
-export const getAstLocationRange = (node: AstNode<any>): LocationRange => {
-    const leftmostNode = (node: ParseNode): ParseToken => {
-        if ('nodes' in node) {
-            return leftmostNode(node.nodes[0])
-        } else {
-            return node
-        }
-    }
-    const rightmostNode = (node: ParseNode): ParseToken => {
-        if ('nodes' in node) {
-            return rightmostNode(node.nodes.at(-1)!)
-        } else {
-            return node
-        }
-    }
-    return { start: leftmostNode(node.parseNode).location.start, end: rightmostNode(node.parseNode).location.end }
 }
 
 export interface Module extends AstNode<'module'> {
