@@ -5,10 +5,9 @@
   "scripts": {
     "start": "ts-node src/index.ts",
     "build": "tsc",
-    "build:lib": "tsc -p tsconfig.lib.json",
     "test": "jest --watchAll",
     "ci": "jest --ci",
-    "postinstall": "npm run build:lib"
+    "postinstall": "npm run build"
   },
   "repository": {
     "type": "git",
