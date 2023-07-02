@@ -1,4 +1,8 @@
-export let colorOutput = true
+let colorOutput = true
+
+export const useColoredOutput = (flag: boolean): void => {
+    colorOutput = flag
+}
 
 const format = {
     red: '\x1b[31m',
