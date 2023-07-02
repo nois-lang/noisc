@@ -4,11 +4,11 @@ import { checkModule } from './semantic'
 import { buildModule, Context, pathToVid } from './scope'
 import * as console from 'console'
 import { indexToLocation } from './location'
-import { getPackageModuleSources } from './scope/io'
 
 async function main() {
     const { existsSync, readFileSync } = await import('fs')
     const { join, resolve } = await import('path')
+    const { getPackageModuleSources } = await import('./scope/io')
 
     const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
 

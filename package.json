@@ -25,11 +25,6 @@
   "bin": {
     "nois": "dist/index.js"
   },
-  "pkg": {
-    "assets": [
-      "dist/grammar.json"
-    ]
-  },
   "devDependencies": {
     "@types/node": "~18.16.3",
     "@types/jasmine": "~4.3.1",
