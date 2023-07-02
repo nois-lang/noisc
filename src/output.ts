@@ -1,4 +1,4 @@
-let colorOutput = true
+export let colorOutput = true
 
 const format = {
     red: '\x1b[31m',
