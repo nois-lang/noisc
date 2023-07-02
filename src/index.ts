@@ -1,13 +1,13 @@
 import { prettyError, prettySourceMessage } from './error'
 import { getAstLocationRange, Module, } from './ast'
-import { checkModule } from './semantic'
-import { buildModule, Context, pathToVid } from './scope'
+import { checkModule, SemanticError } from './semantic'
 import * as console from 'console'
 import { indexToLocation } from './location'
 
 async function main() {
     const { existsSync, readFileSync } = await import('fs')
     const { join, resolve } = await import('path')
+    const { buildModule, pathToVid } = await import( './scope')
     const { getPackageModuleSources } = await import('./scope/io')
 
     const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
@@ -40,11 +40,11 @@ Usage: nois file`
         process.exit(1)
     }
 
-    const ctx: Context = { modules: [...<Module[]>stdModules, moduleAst], scopeStack: [], errors: [] }
+    const ctx = { modules: [...<Module[]>stdModules, moduleAst], scopeStack: [], errors: [] }
     checkModule(moduleAst, ctx)
 
     if (ctx.errors.length > 0) {
-        for (const error of ctx.errors) {
+        for (const error of <SemanticError[]>ctx.errors) {
             console.error(prettySourceMessage(
                 prettyError(error.message),
                 indexToLocation(getAstLocationRange(error.node).start, source)!,
