@@ -1,4 +1,3 @@
-import { existsSync, readFileSync } from 'fs'
 import { prettyError, prettySourceMessage } from './error'
 import { getAstLocationRange, Module, } from './ast'
 import { checkModule } from './semantic'
