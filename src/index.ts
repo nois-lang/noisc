@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { existsSync, readFileSync } from 'fs'
 import { join, resolve } from 'path'
 import { prettyError, prettySourceMessage } from './error'
