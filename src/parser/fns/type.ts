@@ -18,8 +18,10 @@ export const parseType = (parser: Parser): void => {
     const mark = parser.open()
     if (parser.at('name')) {
         parseVariantType(parser)
-    } else {
+    } else if (parser.at('pipe')) {
         parseFnType(parser)
+    } else {
+        parser.advanceWithError('expected type')
     }
     parser.close(mark, 'type')
 }

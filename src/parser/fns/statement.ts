@@ -112,9 +112,11 @@ export const parseFnDef = (parser: Parser): void => {
     parseVariantType(parser)
     if (parser.at('o-paren')) {
         parseParams(parser)
-    } else if (parser.at('colon')) {
+    }
+    if (parser.at('colon')) {
         parseTypeAnnot(parser)
-    } else if (parser.at('o-brace')) {
+    }
+    if (parser.at('o-brace')) {
         parseBlock(parser)
     }
     parser.close(mark, 'fn-def')
