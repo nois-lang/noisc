@@ -78,7 +78,7 @@ export const parseInfixOp = (parser: Parser): void => {
         return
     }
 
-    parser.advanceWithError('expected infix operator')
+    parser.advanceWithError('expected infix operator', mark)
 }
 
 /**

@@ -98,9 +98,7 @@ export class Parser {
         this.error({ expected: kinds, got: this.tokens[this.pos] })
     }
 
-    advanceWithError(message: string): void {
-        const mark = this.open()
-
+    advanceWithError(message: string, mark: number = this.open()): void {
         this.error({ expected: [], got: this.tokens[this.pos], message })
 
         this.advance()

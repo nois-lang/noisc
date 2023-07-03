@@ -59,7 +59,7 @@ export const parseOperand = (parser: Parser): void => {
         parseMatchExpr(parser)
     } else if (parser.at('pipe')) {
         parseClosureExpr(parser)
-    } else if (parser.at('o-paren')) {
+    } else if (parser.at('o-paren') && exprFirstTokens.includes(parser.nth(1))) {
         parser.expect('o-paren')
         parseExpr(parser)
         parser.expect('c-paren')
