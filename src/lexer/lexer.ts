@@ -246,6 +246,7 @@ const parseName = (chars: string[], tokens: ParseToken[], pos: { pos: number }):
 }
 
 const parseFloat = (chars: string[], tokens: ParseToken[], pos: { pos: number }): boolean => {
+    if (!isNumeric(chars[pos.pos]) && chars[pos.pos] !== '.') return false
     const leftCode = chars.slice(pos.pos).join('')
     const match = leftCode.match(floatRegex)
     if (!match) return false
