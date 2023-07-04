@@ -113,7 +113,6 @@ export const constTokenKindMap: Map<TokenKind, string> = new Map([
     ['underscore', '_'],
 ])
 
-const intRegex = /^\d+/
 const floatRegex = /^((\d+(\.\d*)?e[+-]?\d+)|(\d+\.\d*)|(\d*\.\d+))/
 const singleCharRegex = /(([^\\\n\r])|(\\[btnvfr\\'"])|(\\u{[0-9a-fA-F]{1,4}}))/
 const charRegex = new RegExp(`^'((\\')|` + singleCharRegex.source + `)'`)
@@ -259,13 +258,14 @@ const parseFloat = (chars: string[], tokens: ParseToken[], pos: { pos: number })
 }
 
 const parseInt = (chars: string[], tokens: ParseToken[], pos: { pos: number }): boolean => {
-    const leftCode = chars.slice(pos.pos).join('')
-    const match = leftCode.match(intRegex)
-    if (!match) return false
-
-    const int = match[0]
     const start = pos.pos
-    pos.pos += int.length
+    let int = ''
+    while (isNumeric(chars[pos.pos])) {
+        int += chars[pos.pos]
+        pos.pos++
+    }
+    if (int.length === 0) return false
+
     tokens.push(createToken('int', int, pos, start))
     return true
 }
