@@ -22,8 +22,7 @@
     "skipLibCheck": true
   },
   "include": [
-    "src/**/*",
-    "src/grammar.json"
+    "src/**/*"
   ],
   "exclude": [
     "src/**/*.spec.ts"
