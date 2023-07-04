@@ -13,6 +13,7 @@ export const exprFirstTokens: TokenKind[] = ['char', 'name', 'if-keyword', 'whil
     'match-keyword', 'int', 'float', 'o-bracket', 'o-paren', 'string', ...prefixOpFirstTokens]
 export const paramFirstTokens: TokenKind[] = ['name']
 export const useExprFirstTokens: TokenKind[] = ['name', 'asterisk', 'o-brace']
+export const fieldPatternFirstTokens: TokenKind[] = ['name', 'period']
 
 /**
  * module ::= use-stmt* statement*

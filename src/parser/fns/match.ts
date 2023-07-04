@@ -1,7 +1,7 @@
 import { Parser } from '../parser'
 import { parseExpr, parseIdentifier } from './expr'
 import { parseBlock } from './statement'
-import { prefixOpFirstTokens } from './index'
+import { fieldPatternFirstTokens, prefixOpFirstTokens } from './index'
 import { parsePrefixOp, parseSpreadOp } from './op'
 
 /**
@@ -101,7 +101,7 @@ export const parseConPattern = (parser: Parser): void => {
 export const parseConPatternParams = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('o-paren')
-    while (!parser.at('c-paren') && !parser.eof()) {
+    while (parser.atAny(fieldPatternFirstTokens) && !parser.eof()) {
         parseFieldPattern(parser)
         if (!parser.at('c-paren')) {
             parser.expect('comma')
