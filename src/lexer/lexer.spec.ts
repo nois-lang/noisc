@@ -192,6 +192,14 @@ let main = (): Unit {
         ])
     })
 
+    it('tokenize unknown token', () => {
+        expect(tokenize(`4;`)).toEqual([
+            { kind: 'int', value: '4', location: { start: 0, end: 0 } },
+            { kind: 'unknown', value: ';', location: { start: 1, end: 1 } },
+            { kind: 'eof', value: '', location: { start: 2, end: 2 } }
+        ])
+    })
+
     it('tokenize comment', () => {
         expect(tokenize(`//this is 4\n4`)).toEqual([
             { 'kind': 'comment', 'location': { 'end': 10, 'start': 0 }, 'value': '//this is 4' },

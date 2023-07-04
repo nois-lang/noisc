@@ -177,6 +177,7 @@ export const tokenize = (code: String): ParseToken[] => {
         }
     }
 
+    flushUnknown()
     pos.pos++
     tokens.push(createToken('eof', '', pos, pos.pos - 1))
 
