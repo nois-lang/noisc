@@ -19,7 +19,11 @@ export const parseExpr = (parser: Parser): void => {
     parseSubExpr(parser)
     while (parser.atAny(infixOpFirstTokens) && !parser.eof()) {
         parseInfixOp(parser)
-        parseSubExpr(parser)
+        if (!parser.eof()) {
+            parseSubExpr(parser)
+        } else {
+            parser.advanceWithError('expected expression')
+        }
     }
     parser.close(mark, 'expr')
 }

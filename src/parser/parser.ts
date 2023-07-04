@@ -101,7 +101,9 @@ export class Parser {
     advanceWithError(message: string, mark: number = this.open()): void {
         this.error({ expected: [], got: this.tokens[this.pos], message })
 
-        this.advance()
+        if (!this.eof()) {
+            this.advance()
+        }
         this.close(mark, 'error')
     }
 
