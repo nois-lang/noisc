@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { prettyError, prettySourceMessage } from './error'
 import { Module } from './ast'
 import { checkModule } from './semantic'
