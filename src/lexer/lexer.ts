@@ -297,6 +297,9 @@ const parseUnterminatedChar = (chars: string[], tokens: ParseToken[], pos: { pos
     while (pos.pos !== chars.length && !isNewline(chars[pos.pos])) {
         char += chars[pos.pos]
         pos.pos++
+        if (chars[pos.pos - 1] === quote) {
+            break
+        }
     }
     tokens.push(createToken('unterminated-char', char, pos, start))
 }
