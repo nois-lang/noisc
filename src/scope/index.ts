@@ -15,6 +15,7 @@ export interface Context {
     modules: Module[]
     scopeStack: Scope[]
     errors: SemanticError[]
+    warnings: SemanticError[]
 
     module?: Module
     implDef?: ImplDef
@@ -26,9 +27,13 @@ export interface Scope {
 }
 
 export interface SemanticError {
+    module: Module,
     node: AstNode<any>
     message: string
 }
+
+export const semanticError = (ctx: Context, node: AstNode<any>, message: string): SemanticError =>
+    ({module: ctx.module!, node, message})
 
 export const findImpl = (vId: VirtualIdentifier, type: VirtualType, ctx: Context): ImplDef | undefined => {
     // TODO: go through imports only
@@ -44,8 +49,11 @@ export const findImplFn = (implDef: ImplDef, vid: VirtualIdentifier, ctx: Contex
         .map(s => <FnDef>s).at(0)
 }
 
-export const pathToVid = (path: string): VirtualIdentifier => {
+export const pathToVid = (path: string, packageName?: string): VirtualIdentifier => {
     const dirs = path.replace(/\.no$/, '').split('/')
+    if (packageName) {
+        dirs.unshift(packageName)
+    }
     if (dirs.at(-1)!.toLowerCase() === 'index') {
         dirs.pop()
     }
@@ -55,7 +63,7 @@ export const pathToVid = (path: string): VirtualIdentifier => {
 }
 
 export const buildModule = (source: Source, vid: VirtualIdentifier): Module | undefined => {
-    const tokens = tokenize(source.str)
+    const tokens = tokenize(source.code)
     const errorTokens = tokens.filter(t => erroneousTokenKinds.includes(t.kind))
     if (errorTokens.length > 0) {
         for (const t of errorTokens) {
@@ -79,5 +87,5 @@ export const buildModule = (source: Source, vid: VirtualIdentifier): Module | un
         return undefined
     }
 
-    return buildModuleAst(root, vid)
+    return buildModuleAst(root, vid, source)
 }

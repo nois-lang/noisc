@@ -1,7 +1,7 @@
 import { Location, locationToString, prettyLineAt } from './location'
 import { Source } from './source'
 import { ParseToken, TokenKind } from './lexer/lexer'
-import { red } from './output'
+import { red, yellow } from './output'
 
 export interface SyntaxError {
     expected: TokenKind[],
@@ -22,8 +22,12 @@ export const prettyError = (message: string): string => {
     return red(message)
 }
 
+export const prettyWarning = (message: string): string => {
+    return yellow(message)
+}
+
 export const prettySourceMessage = (message: string, location: Location, source: Source): string => {
-    const locationStr = `${location ? `${source.filename}:${locationToString(location)}` : '<unknwon location>'}`
+    const locationStr = `${location ? `${source.filepath}:${locationToString(location)}` : '<unknwon location>'}`
     const locationMsg = `${' '.repeat(2)}at ${locationStr}`
     return [message, locationMsg, '\n' + prettyLineAt(location, source)].join('\n')
 }

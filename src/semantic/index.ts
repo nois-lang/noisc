@@ -1,4 +1,4 @@
-import { Context, findImpl, findImplFn } from '../scope'
+import { Context, findImpl, findImplFn, semanticError } from '../scope'
 import { Module } from '../ast'
 import { Block, FnDef, ImplDef, Statement, UseExpr } from '../ast/statement'
 import { BinaryExpr, UnaryExpr } from '../ast/expr'
@@ -22,7 +22,7 @@ import { flattenUseExpr } from './use-expr'
 export const checkModule = (module: Module, ctx: Context): void => {
     if (module.checked) return
     if (ctx.module && vidToString(ctx.module.identifier) === vidToString(module.identifier)) {
-        ctx.errors.push({ node: module, message: 'recursive module resolution' })
+        ctx.errors.push(semanticError(ctx, module, 'recursive module resolution'))
         return
     }
 
@@ -57,7 +57,7 @@ const checkUseExpr = (useExpr: UseExpr, ctx: Context): void => {
 
 const checkStatement = (statement: Statement, ctx: Context, topLevel: boolean = false): void => {
     if (topLevel && ['return-stmt', 'operand-expr', 'unary-expr', 'binary-expr'].includes(statement.kind)) {
-        ctx.errors.push({ node: statement, message: `top level \`${statement.kind}\` is not allowed` })
+        ctx.errors.push(semanticError(ctx, statement, `top level \`${statement.kind}\` is not allowed`))
         return
     }
     const push = () => {
@@ -104,7 +104,7 @@ const checkStatement = (statement: Statement, ctx: Context, topLevel: boolean = 
 const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
     const unexpectedVariantType = fnDef.typeParams.find(tp => tp.kind === 'variant-type')
     if (unexpectedVariantType) {
-        ctx.errors.push({ node: unexpectedVariantType, message: 'expected generic, got variant type' })
+        ctx.errors.push(semanticError(ctx, unexpectedVariantType, 'expected generic, got variant type'))
         return
     }
     const generics = fnDef.typeParams.map(tp => <VirtualGeneric>typeParamToVirtual(tp))
@@ -118,7 +118,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
                 generics.unshift({ name: 'Self', bounds: [] })
                 return { kind: 'variant-type', identifier: vidFromString('Self'), typeParams: [] }
             } else {
-                ctx.errors.push({ node: p, message: 'parameter type not specified' })
+                ctx.errors.push(semanticError(ctx, p, 'parameter type not specified'))
                 return { kind: 'any-type' }
             }
         } else {
@@ -133,6 +133,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
     }
     if (!fnDef.block) {
         if (!ctx.kindDef) {
+            ctx.warnings.push(semanticError(ctx, fnDef, 'missing function body, must be a native function'))
         }
     } else {
         checkBlock(fnDef.block, ctx)
@@ -153,7 +154,7 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
 
     if (operand.type!.kind !== 'fn-type') {
         const message = `type error: non-callable operand of type ${virtualTypeToString(operand.type!)}`
-        ctx.errors.push({ node: operand, message })
+        ctx.errors.push(semanticError(ctx, operand, message))
         return
     }
     callOp.args.forEach(a => checkOperand(a, ctx))
@@ -167,7 +168,7 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         const message = `\
 type error: expected ${virtualTypeToString(operand.type!)}
             got      ${virtualTypeToString(t)}`
-        ctx.errors.push({ node: unaryExpr, message })
+        ctx.errors.push(semanticError(ctx, unaryExpr, message))
         return
     }
 }
@@ -186,7 +187,7 @@ const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
 ${vidToString(opImplId)}(\
 ${virtualTypeToString(binaryExpr.lOperand.type!)}, \
 ${virtualTypeToString(binaryExpr.rOperand.type!)})}`
-        ctx.errors.push({ node: binaryExpr.binaryOp, message: message })
+        ctx.errors.push(semanticError(ctx, binaryExpr.binaryOp, message))
         return
     }
 
@@ -203,7 +204,7 @@ ${virtualTypeToString(binaryExpr.rOperand.type!)})}`
         const message = `\
 type error: expected ${virtualTypeToString(implFn.type!)}
             got      ${virtualTypeToString(t)}`
-        ctx.errors.push({ node: binaryExpr, message })
+        ctx.errors.push(semanticError(ctx, binaryExpr, message))
         return
     }
 }

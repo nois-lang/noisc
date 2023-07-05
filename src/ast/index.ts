@@ -6,6 +6,7 @@ import { buildName, Name } from './operand'
 import { buildExpr, Expr } from './expr'
 import { buildType, Type } from './type'
 import { VirtualIdentifier } from '../scope/vid'
+import { Source } from '../source'
 
 export interface AstNode<T extends AstNodeKind> {
     kind: T
@@ -96,6 +97,7 @@ export const compactAstNode = (node: AstNode<any>): any => {
 }
 
 export interface Module extends AstNode<'module'> {
+    source: Source
     identifier: VirtualIdentifier
     useExprs: UseExpr[]
     block: Block
@@ -103,11 +105,11 @@ export interface Module extends AstNode<'module'> {
     checked?: boolean
 }
 
-export const buildModuleAst = (node: ParseNode, id: VirtualIdentifier): Module => {
+export const buildModuleAst = (node: ParseNode, id: VirtualIdentifier, source: Source): Module => {
     const useExprs = filterNonAstNodes(node).filter(n => n.kind === 'use-stmt').map(buildUseExpr)
     const statements = filterNonAstNodes(node).filter(n => n.kind === 'statement').map(buildStatement)
     const block: Block = { kind: 'block', parseNode: node, statements }
-    return { kind: 'module', identifier: id, parseNode: node, useExprs, block }
+    return { source, kind: 'module', identifier: id, parseNode: node, useExprs, block }
 }
 
 export interface Param extends AstNode<'param'> {

@@ -18,7 +18,7 @@ export const indexToLocation = (index: number, source: Source): Location | undef
         if (i === index) {
             return { line, column }
         }
-        if (isNewline(source.str[i])) {
+        if (isNewline(source.code[i])) {
             line++
             column = 0
         } else {
@@ -35,7 +35,7 @@ export const prettyLineAt = (start: Location, source: Source): string => {
 }
 
 export const prettyLine = (lineIndex: number, source: Source): string => {
-    const lines = source.str.split('\n')
+    const lines = source.code.split('\n')
     const line = lines[lineIndex]
     const lineNum = `${(lineIndex + 1).toString()} | `.padStart(6)
     return lineNum + line

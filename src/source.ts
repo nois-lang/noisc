@@ -1,4 +1,4 @@
 export interface Source {
-    str: string
-    filename: string
+    code: string
+    filepath: string
 }

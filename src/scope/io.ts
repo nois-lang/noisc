@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, statSync } from 'fs'
-import { extname, join, relative } from 'path'
+import { extname, join } from 'path'
 import { Source } from '../source'
 
 export const listFiles = (dir: string): string[] => {
@@ -12,6 +12,6 @@ export const listFiles = (dir: string): string[] => {
 export const getPackageModuleSources = (packagePath: string): Source[] => {
     const modulePaths = listFiles(packagePath).filter(f => extname(f).toLowerCase() === '.no')
     return modulePaths.map(path => {
-        return { str: readFileSync(path).toString(), filename: relative(packagePath, path) }
+        return { code: readFileSync(path).toString(), filepath: path }
     })
 }

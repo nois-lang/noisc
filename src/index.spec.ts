@@ -7,9 +7,9 @@ import { vidFromString } from './scope/vid'
 
 describe('nois', () => {
     it('parse features', () => {
-        const filename = 'features.no'
-        const source = { str: readFileSync(`data/${filename}`).toString(), filename }
-        const tokens = tokenize(source.str)
+        const filepath = 'data/features.no'
+        const source = { code: readFileSync(filepath).toString(), filepath }
+        const tokens = tokenize(source.code)
 
         expect(tokens.filter(t => t.kind === 'unknown').length).toEqual(0)
 
@@ -22,7 +22,7 @@ describe('nois', () => {
 
         expect(root.kind).toEqual('module')
 
-        const astRoot = buildModuleAst(root, vidFromString('test'))
+        const astRoot = buildModuleAst(root, vidFromString('test'), source)
 
         expect(astRoot.kind).toEqual('module')
     })

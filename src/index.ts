@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'fs'
 import { join, resolve } from 'path'
-import { prettyError, prettySourceMessage } from './error'
+import { prettyError, prettySourceMessage, prettyWarning } from './error'
 import { Module, } from './ast'
 import { checkModule } from './semantic'
 import { buildModule, Context, pathToVid } from './scope'
@@ -11,6 +11,7 @@ import { getPackageModuleSources } from './scope/io'
 import { getLocationRange } from './parser'
 import { vidFromString } from './scope/vid'
 import { defaultConfig } from './config'
+import { Source } from './source'
 
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
 
@@ -29,7 +30,7 @@ if (!existsSync(sourcePath)) {
     console.error(`no such file \`${path}\``)
     process.exit()
 }
-const source = { str: readFileSync(sourcePath).toString(), filename: path }
+const source: Source = { code: readFileSync(sourcePath).toString(), filepath: sourcePath }
 
 const moduleAst = buildModule(source, vidFromString('test'))
 
@@ -38,7 +39,7 @@ if (!moduleAst) {
 }
 
 const stdModules = getPackageModuleSources(join(__dirname, 'std')).map(s => {
-    const stdModule = buildModule(s, pathToVid(s.filename))
+    const stdModule = buildModule(s, pathToVid(s.filepath, 'std'))
     if (!stdModule) {
         process.exit(1)
     }
@@ -46,7 +47,7 @@ const stdModules = getPackageModuleSources(join(__dirname, 'std')).map(s => {
 })
 
 const config = defaultConfig()
-const ctx: Context = { config, modules: [...<Module[]>stdModules, moduleAst], scopeStack: [], errors: [] }
+const ctx: Context = { config, modules: [...<Module[]>stdModules, moduleAst], scopeStack: [], errors: [], warnings: [] }
 
 checkModule(moduleAst, ctx)
 
@@ -63,4 +64,12 @@ if (ctx.errors.length > 0) {
         ))
     }
     process.exit(1)
+}
+
+for (const warning of ctx.warnings) {
+    console.error(prettySourceMessage(
+        prettyWarning(warning.message),
+        indexToLocation(getLocationRange(warning.node.parseNode).start, warning.module.source)!,
+        warning.module.source
+    ))
 }
