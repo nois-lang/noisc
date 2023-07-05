@@ -144,6 +144,10 @@ export const parseIdentifier = (parser: Parser): void => {
         parser.expect('colon')
         parser.expect('colon')
     }
-    parser.expect('name')
+    if (parser.at('name')) {
+        parser.expect('name')
+    } else {
+        parser.advanceWithError('expected name')
+    }
     parser.close(mark, 'identifier')
 }
