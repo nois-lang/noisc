@@ -30,7 +30,7 @@ impl Area for Shape {
 }
 
 fn main() {
-    let shape: Shape = Rect(2)
+    let shape: Shape = Rect(width: 4, height: 2)
     println(shape.area())
 }
 ```
