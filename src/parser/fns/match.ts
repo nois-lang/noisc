@@ -1,7 +1,7 @@
 import { Parser } from '../parser'
 import { parseExpr, parseIdentifier } from './expr'
 import { parseBlock } from './statement'
-import { fieldPatternFirstTokens, prefixOpFirstTokens } from './index'
+import { fieldPatternFirstTokens, patternFollowTokens, prefixOpFirstTokens } from './index'
 import { parsePrefixOp, parseSpreadOp } from './op'
 
 /**
@@ -60,11 +60,16 @@ export const parseGuard = (parser: Parser): void => {
 }
 
 /**
- * pattern ::= con-pattern | STRING | CHAR | prefix-op? (INT | FLOAT) | identifier | hole
+ * pattern ::= NAME | con-pattern | STRING | CHAR | prefix-op? (INT | FLOAT) | hole
  */
 export const parsePattern = (parser: Parser): void => {
     const mark = parser.open()
-    if (parser.at('name') && parser.nth(1) === 'o-paren') {
+    // tough case to decide it is a name or a con-pattern, name should be followed by pattern follow tokens
+    // because COLON is a follow token, we should check if it is a part of scope resolution
+    const isFollowedByScopeRes = parser.nth(1) === 'colon' && parser.nth(2) === 'colon'
+    if (parser.at('name') && patternFollowTokens.includes(parser.nth(1)) && !isFollowedByScopeRes) {
+        parser.expect('name')
+    } else if (parser.at('name')) {
         parseConPattern(parser)
     } else if (parser.consume('string')) {
     } else if (parser.consume('char')) {
@@ -75,8 +80,6 @@ export const parsePattern = (parser: Parser): void => {
         if (parser.consume('int')) {
         } else if (parser.consume('float')) {
         }
-    } else if (parser.at('name')) {
-        parseIdentifier(parser)
     } else if (parser.at('underscore')) {
         parseHole(parser)
     } else {

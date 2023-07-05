@@ -14,6 +14,8 @@ export const exprFirstTokens: TokenKind[] = ['char', 'name', 'if-keyword', 'whil
 export const paramFirstTokens: TokenKind[] = ['name']
 export const useExprFirstTokens: TokenKind[] = ['name', 'asterisk', 'o-brace']
 export const fieldPatternFirstTokens: TokenKind[] = ['name', 'period']
+export const patternFollowTokens: TokenKind[] = ['arrow', 'c-paren', 'colon', 'comma', 'equals', 'if-keyword',
+    'in-keyword', 'pipe']
 
 /**
  * module ::= use-stmt* statement*

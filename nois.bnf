@@ -128,7 +128,7 @@ match-expr          ::= MATCH-KEYWORD expr match-clauses
                     ;
       guard         ::= IF-KEYWORD expr
                     ;
-pattern             ::= con-pattern | STRING | CHAR | prefix-op? (INT | FLOAT) | identifier | hole
+pattern             ::= NAME | con-pattern | STRING | CHAR | prefix-op? (INT | FLOAT) | hole
                     ;
   con-pattern       ::= identifier con-pattern-params
                     ;

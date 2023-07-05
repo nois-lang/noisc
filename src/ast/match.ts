@@ -33,10 +33,13 @@ export const buildMatchClause = (node: ParseNode): MatchClause => {
     return { kind: 'match-clause', parseNode: node, pattern, guard, block }
 }
 
-export type Pattern = ConPattern | Expr | Hole
+export type Pattern = Name | ConPattern | Expr | Hole
 
 export const buildPattern = (node: ParseNode): Pattern => {
     const nodes = filterNonAstNodes(node)
+    if (nodes[0].kind === 'name') {
+        return buildName(nodes[0])
+    }
     if (nodes[0].kind === 'con-pattern') {
         return buildConPattern(nodes[0])
     }
