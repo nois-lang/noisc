@@ -1,0 +1,11 @@
+use std::op::*
+
+type String
+
+impl Add for String {
+    fn add(self, other: Self): Self {
+        concatString(self, other)
+    }
+}
+
+fn concatString(a: String, b: String): String

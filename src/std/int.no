@@ -1,0 +1,11 @@
+use std::op::*
+
+type Int
+
+impl Add for Int {
+    fn add(self, other: Self): Self {
+        addInt(self, other)
+    }
+}
+
+fn addInt(a: Int, b: Int): Int

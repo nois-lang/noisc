@@ -1,0 +1,11 @@
+use std::op::*
+
+type Float
+
+impl Add for Float {
+    fn add(self, other: Self): Self {
+        addFloat(self, other)
+    }
+}
+
+fn addFloat(a: Float, b: Float): Float
