@@ -1,6 +1,6 @@
 import { Context, findImpl, findImplFn } from '../scope'
-import { AstNode, Module } from '../ast'
-import { FnDef, ImplDef, Statement, UseExpr } from '../ast/statement'
+import { Module } from '../ast'
+import { Block, FnDef, ImplDef, Statement, UseExpr } from '../ast/statement'
 import { BinaryExpr, UnaryExpr } from '../ast/expr'
 import { operatorImplMap } from './op'
 import { Operand } from '../ast/operand'
@@ -9,49 +9,82 @@ import {
     isAssignable,
     typeParamToVirtual,
     typeToVirtual,
+    unitType,
     VirtualFnType,
     VirtualGeneric,
     VirtualType,
     virtualTypeToString
 } from '../typecheck'
 import { CallOp } from '../ast/op'
-import { todo } from '../util/todo'
 import { vidFromScope, vidFromString, vidToString } from '../scope/vid'
-
-export interface SemanticError {
-    node: AstNode<any>
-    message: string
-}
+import { flattenUseExpr } from './use-expr'
 
 export const checkModule = (module: Module, ctx: Context): void => {
-    ctx.scopeStack.push({ statements: module.block.statements })
+    if (module.checked) return
+    if (ctx.module && vidToString(ctx.module.identifier) === vidToString(module.identifier)) {
+        ctx.errors.push({ node: module, message: 'recursive module resolution' })
+        return
+    }
 
+    ctx.module = module
+
+    // TODO: check duplicate exprs
     module.useExprs.forEach(e => checkUseExpr(e, ctx))
-    module.block.statements.forEach(s => checkStatement(s, ctx))
+    checkBlock(module.block, ctx, true)
+
+    ctx.module = undefined
+    module.checked = true
+}
+
+export const checkBlock = (block: Block, ctx: Context, topLevel: boolean = false): void => {
+    ctx.scopeStack.push({ statements: [] })
+    if (topLevel) {
+        ctx.scopeStack.at(-1)!.statements.push(...block.statements)
+    }
+
+    block.statements.forEach(s => checkStatement(s, ctx, topLevel))
+    // TODO: block type
 
     ctx.scopeStack.pop()
 }
 
 const checkUseExpr = (useExpr: UseExpr, ctx: Context): void => {
-    // todo
+    const useExprs = flattenUseExpr(useExpr)
+    useExprs.forEach(expr => {
+        // TODO: check if such vid exist
+    })
 }
 
-const checkStatement = (statement: Statement, ctx: Context): void => {
+const checkStatement = (statement: Statement, ctx: Context, topLevel: boolean = false): void => {
+    if (topLevel && ['return-stmt', 'operand-expr', 'unary-expr', 'binary-expr'].includes(statement.kind)) {
+        ctx.errors.push({ node: statement, message: `top level \`${statement.kind}\` is not allowed` })
+        return
+    }
+    const push = () => {
+        if (!topLevel) {
+            ctx.scopeStack.at(-1)!.statements.push(statement)
+        }
+    }
+
     switch (statement.kind) {
         case 'var-def':
             // todo
             break
         case 'fn-def':
             checkFnDef(statement, ctx)
+            push()
             break
         case 'kind-def':
             // todo
+            push()
             break
         case 'impl-def':
             // todo
+            push()
             break
         case 'type-def':
             // todo
+            push()
             break
         case 'return-stmt':
             // todo
@@ -77,7 +110,8 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
     const generics = fnDef.typeParams.map(tp => <VirtualGeneric>typeParamToVirtual(tp))
     const paramTypes: VirtualType[] = fnDef.params.map((p, i) => {
         if (!p.paramType) {
-            if (i === 0
+            if (ctx.implDef
+                && i === 0
                 && p.pattern.kind === 'operand-expr'
                 && p.pattern.operand.kind === 'identifier'
                 && p.pattern.operand.name.value === 'self') {
@@ -91,12 +125,17 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
             return typeToVirtual(p.paramType)
         }
     })
-    const returnType = fnDef.returnType ? typeToVirtual(fnDef.returnType) : todo('infer fn return type')
     fnDef.type = {
         kind: 'fn-type',
         generics: generics,
         paramTypes,
-        returnType
+        returnType: fnDef.returnType ? typeToVirtual(fnDef.returnType) : unitType
+    }
+    if (!fnDef.block) {
+        if (!ctx.kindDef) {
+        }
+    } else {
+        checkBlock(fnDef.block, ctx)
     }
 }
 

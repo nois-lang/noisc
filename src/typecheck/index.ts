@@ -1,6 +1,6 @@
 import { Context } from '../scope'
 import { Type, TypeParam } from '../ast/type'
-import { idToVid, vidToString, VirtualIdentifier } from '../scope/vid'
+import { idToVid, vidFromString, vidToString, VirtualIdentifier } from '../scope/vid'
 
 export interface Typed {
     type: VirtualType
@@ -26,6 +26,12 @@ export interface AnyType {
 }
 
 export const anyType: AnyType = { kind: 'any-type' }
+
+export const unitType: VirtualVariantType = {
+    kind: 'variant-type',
+    identifier: vidFromString('std::Unit'),
+    typeParams: []
+}
 
 export type VirtualTypeParam = VirtualType | VirtualGeneric
 

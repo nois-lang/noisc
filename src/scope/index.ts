@@ -1,6 +1,5 @@
-import { buildModuleAst, Module } from '../ast'
-import { FnDef, ImplDef, Statement } from '../ast/statement'
-import { SemanticError } from '../semantic'
+import { AstNode, buildModuleAst, Module } from '../ast'
+import { FnDef, ImplDef, KindDef, Statement } from '../ast/statement'
 import { Source } from '../source'
 import { erroneousTokenKinds, tokenize } from '../lexer/lexer'
 import { prettyLexerError, prettySourceMessage, prettySyntaxError } from '../error'
@@ -9,16 +8,26 @@ import { Parser } from '../parser/parser'
 import { parseModule } from '../parser/fns'
 import { isAssignable, typeToVirtual, VirtualType } from '../typecheck'
 import { VirtualIdentifier } from './vid'
+import { Config } from '../config'
 
 export interface Context {
+    config: Config
     modules: Module[]
     scopeStack: Scope[]
     errors: SemanticError[]
+
+    module?: Module
     implDef?: ImplDef
+    kindDef?: KindDef
 }
 
 export interface Scope {
     statements: Statement[]
+}
+
+export interface SemanticError {
+    node: AstNode<any>
+    message: string
 }
 
 export const findImpl = (vId: VirtualIdentifier, type: VirtualType, ctx: Context): ImplDef | undefined => {

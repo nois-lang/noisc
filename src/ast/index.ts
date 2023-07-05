@@ -99,6 +99,8 @@ export interface Module extends AstNode<'module'> {
     identifier: VirtualIdentifier
     useExprs: UseExpr[]
     block: Block
+
+    checked?: boolean
 }
 
 export const buildModuleAst = (node: ParseNode, id: VirtualIdentifier): Module => {

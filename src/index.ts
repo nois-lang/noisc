@@ -10,6 +10,7 @@ import * as process from 'process'
 import { getPackageModuleSources } from './scope/io'
 import { getLocationRange } from './parser'
 import { vidFromString } from './scope/vid'
+import { defaultConfig } from './config'
 
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
 
@@ -36,13 +37,22 @@ if (!moduleAst) {
     process.exit(1)
 }
 
-const stdModules = getPackageModuleSources(join(__dirname, 'std')).map(s => buildModule(s, pathToVid(s.filename)))
-if (stdModules.some(m => !m)) {
-    process.exit(1)
-}
+const stdModules = getPackageModuleSources(join(__dirname, 'std')).map(s => {
+    const stdModule = buildModule(s, pathToVid(s.filename))
+    if (!stdModule) {
+        process.exit(1)
+    }
+    return stdModule
+})
 
-const ctx: Context = { modules: [...<Module[]>stdModules, moduleAst], scopeStack: [], errors: [] }
+const config = defaultConfig()
+const ctx: Context = { config, modules: [...<Module[]>stdModules, moduleAst], scopeStack: [], errors: [] }
+
 checkModule(moduleAst, ctx)
+
+if (config.checkUnusedModules) {
+    ctx.modules.forEach(m => { checkModule(m, ctx) })
+}
 
 if (ctx.errors.length > 0) {
     for (const error of ctx.errors) {
