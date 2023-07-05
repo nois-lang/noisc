@@ -105,13 +105,28 @@ let main = (): Unit {
 
         it('unterminated', () => {
             expect(tokenize(`'h`)).toEqual([
-                { kind: 'unterminated-char', value: `'h`, location: { start: 0, end: 2 } },
-                { kind: 'eof', value: '', location: { start: 3, end: 3 } }
+                { kind: 'unterminated-char', value: `'h`, location: { start: 0, end: 1 } },
+                { kind: 'eof', value: '', location: { start: 2, end: 2 } }
             ])
         })
+
+        it('empty', () => {
+            expect(tokenize(`''`)).toEqual([
+                { kind: 'unterminated-char', value: `''`, location: { start: 0, end: 1 } },
+                { kind: 'eof', value: '', location: { start: 2, end: 2 } }
+            ])
+        })
+
     })
 
     describe('tokenize string', () => {
+
+        it('empty', () => {
+            expect(tokenize(`""`)).toEqual([
+                { kind: 'string', value: `""`, location: { start: 0, end: 1 } },
+                { kind: 'eof', value: '', location: { start: 2, end: 2 } }
+            ])
+        })
 
         it('plain', () => {
             expect(tokenize(`"string 123 ok"`)).toEqual([

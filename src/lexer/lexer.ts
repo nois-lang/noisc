@@ -116,7 +116,7 @@ export const constTokenKindMap: Map<TokenKind, string> = new Map([
 const floatRegex = /^((\d+(\.\d*)?e[+-]?\d+)|(\d+\.\d*)|(\d*\.\d+))/
 const singleCharRegex = /(([^\\\n\r])|(\\[btnvfr\\'"])|(\\u{[0-9a-fA-F]{1,4}}))/
 const charRegex = new RegExp(`^'((\\')|` + singleCharRegex.source + `)'`)
-const stringRegex = new RegExp(`^"((\\")|` + singleCharRegex.source + `)+"`)
+const stringRegex = new RegExp(`^"((\\")|` + singleCharRegex.source + `)*"`)
 
 /**
  * Independent tokens are automatically advanced by parser by default
@@ -293,16 +293,12 @@ const parseUnterminatedChar = (chars: string[], tokens: ParseToken[], pos: { pos
     const quote = `'`
     const start = pos.pos
     pos.pos++
-    const char: string[] = []
-    while (chars[pos.pos] !== quote) {
-        if (isNewline(chars[pos.pos]) || pos.pos === chars.length) {
-            pos.pos++
-            tokens.push(createToken('unterminated-char', quote + char.join(''), pos, start))
-            return
-        }
-        char.push(chars[pos.pos])
+    let char = quote
+    while (pos.pos !== chars.length && !isNewline(chars[pos.pos])) {
+        char += chars[pos.pos]
         pos.pos++
     }
+    tokens.push(createToken('unterminated-char', char, pos, start))
 }
 
 const parseStringLiteral = (chars: string[], tokens: ParseToken[], pos: { pos: number }): boolean => {
@@ -327,15 +323,13 @@ const parseUnterminatedString = (chars: string[], tokens: ParseToken[], pos: { p
     const quote = '"'
     const start = pos.pos
     pos.pos++
-    const str: string[] = []
-    while (chars[pos.pos] !== quote) {
-        if (isNewline(chars[pos.pos]) || pos.pos === chars.length) {
-            tokens.push(createToken('unterminated-string', quote + str.join(''), pos, start))
-            return
-        }
-        str.push(chars[pos.pos])
+    let str = quote
+    while (pos.pos !== chars.length && !isNewline(chars[pos.pos])) {
+        str += chars[pos.pos]
         pos.pos++
     }
+    tokens.push(createToken('unterminated-string', str, pos, start))
+    return
 }
 
 const createToken = (
