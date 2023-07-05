@@ -1,4 +1,4 @@
-import { AstNode, buildModuleAst, Module } from '../ast'
+import { buildModuleAst, Module } from '../ast'
 import { FnDef, ImplDef, Statement } from '../ast/statement'
 import { SemanticError } from '../semantic'
 import { Source } from '../source'
@@ -8,8 +8,7 @@ import { indexToLocation } from '../location'
 import { Parser } from '../parser/parser'
 import { parseModule } from '../parser/fns'
 import { isAssignable, typeToVirtual, VirtualType } from '../typecheck'
-import { Identifier } from '../ast/operand'
-import { todo } from '../util/todo'
+import { VirtualIdentifier } from './vid'
 
 export interface Context {
     modules: Module[]
@@ -21,25 +20,6 @@ export interface Context {
 export interface Scope {
     statements: Statement[]
 }
-
-export interface VirtualIdentifier {
-    scope: string[]
-    name: string
-}
-
-export const vidToString = (vid: VirtualIdentifier): string => [...vid.scope, vid.name].join('::')
-
-export const vidScopeToString = (vid: VirtualIdentifier) => vid.scope.join('::')
-
-export const vidFromScope = (vid: VirtualIdentifier): VirtualIdentifier => ({
-    scope: vid.scope.slice(0, -1),
-    name: vid.scope.at(-1)!
-})
-
-export const idToVid = (id: Identifier): VirtualIdentifier => ({
-    scope: id.scope.map(s => s.value),
-    name: id.name.value
-})
 
 export const findImpl = (vId: VirtualIdentifier, type: VirtualType, ctx: Context): ImplDef | undefined => {
     // TODO: go through imports only
@@ -91,8 +71,4 @@ export const buildModule = (source: Source, vid: VirtualIdentifier): Module | un
     }
 
     return buildModuleAst(root, vid)
-}
-
-export const resolveVid = (vid: VirtualIdentifier, ctx: Context): AstNode<any> | undefined => {
-    return todo()
 }

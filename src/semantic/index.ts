@@ -1,4 +1,4 @@
-import { Context, findImpl, findImplFn, vidFromScope, vidToString } from '../scope'
+import { Context, findImpl, findImplFn } from '../scope'
 import { AstNode, Module } from '../ast'
 import { FnDef, ImplDef, Statement, UseExpr } from '../ast/statement'
 import { BinaryExpr, UnaryExpr } from '../ast/expr'
@@ -16,6 +16,7 @@ import {
 } from '../typecheck'
 import { CallOp } from '../ast/op'
 import { todo } from '../util/todo'
+import { vidFromScope, vidFromString, vidToString } from '../scope/vid'
 
 export interface SemanticError {
     node: AstNode<any>
@@ -81,7 +82,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
                 && p.pattern.operand.kind === 'identifier'
                 && p.pattern.operand.name.value === 'self') {
                 generics.unshift({ name: 'Self', bounds: [] })
-                return { kind: 'variant-type', identifier: { scope: [], name: 'Self' }, typeParams: [] }
+                return { kind: 'variant-type', identifier: vidFromString('Self'), typeParams: [] }
             } else {
                 ctx.errors.push({ node: p, message: 'parameter type not specified' })
                 return { kind: 'any-type' }
@@ -208,16 +209,16 @@ const checkOperand = (operand: Operand, ctx: Context): void => {
             // todo
             break
         case 'string-literal':
-            operand.type = { kind: 'variant-type', identifier: { scope: ['std'], name: 'String' }, typeParams: [] }
+            operand.type = { kind: 'variant-type', identifier: vidFromString('std::String'), typeParams: [] }
             break
         case 'char-literal':
-            operand.type = { kind: 'variant-type', identifier: { scope: ['std'], name: 'Char' }, typeParams: [] }
+            operand.type = { kind: 'variant-type', identifier: vidFromString('std::Char'), typeParams: [] }
             break
         case 'int-literal':
-            operand.type = { kind: 'variant-type', identifier: { scope: ['std'], name: 'Int' }, typeParams: [] }
+            operand.type = { kind: 'variant-type', identifier: vidFromString('std::Int'), typeParams: [] }
             break
         case 'float-literal':
-            operand.type = { kind: 'variant-type', identifier: { scope: ['std'], name: 'Float' }, typeParams: [] }
+            operand.type = { kind: 'variant-type', identifier: vidFromString('std::Float'), typeParams: [] }
             break
         case 'identifier':
             // todo

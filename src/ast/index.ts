@@ -4,8 +4,8 @@ import { NodeKind, ParseNode, ParseTree, treeKinds } from '../parser'
 import { lexerDynamicKinds } from '../lexer/lexer'
 import { buildName, Name } from './operand'
 import { buildExpr, Expr } from './expr'
-import { VirtualIdentifier } from '../scope'
 import { buildType, Type } from './type'
+import { VirtualIdentifier } from '../scope/vid'
 
 export interface AstNode<T extends AstNodeKind> {
     kind: T

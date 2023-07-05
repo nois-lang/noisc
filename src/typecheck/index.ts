@@ -1,5 +1,6 @@
-import { Context, idToVid, vidToString, VirtualIdentifier } from '../scope'
+import { Context } from '../scope'
 import { Type, TypeParam } from '../ast/type'
+import { idToVid, vidToString, VirtualIdentifier } from '../scope/vid'
 
 export interface Typed {
     type: VirtualType

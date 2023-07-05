@@ -9,6 +9,7 @@ import { indexToLocation } from './location'
 import * as process from 'process'
 import { getPackageModuleSources } from './scope/io'
 import { getLocationRange } from './parser'
+import { vidFromString } from './scope/vid'
 
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
 
@@ -29,7 +30,7 @@ if (!existsSync(sourcePath)) {
 }
 const source = { str: readFileSync(sourcePath).toString(), filename: path }
 
-const moduleAst = buildModule(source, { scope: [], name: 'test' })
+const moduleAst = buildModule(source, vidFromString('test'))
 
 if (!moduleAst) {
     process.exit(1)
