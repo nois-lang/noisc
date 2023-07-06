@@ -79,9 +79,6 @@ export const typeParamToVirtual = (tp: TypeParam): VirtualTypeParam => {
     }
 }
 
-/**
- * TODO: scope resolution (e.g. make sure Int is std::Int)
- */
 export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context): boolean => {
     if (t.kind === 'any-type' || target.kind === 'any-type') {
         return true

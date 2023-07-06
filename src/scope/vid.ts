@@ -1,13 +1,21 @@
 import { Identifier } from '../ast/operand'
 import { Module } from '../ast'
 import { Context } from './index'
-import { Statement } from '../ast/statement'
+import { FnDef, KindDef, Statement, VarDef } from '../ast/statement'
 import { todo } from '../util/todo'
 import { Pattern } from '../ast/match'
+import { TypeDef } from '../ast/type-def'
 
 export interface VirtualIdentifier {
     scope: string[]
     name: string
+}
+
+export type Definition = Module | VarDef | FnDef | KindDef | TypeDef
+
+export interface VirtualIdentifierMatch {
+    qualifiedVid: VirtualIdentifier
+    def: Definition
 }
 
 export const scopeResOp: string = '::'
@@ -45,6 +53,17 @@ export const statementVid = (statement: Statement): VirtualIdentifier | undefine
     return undefined
 }
 
+export const statementToDefinition = (statement: Statement): Definition | undefined => {
+    switch (statement.kind) {
+        case 'var-def':
+        case 'fn-def':
+        case 'kind-def':
+        case 'type-def':
+            return statement
+    }
+    return undefined
+}
+
 export const patternVid = (pattern: Pattern): VirtualIdentifier | undefined => {
     switch (pattern.kind) {
         case 'name':
@@ -55,12 +74,12 @@ export const patternVid = (pattern: Pattern): VirtualIdentifier | undefined => {
     return undefined
 }
 
-export const resolveVid = (vid: VirtualIdentifier, ctx: Context): Module | Statement | undefined => {
+export const resolveVid = (vid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch | undefined => {
     for (let i = ctx.scopeStack.length - 1; i >= 0; i--) {
         let scope = ctx.scopeStack[i]
         const found = scope.statements.get(vidToString(vid))
         if (found) {
-            return found
+            return { qualifiedVid: vid, def: found }
         }
     }
     for (let useExpr of ctx.useExprs!) {
@@ -79,17 +98,22 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context): Module | State
     return undefined
 }
 
-export const resolveVidMatched = (vid: VirtualIdentifier, ctx: Context): Module | Statement | undefined => {
+export const resolveVidMatched = (vid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch | undefined => {
     let foundModule = ctx.modules.find(m => vidToString(m.identifier) === vidToString(vid))
     if (foundModule) {
-        return foundModule
+        return { qualifiedVid: vid, def: foundModule }
     }
     foundModule = ctx.modules.find(m => vidToString(m.identifier) === vidScopeToString(vid))
     if (foundModule) {
-        return foundModule.block.statements.find(s => {
-            const v = statementVid(s)
-            return v && vidToString(v) === vid.name
-        })
+        const statement = foundModule.block.statements
+            .find(s => {
+                const v = statementVid(s)
+                return v && vidToString(v) === vid.name
+            })
+        if (!statement) return undefined
+        const def = statementToDefinition(statement)
+        if (!def) return undefined
+        return { qualifiedVid: vid, def }
     }
-    return todo('resolve useExpr')
+    return undefined
 }

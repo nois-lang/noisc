@@ -7,7 +7,7 @@ import { indexToLocation } from '../location'
 import { Parser } from '../parser/parser'
 import { parseModule } from '../parser/fns'
 import { isAssignable, typeToVirtual, VirtualType } from '../typecheck'
-import { VirtualIdentifier } from './vid'
+import { Definition, VirtualIdentifier } from './vid'
 import { Config } from '../config'
 
 export interface Context {
@@ -24,7 +24,7 @@ export interface Context {
 }
 
 export interface Scope {
-    statements: Map<string, Statement>
+    statements: Map<string, Definition>
 }
 
 export interface SemanticError {

@@ -16,7 +16,15 @@ import {
     virtualTypeToString
 } from '../typecheck'
 import { CallOp } from '../ast/op'
-import { idToVid, resolveVid, statementVid, vidFromScope, vidFromString, vidToString } from '../scope/vid'
+import {
+    idToVid,
+    resolveVid,
+    statementToDefinition,
+    statementVid,
+    vidFromScope,
+    vidFromString,
+    vidToString
+} from '../scope/vid'
 import { flattenUseExpr } from './use-expr'
 
 export const checkModule = (module: Module, ctx: Context): void => {
@@ -37,15 +45,10 @@ export const checkModule = (module: Module, ctx: Context): void => {
     module.checked = true
 }
 
-export const checkBlock = (block: Block, ctx: Context, topLevel: boolean = false): void => {
+const checkBlock = (block: Block, ctx: Context, topLevel: boolean = false): void => {
     ctx.scopeStack.push({ statements: new Map() })
     if (topLevel) {
-        block.statements.forEach(s => {
-            const vid = statementVid(s)
-            if (vid) {
-                ctx.scopeStack.at(-1)!.statements.set(vidToString(vid), s)
-            }
-        })
+        block.statements.forEach(s => addDef(ctx, s))
     }
 
     block.statements.forEach(s => checkStatement(s, ctx, topLevel))
@@ -67,10 +70,7 @@ const checkStatement = (statement: Statement, ctx: Context, topLevel: boolean = 
     }
     const push = () => {
         if (!topLevel) {
-            const vid = statementVid(statement)
-            if (vid) {
-                ctx.scopeStack.at(-1)!.statements.set(vidToString(vid), statement)
-            }
+            addDef(ctx, statement)
         }
     }
 
@@ -282,3 +282,14 @@ const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
         ctx.errors.push(semanticError(ctx, identifier, `identifier ${vidToString(vid)} not found`))
     }
 }
+
+const addDef = (ctx: Context, statement: Statement): void => {
+    const vid = statementVid(statement)
+    if (!vid) return
+
+    const def = statementToDefinition(statement)
+    if (!def) return
+
+    ctx.scopeStack.at(-1)!.statements.set(vidToString(vid), def)
+}
+
