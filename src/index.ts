@@ -60,8 +60,8 @@ if (ctx.errors.length > 0) {
     for (const error of ctx.errors) {
         console.error(prettySourceMessage(
             prettyError(error.message),
-            indexToLocation(getLocationRange(error.node.parseNode).start, source)!,
-            source
+            indexToLocation(getLocationRange(error.node.parseNode).start, error.module.source)!,
+            error.module.source
         ))
     }
     process.exit(1)

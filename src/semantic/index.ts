@@ -1,6 +1,6 @@
 import { Context, findImpl, findImplFn, semanticError } from '../scope'
 import { Module } from '../ast'
-import { Block, FnDef, ImplDef, Statement, UseExpr } from '../ast/statement'
+import { Block, FnDef, ImplDef, Statement, UseExpr, VarDef } from '../ast/statement'
 import { BinaryExpr, UnaryExpr } from '../ast/expr'
 import { operatorImplMap } from './op'
 import { Identifier, Operand } from '../ast/operand'
@@ -19,13 +19,14 @@ import { CallOp } from '../ast/op'
 import {
     idToVid,
     resolveVid,
+    resolveVidMatched,
     statementToDefinition,
     statementVid,
     vidFromScope,
     vidFromString,
     vidToString
 } from '../scope/vid'
-import { flattenUseExpr } from './use-expr'
+import { flattenUseExpr, useExprToVid } from './use-expr'
 
 export const checkModule = (module: Module, ctx: Context): void => {
     if (module.checked) return
@@ -48,7 +49,7 @@ export const checkModule = (module: Module, ctx: Context): void => {
 const checkBlock = (block: Block, ctx: Context, topLevel: boolean = false): void => {
     ctx.scopeStack.push({ statements: new Map() })
     if (topLevel) {
-        block.statements.forEach(s => addDef(ctx, s))
+        block.statements.forEach(s => addDefToScope(ctx, s))
     }
 
     block.statements.forEach(s => checkStatement(s, ctx, topLevel))
@@ -59,7 +60,10 @@ const checkBlock = (block: Block, ctx: Context, topLevel: boolean = false): void
 
 const checkUseExpr = (useExpr: UseExpr, ctx: Context): void => {
     ctx.useExprs!.forEach(expr => {
-        // TODO: check if such vid exist
+        const resolved = resolveVidMatched(useExprToVid(expr), ctx)
+        if (!resolved) {
+            ctx.errors.push(semanticError(ctx, useExpr, 'unresolved use expression'))
+        }
     })
 }
 
@@ -70,13 +74,13 @@ const checkStatement = (statement: Statement, ctx: Context, topLevel: boolean = 
     }
     const push = () => {
         if (!topLevel) {
-            addDef(ctx, statement)
+            addDefToScope(ctx, statement)
         }
     }
 
     switch (statement.kind) {
         case 'var-def':
-            // todo
+            checkVarDef(statement, ctx)
             break
         case 'fn-def':
             checkFnDef(statement, ctx)
@@ -146,6 +150,10 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
     } else {
         checkBlock(fnDef.block, ctx)
     }
+}
+
+const checkVarDef = (varDef: VarDef, ctx: Context): void => {
+    // todo
 }
 
 const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
@@ -283,7 +291,7 @@ const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
     }
 }
 
-const addDef = (ctx: Context, statement: Statement): void => {
+const addDefToScope = (ctx: Context, statement: Statement): void => {
     const vid = statementVid(statement)
     if (!vid) return
 

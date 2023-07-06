@@ -51,7 +51,7 @@ export const buildUseExpr = (node: ParseNode): UseExpr => {
 
 export interface Wildcard extends AstNode<'wildcard'> {}
 
-export interface VarDef extends AstNode<'var-def'> {
+export interface VarDef extends AstNode<'var-def'>, Partial<Typed> {
     pattern: Pattern
     varType?: Type
     expr: Expr

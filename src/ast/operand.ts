@@ -161,7 +161,7 @@ export const buildIdentifier = (node: ParseNode): Identifier => {
     return { kind: 'identifier', parseNode: node, scope, name }
 }
 
-export interface Name extends AstNode<'name'> {
+export interface Name extends AstNode<'name'>, Partial<Typed> {
     value: string
 }
 
