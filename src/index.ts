@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'fs'
-import { join, resolve } from 'path'
+import { join, relative, resolve } from 'path'
 import { prettyError, prettySourceMessage, prettyWarning } from './error'
 import { Module, } from './ast'
 import { checkModule } from './semantic'
@@ -38,8 +38,9 @@ if (!moduleAst) {
     process.exit(1)
 }
 
-const stdModules = getPackageModuleSources(join(__dirname, 'std')).map(s => {
-    const stdModule = buildModule(s, pathToVid(s.filepath, 'std'))
+const stdPath = join(__dirname, 'std')
+const stdModules = getPackageModuleSources(stdPath).map(s => {
+    const stdModule = buildModule(s, pathToVid(relative(stdPath, s.filepath), 'std'))
     if (!stdModule) {
         process.exit(1)
     }
