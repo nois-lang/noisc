@@ -1,7 +1,9 @@
 import { Identifier } from '../ast/operand'
 import { AstNode } from '../ast'
-import { todo } from '../util/todo'
 import { Context } from './index'
+import { Statement } from '../ast/statement'
+import { todo } from '../util/todo'
+import { Pattern } from '../ast/match'
 
 export interface VirtualIdentifier {
     scope: string[]
@@ -29,6 +31,39 @@ export const idToVid = (id: Identifier): VirtualIdentifier => ({
     name: id.name.value
 })
 
+export const statementVid = (statement: Statement): VirtualIdentifier | undefined => {
+    switch (statement.kind) {
+        case 'var-def':
+            return patternVid(statement.pattern)
+        case 'fn-def':
+        case 'kind-def':
+        case 'type-def':
+            return idToVid(statement.identifier)
+    }
+    return undefined
+}
+
+export const patternVid = (pattern: Pattern): VirtualIdentifier | undefined => {
+    switch (pattern.kind) {
+        case 'name':
+            return vidFromString(pattern.value)
+        case 'con-pattern':
+            return todo('con-pattern vid')
+    }
+    return undefined
+}
+
 export const resolveVid = (vid: VirtualIdentifier, ctx: Context): AstNode<any> | undefined => {
-    return todo()
+    if (vid.scope.length === 0) {
+        for (let i = ctx.scopeStack.length - 1; i > 0; i--) {
+            let scope = ctx.scopeStack[i]
+            const found = scope.statements.get(vid)
+            if (found) {
+                return found
+            }
+        }
+    } else {
+        return todo('resolve qualified vid')
+    }
+    return undefined
 }

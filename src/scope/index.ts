@@ -23,7 +23,7 @@ export interface Context {
 }
 
 export interface Scope {
-    statements: Statement[]
+    statements: Map<VirtualIdentifier, Statement>
 }
 
 export interface SemanticError {
@@ -33,7 +33,7 @@ export interface SemanticError {
 }
 
 export const semanticError = (ctx: Context, node: AstNode<any>, message: string): SemanticError =>
-    ({module: ctx.module!, node, message})
+    ({ module: ctx.module!, node, message })
 
 export const findImpl = (vId: VirtualIdentifier, type: VirtualType, ctx: Context): ImplDef | undefined => {
     // TODO: go through imports only

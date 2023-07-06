@@ -3,7 +3,7 @@ import { Module } from '../ast'
 import { Block, FnDef, ImplDef, Statement, UseExpr } from '../ast/statement'
 import { BinaryExpr, UnaryExpr } from '../ast/expr'
 import { operatorImplMap } from './op'
-import { Operand } from '../ast/operand'
+import { Identifier, Operand } from '../ast/operand'
 import {
     anyType,
     isAssignable,
@@ -16,7 +16,7 @@ import {
     virtualTypeToString
 } from '../typecheck'
 import { CallOp } from '../ast/op'
-import { vidFromScope, vidFromString, vidToString } from '../scope/vid'
+import { idToVid, resolveVid, statementVid, vidFromScope, vidFromString, vidToString } from '../scope/vid'
 import { flattenUseExpr } from './use-expr'
 
 export const checkModule = (module: Module, ctx: Context): void => {
@@ -28,7 +28,7 @@ export const checkModule = (module: Module, ctx: Context): void => {
 
     ctx.module = module
 
-    // TODO: check duplicate exprs
+    // TODO: check duplicate useExprs
     module.useExprs.forEach(e => checkUseExpr(e, ctx))
     checkBlock(module.block, ctx, true)
 
@@ -37,9 +37,14 @@ export const checkModule = (module: Module, ctx: Context): void => {
 }
 
 export const checkBlock = (block: Block, ctx: Context, topLevel: boolean = false): void => {
-    ctx.scopeStack.push({ statements: [] })
+    ctx.scopeStack.push({ statements: new Map() })
     if (topLevel) {
-        ctx.scopeStack.at(-1)!.statements.push(...block.statements)
+        block.statements.forEach(s => {
+            const vid = statementVid(s)
+            if (vid) {
+                ctx.scopeStack.at(-1)!.statements.set(vid, s)
+            }
+        })
     }
 
     block.statements.forEach(s => checkStatement(s, ctx, topLevel))
@@ -62,7 +67,10 @@ const checkStatement = (statement: Statement, ctx: Context, topLevel: boolean = 
     }
     const push = () => {
         if (!topLevel) {
-            ctx.scopeStack.at(-1)!.statements.push(statement)
+            const vid = statementVid(statement)
+            if (vid) {
+                ctx.scopeStack.at(-1)!.statements.set(vid, statement)
+            }
         }
     }
 
@@ -152,6 +160,8 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const operand = unaryExpr.operand
     checkOperand(operand, ctx)
 
+    // TODO: remove
+    if (!operand.type) return
     if (operand.type!.kind !== 'fn-type') {
         const message = `type error: non-callable operand of type ${virtualTypeToString(operand.type!)}`
         ctx.errors.push(semanticError(ctx, operand, message))
@@ -240,7 +250,6 @@ const checkOperand = (operand: Operand, ctx: Context): void => {
             break
         case 'unary-expr':
             checkUnaryExpr(operand, ctx)
-            // todo
             break
         case 'binary-expr':
             checkBinaryExpr(operand, ctx)
@@ -261,7 +270,15 @@ const checkOperand = (operand: Operand, ctx: Context): void => {
             operand.type = { kind: 'variant-type', identifier: vidFromString('std::Float'), typeParams: [] }
             break
         case 'identifier':
-            // todo
+            checkIdentifier(operand, ctx)
             break
+    }
+}
+
+const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
+    const vid = idToVid(identifier)
+    const ref = resolveVid(vid, ctx)
+    if (!ref) {
+        ctx.errors.push(semanticError(ctx, identifier, `identifier ${vidToString(vid)} not found`))
     }
 }
