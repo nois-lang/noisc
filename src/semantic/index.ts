@@ -27,6 +27,7 @@ export const checkModule = (module: Module, ctx: Context): void => {
     }
 
     ctx.module = module
+    ctx.useExprs = module.useExprs.flatMap(useExpr => flattenUseExpr(useExpr))
 
     // TODO: check duplicate useExprs
     module.useExprs.forEach(e => checkUseExpr(e, ctx))
@@ -42,7 +43,7 @@ export const checkBlock = (block: Block, ctx: Context, topLevel: boolean = false
         block.statements.forEach(s => {
             const vid = statementVid(s)
             if (vid) {
-                ctx.scopeStack.at(-1)!.statements.set(vid, s)
+                ctx.scopeStack.at(-1)!.statements.set(vidToString(vid), s)
             }
         })
     }
@@ -54,8 +55,7 @@ export const checkBlock = (block: Block, ctx: Context, topLevel: boolean = false
 }
 
 const checkUseExpr = (useExpr: UseExpr, ctx: Context): void => {
-    const useExprs = flattenUseExpr(useExpr)
-    useExprs.forEach(expr => {
+    ctx.useExprs!.forEach(expr => {
         // TODO: check if such vid exist
     })
 }
@@ -69,7 +69,7 @@ const checkStatement = (statement: Statement, ctx: Context, topLevel: boolean = 
         if (!topLevel) {
             const vid = statementVid(statement)
             if (vid) {
-                ctx.scopeStack.at(-1)!.statements.set(vid, statement)
+                ctx.scopeStack.at(-1)!.statements.set(vidToString(vid), statement)
             }
         }
     }

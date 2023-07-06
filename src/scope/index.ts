@@ -1,5 +1,5 @@
 import { AstNode, buildModuleAst, Module } from '../ast'
-import { FnDef, ImplDef, KindDef, Statement } from '../ast/statement'
+import { FnDef, ImplDef, KindDef, Statement, UseExpr } from '../ast/statement'
 import { Source } from '../source'
 import { erroneousTokenKinds, tokenize } from '../lexer/lexer'
 import { prettyLexerError, prettySourceMessage, prettySyntaxError } from '../error'
@@ -18,12 +18,13 @@ export interface Context {
     warnings: SemanticError[]
 
     module?: Module
+    useExprs?: UseExpr[]
     implDef?: ImplDef
     kindDef?: KindDef
 }
 
 export interface Scope {
-    statements: Map<VirtualIdentifier, Statement>
+    statements: Map<string, Statement>
 }
 
 export interface SemanticError {

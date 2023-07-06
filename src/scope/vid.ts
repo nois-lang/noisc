@@ -1,5 +1,5 @@
 import { Identifier } from '../ast/operand'
-import { AstNode } from '../ast'
+import { Module } from '../ast'
 import { Context } from './index'
 import { Statement } from '../ast/statement'
 import { todo } from '../util/todo'
@@ -25,6 +25,8 @@ export const vidFromScope = (vid: VirtualIdentifier): VirtualIdentifier => ({
     scope: vid.scope.slice(0, -1),
     name: vid.scope.at(-1)!
 })
+
+export const vidFirst = (vid: VirtualIdentifier): string => vid.scope.at(0) || vid.name
 
 export const idToVid = (id: Identifier): VirtualIdentifier => ({
     scope: id.scope.map(s => s.value),
@@ -53,17 +55,41 @@ export const patternVid = (pattern: Pattern): VirtualIdentifier | undefined => {
     return undefined
 }
 
-export const resolveVid = (vid: VirtualIdentifier, ctx: Context): AstNode<any> | undefined => {
-    if (vid.scope.length === 0) {
-        for (let i = ctx.scopeStack.length - 1; i > 0; i--) {
-            let scope = ctx.scopeStack[i]
-            const found = scope.statements.get(vid)
-            if (found) {
-                return found
-            }
+export const resolveVid = (vid: VirtualIdentifier, ctx: Context): Module | Statement | undefined => {
+    for (let i = ctx.scopeStack.length - 1; i >= 0; i--) {
+        let scope = ctx.scopeStack[i]
+        const found = scope.statements.get(vidToString(vid))
+        if (found) {
+            return found
         }
-    } else {
-        return todo('resolve qualified vid')
+    }
+    for (let useExpr of ctx.useExprs!) {
+        if ('value' in useExpr.expr) {
+            if (useExpr.expr.value === vidFirst(vid)) {
+                const merged: VirtualIdentifier = {
+                    scope: [...useExpr.scope.map(n => n.value), ...vid.scope],
+                    name: vid.name
+                }
+                return resolveVidMatched(merged, ctx)
+            }
+        } else {
+            return todo('wildcard useExpr')
+        }
     }
     return undefined
+}
+
+export const resolveVidMatched = (vid: VirtualIdentifier, ctx: Context): Module | Statement | undefined => {
+    let foundModule = ctx.modules.find(m => vidToString(m.identifier) === vidToString(vid))
+    if (foundModule) {
+        return foundModule
+    }
+    foundModule = ctx.modules.find(m => vidToString(m.identifier) === vidScopeToString(vid))
+    if (foundModule) {
+        return foundModule.block.statements.find(s => {
+            const v = statementVid(s)
+            return v && vidToString(v) === vid.name
+        })
+    }
+    return todo('resolve useExpr')
 }
