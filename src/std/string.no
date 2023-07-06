@@ -8,4 +8,10 @@ impl Add for String {
     }
 }
 
+impl Display for String {
+    fn fmt(self): String {
+        self
+    }
+}
+
 fn concatString(a: String, b: String): String

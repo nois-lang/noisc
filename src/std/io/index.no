@@ -1,0 +1,11 @@
+use std::String
+
+kind Display {
+    fn fmt(self): String
+}
+
+fn println(display: Display): Unit {
+    printlnStr(display.fmt())
+}
+
+fn printlnStr(display: Display): Unit
