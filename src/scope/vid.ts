@@ -47,7 +47,7 @@ export const statementVid = (statement: Statement): VirtualIdentifier | undefine
         case 'fn-def':
         case 'kind-def':
         case 'type-def':
-            return idToVid(statement.identifier)
+            return vidFromString(statement.name.value)
     }
     return undefined
 }

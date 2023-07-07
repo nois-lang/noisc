@@ -1,8 +1,7 @@
 import { TokenKind } from '../../lexer/lexer'
 import { Parser } from '../parser'
 import { parseExpr } from './expr'
-import { parseBlock, parseStatement, parseUseStmt } from './statement'
-import { parsePattern } from './match'
+import { parseBlock, parseParam, parseStatement, parseUseStmt } from './statement'
 import { parseTypeAnnot } from './type'
 
 export const prefixOpFirstTokens: TokenKind[] = ['excl', 'minus', 'period', 'plus']
@@ -107,34 +106,6 @@ export const parseFieldInit = (parser: Parser): void => {
     parser.expect('colon')
     parseExpr(parser)
     parser.close(mark, 'field-init')
-}
-
-/**
- * params ::= O-PAREN (param (COMMA param)*)? COMMA? C-PAREN
- */
-export const parseParams = (parser: Parser): void => {
-    const mark = parser.open()
-    parser.expect('o-paren')
-    while (parser.atAny(paramFirstTokens) && !parser.eof()) {
-        parseParam(parser)
-        if (!parser.at('c-paren')) {
-            parser.expect('comma')
-        }
-    }
-    parser.expect('c-paren')
-    parser.close(mark, 'params')
-}
-
-/**
- * param ::= IDENTIFIER type-annot?
- */
-export const parseParam = (parser: Parser): void => {
-    const mark = parser.open()
-    parsePattern(parser)
-    if (parser.at('colon')) {
-        parseTypeAnnot(parser)
-    }
-    parser.close(mark, 'param')
 }
 
 export const parseTodo = (parser: Parser): void => {

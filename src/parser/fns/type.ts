@@ -65,46 +65,18 @@ export const parseFnTypeParams = (parser: Parser): void => {
 }
 
 /**
- * type-params ::= O-ANGLE (type-param (COMMA type-param)* COMMA?)? C-ANGLE
+ * type-params ::= O-ANGLE (type (COMMA type)* COMMA?)? C-ANGLE
  */
 export const parseTypeParams = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('o-angle')
     while (!parser.at('c-angle') && !parser.eof()) {
-        parseTypeParam(parser)
+        parseType(parser)
         if (!parser.at('c-angle')) {
             parser.expect('comma')
         }
     }
     parser.expect('c-angle')
     parser.close(mark, 'type-params')
-}
-
-/**
- * type-param ::= type | identifier COLON type-bounds
- */
-export const parseTypeParam = (parser: Parser): void => {
-    const mark = parser.open()
-    if (parser.nth(1) === 'colon') {
-        parseIdentifier(parser)
-        parser.expect('colon')
-        parseTypeBounds(parser)
-    } else {
-        parseType(parser)
-    }
-    parser.close(mark, 'type-param')
-}
-
-/**
- * type-bounds ::= type (PLUS type)*
- */
-export const parseTypeBounds = (parser: Parser): void => {
-    const mark = parser.open()
-    parseType(parser)
-    while (parser.at('plus') && !parser.eof()) {
-        parser.expect('plus')
-        parseType(parser)
-    }
-    parser.close(mark, 'type-bounds')
 }
 

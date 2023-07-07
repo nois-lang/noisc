@@ -2,8 +2,8 @@ import { Parser } from '../parser'
 import { parseTypeDef } from './type-def'
 import { parseExpr } from './expr'
 import { parsePattern } from './match'
-import { exprFirstTokens, parseParams, useExprFirstTokens } from './index'
-import { parseTypeAnnot, parseVariantType } from './type'
+import { exprFirstTokens, paramFirstTokens, useExprFirstTokens } from './index'
+import { parseType, parseTypeAnnot, parseVariantType } from './type'
 
 /**
  * statement ::= var-def | fn-def | kind-def | impl-def | type-def | return-stmt | expr
@@ -104,12 +104,15 @@ export const parseWildcard = (parser: Parser): void => {
 }
 
 /**
- * fn-def ::= FN-KEYWORD variant-type O-PAREN params? C-PAREN type-annot? block?
+ * fn-def ::= FN-KEYWORD NAME generic-list? params type-annot? block?
  */
 export const parseFnDef = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('fn-keyword')
-    parseVariantType(parser)
+    parser.expect('name')
+    if (parser.at('o-angle')) {
+        parseGenerics(parser)
+    }
     if (parser.at('o-paren')) {
         parseParams(parser)
     }
@@ -123,23 +126,98 @@ export const parseFnDef = (parser: Parser): void => {
 }
 
 /**
- * kind-def ::= KIND-KEYWORD variant-type block
+ * params ::= O-PAREN (param (COMMA param)*)? COMMA? C-PAREN
+ */
+export const parseParams = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('o-paren')
+    while (parser.atAny(paramFirstTokens) && !parser.eof()) {
+        parseParam(parser)
+        if (!parser.at('c-paren')) {
+            parser.expect('comma')
+        }
+    }
+    parser.expect('c-paren')
+    parser.close(mark, 'params')
+}
+
+/**
+ * param ::= IDENTIFIER type-annot?
+ */
+export const parseParam = (parser: Parser): void => {
+    const mark = parser.open()
+    parsePattern(parser)
+    if (parser.at('colon')) {
+        parseTypeAnnot(parser)
+    }
+    parser.close(mark, 'param')
+}
+
+/**
+ * generics ::= O-ANGLE (generic (COMMA generic)* COMMA?)? C-ANGLE
+ */
+export const parseGenerics = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('o-angle')
+    while (parser.at('name') && !parser.eof()) {
+        parseGeneric(parser)
+        if (!parser.at('c-angle')) {
+            parser.expect('comma')
+        }
+    }
+    parser.expect('c-angle')
+    parser.close(mark, 'generics')
+}
+/**
+ * generic ::= NAME (COLON generic-bounds)?
+ */
+export const parseGeneric = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('name')
+    if (parser.at('colon')) {
+        parser.expect('colon')
+        parseGenericBounds(parser)
+    }
+    parser.close(mark, 'generic')
+}
+
+/**
+ * generic-bounds ::= type (PLUS type)*
+ */
+export const parseGenericBounds = (parser: Parser): void => {
+    const mark = parser.open()
+    parseType(parser)
+    while (parser.at('plus') && !parser.eof()) {
+        parser.expect('plus')
+        parseType(parser)
+    }
+    parser.close(mark, 'generic-bounds')
+}
+
+/**
+ * kind-def ::= KIND-KEYWORD NAME generics? block
  */
 export const parseKindDef = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('kind-keyword')
-    parseVariantType(parser)
+    parser.expect('name')
+    if (parser.at('o-angle')) {
+        parseGenerics(parser)
+    }
     parseBlock(parser)
     parser.close(mark, 'kind-def')
 }
 
 /**
- * impl-def ::= IMPL-KEYWORD variant-type impl-for? block
+ * impl-def ::= IMPL-KEYWORD NAME generics? impl-for? block
  */
 export const parseImplDef = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('impl-keyword')
-    parseVariantType(parser)
+    parser.expect('name')
+    if (parser.at('o-angle')) {
+        parseGenerics(parser)
+    }
     if (parser.at('for-keyword')) {
         parseImplFor(parser)
     }

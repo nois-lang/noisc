@@ -1,5 +1,5 @@
 import { Context, semanticError } from '../scope'
-import { Type, TypeParam } from '../ast/type'
+import { Generic, Type } from '../ast/type'
 import { idToVid, resolveVid, vidToString, VirtualIdentifier } from '../scope/vid'
 import { todo } from '../util/todo'
 
@@ -24,7 +24,7 @@ export const identifyType = (type: Type, ctx: Context): void => {
             }
             const typeDef = vidMatch.def
             type.vid = vidMatch.qualifiedVid
-            typeDef.typeParams.forEach(tp => identifyTypeParam(tp, ctx))
+            typeDef.generics.forEach(g => identifyGeneric(g, ctx))
             break
         case 'fn-type':
             todo('identify fn-type')
@@ -32,17 +32,6 @@ export const identifyType = (type: Type, ctx: Context): void => {
     }
 }
 
-export const identifyTypeParam = (typeParam: TypeParam, ctx: Context): void => {
-    if (typeParam.kind === 'variant-type' && typeParam.vid) return
-
-    switch (typeParam.kind) {
-        case 'variant-type':
-        case 'fn-type':
-            identifyType(typeParam, ctx)
-            break
-        case 'generic':
-            todo('generics')
-            break
-
-    }
+export const identifyGeneric = (generic: Generic, ctx: Context): void => {
+    // TODO
 }

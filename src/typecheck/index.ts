@@ -1,7 +1,7 @@
 import { Context, semanticError, SemanticError } from '../scope'
-import { Type, TypeParam } from '../ast/type'
-import { idToVid, vidFromString, vidToString, VirtualIdentifier } from '../scope/vid'
-import { AstNode, Module } from '../ast'
+import { Generic, Type } from '../ast/type'
+import { vidFromString, vidToString, VirtualIdentifier } from '../scope/vid'
+import { AstNode } from '../ast'
 
 export interface Typed {
     type: VirtualType
@@ -34,7 +34,7 @@ export const unitType: VirtualVariantType = {
     typeParams: []
 }
 
-export type VirtualTypeParam = VirtualType | VirtualGeneric
+export type VirtualTypeParam = VirtualType
 
 export interface VirtualGeneric {
     name: string
@@ -61,25 +61,20 @@ export const typeToVirtual = (t: Type): VirtualType => {
             return {
                 kind: 'variant-type',
                 identifier: t.vid,
-                typeParams: t.typeParams.map(typeParamToVirtual)
+                typeParams: t.typeParams.map(typeToVirtual)
             }
         case 'fn-type':
             return {
                 kind: 'fn-type',
-                generics: t.generics.map(g => <VirtualGeneric>typeParamToVirtual(g)),
+                generics: t.generics.map(genericToVirtual),
                 paramTypes: t.paramTypes.map(typeToVirtual),
                 returnType: typeToVirtual(t.returnType)
             }
     }
 }
 
-export const typeParamToVirtual = (tp: TypeParam): VirtualTypeParam => {
-    if (tp.kind === 'generic') {
-        return { name: tp.name.value, bounds: tp.bounds.map(typeToVirtual) }
-    } else {
-        return typeToVirtual(tp)
-    }
-}
+export const genericToVirtual = (generic: Generic): VirtualGeneric =>
+    ({ name: generic.name.value, bounds: generic.bounds.map(typeToVirtual) })
 
 export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context): boolean => {
     if (t.kind === 'any-type' || target.kind === 'any-type') {

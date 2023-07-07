@@ -2,10 +2,10 @@ import { AstNode, buildParam, filterNonAstNodes, Param } from './index'
 import { buildTypeDef, TypeDef } from './type-def'
 import { buildExpr, Expr } from './expr'
 import { buildPattern, Pattern } from './match'
-import { buildName, Identifier, Name } from './operand'
+import { buildName, Name } from './operand'
 import { ParseNode, ParseTree } from '../parser'
 import { Typed } from '../typecheck'
-import { buildType, buildVariantType, Type, TypeParam } from './type'
+import { buildGeneric, buildType, Generic, Type } from './type'
 
 export type Statement = VarDef | FnDef | KindDef | ImplDef | TypeDef | ReturnStmt | Expr
 
@@ -68,8 +68,8 @@ export const buildVarDef = (node: ParseNode): VarDef => {
 
 export interface FnDef extends AstNode<'fn-def'>, Partial<Typed> {
     kind: 'fn-def'
-    identifier: Identifier
-    typeParams: TypeParam[]
+    name: Name
+    generics: Generic[]
     params: Param[]
     block?: Block
     returnType?: Type
@@ -78,29 +78,32 @@ export interface FnDef extends AstNode<'fn-def'>, Partial<Typed> {
 export const buildFnDef = (node: ParseNode): FnDef => {
     const nodes = filterNonAstNodes(node)
     let idx = 0
-    const { identifier, typeParams } = buildVariantType(nodes[idx++])
+    const name = buildName(nodes[idx++])
+    const generics = nodes.at(idx)?.kind === 'generics' ? filterNonAstNodes(nodes[idx++]).map(buildGeneric) : []
     const params = nodes.at(idx)?.kind === 'params' ? filterNonAstNodes(nodes[idx++]).map(buildParam) : []
     const returnType = nodes.at(idx)?.kind === 'type-annot' ? buildType(nodes[idx++]) : undefined
     const block = nodes.at(idx)?.kind === 'block' ? buildBlock(nodes[idx++]) : undefined
-    return { kind: 'fn-def', parseNode: node, identifier, typeParams, params, block, returnType }
+    return { kind: 'fn-def', parseNode: node, name, generics, params, block, returnType }
 }
 
 export interface KindDef extends AstNode<'kind-def'> {
-    identifier: Identifier
-    kindParams: TypeParam[]
+    name: Name
+    generics: Generic[]
     block: Block
 }
 
 export const buildKindDef = (node: ParseNode): KindDef => {
     const nodes = filterNonAstNodes(node)
-    const { identifier, typeParams: kindParams } = buildVariantType(nodes[0])
-    const block = buildBlock(nodes[1])
-    return { kind: 'kind-def', parseNode: node, identifier, kindParams, block }
+    let idx = 0
+    const name = buildName(nodes[idx++])
+    const generics = nodes.at(idx)?.kind === 'generics' ? filterNonAstNodes(nodes[idx++]).map(buildGeneric) : []
+    const block = buildBlock(nodes[idx++])
+    return { kind: 'kind-def', parseNode: node, name, generics, block }
 }
 
 export interface ImplDef extends AstNode<'impl-def'> {
-    identifier: Identifier
-    implParams: TypeParam[]
+    name: Name
+    generics: Generic[]
     forKind?: Type
     block: Block
 }
@@ -108,10 +111,11 @@ export interface ImplDef extends AstNode<'impl-def'> {
 export const buildImplDef = (node: ParseNode): ImplDef => {
     const nodes = filterNonAstNodes(node)
     let idx = 0
-    const { identifier, typeParams: implParams } = buildVariantType(nodes[idx++])
+    const name = buildName(nodes[idx++])
+    const generics = nodes.at(idx)?.kind === 'generics' ? filterNonAstNodes(nodes[idx++]).map(buildGeneric) : []
     const forKind = nodes.at(idx)?.kind === 'impl-for' ? buildType(nodes[idx++]) : undefined
     const block = buildBlock(nodes[idx++])
-    return { kind: 'impl-def', parseNode: node, identifier, implParams, forKind, block }
+    return { kind: 'impl-def', parseNode: node, name, generics, forKind, block }
 }
 
 export interface ReturnStmt extends AstNode<'return-stmt'>, Partial<Typed> {

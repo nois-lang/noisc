@@ -12,23 +12,33 @@ statement           ::= var-def | fn-def | kind-def | impl-def | type-def | retu
                     ;
   var-def           ::= LET-KEYWORD pattern type-annot? EQUALS expr
                     ;
-  fn-def            ::= FN-KEYWORD variant-type params? type-annot? block?
+  fn-def            ::= FN-KEYWORD NAME generics? params type-annot? block?
                     ;
-  kind-def          ::= KIND-KEYWORD variant-type block
+    generics        ::= O-ANGLE (generic (COMMA generic)* COMMA?)? C-ANGLE
                     ;
-  impl-def          ::= IMPL-KEYWORD variant-type impl-for? block
+      generic       ::= NAME COLON generic-bounds
+                    ;
+      generic-bounds::= type (PLUS type)*
+                    ;
+    params          ::= O-PAREN (param (COMMA param)*)? COMMA? C-PAREN
+                    ;
+      param         ::= pattern type-annot?
+                    ;
+  kind-def          ::= KIND-KEYWORD NAME generics? block
+                    ;
+  impl-def          ::= IMPL-KEYWORD NAME generics? impl-for? block
                     ;
     impl-for        ::= FOR-KEYWORD variant-type
                     ;
-  type-def          ::= TYPE-KEYWORD variant-type (type-con-list | type-con-params)?
+  type-def          ::= TYPE-KEYWORD NAME generics? (type-con-list | type-con-params)?
                     ;
     type-con-params ::= O-PAREN (field-def (COMMA field-def)*)? COMMA? C-PAREN
                     ;
-      field-def     ::= identifier type-annot
+      field-def     ::= NAME type-annot
                     ;
     type-con-list   ::= O-BRACE (type-con (COMMA type-con)* COMMA?)? C-BRACE
                     ;
-      type-con      ::= identifier type-con-params?
+      type-con      ::= NAME type-con-params?
                     ;
   return-stmt       ::= RETURN-KEYWORD expr?
                     ;
@@ -94,21 +104,13 @@ closure-expr        ::= closure-params type-annot? (block | expr)
                     ;
 list-expr           ::= O-BRACKET (expr (COMMA expr)*)? COMMA? C-BRACKET
                     ;
-params              ::= O-PAREN (param (COMMA param)*)? COMMA? C-PAREN
-                    ;
-  param             ::= pattern type-annot?
-                    ;
 type-annot          ::= COLON type
                     ;
 type                ::= variant-type | fn-type
                     ;
   variant-type      ::= identifier type-params?
                     ;
-  type-params       ::= O-ANGLE (type-param (COMMA type-param)* COMMA?)? C-ANGLE
-                    ;
-    type-param      ::= type | NAME COLON type-bounds
-                    ;
-    type-bounds     ::= type (PLUS type)*
+  type-params       ::= O-ANGLE (type (COMMA type)* COMMA?)? C-ANGLE
                     ;
   fn-type           ::= fn-type-params type-annot
                     ;

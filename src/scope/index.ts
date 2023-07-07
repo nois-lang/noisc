@@ -36,12 +36,12 @@ export const findImpl = (vId: VirtualIdentifier, type: VirtualType, ctx: Context
     return ctx.modules
         .flatMap(m => m.block.statements.filter(s => s.kind === 'impl-def').map(s => <ImplDef>s))
         .filter(i => !i.forKind || isAssignable(type, typeToVirtual(i.forKind), ctx))
-        .find(i => i.identifier.name.value === vId.name)
+        .find(i => i.name.value === vId.name)
 }
 
 export const findImplFn = (implDef: ImplDef, vid: VirtualIdentifier, ctx: Context): FnDef | undefined => {
     return implDef.block.statements
-        .filter(s => s.kind === 'fn-def' && s.identifier.name.value === vid.name)
+        .filter(s => s.kind === 'fn-def' && s.name.value === vid.name)
         .map(s => <FnDef>s).at(0)
 }
 

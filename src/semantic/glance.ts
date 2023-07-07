@@ -12,7 +12,7 @@ import { Context, semanticError } from '../scope'
 import { vidFromString, vidToString } from '../scope/vid'
 import { FnDef, ImplDef, KindDef, Statement, VarDef } from '../ast/statement'
 import { TypeDef } from '../ast/type-def'
-import { typeParamToVirtual, typeToVirtual, unitType, VirtualGeneric, VirtualType } from '../typecheck'
+import { genericToVirtual, typeToVirtual, unitType, VirtualType } from '../typecheck'
 import { identifyType } from './identify'
 
 export const glanceModule = (module: Module, ctx: Context) => {
@@ -59,13 +59,8 @@ const glanceVarDef = (varDef: VarDef, ctx: Context) => {
 
 const glanceFnDef = (fnDef: FnDef, ctx: Context) => {
     const module = ctx.moduleStack.at(-1)!
-    const unexpectedVariantType = fnDef.typeParams.find(tp => tp.kind === 'variant-type')
-    if (unexpectedVariantType) {
-        ctx.errors.push(semanticError(ctx, unexpectedVariantType, 'expected generic, got variant type'))
-        return
-    }
 
-    const generics = fnDef.typeParams.map(tp => <VirtualGeneric>typeParamToVirtual(tp))
+    const generics = fnDef.generics.map(genericToVirtual)
     if (module.implDef || module.kindDef) {
         generics.unshift({ name: 'Self', bounds: [] })
     }

@@ -21,7 +21,7 @@ describe('parser', () => {
                     'statement': [{
                         'fn-def': [
                             { 'fn-keyword': 'fn' },
-                            { 'variant-type': [{ 'identifier': [{ 'name': 'main' }] }] },
+                            { 'name': 'main' },
                             { 'params': [{ 'o-paren': '(' }, { 'c-paren': ')' }] },
                             { 'block': [{ 'o-brace': '{' }, { 'c-brace': '}' }] }
                         ]

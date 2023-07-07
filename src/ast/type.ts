@@ -19,10 +19,8 @@ export const buildType = (node: ParseNode): Type => {
 
 export interface VariantType extends AstNode<'variant-type'>, Partial<Identified> {
     identifier: Identifier
-    typeParams: TypeParam[]
+    typeParams: Type[]
 }
-
-export type TypeParam = Type | Generic
 
 export interface Generic extends AstNode<'generic'> {
     name: Name
@@ -43,20 +41,16 @@ export const buildVariantType = (node: ParseNode): VariantType => {
         typeParams: paramsNode
             ? (<ParseTree>paramsNode).nodes
                 .filter(n => n.kind === 'type-param')
-                .map(buildTypeParam)
+                .map(buildType)
             : [],
     }
 }
 
-export const buildTypeParam = (node: ParseNode): TypeParam => {
+export const buildGeneric = (node: ParseNode): Generic => {
     const nodes = filterNonAstNodes(node)
-    if (nodes[0].kind === 'type') {
-        return buildType(nodes[0])
-    } else {
-        const name = buildName(nodes[0])
-        const bounds = filterNonAstNodes(nodes[1]).map(buildType)
-        return { kind: 'generic', parseNode: node, name, bounds }
-    }
+    const name = buildName(nodes[0])
+    const bounds = nodes.at(1)?.kind === 'generic-bounds' ? filterNonAstNodes(nodes[1]).map(buildType) : []
+    return { kind: 'generic', parseNode: node, name, bounds }
 }
 
 export interface FnType extends AstNode<'fn-type'> {
