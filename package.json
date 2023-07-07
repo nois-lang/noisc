@@ -4,7 +4,8 @@
   "description": "Statically typed programming language for the web",
   "scripts": {
     "start": "ts-node src/index.ts",
-    "build": "tsc",
+    "build": "tsc && npm run build:std",
+    "build:std": "cp -r src/std dist/",
     "build:lib": "tsc -p tsconfig.lib.json",
     "test": "jest --watchAll",
     "ci": "jest --ci",
