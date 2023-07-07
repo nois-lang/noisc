@@ -1,7 +1,7 @@
 import { Context, semanticError, SemanticError } from '../scope'
 import { Type, TypeParam } from '../ast/type'
 import { idToVid, vidFromString, vidToString, VirtualIdentifier } from '../scope/vid'
-import { AstNode } from '../ast'
+import { AstNode, Module } from '../ast'
 
 export interface Typed {
     type: VirtualType
@@ -112,9 +112,9 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
     return true
 }
 
-export const typeError = (ctx: Context, node: AstNode<any>, expected: VirtualType, actual: VirtualType): SemanticError => {
+export const typeError = (module: Module, node: AstNode<any>, expected: VirtualType, actual: VirtualType): SemanticError => {
     const message = `\
 type error: expected ${virtualTypeToString(expected)}
             got      ${virtualTypeToString(actual)}`
-    return semanticError(ctx, node, message)
+    return semanticError(module, node, message)
 }

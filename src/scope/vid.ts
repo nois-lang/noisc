@@ -75,14 +75,14 @@ export const patternVid = (pattern: Pattern): VirtualIdentifier | undefined => {
 }
 
 export const resolveVid = (vid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch | undefined => {
-    for (let i = ctx.scopeStack.length - 1; i >= 0; i--) {
-        let scope = ctx.scopeStack[i]
+    for (let i = ctx.module!.scopeStack.length - 1; i >= 0; i--) {
+        let scope = ctx.module!.scopeStack[i]
         const found = scope.statements.get(vidToString(vid))
         if (found) {
             return { qualifiedVid: vid, def: found }
         }
     }
-    for (let useExpr of ctx.useExprs!) {
+    for (let useExpr of ctx.module!.useExprs!) {
         if ('value' in useExpr.expr) {
             if (useExpr.expr.value === vidFirst(vid)) {
                 const merged: VirtualIdentifier = {

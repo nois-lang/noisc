@@ -12,6 +12,20 @@ import { getLocationRange } from './parser'
 import { vidFromString } from './scope/vid'
 import { defaultConfig } from './config'
 import { Source } from './source'
+import { glanceModule } from './semantic/glance'
+
+const checkForErrors = (ctx: Context) => {
+    if (ctx.errors.length > 0) {
+        for (const error of ctx.errors) {
+            console.error(prettySourceMessage(
+                prettyError(error.message),
+                indexToLocation(getLocationRange(error.node.parseNode).start, error.module.source)!,
+                error.module.source
+            ))
+        }
+        process.exit(1)
+    }
+}
 
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
 
@@ -32,7 +46,7 @@ if (!existsSync(sourcePath)) {
 }
 const source: Source = { code: readFileSync(sourcePath).toString(), filepath: sourcePath }
 
-const moduleAst = buildModule(source, vidFromString('test'))
+const moduleAst = buildModule(source, pathToVid(sourcePath))
 
 if (!moduleAst) {
     process.exit(1)
@@ -48,24 +62,19 @@ const stdModules = getPackageModuleSources(stdPath).map(s => {
 })
 
 const config = defaultConfig()
-const ctx: Context = { config, modules: [...<Module[]>stdModules, moduleAst], scopeStack: [], errors: [], warnings: [] }
-
-checkModule(moduleAst, ctx)
-
-if (config.checkUnusedModules) {
-    ctx.modules.forEach(m => { checkModule(m, ctx) })
+const ctx: Context = {
+    config,
+    glanceCtx: { moduleStack: [] },
+    modules: [...<Module[]>stdModules, moduleAst],
+    errors: [],
+    warnings: []
 }
 
-if (ctx.errors.length > 0) {
-    for (const error of ctx.errors) {
-        console.error(prettySourceMessage(
-            prettyError(error.message),
-            indexToLocation(getLocationRange(error.node.parseNode).start, error.module.source)!,
-            error.module.source
-        ))
-    }
-    process.exit(1)
-}
+ctx.modules.forEach(m => { glanceModule(m, ctx) })
+checkForErrors(ctx)
+
+ctx.modules.forEach(m => { checkModule(m, ctx) })
+checkForErrors(ctx)
 
 for (const warning of ctx.warnings) {
     console.error(prettySourceMessage(

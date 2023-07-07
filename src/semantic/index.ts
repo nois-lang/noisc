@@ -31,13 +31,12 @@ import { flattenUseExpr, useExprToVid } from './use-expr'
 
 export const checkModule = (module: Module, ctx: Context): void => {
     if (module.checked) return
-    if (ctx.module && vidToString(ctx.module.identifier) === vidToString(module.identifier)) {
-        ctx.errors.push(semanticError(ctx, module, 'recursive module resolution'))
-        return
+    if (ctx.module) {
+        throw Error('recursive module check')
     }
 
     ctx.module = module
-    ctx.useExprs = module.useExprs.flatMap(useExpr => flattenUseExpr(useExpr))
+    module.useExprs = module.useExprs.flatMap(useExpr => flattenUseExpr(useExpr))
 
     // TODO: check duplicate useExprs
     module.useExprs.forEach(e => checkUseExpr(e, ctx))
@@ -48,7 +47,7 @@ export const checkModule = (module: Module, ctx: Context): void => {
 }
 
 const checkBlock = (block: Block, ctx: Context, topLevel: boolean = false): void => {
-    ctx.scopeStack.push({ statements: new Map() })
+    ctx.module!.scopeStack.push({ statements: new Map() })
     if (topLevel) {
         block.statements.forEach(s => addDefToScope(ctx, s))
     }
@@ -56,24 +55,20 @@ const checkBlock = (block: Block, ctx: Context, topLevel: boolean = false): void
     block.statements.forEach(s => checkStatement(s, ctx, topLevel))
     // TODO: block type
 
-    ctx.scopeStack.pop()
+    ctx.module!.scopeStack.pop()
 }
 
 const checkUseExpr = (useExpr: UseExpr, ctx: Context): void => {
-    ctx.useExprs!.forEach(expr => {
+    ctx.module!.useExprs.forEach(expr => {
         const resolved = resolveVidMatched(useExprToVid(expr), ctx)
         if (!resolved) {
-            ctx.errors.push(semanticError(ctx, useExpr, 'unresolved use expression'))
+            ctx.errors.push(semanticError(ctx.module!, useExpr, 'unresolved use expression'))
         }
     })
 }
 
 const checkStatement = (statement: Statement, ctx: Context, topLevel: boolean = false): void => {
-    if (topLevel && ['return-stmt', 'operand-expr', 'unary-expr', 'binary-expr'].includes(statement.kind)) {
-        ctx.errors.push(semanticError(ctx, statement, `top level \`${statement.kind}\` is not allowed`))
-        return
-    }
-    const push = () => {
+    const pushDefToStack = () => {
         if (!topLevel) {
             addDefToScope(ctx, statement)
         }
@@ -85,19 +80,19 @@ const checkStatement = (statement: Statement, ctx: Context, topLevel: boolean = 
             break
         case 'fn-def':
             checkFnDef(statement, ctx)
-            push()
+            pushDefToStack()
             break
         case 'kind-def':
             // todo
-            push()
+            pushDefToStack()
             break
         case 'impl-def':
             // todo
-            push()
+            pushDefToStack()
             break
         case 'type-def':
             // todo
-            push()
+            pushDefToStack()
             break
         case 'return-stmt':
             // todo
@@ -115,38 +110,9 @@ const checkStatement = (statement: Statement, ctx: Context, topLevel: boolean = 
 }
 
 const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
-    const unexpectedVariantType = fnDef.typeParams.find(tp => tp.kind === 'variant-type')
-    if (unexpectedVariantType) {
-        ctx.errors.push(semanticError(ctx, unexpectedVariantType, 'expected generic, got variant type'))
-        return
-    }
-    const generics = fnDef.typeParams.map(tp => <VirtualGeneric>typeParamToVirtual(tp))
-    const paramTypes: VirtualType[] = fnDef.params.map((p, i) => {
-        if (!p.paramType) {
-            if (ctx.implDef
-                && i === 0
-                && p.pattern.kind === 'operand-expr'
-                && p.pattern.operand.kind === 'identifier'
-                && p.pattern.operand.name.value === 'self') {
-                generics.unshift({ name: 'Self', bounds: [] })
-                return { kind: 'variant-type', identifier: vidFromString('Self'), typeParams: [] }
-            } else {
-                ctx.errors.push(semanticError(ctx, p, 'parameter type not specified'))
-                return { kind: 'any-type' }
-            }
-        } else {
-            return typeToVirtual(p.paramType)
-        }
-    })
-    fnDef.type = {
-        kind: 'fn-type',
-        generics: generics,
-        paramTypes,
-        returnType: fnDef.returnType ? typeToVirtual(fnDef.returnType) : unitType
-    }
     if (!fnDef.block) {
-        if (!ctx.kindDef) {
-            ctx.warnings.push(semanticError(ctx, fnDef, 'missing function body, must be a native function'))
+        if (!ctx.module!.kindDef) {
+            ctx.warnings.push(semanticError(ctx.module!, fnDef, 'missing function body, must be a native function'))
         }
     } else {
         checkBlock(fnDef.block, ctx)
@@ -173,7 +139,7 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     if (!operand.type) return
     if (operand.type!.kind !== 'fn-type') {
         const message = `type error: non-callable operand of type ${virtualTypeToString(operand.type!)}`
-        ctx.errors.push(semanticError(ctx, operand, message))
+        ctx.errors.push(semanticError(ctx.module!, operand, message))
         return
     }
     callOp.args.forEach(a => checkOperand(a, ctx))
@@ -184,7 +150,7 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         returnType: anyType
     }
     if (!isAssignable(t, operand.type!, ctx)) {
-        ctx.errors.push(typeError(ctx, unaryExpr, operand.type, t))
+        ctx.errors.push(typeError(ctx.module!, unaryExpr, operand.type, t))
         return
     }
 }
@@ -197,41 +163,43 @@ const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     if (!opImplFnId) return
 
     const opImplId = vidFromScope(opImplFnId)
+
     const impl = findImpl(opImplId, binaryExpr.lOperand.type!, ctx)
     if (!impl) {
         const message = `no suitable impl \
 ${vidToString(opImplId)}(\
 ${virtualTypeToString(binaryExpr.lOperand.type!)}, \
 ${virtualTypeToString(binaryExpr.rOperand.type!)})}`
-        ctx.errors.push(semanticError(ctx, binaryExpr.binaryOp, message))
+        ctx.errors.push(semanticError(ctx.module!, binaryExpr.binaryOp, message))
         return
     }
 
-    checkImplDef(impl, ctx)
+    const implFn = findImplFn(impl, opImplFnId, ctx)
+    if (!implFn) throw Error('impl fn not found')
+    if (!implFn.type) throw Error('untyped impl fn')
 
-    const implFn = findImplFn(impl, opImplFnId, ctx)!
     const t: VirtualFnType = {
         kind: 'fn-type',
         generics: [],
         paramTypes: [binaryExpr.lOperand, binaryExpr.rOperand].map(o => o.type!),
         returnType: anyType
     }
-    if (!isAssignable(t, implFn.type!, ctx)) {
-        ctx.errors.push(typeError(ctx, binaryExpr, implFn.type!, t))
+    if (!isAssignable(t, implFn.type, ctx)) {
+        ctx.errors.push(typeError(ctx.module!, binaryExpr, implFn.type, t))
         return
     }
 }
 
 const checkImplDef = (implDef: ImplDef, ctx: Context): void => {
-    if (ctx.implDef) {
-        ctx.errors.push(semanticError(ctx, implDef, ''))
+    if (ctx.module!.implDef) {
+        ctx.errors.push(semanticError(ctx.module!, implDef, 'nested impl definition'))
         return
     }
-    ctx.implDef = implDef
+    ctx.module!.implDef = implDef
     implDef.block.statements.forEach(s => {
         checkStatement(s, ctx)
     })
-    ctx.implDef = undefined
+    ctx.module!.implDef = undefined
 }
 
 const checkOperand = (operand: Operand, ctx: Context): void => {
@@ -286,7 +254,7 @@ const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
     const vid = idToVid(identifier)
     const ref = resolveVid(vid, ctx)
     if (!ref) {
-        ctx.errors.push(semanticError(ctx, identifier, `identifier ${vidToString(vid)} not found`))
+        ctx.errors.push(semanticError(ctx.module!, identifier, `identifier ${vidToString(vid)} not found`))
     }
 }
 
@@ -297,6 +265,6 @@ const addDefToScope = (ctx: Context, statement: Statement): void => {
     const def = statementToDefinition(statement)
     if (!def) return
 
-    ctx.scopeStack.at(-1)!.statements.set(vidToString(vid), def)
+    ctx.module!.scopeStack.at(-1)!.statements.set(vidToString(vid), def)
 }
 

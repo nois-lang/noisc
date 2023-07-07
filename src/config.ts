@@ -1,7 +1,3 @@
-export interface Config {
-    checkUnusedModules: boolean
-}
+export interface Config {}
 
-export const defaultConfig = (): Config => ({
-    checkUnusedModules: true
-})
+export const defaultConfig = (): Config => ({})
