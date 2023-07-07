@@ -169,7 +169,7 @@ const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
         const message = `no suitable impl \
 ${vidToString(opImplId)}(\
 ${virtualTypeToString(binaryExpr.lOperand.type!)}, \
-${virtualTypeToString(binaryExpr.rOperand.type!)})}`
+${virtualTypeToString(binaryExpr.rOperand.type!)})`
         ctx.errors.push(semanticError(ctx.module!, binaryExpr.binaryOp, message))
         return
     }
