@@ -4,18 +4,7 @@ import { Block, FnDef, ImplDef, Statement, UseExpr, VarDef } from '../ast/statem
 import { BinaryExpr, UnaryExpr } from '../ast/expr'
 import { operatorImplMap } from './op'
 import { Identifier, Operand } from '../ast/operand'
-import {
-    anyType,
-    isAssignable,
-    typeError,
-    typeParamToVirtual,
-    typeToVirtual,
-    unitType,
-    VirtualFnType,
-    VirtualGeneric,
-    VirtualType,
-    virtualTypeToString
-} from '../typecheck'
+import { anyType, isAssignable, typeError, VirtualFnType, virtualTypeToString } from '../typecheck'
 import { CallOp } from '../ast/op'
 import {
     idToVid,
@@ -59,12 +48,10 @@ const checkBlock = (block: Block, ctx: Context, topLevel: boolean = false): void
 }
 
 const checkUseExpr = (useExpr: UseExpr, ctx: Context): void => {
-    ctx.module!.useExprs.forEach(expr => {
-        const resolved = resolveVidMatched(useExprToVid(expr), ctx)
-        if (!resolved) {
-            ctx.errors.push(semanticError(ctx.module!, useExpr, 'unresolved use expression'))
-        }
-    })
+    const resolved = resolveVidMatched(useExprToVid(useExpr), ctx)
+    if (!resolved) {
+        ctx.errors.push(semanticError(ctx.module!, useExpr, 'unresolved use expression'))
+    }
 }
 
 const checkStatement = (statement: Statement, ctx: Context, topLevel: boolean = false): void => {
