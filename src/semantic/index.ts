@@ -7,6 +7,7 @@ import { Identifier, Operand } from '../ast/operand'
 import {
     anyType,
     isAssignable,
+    typeError,
     typeParamToVirtual,
     typeToVirtual,
     unitType,
@@ -183,10 +184,7 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         returnType: anyType
     }
     if (!isAssignable(t, operand.type!, ctx)) {
-        const message = `\
-type error: expected ${virtualTypeToString(operand.type!)}
-            got      ${virtualTypeToString(t)}`
-        ctx.errors.push(semanticError(ctx, unaryExpr, message))
+        ctx.errors.push(typeError(ctx, unaryExpr, operand.type, t))
         return
     }
 }
@@ -219,15 +217,16 @@ ${virtualTypeToString(binaryExpr.rOperand.type!)})}`
         returnType: anyType
     }
     if (!isAssignable(t, implFn.type!, ctx)) {
-        const message = `\
-type error: expected ${virtualTypeToString(implFn.type!)}
-            got      ${virtualTypeToString(t)}`
-        ctx.errors.push(semanticError(ctx, binaryExpr, message))
+        ctx.errors.push(typeError(ctx, binaryExpr, implFn.type!, t))
         return
     }
 }
 
 const checkImplDef = (implDef: ImplDef, ctx: Context): void => {
+    if (ctx.implDef) {
+        ctx.errors.push(semanticError(ctx, implDef, ''))
+        return
+    }
     ctx.implDef = implDef
     implDef.block.statements.forEach(s => {
         checkStatement(s, ctx)
