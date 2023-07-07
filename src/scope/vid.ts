@@ -5,6 +5,7 @@ import { FnDef, KindDef, Statement, VarDef } from '../ast/statement'
 import { todo } from '../util/todo'
 import { Pattern } from '../ast/match'
 import { TypeDef } from '../ast/type-def'
+import { glanceModule } from '../semantic/glance'
 
 export interface VirtualIdentifier {
     scope: string[]
@@ -18,10 +19,8 @@ export interface VirtualIdentifierMatch {
     def: Definition
 }
 
-export const scopeResOp: string = '::'
-
-export const vidFromString = (str: string): VirtualIdentifier => {
-    const tokens = str.split(scopeResOp)
+export function vidFromString(str: string): VirtualIdentifier {
+    const tokens = str.split('::')
     return { scope: tokens.slice(0, -1), name: tokens.at(-1)! }
 }
 
@@ -74,15 +73,18 @@ export const patternVid = (pattern: Pattern): VirtualIdentifier | undefined => {
     return undefined
 }
 
+/**
+ * TODO: resolve generic refs
+ */
 export const resolveVid = (vid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch | undefined => {
-    for (let i = ctx.module!.scopeStack.length - 1; i >= 0; i--) {
-        let scope = ctx.module!.scopeStack[i]
+    for (let i = ctx.moduleStack.at(-1)!.scopeStack.length - 1; i >= 0; i--) {
+        let scope = ctx.moduleStack.at(-1)!.scopeStack[i]
         const found = scope.statements.get(vidToString(vid))
         if (found) {
             return { qualifiedVid: vid, def: found }
         }
     }
-    for (let useExpr of ctx.module!.useExprs!) {
+    for (let useExpr of ctx.moduleStack.at(-1)!.useExprs!) {
         if ('value' in useExpr.expr) {
             if (useExpr.expr.value === vidFirst(vid)) {
                 const merged: VirtualIdentifier = {
@@ -92,7 +94,7 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context): VirtualIdentif
                 return resolveVidMatched(merged, ctx)
             }
         } else {
-            return todo('wildcard useExpr')
+            // TODO: wildcard expr
         }
     }
     return undefined
@@ -101,10 +103,12 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context): VirtualIdentif
 export const resolveVidMatched = (vid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch | undefined => {
     let foundModule = ctx.modules.find(m => vidToString(m.identifier) === vidToString(vid))
     if (foundModule) {
+        glanceModule(foundModule, ctx)
         return { qualifiedVid: vid, def: foundModule }
     }
     foundModule = ctx.modules.find(m => vidToString(m.identifier) === vidScopeToString(vid))
     if (foundModule) {
+        glanceModule(foundModule, ctx)
         const statement = foundModule.block.statements
             .find(s => {
                 const v = statementVid(s)

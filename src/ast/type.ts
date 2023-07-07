@@ -1,6 +1,7 @@
 import { buildIdentifier, buildName, Identifier, Name } from './operand'
 import { ParseNode, ParseTree } from '../parser'
 import { AstNode, filterNonAstNodes } from './index'
+import { Identified } from '../semantic/identify'
 
 export type Type = VariantType | FnType
 
@@ -16,7 +17,7 @@ export const buildType = (node: ParseNode): Type => {
     }
 }
 
-export interface VariantType extends AstNode<'variant-type'> {
+export interface VariantType extends AstNode<'variant-type'>, Partial<Identified> {
     identifier: Identifier
     typeParams: TypeParam[]
 }

@@ -63,7 +63,7 @@ const stdModules = getPackageModuleSources(stdPath).map(s => {
 const config = defaultConfig()
 const ctx: Context = {
     config,
-    glanceCtx: { moduleStack: [] },
+    moduleStack: [],
     modules: [...<Module[]>stdModules, moduleAst],
     errors: [],
     warnings: []

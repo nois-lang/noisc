@@ -57,9 +57,10 @@ export const virtualTypeToString = (vt: VirtualType): string => {
 export const typeToVirtual = (t: Type): VirtualType => {
     switch (t.kind) {
         case 'variant-type':
+            if (!t.vid) throw Error('unidentified type')
             return {
                 kind: 'variant-type',
-                identifier: idToVid(t.identifier),
+                identifier: t.vid,
                 typeParams: t.typeParams.map(typeParamToVirtual)
             }
         case 'fn-type':
@@ -112,9 +113,9 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
     return true
 }
 
-export const typeError = (module: Module, node: AstNode<any>, expected: VirtualType, actual: VirtualType): SemanticError => {
+export const typeError = (ctx: Context, node: AstNode<any>, expected: VirtualType, actual: VirtualType): SemanticError => {
     const message = `\
 type error: expected ${virtualTypeToString(expected)}
             got      ${virtualTypeToString(actual)}`
-    return semanticError(module, node, message)
+    return semanticError(ctx, node, message)
 }

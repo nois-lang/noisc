@@ -1,5 +1,5 @@
 import { AstNode, buildModuleAst, Module } from '../ast'
-import { FnDef, ImplDef, KindDef, UseExpr } from '../ast/statement'
+import { FnDef, ImplDef } from '../ast/statement'
 import { Source } from '../source'
 import { erroneousTokenKinds, tokenize } from '../lexer/lexer'
 import { prettyLexerError, prettySourceMessage, prettySyntaxError } from '../error'
@@ -12,20 +12,14 @@ import { Config } from '../config'
 
 export interface Context {
     config: Config
-    glanceCtx: GlanceContext
+    moduleStack: Module[]
     modules: Module[]
     errors: SemanticError[]
     warnings: SemanticError[]
-
-    module?: Module
 }
 
 export interface Scope {
     statements: Map<string, Definition>
-}
-
-export interface GlanceContext {
-    moduleStack: Module[]
 }
 
 export interface SemanticError {
@@ -34,8 +28,8 @@ export interface SemanticError {
     message: string
 }
 
-export const semanticError = (module: Module, node: AstNode<any>, message: string): SemanticError =>
-    ({ module, node, message })
+export const semanticError = (ctx: Context, node: AstNode<any>, message: string): SemanticError =>
+    ({ module: ctx.moduleStack.at(-1)!, node, message })
 
 export const findImpl = (vId: VirtualIdentifier, type: VirtualType, ctx: Context): ImplDef | undefined => {
     // TODO: go through imports only

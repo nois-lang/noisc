@@ -13,20 +13,21 @@ import { vidFromString, vidToString } from '../scope/vid'
 import { FnDef, ImplDef, KindDef, Statement, VarDef } from '../ast/statement'
 import { TypeDef } from '../ast/type-def'
 import { typeParamToVirtual, typeToVirtual, unitType, VirtualGeneric, VirtualType } from '../typecheck'
+import { identifyType } from './identify'
 
 export const glanceModule = (module: Module, ctx: Context) => {
     if (module.glanced) return
     const vid = vidToString(module.identifier)
-    if (ctx.glanceCtx.moduleStack.some(m => vidToString(m.identifier) === vid)) {
-        const stackVids = ctx.glanceCtx.moduleStack.map(m => vidToString(m.identifier))
+    if (ctx.moduleStack.some(m => vidToString(m.identifier) === vid)) {
+        const stackVids = ctx.moduleStack.map(m => vidToString(m.identifier))
         const refChain = [...stackVids.slice(stackVids.indexOf(vid)), vid].join(' -> ')
-        ctx.errors.push(semanticError(module, module, `circular module reference: ${refChain}`))
+        ctx.errors.push(semanticError(ctx, module, `circular module reference: ${refChain}`))
     }
-    ctx.glanceCtx.moduleStack.push(module)
+    ctx.moduleStack.push(module)
 
     module.block.statements.forEach(s => glanceStatement(s, ctx))
 
-    ctx.glanceCtx.moduleStack.pop()
+    ctx.moduleStack.pop()
     module.glanced = true
 }
 
@@ -48,11 +49,7 @@ const glanceStatement = (statement: Statement, ctx: Context) => {
             glanceTypeDef(statement, ctx)
             break
         default:
-            ctx.errors.push(semanticError(
-                ctx.glanceCtx.moduleStack.at(-1)!,
-                statement,
-                `top level \`${statement.kind}\` is not allowed`
-            ))
+            ctx.errors.push(semanticError(ctx, statement, `top level \`${statement.kind}\` is not allowed`))
     }
 }
 
@@ -61,10 +58,10 @@ const glanceVarDef = (varDef: VarDef, ctx: Context) => {
 }
 
 const glanceFnDef = (fnDef: FnDef, ctx: Context) => {
-    const module = ctx.glanceCtx.moduleStack.at(-1)!
+    const module = ctx.moduleStack.at(-1)!
     const unexpectedVariantType = fnDef.typeParams.find(tp => tp.kind === 'variant-type')
     if (unexpectedVariantType) {
-        ctx.errors.push(semanticError(module, unexpectedVariantType, 'expected generic, got variant type'))
+        ctx.errors.push(semanticError(ctx, unexpectedVariantType, 'expected generic, got variant type'))
         return
     }
 
@@ -80,10 +77,11 @@ const glanceFnDef = (fnDef: FnDef, ctx: Context) => {
                 && p.pattern.value === 'self') {
                 return { kind: 'variant-type', identifier: vidFromString('Self'), typeParams: [] }
             } else {
-                ctx.errors.push(semanticError(module, p, 'parameter type not specified'))
+                ctx.errors.push(semanticError(ctx, p, 'parameter type not specified'))
                 return { kind: 'any-type' }
             }
         } else {
+            identifyType(p.paramType, ctx)
             return typeToVirtual(p.paramType)
         }
     })
@@ -98,22 +96,18 @@ const glanceFnDef = (fnDef: FnDef, ctx: Context) => {
 
     if (!fnDef.block) {
         if (!module.kindDef) {
-            ctx.warnings.push(semanticError(module, fnDef, 'missing function body, must be a native function'))
+            ctx.warnings.push(semanticError(ctx, fnDef, 'missing function body, must be a native function'))
         }
     }
 }
 
 const glanceKindDef = (kindDef: KindDef, ctx: Context) => {
-    const module = ctx.glanceCtx.moduleStack.at(-1)!
+    const module = ctx.moduleStack.at(-1)!
     module.kindDef = kindDef
 
     kindDef.block.statements.forEach(s => {
         if (s.kind !== 'fn-def') {
-            ctx.errors.push(semanticError(
-                module,
-                s,
-                `\`${s.kind}\` in kind definition is not allowed`
-            ))
+            ctx.errors.push(semanticError(ctx, s, `\`${s.kind}\` in kind definition is not allowed`))
             return
         }
 
@@ -124,16 +118,12 @@ const glanceKindDef = (kindDef: KindDef, ctx: Context) => {
 }
 
 const glanceImplDef = (implDef: ImplDef, ctx: Context) => {
-    const module = ctx.glanceCtx.moduleStack.at(-1)!
+    const module = ctx.moduleStack.at(-1)!
     module.implDef = implDef
 
     implDef.block.statements.forEach(s => {
         if (s.kind !== 'fn-def') {
-            ctx.errors.push(semanticError(
-                module,
-                s,
-                `\`${s.kind}\` in impl definition is not allowed`
-            ))
+            ctx.errors.push(semanticError(ctx, s, `\`${s.kind}\` in impl definition is not allowed`))
             return
         }
 
