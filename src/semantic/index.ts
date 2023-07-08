@@ -1,4 +1,4 @@
-import { Context, findImpl, findImplFn, semanticError } from '../scope'
+import { Context, findImpl, findImplFn } from '../scope'
 import { Module } from '../ast'
 import { Block, FnDef, ImplDef, KindDef, Statement, VarDef } from '../ast/statement'
 import { BinaryExpr, UnaryExpr } from '../ast/expr'
@@ -28,6 +28,7 @@ import {
 } from '../scope/vid'
 import { useExprToVids } from './use-expr'
 import { Type } from '../ast/type'
+import { notFoundError, semanticError } from './error'
 
 export const checkModule = (module: Module, ctx: Context): void => {
     const vid = vidToString(module.identifier)
@@ -35,6 +36,7 @@ export const checkModule = (module: Module, ctx: Context): void => {
         const stackVids = ctx.moduleStack.map(m => vidToString(m.identifier))
         const refChain = [...stackVids.slice(stackVids.indexOf(vid)), vid].join(' -> ')
         ctx.errors.push(semanticError(ctx, module, `circular module reference: ${refChain}`))
+        return
     }
     ctx.moduleStack.push(module)
     module.references = module.useExprs.flatMap(useExpr => useExprToVids(useExpr, ctx))
@@ -120,10 +122,13 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
             return unknownType
         } else {
             checkType(p.paramType, ctx)
-            const vt = typeToVirtual(p.paramType)
-            return vt
+            return typeToVirtual(p.paramType)
         }
     })
+
+    if (fnDef.returnType) {
+        checkType(fnDef.returnType, ctx)
+    }
 
     fnDef.type = {
         kind: 'fn-type',
@@ -320,5 +325,22 @@ const addDefToScope = (ctx: Context, statement: Statement): void => {
 }
 
 const checkType = (type: Type, ctx: Context) => {
-    // TODO
+    switch (type.kind) {
+        case 'variant-type':
+            const vid = idToVid(type.identifier)
+            const ref = resolveVid(vid, ctx)
+            if (!ref) {
+                ctx.errors.push(notFoundError(ctx, type.identifier, vid))
+                return
+            }
+            type.typeParams.forEach(tp => checkType(tp, ctx))
+            if (!['type-def', 'kind-def', 'generic', 'self'].includes(ref.def.kind)) {
+                ctx.errors.push(semanticError(ctx, type.identifier, `expected type, got \`${ref.def.kind}\``))
+                return
+            }
+            // TODO: type params typecheck
+            return
+        case 'fn-type':
+            break
+    }
 }

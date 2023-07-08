@@ -7,6 +7,7 @@ import { Pattern } from '../ast/match'
 import { TypeDef } from '../ast/type-def'
 import { Generic } from '../ast/type'
 import { checkModule } from '../semantic'
+import { selfType } from '../typecheck'
 
 export interface VirtualIdentifier {
     scope: string[]
@@ -74,11 +75,12 @@ export const patternVid = (pattern: Pattern): VirtualIdentifier | undefined => {
     return undefined
 }
 
-/**
- * TODO: resolve generic refs
- */
 export const resolveVid = (vid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch | undefined => {
     const module = ctx.moduleStack.at(-1)!
+
+    if (vidToString(vid) === selfType.name && (module.implDef || module.kindDef)) {
+        return { qualifiedVid: vid, def: { kind: 'self' } }
+    }
     for (let i = module.scopeStack.length - 1; i >= 0; i--) {
         let scope = module.scopeStack[i]
         const found = scope.definitions.get(vidToString(vid))

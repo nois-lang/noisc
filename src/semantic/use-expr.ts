@@ -1,6 +1,7 @@
 import { UseExpr } from '../ast/statement'
 import { resolveVidMatched, statementVid, VirtualIdentifier } from '../scope/vid'
-import { Context, semanticError } from '../scope'
+import { Context } from '../scope'
+import { semanticError } from './error'
 
 export const useExprToVids = (useExpr: UseExpr, ctx: Context): VirtualIdentifier[] => {
     if (Array.isArray(useExpr.expr)) {

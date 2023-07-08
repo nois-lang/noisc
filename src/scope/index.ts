@@ -1,8 +1,9 @@
-import { AstNode, Module } from '../ast'
+import { Module } from '../ast'
 import { FnDef, ImplDef } from '../ast/statement'
 import { isAssignable, typeToVirtual, VirtualType } from '../typecheck'
 import { Definition, VirtualIdentifier } from './vid'
 import { Config } from '../config'
+import { SemanticError } from '../semantic/error'
 
 export interface Context {
     config: Config
@@ -18,15 +19,6 @@ export interface Scope {
     type: ScopeType
     definitions: Map<string, Definition>
 }
-
-export interface SemanticError {
-    module: Module,
-    node: AstNode<any>
-    message: string
-}
-
-export const semanticError = (ctx: Context, node: AstNode<any>, message: string): SemanticError =>
-    ({ module: ctx.moduleStack.at(-1)!, node, message })
 
 export const findImpl = (vId: VirtualIdentifier, type: VirtualType, ctx: Context): ImplDef | undefined => {
     // TODO: go through imports only
