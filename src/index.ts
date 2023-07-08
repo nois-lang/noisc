@@ -1,16 +1,14 @@
 import { existsSync, readFileSync } from 'fs'
-import { join, relative, resolve } from 'path'
+import { join, resolve } from 'path'
 import { prettyError, prettySourceMessage, prettyWarning } from './error'
-import { Module, } from './ast'
 import { checkModule } from './semantic'
-import { buildModule, Context, pathToVid } from './scope'
-import * as console from 'console'
+import { Context, pathToVid } from './scope'
 import { indexToLocation } from './location'
 import * as process from 'process'
-import { getPackageModuleSources } from './scope/io'
 import { getLocationRange } from './parser'
 import { defaultConfig } from './config'
 import { Source } from './source'
+import { buildModule, buildPackage } from './package'
 
 const checkForErrors = (ctx: Context) => {
     if (ctx.errors.length > 0) {
@@ -50,20 +48,16 @@ if (!moduleAst) {
     process.exit(1)
 }
 
-const stdPath = join(__dirname, 'std')
-const stdModules = getPackageModuleSources(stdPath).map(s => {
-    const stdModule = buildModule(s, pathToVid(relative(stdPath, s.filepath), 'std'))
-    if (!stdModule) {
-        process.exit(1)
-    }
-    return stdModule
-})
+const std = buildPackage(join(__dirname, 'std'), 'std')
+if (!std) {
+    process.exit(1)
+}
 
 const config = defaultConfig()
 const ctx: Context = {
     config,
     moduleStack: [],
-    modules: [...<Module[]>stdModules, moduleAst],
+    modules: [...std.modules, moduleAst],
     errors: [],
     warnings: []
 }

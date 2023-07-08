@@ -1,12 +1,13 @@
 import { defaultConfig } from '../config'
-import { buildModule, Context, pathToVid } from '../scope'
+import { Context, pathToVid } from '../scope'
 import { Module } from '../ast'
 import { join, relative } from 'path'
-import { getPackageModuleSources } from '../scope/io'
+import { getPackageModuleSources } from '../package/io'
 import { checkModule } from './index'
 import { Source } from '../source'
 import { expect } from '@jest/globals'
 import { vidFromString } from '../scope/vid'
+import { buildModule } from '../package'
 
 describe('semantic', () => {
 
