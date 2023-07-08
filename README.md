@@ -11,7 +11,7 @@
 ## Taste of Nois
 
 ```rust
-use std::io::println
+use std::math
 
 kind Area {
     fn area(self): Num
@@ -26,7 +26,7 @@ impl Area for Shape {
     fn area(self): Num {
         match self {
             Rect(width, height) -> width * height,
-            Circle(radius) -> Math.pi * radius ^ 2
+            Circle(radius) -> math::pi * radius ^ 2
         }
     }
 }
