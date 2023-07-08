@@ -1,14 +1,31 @@
 import { UseExpr } from '../ast/statement'
-import { VirtualIdentifier } from '../scope/vid'
+import { resolveVidMatched, statementVid, VirtualIdentifier } from '../scope/vid'
+import { Context, semanticError } from '../scope'
 
-export const flattenUseExpr = (useExpr: UseExpr): UseExpr[] => {
+export const flattenUseExpr = (useExpr: UseExpr, ctx: Context): VirtualIdentifier[] => {
     if (Array.isArray(useExpr.expr)) {
         return useExpr.expr.flatMap(expr => {
             const scope = [...useExpr.scope, ...expr.scope]
-            return flattenUseExpr({ ...useExpr, scope, expr: expr.expr })
+            return flattenUseExpr({ ...useExpr, scope, expr: expr.expr }, ctx)
         })
     }
-    return [useExpr]
+    if (useExpr.expr.kind === 'wildcard') {
+        const match = resolveVidMatched(useExprToVid(useExpr), ctx)
+        if (!match) {
+            ctx.errors.push(semanticError(ctx, useExpr, 'unresolved use expression'))
+            return []
+        }
+        if (match?.def.kind !== 'module') {
+            ctx.errors.push(semanticError(ctx, useExpr, 'wildcard use statement does not reference module'))
+            return []
+        }
+        const vids = match.def.block.statements.flatMap(s => {
+            const vid = statementVid(s)
+            return vid ? [vid] : []
+        })
+        return vids.map(vid => ({ scope: useExpr.scope.map(s => s.value), name: vid.name }))
+    }
+    return [useExprToVid(useExpr)]
 }
 
 export const useExprToVid = (useExpr: UseExpr): VirtualIdentifier => {

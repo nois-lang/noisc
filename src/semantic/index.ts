@@ -1,34 +1,46 @@
 import { Context, findImpl, findImplFn, semanticError } from '../scope'
 import { Module } from '../ast'
-import { Block, FnDef, ImplDef, Statement, UseExpr, VarDef } from '../ast/statement'
+import { Block, FnDef, ImplDef, KindDef, Statement, VarDef } from '../ast/statement'
 import { BinaryExpr, UnaryExpr } from '../ast/expr'
 import { operatorImplMap } from './op'
 import { Identifier, Operand } from '../ast/operand'
-import { anyType, isAssignable, typeError, VirtualFnType, virtualTypeToString } from '../typecheck'
+import {
+    anyType,
+    genericToVirtual,
+    isAssignable,
+    typeError,
+    typeToVirtual,
+    unitType,
+    vidToType,
+    VirtualFnType,
+    VirtualType,
+    virtualTypeToString
+} from '../typecheck'
 import { CallOp } from '../ast/op'
 import {
     idToVid,
     resolveVid,
-    resolveVidMatched,
     statementToDefinition,
     statementVid,
     vidFromScope,
     vidFromString,
     vidToString
 } from '../scope/vid'
-import { flattenUseExpr, useExprToVid } from './use-expr'
+import { flattenUseExpr } from './use-expr'
+import { VariantType } from '../ast/type'
+import { identifyType } from './identify'
 
 export const checkModule = (module: Module, ctx: Context): void => {
-    if (module.checked) return
-    if (ctx.moduleStack.at(-1)) {
-        throw Error('recursive module check')
+    const vid = vidToString(module.identifier)
+    if (ctx.moduleStack.some(m => vidToString(m.identifier) === vid)) {
+        const stackVids = ctx.moduleStack.map(m => vidToString(m.identifier))
+        const refChain = [...stackVids.slice(stackVids.indexOf(vid)), vid].join(' -> ')
+        ctx.errors.push(semanticError(ctx, module, `circular module reference: ${refChain}`))
     }
-
     ctx.moduleStack.push(module)
-    module.useExprs = module.useExprs.flatMap(useExpr => flattenUseExpr(useExpr))
+    module.flatUseExprs = module.useExprs.flatMap(useExpr => flattenUseExpr(useExpr, ctx))
 
     // TODO: check duplicate useExprs
-    module.useExprs.forEach(e => checkUseExpr(e, ctx))
     checkBlock(module.block, ctx, true)
 
     ctx.moduleStack.pop()
@@ -47,14 +59,12 @@ const checkBlock = (block: Block, ctx: Context, topLevel: boolean = false): void
     ctx.moduleStack.at(-1)!.scopeStack.pop()
 }
 
-const checkUseExpr = (useExpr: UseExpr, ctx: Context): void => {
-    const resolved = resolveVidMatched(useExprToVid(useExpr), ctx)
-    if (!resolved) {
-        ctx.errors.push(semanticError(ctx, useExpr, 'unresolved use expression'))
-    }
-}
-
 const checkStatement = (statement: Statement, ctx: Context, topLevel: boolean = false): void => {
+    if (topLevel && !['var-def', 'fn-def', 'kind-def', 'impl-def', 'type-def'].includes(statement.kind)) {
+        ctx.errors.push(semanticError(ctx, statement, `top level \`${statement.kind}\` is not allowed`))
+        return
+    }
+
     const pushDefToStack = () => {
         if (!topLevel) {
             addDefToScope(ctx, statement)
@@ -71,10 +81,12 @@ const checkStatement = (statement: Statement, ctx: Context, topLevel: boolean = 
             break
         case 'kind-def':
             // todo
+            checkKindDef(statement, ctx)
             pushDefToStack()
             break
         case 'impl-def':
             // todo
+            checkImplDef(statement, ctx)
             pushDefToStack()
             break
         case 'type-def':
@@ -97,13 +109,102 @@ const checkStatement = (statement: Statement, ctx: Context, topLevel: boolean = 
 }
 
 const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
+    const module = ctx.moduleStack.at(-1)!
+
+    // TODO: include kind/impl generics
+    const generics = fnDef.generics.map(genericToVirtual)
+    if (module.implDef || module.kindDef) {
+        generics.unshift({ name: 'Self', bounds: [] })
+    }
+    const paramTypes: VirtualType[] = fnDef.params.map((p, i) => {
+        if (!p.paramType) {
+            if ((module.implDef || module.kindDef)
+                && i === 0
+                && p.pattern.kind === 'name'
+                && p.pattern.value === 'self') {
+                const vid = vidFromString('Self')
+                return vidToType(vid)
+            }
+            ctx.errors.push(semanticError(ctx, p, 'parameter type not specified'))
+            return anyType
+        } else {
+            if (p.paramType && p.paramType.kind === 'variant-type') {
+                const matchedGeneric = generics.find(g => g.name === (<VariantType>p.paramType).identifier.name.value)
+                if (matchedGeneric) {
+                    const vid = vidFromString(matchedGeneric.name)
+                    if (p.paramType.kind === 'variant-type') {
+                        p.paramType.vid = vid
+                    }
+                    return vidToType(vid)
+                }
+            }
+            if (!identifyType(p.paramType, ctx)) {
+                return anyType
+            }
+
+            return typeToVirtual(p.paramType)
+        }
+    })
+    if (paramTypes.some(p => p.kind === 'any-type')) return
+
+    if (fnDef.returnType) {
+        if (!identifyType(fnDef.returnType, ctx)) {
+            return
+        }
+    }
+
+    fnDef.type = {
+        kind: 'fn-type',
+        generics,
+        paramTypes: paramTypes.map(p => p!),
+        returnType: fnDef.returnType ? typeToVirtual(fnDef.returnType) : unitType
+    }
+
     if (!fnDef.block) {
-        if (!ctx.moduleStack.at(-1)!.kindDef) {
+        if (!module.kindDef) {
             ctx.warnings.push(semanticError(ctx, fnDef, 'missing function body, must be a native function'))
         }
     } else {
         checkBlock(fnDef.block, ctx)
     }
+}
+
+const checkKindDef = (kindDef: KindDef, ctx: Context) => {
+    const module = ctx.moduleStack.at(-1)!
+    module.kindDef = kindDef
+
+    kindDef.block.statements.forEach(s => {
+        if (s.kind !== 'fn-def') {
+            ctx.errors.push(semanticError(ctx, s, `\`${s.kind}\` in kind definition is not allowed`))
+            return
+        }
+
+        checkFnDef(s, ctx)
+    })
+
+    module.kindDef = undefined
+}
+
+const checkImplDef = (implDef: ImplDef, ctx: Context) => {
+    const module = ctx.moduleStack.at(-1)!
+
+    if (module.implDef) {
+        ctx.errors.push(semanticError(ctx, implDef, 'nested impl definition'))
+        return
+    }
+
+    module.implDef = implDef
+
+    implDef.block.statements.forEach(s => {
+        if (s.kind !== 'fn-def') {
+            ctx.errors.push(semanticError(ctx, s, `\`${s.kind}\` in impl definition is not allowed`))
+            return
+        }
+
+        checkFnDef(s, ctx)
+    })
+
+    module.implDef = undefined
 }
 
 const checkVarDef = (varDef: VarDef, ctx: Context): void => {
@@ -175,18 +276,6 @@ ${virtualTypeToString(binaryExpr.rOperand.type!)})`
         ctx.errors.push(typeError(ctx, binaryExpr, implFn.type, t))
         return
     }
-}
-
-const checkImplDef = (implDef: ImplDef, ctx: Context): void => {
-    if (ctx.moduleStack.at(-1)!.implDef) {
-        ctx.errors.push(semanticError(ctx, implDef, 'nested impl definition'))
-        return
-    }
-    ctx.moduleStack.at(-1)!.implDef = implDef
-    implDef.block.statements.forEach(s => {
-        checkStatement(s, ctx)
-    })
-    ctx.moduleStack.at(-1)!.implDef = undefined
 }
 
 const checkOperand = (operand: Operand, ctx: Context): void => {

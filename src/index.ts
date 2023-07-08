@@ -11,7 +11,6 @@ import { getPackageModuleSources } from './scope/io'
 import { getLocationRange } from './parser'
 import { defaultConfig } from './config'
 import { Source } from './source'
-import { glanceModule } from './semantic/glance'
 
 const checkForErrors = (ctx: Context) => {
     if (ctx.errors.length > 0) {
@@ -68,9 +67,6 @@ const ctx: Context = {
     errors: [],
     warnings: []
 }
-
-ctx.modules.forEach(m => { glanceModule(m, ctx) })
-checkForErrors(ctx)
 
 ctx.modules.forEach(m => { checkModule(m, ctx) })
 checkForErrors(ctx)

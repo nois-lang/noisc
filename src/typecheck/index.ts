@@ -54,21 +54,24 @@ export const virtualTypeToString = (vt: VirtualType): string => {
     }
 }
 
-export const typeToVirtual = (t: Type): VirtualType => {
-    switch (t.kind) {
+export const vidToType = (vid: VirtualIdentifier): VirtualType =>
+    ({ kind: 'variant-type', identifier: vid, typeParams: [] })
+
+export const typeToVirtual = (type: Type): VirtualType => {
+    switch (type.kind) {
         case 'variant-type':
-            if (!t.vid) throw Error('unidentified type')
+            if (!type.vid) throw Error(`unidentified type`)
             return {
                 kind: 'variant-type',
-                identifier: t.vid,
-                typeParams: t.typeParams.map(typeToVirtual)
+                identifier: type.vid,
+                typeParams: type.typeParams.map(typeToVirtual)
             }
         case 'fn-type':
             return {
                 kind: 'fn-type',
-                generics: t.generics.map(genericToVirtual),
-                paramTypes: t.paramTypes.map(typeToVirtual),
-                returnType: typeToVirtual(t.returnType)
+                generics: type.generics.map(genericToVirtual),
+                paramTypes: type.paramTypes.map(typeToVirtual),
+                returnType: typeToVirtual(type.returnType)
             }
     }
 }

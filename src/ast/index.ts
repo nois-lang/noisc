@@ -8,7 +8,6 @@ import { buildType, Type } from './type'
 import { VirtualIdentifier } from '../scope/vid'
 import { Source } from '../source'
 import { Scope } from '../scope'
-import { flattenUseExpr } from '../semantic/use-expr'
 
 export interface AstNode<T extends AstNodeKind> {
     kind: T
@@ -105,11 +104,11 @@ export interface Module extends AstNode<'module'> {
 
     scopeStack: Scope[]
     useExprs: UseExpr[]
-    flatUseExprs: UseExpr[]
+
+    flatUseExprs?: VirtualIdentifier[]
     implDef?: ImplDef
     kindDef?: KindDef
 
-    glanced?: boolean
     checked?: boolean
 }
 
@@ -124,8 +123,7 @@ export const buildModuleAst = (node: ParseNode, id: VirtualIdentifier, source: S
         identifier: id,
         block,
         scopeStack: [],
-        useExprs,
-        flatUseExprs: useExprs.flatMap(expr => flattenUseExpr(expr))
+        useExprs
     }
 }
 
