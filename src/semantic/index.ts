@@ -26,7 +26,7 @@ import {
     vidFromString,
     vidToString
 } from '../scope/vid'
-import { flattenUseExpr } from './use-expr'
+import { useExprToVids } from './use-expr'
 import { Type } from '../ast/type'
 
 export const checkModule = (module: Module, ctx: Context): void => {
@@ -37,7 +37,7 @@ export const checkModule = (module: Module, ctx: Context): void => {
         ctx.errors.push(semanticError(ctx, module, `circular module reference: ${refChain}`))
     }
     ctx.moduleStack.push(module)
-    module.flatUseExprs = module.useExprs.flatMap(useExpr => flattenUseExpr(useExpr, ctx))
+    module.references = module.useExprs.flatMap(useExpr => useExprToVids(useExpr, ctx))
 
     // TODO: check duplicate useExprs
     checkBlock(module.block, ctx, true)
@@ -47,7 +47,7 @@ export const checkModule = (module: Module, ctx: Context): void => {
 }
 
 const checkBlock = (block: Block, ctx: Context, topLevel: boolean = false): void => {
-    ctx.moduleStack.at(-1)!.scopeStack.push({ statements: new Map(), generics: new Map() })
+    ctx.moduleStack.at(-1)!.scopeStack.push({ type: 'block', definitions: new Map() })
     if (topLevel) {
         block.statements.forEach(s => addDefToScope(ctx, s))
     }
@@ -109,7 +109,7 @@ const checkStatement = (statement: Statement, ctx: Context, topLevel: boolean = 
 
 const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
     const module = ctx.moduleStack.at(-1)!
-    module.scopeStack.push({ statements: new Map(), generics: new Map(fnDef.generics.map(g => [g.name.value, g])) })
+    module.scopeStack.push({ type: 'fn-def', definitions: new Map(fnDef.generics.map(g => [g.name.value, g])) })
 
     const paramTypes: VirtualType[] = fnDef.params.map((p, i) => {
         if (!p.paramType) {
@@ -134,11 +134,13 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
 
     if (!fnDef.block) {
         if (!module.kindDef) {
-            ctx.warnings.push(semanticError(ctx, fnDef, 'missing function body, must be a native function'))
+            ctx.warnings.push(semanticError(ctx, fnDef, `fn \`${fnDef.name.value}\` has no body -> must be native`))
         }
     } else {
         checkBlock(fnDef.block, ctx)
     }
+
+    module.scopeStack.pop()
 }
 
 const checkKindDef = (kindDef: KindDef, ctx: Context) => {
@@ -314,7 +316,7 @@ const addDefToScope = (ctx: Context, statement: Statement): void => {
     const def = statementToDefinition(statement)
     if (!def) return
 
-    ctx.moduleStack.at(-1)!.scopeStack.at(-1)!.statements.set(vidToString(vid), def)
+    ctx.moduleStack.at(-1)!.scopeStack.at(-1)!.definitions.set(vidToString(vid), def)
 }
 
 const checkType = (type: Type, ctx: Context) => {

@@ -81,17 +81,12 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context): VirtualIdentif
     const module = ctx.moduleStack.at(-1)!
     for (let i = module.scopeStack.length - 1; i >= 0; i--) {
         let scope = module.scopeStack[i]
-        const found = scope.statements.get(vidToString(vid))
+        const found = scope.definitions.get(vidToString(vid))
         if (found) {
             return { qualifiedVid: vid, def: found }
         }
-
-        const matchedGeneric = scope.generics.get(vid.name)
-        if (matchedGeneric) {
-            return { qualifiedVid: vid, def: matchedGeneric }
-        }
     }
-    for (let useExpr of module.flatUseExprs!) {
+    for (let useExpr of module.references!) {
         if (useExpr.name === vidFirst(vid)) {
             const merged: VirtualIdentifier = {
                 scope: [...useExpr.scope, ...vid.scope],

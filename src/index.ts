@@ -10,19 +10,6 @@ import { defaultConfig } from './config'
 import { Source } from './source'
 import { buildModule, buildPackage } from './package'
 
-const checkForErrors = (ctx: Context) => {
-    if (ctx.errors.length > 0) {
-        for (const error of ctx.errors) {
-            console.error(prettySourceMessage(
-                prettyError(error.message),
-                indexToLocation(getLocationRange(error.node.parseNode).start, error.module.source)!,
-                error.module.source
-            ))
-        }
-        process.exit(1)
-    }
-}
-
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
 
 export const usage = `\
@@ -53,9 +40,8 @@ if (!std) {
     process.exit(1)
 }
 
-const config = defaultConfig()
 const ctx: Context = {
-    config,
+    config: defaultConfig(),
     moduleStack: [],
     modules: [...std.modules, moduleAst],
     errors: [],
@@ -63,7 +49,17 @@ const ctx: Context = {
 }
 
 ctx.modules.forEach(m => { checkModule(m, ctx) })
-checkForErrors(ctx)
+
+if (ctx.errors.length > 0) {
+    for (const error of ctx.errors) {
+        console.error(prettySourceMessage(
+            prettyError(error.message),
+            indexToLocation(getLocationRange(error.node.parseNode).start, error.module.source)!,
+            error.module.source
+        ))
+    }
+    process.exit(1)
+}
 
 for (const warning of ctx.warnings) {
     console.error(prettySourceMessage(

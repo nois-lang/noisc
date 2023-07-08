@@ -2,11 +2,11 @@ import { UseExpr } from '../ast/statement'
 import { resolveVidMatched, statementVid, VirtualIdentifier } from '../scope/vid'
 import { Context, semanticError } from '../scope'
 
-export const flattenUseExpr = (useExpr: UseExpr, ctx: Context): VirtualIdentifier[] => {
+export const useExprToVids = (useExpr: UseExpr, ctx: Context): VirtualIdentifier[] => {
     if (Array.isArray(useExpr.expr)) {
         return useExpr.expr.flatMap(expr => {
             const scope = [...useExpr.scope, ...expr.scope]
-            return flattenUseExpr({ ...useExpr, scope, expr: expr.expr }, ctx)
+            return useExprToVids({ ...useExpr, scope, expr: expr.expr }, ctx)
         })
     }
     if (useExpr.expr.kind === 'wildcard') {
@@ -28,7 +28,7 @@ export const flattenUseExpr = (useExpr: UseExpr, ctx: Context): VirtualIdentifie
     return [useExprToVid(useExpr)]
 }
 
-export const useExprToVid = (useExpr: UseExpr): VirtualIdentifier => {
+const useExprToVid = (useExpr: UseExpr): VirtualIdentifier => {
     if (Array.isArray(useExpr.expr)) {
         throw Error(`non-terminal use-expr`)
     }

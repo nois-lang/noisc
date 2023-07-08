@@ -105,7 +105,10 @@ export interface Module extends AstNode<'module'> {
     scopeStack: Scope[]
     useExprs: UseExpr[]
 
-    flatUseExprs?: VirtualIdentifier[]
+    /**
+     * All vids accessible from the current module, based on {@link useExprs}
+     */
+    references?: VirtualIdentifier[]
     implDef?: ImplDef
     kindDef?: KindDef
 

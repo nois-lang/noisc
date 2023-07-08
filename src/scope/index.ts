@@ -1,15 +1,8 @@
-import { AstNode, buildModuleAst, Module } from '../ast'
+import { AstNode, Module } from '../ast'
 import { FnDef, ImplDef } from '../ast/statement'
-import { Source } from '../source'
-import { erroneousTokenKinds, tokenize } from '../lexer/lexer'
-import { prettyLexerError, prettySourceMessage, prettySyntaxError } from '../error'
-import { indexToLocation } from '../location'
-import { Parser } from '../parser/parser'
-import { parseModule } from '../parser/fns'
 import { isAssignable, typeToVirtual, VirtualType } from '../typecheck'
 import { Definition, VirtualIdentifier } from './vid'
 import { Config } from '../config'
-import { Generic } from '../ast/type'
 
 export interface Context {
     config: Config
@@ -19,9 +12,11 @@ export interface Context {
     warnings: SemanticError[]
 }
 
+export type ScopeType = 'module' | 'fn-def' | 'kind-def' | 'type-def' | 'block'
+
 export interface Scope {
-    generics: Map<string, Generic>
-    statements: Map<string, Definition>
+    type: ScopeType
+    definitions: Map<string, Definition>
 }
 
 export interface SemanticError {
