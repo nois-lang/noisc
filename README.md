@@ -11,27 +11,32 @@
 ## Taste of Nois
 
 ```rust
+use std::io::println
+
 kind Area {
-    fn area(self): Float
+    fn area(self): Num
 }
 
 type Shape {
     Rect(width: Num, height: Num),
-    Circle(side: Num),
+    Circle(radius: Num),
 }
 
 impl Area for Shape {
-    fn area(self): Float {
+    fn area(self): Num {
         match self {
-            Rect(w) -> w ^ 2,
-            Circle(r) -> Math.pi * r ^ 2
+            Rect(width, height) -> width * height,
+            Circle(radius) -> Math.pi * radius ^ 2
         }
     }
 }
 
 fn main() {
-    let shape: Shape = Rect(width: 4, height: 2)
-    println(shape.area())
+    let shapes: List<Shape> = [
+        Rect(width: 4, height: 2),
+        Circle(radius: 12.34),
+    ]
+    println(shapes)
 }
 ```
 
