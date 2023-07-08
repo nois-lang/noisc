@@ -13,7 +13,7 @@ export interface VirtualIdentifier {
     name: string
 }
 
-export type Definition = Module | VarDef | FnDef | KindDef | TypeDef | Generic
+export type Definition = Module | VarDef | FnDef | KindDef | TypeDef | Generic | { kind: 'self' }
 
 export interface VirtualIdentifierMatch {
     qualifiedVid: VirtualIdentifier
@@ -84,6 +84,11 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context): VirtualIdentif
         const found = scope.statements.get(vidToString(vid))
         if (found) {
             return { qualifiedVid: vid, def: found }
+        }
+
+        const matchedGeneric = scope.generics.get(vid.name)
+        if (matchedGeneric) {
+            return { qualifiedVid: vid, def: matchedGeneric }
         }
     }
     for (let useExpr of module.flatUseExprs!) {

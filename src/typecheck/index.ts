@@ -1,13 +1,13 @@
 import { Context, semanticError, SemanticError } from '../scope'
 import { Generic, Type } from '../ast/type'
-import { vidFromString, vidToString, VirtualIdentifier } from '../scope/vid'
+import { idToVid, vidFromString, vidToString, VirtualIdentifier } from '../scope/vid'
 import { AstNode } from '../ast'
 
 export interface Typed {
     type: VirtualType
 }
 
-export type VirtualType = VirtualVariantType | VirtualFnType | AnyType
+export type VirtualType = VirtualVariantType | VirtualFnType | AnyType | UnknownType
 
 export interface VirtualVariantType {
     kind: 'variant-type'
@@ -26,7 +26,15 @@ export interface AnyType {
     kind: 'any-type'
 }
 
+export interface UnknownType {
+    kind: 'unknown-type'
+}
+
 export const anyType: AnyType = { kind: 'any-type' }
+
+export const unknownType: UnknownType = { kind: 'unknown-type' }
+
+export const selfType: VirtualType = { kind: 'variant-type', identifier: vidFromString('Self'), typeParams: [] }
 
 export const unitType: VirtualVariantType = {
     kind: 'variant-type',
@@ -60,10 +68,9 @@ export const vidToType = (vid: VirtualIdentifier): VirtualType =>
 export const typeToVirtual = (type: Type): VirtualType => {
     switch (type.kind) {
         case 'variant-type':
-            if (!type.vid) throw Error(`unidentified type`)
             return {
                 kind: 'variant-type',
-                identifier: type.vid,
+                identifier: idToVid(type.identifier),
                 typeParams: type.typeParams.map(typeToVirtual)
             }
         case 'fn-type':

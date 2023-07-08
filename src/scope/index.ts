@@ -9,6 +9,7 @@ import { parseModule } from '../parser/fns'
 import { isAssignable, typeToVirtual, VirtualType } from '../typecheck'
 import { Definition, VirtualIdentifier } from './vid'
 import { Config } from '../config'
+import { Generic } from '../ast/type'
 
 export interface Context {
     config: Config
@@ -19,6 +20,7 @@ export interface Context {
 }
 
 export interface Scope {
+    generics: Map<string, Generic>
     statements: Map<string, Definition>
 }
 

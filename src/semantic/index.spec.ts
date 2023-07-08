@@ -7,7 +7,6 @@ import { checkModule } from './index'
 import { Source } from '../source'
 import { expect } from '@jest/globals'
 import { vidFromString } from '../scope/vid'
-import { glanceModule } from './glance'
 
 describe('semantic', () => {
 
@@ -35,7 +34,6 @@ describe('semantic', () => {
             ctx.modules.push(moduleAst)
         }
 
-        ctx.modules.forEach(m => { glanceModule(m, ctx) })
         ctx.modules.forEach(m => { checkModule(m, ctx) })
 
         return ctx

@@ -5,13 +5,13 @@ import { BinaryExpr, UnaryExpr } from '../ast/expr'
 import { operatorImplMap } from './op'
 import { Identifier, Operand } from '../ast/operand'
 import {
-    anyType,
     genericToVirtual,
     isAssignable,
+    selfType,
     typeError,
     typeToVirtual,
     unitType,
-    vidToType,
+    unknownType,
     VirtualFnType,
     VirtualType,
     virtualTypeToString
@@ -27,8 +27,7 @@ import {
     vidToString
 } from '../scope/vid'
 import { flattenUseExpr } from './use-expr'
-import { VariantType } from '../ast/type'
-import { identifyType } from './identify'
+import { Type } from '../ast/type'
 
 export const checkModule = (module: Module, ctx: Context): void => {
     const vid = vidToString(module.identifier)
@@ -48,7 +47,7 @@ export const checkModule = (module: Module, ctx: Context): void => {
 }
 
 const checkBlock = (block: Block, ctx: Context, topLevel: boolean = false): void => {
-    ctx.moduleStack.at(-1)!.scopeStack.push({ statements: new Map() })
+    ctx.moduleStack.at(-1)!.scopeStack.push({ statements: new Map(), generics: new Map() })
     if (topLevel) {
         block.statements.forEach(s => addDefToScope(ctx, s))
     }
@@ -110,52 +109,25 @@ const checkStatement = (statement: Statement, ctx: Context, topLevel: boolean = 
 
 const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
     const module = ctx.moduleStack.at(-1)!
+    module.scopeStack.push({ statements: new Map(), generics: new Map(fnDef.generics.map(g => [g.name.value, g])) })
 
-    // TODO: include kind/impl generics
-    const generics = fnDef.generics.map(genericToVirtual)
-    if (module.implDef || module.kindDef) {
-        generics.unshift({ name: 'Self', bounds: [] })
-    }
     const paramTypes: VirtualType[] = fnDef.params.map((p, i) => {
         if (!p.paramType) {
-            if ((module.implDef || module.kindDef)
-                && i === 0
-                && p.pattern.kind === 'name'
-                && p.pattern.value === 'self') {
-                const vid = vidFromString('Self')
-                return vidToType(vid)
+            if ((module.implDef || module.kindDef) && i === 0 && p.pattern.kind === 'name' && p.pattern.value === 'self') {
+                return selfType
             }
             ctx.errors.push(semanticError(ctx, p, 'parameter type not specified'))
-            return anyType
+            return unknownType
         } else {
-            if (p.paramType && p.paramType.kind === 'variant-type') {
-                const matchedGeneric = generics.find(g => g.name === (<VariantType>p.paramType).identifier.name.value)
-                if (matchedGeneric) {
-                    const vid = vidFromString(matchedGeneric.name)
-                    if (p.paramType.kind === 'variant-type') {
-                        p.paramType.vid = vid
-                    }
-                    return vidToType(vid)
-                }
-            }
-            if (!identifyType(p.paramType, ctx)) {
-                return anyType
-            }
-
-            return typeToVirtual(p.paramType)
+            checkType(p.paramType, ctx)
+            const vt = typeToVirtual(p.paramType)
+            return vt
         }
     })
-    if (paramTypes.some(p => p.kind === 'any-type')) return
-
-    if (fnDef.returnType) {
-        if (!identifyType(fnDef.returnType, ctx)) {
-            return
-        }
-    }
 
     fnDef.type = {
         kind: 'fn-type',
-        generics,
+        generics: fnDef.generics.map(genericToVirtual),
         paramTypes: paramTypes.map(p => p!),
         returnType: fnDef.returnType ? typeToVirtual(fnDef.returnType) : unitType
     }
@@ -235,7 +207,7 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         kind: 'fn-type',
         generics: [],
         paramTypes: callOp.args.map(a => a.type!),
-        returnType: anyType
+        returnType: unknownType
     }
     if (!isAssignable(t, operand.type!, ctx)) {
         ctx.errors.push(typeError(ctx, unaryExpr, operand.type, t))
@@ -265,12 +237,13 @@ ${virtualTypeToString(binaryExpr.rOperand.type!)})`
     const implFn = findImplFn(impl, opImplFnId, ctx)
     if (!implFn) throw Error('impl fn not found')
     if (!implFn.type) throw Error('untyped impl fn')
+    if (implFn.type.kind !== 'fn-type') throw Error('impl fn type in not fn')
 
     const t: VirtualFnType = {
         kind: 'fn-type',
         generics: [],
         paramTypes: [binaryExpr.lOperand, binaryExpr.rOperand].map(o => o.type!),
-        returnType: anyType
+        returnType: implFn.type.returnType
     }
     if (!isAssignable(t, implFn.type, ctx)) {
         ctx.errors.push(typeError(ctx, binaryExpr, implFn.type, t))
@@ -285,19 +258,19 @@ const checkOperand = (operand: Operand, ctx: Context): void => {
             operand.type = operand.operand.type
             break
         case 'if-expr':
-            // todo
+            // TODO
             break
         case 'while-expr':
-            // todo
+            // TODO
             break
         case 'for-expr':
-            // todo
+            // TODO
             break
         case 'match-expr':
-            // todo
+            // TODO
             break
         case 'closure-expr':
-            // todo
+            // TODO
             break
         case 'unary-expr':
             checkUnaryExpr(operand, ctx)
@@ -306,7 +279,7 @@ const checkOperand = (operand: Operand, ctx: Context): void => {
             checkBinaryExpr(operand, ctx)
             break
         case 'list-expr':
-            // todo
+            // TODO
             break
         case 'string-literal':
             operand.type = { kind: 'variant-type', identifier: vidFromString('std::String'), typeParams: [] }
@@ -344,3 +317,6 @@ const addDefToScope = (ctx: Context, statement: Statement): void => {
     ctx.moduleStack.at(-1)!.scopeStack.at(-1)!.statements.set(vidToString(vid), def)
 }
 
+const checkType = (type: Type, ctx: Context) => {
+    // TODO
+}
