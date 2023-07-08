@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'fs'
-import { join, resolve } from 'path'
+import { join, resolve, basename } from 'path'
 import { prettyError, prettySourceMessage, prettyWarning } from './error'
 import { checkModule } from './semantic'
 import { Context, pathToVid } from './scope'
@@ -29,7 +29,7 @@ if (!existsSync(sourcePath)) {
 }
 const source: Source = { code: readFileSync(sourcePath).toString(), filepath: sourcePath }
 
-const moduleAst = buildModule(source, pathToVid(sourcePath))
+const moduleAst = buildModule(source, pathToVid(basename(sourcePath)))
 
 if (!moduleAst) {
     process.exit(1)
