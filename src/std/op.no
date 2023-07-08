@@ -1,15 +1,15 @@
 kind Add {
-    fn add(self, other: Self): T
+    fn add(self, other: Self): Self
 }
 
 kind Sub {
-    fn sub(self, other: Self): T
+    fn sub(self, other: Self): Self
 }
 
 kind Mult {
-    fn mult(self, other: Self): T
+    fn mult(self, other: Self): Self
 }
 
 kind Div {
-    fn div(self, other: Self): T
+    fn div(self, other: Self): Self
 }
