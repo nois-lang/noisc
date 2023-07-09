@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'fs'
-import { join, resolve, basename } from 'path'
+import { basename, join, resolve } from 'path'
 import { prettyError, prettySourceMessage, prettyWarning } from './error'
 import { checkModule } from './semantic'
 import { Context, pathToVid } from './scope'

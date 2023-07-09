@@ -1,5 +1,3 @@
-use std::string::String
-
 kind Display {
     fn fmt(self): String
 }

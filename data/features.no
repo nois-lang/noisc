@@ -1,6 +1,4 @@
-use std::Display
-use std::io::{println}
-use std::Option::*
+use std::{io::Display, option::Option::*}
 
 // type
 type Unit

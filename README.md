@@ -11,8 +11,6 @@
 ## Taste of Nois
 
 ```rust
-use std::math
-
 kind Area {
     fn area(self): Num
 }

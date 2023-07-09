@@ -1,5 +1,3 @@
-use std::op::*
-
 type String
 
 impl Add for String {

@@ -8,6 +8,7 @@ import { TypeDef } from '../ast/type-def'
 import { Generic } from '../ast/type'
 import { checkModule } from '../semantic'
 import { selfType } from '../typecheck'
+import { defaultImportedVids } from './std'
 
 export interface VirtualIdentifier {
     scope: string[]
@@ -88,7 +89,7 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context): VirtualIdentif
             return { qualifiedVid: vid, def: found }
         }
     }
-    for (let useExpr of module.references!) {
+    for (let useExpr of [...defaultImportedVids(), ...module.references!]) {
         if (useExpr.name === vidFirst(vid)) {
             const merged: VirtualIdentifier = {
                 scope: [...useExpr.scope, ...vid.scope],
