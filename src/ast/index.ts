@@ -8,6 +8,7 @@ import { buildType, Type } from './type'
 import { VirtualIdentifier } from '../scope/vid'
 import { Source } from '../source'
 import { Scope } from '../scope'
+import { Typed } from '../typecheck'
 
 export interface AstNode<T extends AstNodeKind> {
     kind: T
@@ -130,7 +131,7 @@ export const buildModuleAst = (node: ParseNode, id: VirtualIdentifier, source: S
     }
 }
 
-export interface Param extends AstNode<'param'> {
+export interface Param extends AstNode<'param'>, Partial<Typed> {
     pattern: Pattern
     paramType?: Type
 }

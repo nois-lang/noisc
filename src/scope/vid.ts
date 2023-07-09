@@ -1,5 +1,5 @@
 import { Identifier } from '../ast/operand'
-import { Module } from '../ast'
+import { Module, Param } from '../ast'
 import { Context } from './index'
 import { FnDef, KindDef, Statement, VarDef } from '../ast/statement'
 import { todo } from '../util/todo'
@@ -15,7 +15,7 @@ export interface VirtualIdentifier {
     name: string
 }
 
-export type Definition = Module | VarDef | FnDef | KindDef | TypeDef | Generic | { kind: 'self' }
+export type Definition = Module | VarDef | FnDef | KindDef | TypeDef | Generic | Param | { kind: 'self' }
 
 export interface VirtualIdentifierMatch {
     qualifiedVid: VirtualIdentifier

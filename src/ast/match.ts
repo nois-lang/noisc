@@ -1,6 +1,6 @@
-import { buildExpr, buildOperandExpr, Expr } from './expr'
+import { buildExpr, buildOperandExpr, Expr, UnaryExpr } from './expr'
 import { AstNode, filterNonAstNodes, } from './index'
-import { buildIdentifier, buildName, buildOperand, Identifier, Name } from './operand'
+import { buildIdentifier, buildName, buildOperand, Identifier, Name, Operand } from './operand'
 import { buildUnaryOp, SpreadOp } from './op'
 import { Block, buildBlock } from './statement'
 import { ParseNode } from '../parser'
@@ -33,7 +33,7 @@ export const buildMatchClause = (node: ParseNode): MatchClause => {
     return { kind: 'match-clause', parseNode: node, pattern, guard, block }
 }
 
-export type Pattern = Name | ConPattern | Expr | Hole
+export type Pattern = Name | ConPattern | Operand | UnaryExpr | Hole
 
 export const buildPattern = (node: ParseNode): Pattern => {
     const nodes = filterNonAstNodes(node)

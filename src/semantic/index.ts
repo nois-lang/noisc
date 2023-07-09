@@ -1,5 +1,5 @@
 import { Context, findImpl, findImplFn } from '../scope'
-import { Module } from '../ast'
+import { Module, Param } from '../ast'
 import { Block, FnDef, ImplDef, KindDef, Statement, VarDef } from '../ast/statement'
 import { BinaryExpr, UnaryExpr } from '../ast/expr'
 import { operatorImplMap } from './op'
@@ -13,7 +13,6 @@ import {
     unitType,
     unknownType,
     VirtualFnType,
-    VirtualType,
     virtualTypeToString
 } from '../typecheck'
 import { CallOp } from '../ast/op'
@@ -29,6 +28,7 @@ import {
 import { useExprToVids } from './use-expr'
 import { Type } from '../ast/type'
 import { notFoundError, semanticError } from './error'
+import { todo } from '../util/todo'
 
 export const checkModule = (module: Module, ctx: Context): void => {
     const vid = vidToString(module.identifier)
@@ -98,7 +98,8 @@ const checkStatement = (statement: Statement, ctx: Context, topLevel: boolean = 
             // todo
             break
         case 'operand-expr':
-            // todo
+            checkOperand(statement.operand, ctx)
+            statement.type = statement.operand.type
             break
         case 'unary-expr':
             checkUnaryExpr(statement, ctx)
@@ -113,16 +114,21 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
     const module = ctx.moduleStack.at(-1)!
     module.scopeStack.push({ type: 'fn-def', definitions: new Map(fnDef.generics.map(g => [g.name.value, g])) })
 
-    const paramTypes: VirtualType[] = fnDef.params.map((p, i) => {
-        if (!p.paramType) {
-            if ((module.implDef || module.kindDef) && i === 0 && p.pattern.kind === 'name' && p.pattern.value === 'self') {
-                return selfType
-            }
-            ctx.errors.push(semanticError(ctx, p, 'parameter type not specified'))
-            return unknownType
-        } else {
-            checkType(p.paramType, ctx)
-            return typeToVirtual(p.paramType)
+    const paramTypes = fnDef.params.map((p, i) => {
+        checkParam(p, i, ctx)
+        return p.type!
+    })
+
+    fnDef.params.forEach(p => {
+        switch (p.pattern.kind) {
+            case 'hole':
+                break
+            case 'name':
+                module.scopeStack.at(-1)!.definitions.set(p.pattern.value, p)
+                break
+            case 'con-pattern':
+                todo('add con-pattern to scope')
+                break
         }
     })
 
@@ -133,7 +139,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
     fnDef.type = {
         kind: 'fn-type',
         generics: fnDef.generics.map(genericToVirtual),
-        paramTypes: paramTypes.map(p => p!),
+        paramTypes,
         returnType: fnDef.returnType ? typeToVirtual(fnDef.returnType) : unitType
     }
 
@@ -146,6 +152,27 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
     }
 
     module.scopeStack.pop()
+}
+
+const checkParam = (param: Param, index: number, ctx: Context): void => {
+    const module = ctx.moduleStack.at(-1)!
+    if (!param.paramType) {
+        if (index === 0 && (module.implDef || module.kindDef) && param.pattern.kind === 'name' && param.pattern.value === 'self') {
+            param.type = selfType
+        } else {
+            ctx.errors.push(semanticError(ctx, param, 'parameter type not specified'))
+            param.type = { kind: 'unknown-type' }
+        }
+    } else {
+        checkType(param.paramType, ctx)
+        param.type = typeToVirtual(param.paramType)
+    }
+    switch (param.pattern.kind) {
+        case 'operand-expr':
+        case 'unary-expr':
+        case 'binary-expr':
+            ctx.errors.push(semanticError(ctx, param.pattern, `\`${param.pattern.kind}\` can only be used in match expressions`))
+    }
 }
 
 const checkKindDef = (kindDef: KindDef, ctx: Context) => {

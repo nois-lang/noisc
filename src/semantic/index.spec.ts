@@ -7,7 +7,7 @@ import { checkModule } from './index'
 import { Source } from '../source'
 import { expect } from '@jest/globals'
 import { vidFromString } from '../scope/vid'
-import { buildModule } from '../package'
+import { buildModule } from '../package/build'
 
 describe('semantic', () => {
 
