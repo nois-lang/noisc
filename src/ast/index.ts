@@ -110,8 +110,6 @@ export interface Module extends AstNode<'module'> {
      * All vids accessible from the current module, based on {@link useExprs}
      */
     references?: VirtualIdentifier[]
-    implDef?: ImplDef
-    kindDef?: KindDef
 
     checked?: boolean
 }

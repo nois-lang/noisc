@@ -53,17 +53,19 @@ export interface VirtualGeneric {
  * TODO: type params
  */
 export const virtualTypeToString = (vt: VirtualType): string => {
-    if (vt.kind === 'variant-type') {
-        return vidToString(vt.identifier)
-    } else if (vt.kind === 'fn-type') {
-        return `|${vt.paramTypes.map(virtualTypeToString).join(', ')}|: ${virtualTypeToString(vt.returnType)}`
-    } else {
-        return '*'
+    switch (vt.kind) {
+        case 'variant-type':
+            return vidToString(vt.identifier)
+        case 'fn-type':
+            return `|${vt.paramTypes.map(virtualTypeToString).join(', ')}|: ${virtualTypeToString(vt.returnType)}`
+        case 'generic':
+            return vt.name
+        case 'unknown-type':
+            return '<unknown>'
+        default:
+            return '*'
     }
 }
-
-export const vidToType = (vid: VirtualIdentifier): VirtualType =>
-    ({ kind: 'variant-type', identifier: vid, typeParams: [] })
 
 export const typeToVirtual = (type: Type): VirtualType => {
     switch (type.kind) {
@@ -87,7 +89,7 @@ export const genericToVirtual = (generic: Generic): VirtualGeneric =>
     ({ kind: 'generic', name: generic.name.value, bounds: generic.bounds.map(typeToVirtual) })
 
 export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context): boolean => {
-    if (t.kind === 'any-type' || target.kind === 'any-type') {
+    if (t.kind === anyType.kind || target.kind === anyType.kind) {
         return true
     }
     if (t.kind === 'variant-type' && target.kind === 'variant-type') {

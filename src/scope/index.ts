@@ -13,7 +13,7 @@ export interface Context {
     warnings: SemanticError[]
 }
 
-export type ScopeType = 'module' | 'fn-def' | 'kind-def' | 'type-def' | 'block'
+export type ScopeType = 'module' | 'fn-def' | 'impl-def' | 'kind-def' | 'type-def' | 'block'
 
 export interface Scope {
     type: ScopeType
@@ -45,4 +45,18 @@ export const pathToVid = (path: string, packageName?: string): VirtualIdentifier
     const scope = dirs.slice(0, -1)
     const name = dirs.at(-1)!
     return { scope, name }
+}
+
+/**
+ * Checks whether current module scopeStack is within ImplDef or KindDef scope
+ */
+export const instanceScope = (ctx: Context): ScopeType | undefined => {
+    const module = ctx.moduleStack.at(-1)!
+    for (let i = module.scopeStack.length - 1; i >= 0; i--) {
+        let scope = module.scopeStack[i]
+        if (scope.type === 'impl-def' || scope.type === 'kind-def') {
+            return scope.type
+        }
+    }
+    return undefined
 }

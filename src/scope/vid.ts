@@ -1,6 +1,6 @@
 import { Identifier } from '../ast/operand'
 import { Module, Param } from '../ast'
-import { Context } from './index'
+import { Context, instanceScope } from './index'
 import { FnDef, KindDef, Statement, VarDef } from '../ast/statement'
 import { todo } from '../util/todo'
 import { Pattern } from '../ast/match'
@@ -79,7 +79,7 @@ export const patternVid = (pattern: Pattern): VirtualIdentifier | undefined => {
 export const resolveVid = (vid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch | undefined => {
     const module = ctx.moduleStack.at(-1)!
 
-    if (vidToString(vid) === selfType.name && (module.implDef || module.kindDef)) {
+    if (vidToString(vid) === selfType.name && instanceScope(ctx)) {
         return { qualifiedVid: vid, def: { kind: 'self' } }
     }
     for (let i = module.scopeStack.length - 1; i >= 0; i--) {
@@ -104,12 +104,12 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context): VirtualIdentif
 export const resolveVidMatched = (vid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch | undefined => {
     let foundModule = ctx.modules.find(m => vidToString(m.identifier) === vidToString(vid))
     if (foundModule) {
-        checkModule(foundModule, ctx)
+        checkModule(foundModule, ctx, true)
         return { qualifiedVid: vid, def: foundModule }
     }
     foundModule = ctx.modules.find(m => vidToString(m.identifier) === vidScopeToString(vid))
     if (foundModule) {
-        checkModule(foundModule, ctx)
+        checkModule(foundModule, ctx, true)
         const statement = foundModule.block.statements
             .find(s => {
                 const v = statementVid(s)
