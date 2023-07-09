@@ -49,13 +49,16 @@ export interface VirtualGeneric {
     bounds: VirtualType[]
 }
 
-/**
- * TODO: type params
- */
 export const virtualTypeToString = (vt: VirtualType): string => {
     switch (vt.kind) {
         case 'variant-type':
-            return vidToString(vt.identifier)
+            const t = vidToString(vt.identifier)
+            if (vt.typeParams.length === 0) {
+                return t
+            } else {
+                const typeParams = vt.typeParams.map(virtualTypeToString)
+                return `${t}<${typeParams.join(', ')}>`
+            }
         case 'fn-type':
             return `|${vt.paramTypes.map(virtualTypeToString).join(', ')}|: ${virtualTypeToString(vt.returnType)}`
         case 'generic':
