@@ -8,7 +8,7 @@ import * as process from 'process'
 import { getLocationRange } from './parser'
 import { defaultConfig } from './config'
 import { Source } from './source'
-import { buildModule, buildPackage } from './package'
+import { buildModule, buildPackage } from './package/build'
 
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
 
