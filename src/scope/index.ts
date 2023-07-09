@@ -39,7 +39,7 @@ export const pathToVid = (path: string, packageName?: string): VirtualIdentifier
     if (packageName) {
         dirs.unshift(packageName)
     }
-    if (dirs.at(-1)!.toLowerCase() === 'index') {
+    if (dirs.at(-1)!.toLowerCase() === 'mod') {
         dirs.pop()
     }
     const scope = dirs.slice(0, -1)
