@@ -1,7 +1,7 @@
 import { Context, findImpl, findImplFn } from '../scope'
 import { Module, Param } from '../ast'
 import { Block, FnDef, ImplDef, KindDef, Statement, VarDef } from '../ast/statement'
-import { BinaryExpr, UnaryExpr } from '../ast/expr'
+import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { operatorImplMap } from './op'
 import { Identifier, Operand } from '../ast/operand'
 import {
@@ -94,18 +94,30 @@ const checkStatement = (statement: Statement, ctx: Context, topLevel: boolean = 
             // todo
             pushDefToStack()
             break
-        case 'return-stmt':
-            // todo
-            break
         case 'operand-expr':
-            checkOperand(statement.operand, ctx)
-            statement.type = statement.operand.type
+        case 'unary-expr':
+        case 'binary-expr':
+            checkExpr(statement, ctx)
+            break
+        case 'return-stmt':
+            break
+    }
+}
+
+const checkExpr = (expr: Expr, ctx: Context): void => {
+    switch (expr.kind) {
+        case 'operand-expr':
+            checkOperand(expr.operand, ctx)
+            expr.type = expr.operand.type
             break
         case 'unary-expr':
-            checkUnaryExpr(statement, ctx)
+            checkUnaryExpr(expr, ctx)
+            // TODO: type
+            expr.type = unknownType
             break
         case 'binary-expr':
-            checkBinaryExpr(statement, ctx)
+            checkBinaryExpr(expr, ctx)
+            expr.type = unknownType
             break
     }
 }
@@ -161,7 +173,7 @@ const checkParam = (param: Param, index: number, ctx: Context): void => {
             param.type = selfType
         } else {
             ctx.errors.push(semanticError(ctx, param, 'parameter type not specified'))
-            param.type = { kind: 'unknown-type' }
+            param.type = unknownType
         }
     } else {
         checkType(param.paramType, ctx)
@@ -214,7 +226,16 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
 }
 
 const checkVarDef = (varDef: VarDef, ctx: Context): void => {
-    // todo
+    checkExpr(varDef.expr, ctx)
+    if (varDef.varType) {
+        checkType(varDef.varType, ctx)
+        varDef.type = typeToVirtual(varDef.varType)
+        if (!isAssignable(varDef.expr.type!, varDef.type, ctx)) {
+            ctx.errors.push(typeError(ctx, varDef, varDef.expr.type!, varDef.type))
+        }
+    } else {
+        varDef.type = varDef.expr.type
+    }
 }
 
 const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
