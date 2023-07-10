@@ -43,6 +43,50 @@ describe('parser', () => {
         })
     })
 
+    describe('parse fn call', () => {
+        it('qualified fn', () => {
+            const { tree, errors } = parse('a(B::b(4))')
+            expect(errors.length).toEqual(0)
+            expect(tree).toEqual({
+                'module': [{
+                    'statement': [{
+                        'expr': [{
+                            'sub-expr': [
+                                { 'operand': [{ 'identifier': [{ 'name': 'a' }] }] },
+                                {
+                                    'postfix-op': [{
+                                        'call-op': [{
+                                            'args': [
+                                                { 'o-paren': '(' },
+                                                {
+                                                    'expr': [{
+                                                        'sub-expr': [{
+                                                            'operand': [{ 'identifier': [{ 'name': 'B' }, { 'colon': ':' }, { 'colon': ':' }, { 'name': 'b' }] }]
+                                                        },
+                                                            {
+                                                                'postfix-op': [{
+                                                                    'call-op': [{
+                                                                        'args': [
+                                                                            { 'o-paren': '(' },
+                                                                            { 'expr': [{ 'sub-expr': [{ 'operand': [{ 'int': '4' }] }] }] },
+                                                                            { 'c-paren': ')' }
+                                                                        ]
+                                                                    }]
+                                                                }]
+                                                            }]
+                                                    }]
+                                                }, { 'c-paren': ')' }]
+                                        }]
+                                    }]
+                                }
+                            ]
+                        }]
+                    }]
+                }]
+            })
+        })
+    })
+
     describe('parse if-expr', () => {
         it('general', () => {
             const { tree, errors } = parse('if a { b } else { c }')
