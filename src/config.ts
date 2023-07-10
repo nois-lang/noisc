@@ -1,3 +1,7 @@
-export interface Config {}
+export interface Config {
+    typecheck: boolean
+}
 
-export const defaultConfig = (): Config => ({})
+export const defaultConfig = (): Config => ({
+    typecheck: false
+})

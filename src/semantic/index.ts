@@ -5,6 +5,7 @@ import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { operatorImplMap } from './op'
 import { Identifier, Operand } from '../ast/operand'
 import {
+    anyType,
     genericToVirtual,
     isAssignable,
     selfType,
@@ -268,15 +269,19 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         kind: 'fn-type',
         generics: [],
         paramTypes: callOp.args.map(a => a.type!),
-        returnType: unknownType
+        returnType: anyType
     }
     if (!isAssignable(t, operand.type!, ctx)) {
-        ctx.errors.push(typeError(ctx, unaryExpr, t, operand.type!))
+        ctx.errors.push(typeError(ctx, unaryExpr, operand.type!, t))
         return
     }
 }
 
 const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
+    if (binaryExpr.binaryOp.kind === 'access-op') {
+        // TODO
+        return
+    }
     checkOperand(binaryExpr.lOperand, ctx)
     checkOperand(binaryExpr.rOperand, ctx)
 

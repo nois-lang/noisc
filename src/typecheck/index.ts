@@ -92,35 +92,27 @@ export const genericToVirtual = (generic: Generic): VirtualGeneric =>
     ({ kind: 'generic', name: generic.name.value, bounds: generic.bounds.map(typeToVirtual) })
 
 export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context): boolean => {
+    if (!ctx.config.typecheck) return true
     if (t.kind === anyType.kind || target.kind === anyType.kind) {
         return true
     }
+    // TODO: kinds
     if (t.kind === 'variant-type' && target.kind === 'variant-type') {
         return t.identifier.name === target.identifier.name
     }
     if (t.kind === 'fn-type' && target.kind === 'fn-type') {
-        const selfType = target.generics.some(s => s.name === 'Self')
-            ? (<VirtualVariantType>t.paramTypes[0])
-            : undefined
         for (let i = 0; i < target.paramTypes.length; i++) {
             const targetP = target.paramTypes[i]
             const tp = t.paramTypes.at(i)
-            if (!tp) {
+            if (!tp || !isAssignable(tp, targetP, ctx)) {
                 return false
             }
-            if (targetP.kind === 'variant-type' && targetP.identifier.name === 'Self' && selfType) {
-                if (!isAssignable(tp, selfType, ctx)) {
-                    return false
-                }
-            } else {
-                if (!isAssignable(tp, targetP, ctx)) {
-                    return false
-                }
-            }
         }
-        // todo
+        if (!isAssignable(target.returnType, t.returnType, ctx)) {
+            return false
+        }
     }
-    return true
+    return false
 }
 
 export const typeError = (ctx: Context, node: AstNode<any>, expected: VirtualType, actual: VirtualType): SemanticError => {
