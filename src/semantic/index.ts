@@ -169,7 +169,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context, brief: boolean = false): void =>
 
     if (!brief) {
         if (!fnDef.block) {
-            if (instanceScope(ctx) === 'kind-def') {
+            if (instanceScope(ctx)?.type === 'kind-def') {
                 ctx.warnings.push(semanticError(ctx, fnDef, `fn \`${fnDef.name.value}\` has no body -> must be native`))
             }
         } else {
@@ -209,7 +209,7 @@ const checkKindDef = (kindDef: KindDef, ctx: Context, brief: boolean = false) =>
     }
 
     // TODO: add generics
-    module.scopeStack.push({ type: 'kind-def', definitions: new Map() })
+    module.scopeStack.push({ type: 'kind-def', kindDef, definitions: new Map() })
 
     checkBlock(kindDef.block, ctx, brief)
 
@@ -225,7 +225,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context, brief: boolean = false) =>
     }
 
     // TODO: add generics
-    module.scopeStack.push({ type: 'impl-def', definitions: new Map() })
+    module.scopeStack.push({ type: 'impl-def', implDef, definitions: new Map() })
 
     if (!brief) {
         checkBlock(implDef.block, ctx)
@@ -272,7 +272,7 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         returnType: anyType
     }
     if (!isAssignable(t, operand.type!, ctx)) {
-        ctx.errors.push(typeError(ctx, unaryExpr, operand.type!, t))
+        ctx.errors.push(typeError(ctx, callOp, operand.type!, t))
         return
     }
 }

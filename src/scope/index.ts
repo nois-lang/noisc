@@ -1,5 +1,5 @@
 import { Module } from '../ast'
-import { FnDef, ImplDef } from '../ast/statement'
+import { FnDef, ImplDef, KindDef } from '../ast/statement'
 import { isAssignable, typeToVirtual, VirtualType } from '../typecheck'
 import { Definition, VirtualIdentifier } from './vid'
 import { Config } from '../config'
@@ -13,10 +13,22 @@ export interface Context {
     warnings: SemanticError[]
 }
 
-export type ScopeType = 'module' | 'fn-def' | 'impl-def' | 'kind-def' | 'type-def' | 'block'
+export type Scope = KindScope | ImplScope | CommonScope
 
-export interface Scope {
-    type: ScopeType
+export interface KindScope {
+    type: 'kind-def',
+    kindDef: KindDef,
+    definitions: Map<string, Definition>
+}
+
+export interface ImplScope {
+    type: 'impl-def',
+    implDef: ImplDef,
+    definitions: Map<string, Definition>
+}
+
+export interface CommonScope {
+    type: 'module' | 'fn-def' | 'type-def' | 'block',
     definitions: Map<string, Definition>
 }
 
@@ -50,12 +62,12 @@ export const pathToVid = (path: string, packageName?: string): VirtualIdentifier
 /**
  * Checks whether current module scopeStack is within ImplDef or KindDef scope
  */
-export const instanceScope = (ctx: Context): ScopeType | undefined => {
+export const instanceScope = (ctx: Context): Scope | undefined => {
     const module = ctx.moduleStack.at(-1)!
     for (let i = module.scopeStack.length - 1; i >= 0; i--) {
         let scope = module.scopeStack[i]
         if (scope.type === 'impl-def' || scope.type === 'kind-def') {
-            return scope.type
+            return scope
         }
     }
     return undefined

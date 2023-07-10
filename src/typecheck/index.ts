@@ -3,12 +3,19 @@ import { Generic, Type } from '../ast/type'
 import { idToVid, vidFromString, vidToString, VirtualIdentifier } from '../scope/vid'
 import { AstNode } from '../ast'
 import { semanticError, SemanticError } from '../semantic/error'
+import { resolveGeneric } from '../scope/type'
 
 export interface Typed {
     type: VirtualType
 }
 
-export type VirtualType = VirtualVariantType | VirtualFnType | VirtualGeneric | AnyType | UnknownType
+export type VirtualType = TypeDefType | VirtualVariantType | VirtualFnType | VirtualGeneric | AnyType | UnknownType
+
+export interface TypeDefType {
+    kind: 'type-def'
+    identifier: VirtualIdentifier
+    generics: VirtualGeneric[]
+}
 
 export interface VirtualVariantType {
     kind: 'variant-type'
@@ -51,6 +58,15 @@ export interface VirtualGeneric {
 
 export const virtualTypeToString = (vt: VirtualType): string => {
     switch (vt.kind) {
+        case 'type-def': {
+            const t = vidToString(vt.identifier)
+            if (vt.generics.length === 0) {
+                return t
+            } else {
+                const generics = vt.generics.map(virtualTypeToString)
+                return `${t}<${generics.join(', ')}>`
+            }
+        }
         case 'variant-type':
             const t = vidToString(vt.identifier)
             if (vt.typeParams.length === 0) {
@@ -65,7 +81,7 @@ export const virtualTypeToString = (vt: VirtualType): string => {
             return vt.name
         case 'unknown-type':
             return '<unknown>'
-        default:
+        case 'any-type':
             return '*'
     }
 }
@@ -73,9 +89,11 @@ export const virtualTypeToString = (vt: VirtualType): string => {
 export const typeToVirtual = (type: Type): VirtualType => {
     switch (type.kind) {
         case 'variant-type':
+            const identifier = idToVid(type.identifier)
+            if (identifier.name === selfType.name) return selfType
             return {
                 kind: 'variant-type',
-                identifier: idToVid(type.identifier),
+                identifier: identifier,
                 typeParams: type.typeParams.map(typeToVirtual)
             }
         case 'fn-type':
@@ -93,10 +111,14 @@ export const genericToVirtual = (generic: Generic): VirtualGeneric =>
 
 export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context): boolean => {
     if (!ctx.config.typecheck) return true
+
+    t = resolveGeneric(t, ctx)
+
     if (t.kind === anyType.kind || target.kind === anyType.kind) {
         return true
     }
     // TODO: kinds
+    // TODO: type params
     if (t.kind === 'variant-type' && target.kind === 'variant-type') {
         return t.identifier.name === target.identifier.name
     }
@@ -104,13 +126,12 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
         for (let i = 0; i < target.paramTypes.length; i++) {
             const targetP = target.paramTypes[i]
             const tp = t.paramTypes.at(i)
-            if (!tp || !isAssignable(tp, targetP, ctx)) {
+            if (!tp || !isAssignable(resolveGeneric(tp, ctx), targetP, ctx)) {
                 return false
             }
         }
-        if (!isAssignable(target.returnType, t.returnType, ctx)) {
-            return false
-        }
+        return isAssignable(target.returnType, t.returnType, ctx)
+
     }
     return false
 }
