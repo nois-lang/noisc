@@ -113,7 +113,9 @@ export interface ListExpr extends AstNode<'list-expr'>, Partial<Typed> {
 
 export const buildListExpr = (node: ParseNode): ListExpr => {
     const nodes = filterNonAstNodes(node)
-    const exprs = filterNonAstNodes(nodes[0]).filter(n => n.kind === 'expr').map(n => buildExpr(n))
+    const exprs = nodes.length > 0
+        ? filterNonAstNodes(nodes[0]).filter(n => n.kind === 'expr').map(n => buildExpr(n))
+        : []
     return { kind: 'list-expr', parseNode: node, exprs }
 }
 
