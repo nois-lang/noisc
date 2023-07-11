@@ -119,8 +119,8 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
     }
     // TODO: kinds
     // TODO: type params
-    if (t.kind === 'variant-type' && target.kind === 'variant-type') {
-        return t.identifier.name === target.identifier.name
+    if ((t.kind === 'variant-type' || t.kind === 'type-def') && (target.kind === 'variant-type' || target.kind === 'type-def')) {
+        return vidToString(t.identifier) === vidToString(target.identifier)
     }
     if (t.kind === 'fn-type' && target.kind === 'fn-type') {
         for (let i = 0; i < target.paramTypes.length; i++) {

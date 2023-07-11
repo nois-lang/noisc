@@ -62,7 +62,7 @@ export const pathToVid = (path: string, packageName?: string): VirtualIdentifier
 /**
  * Checks whether current module scopeStack is within ImplDef or KindDef scope
  */
-export const instanceScope = (ctx: Context): Scope | undefined => {
+export const instanceScope = (ctx: Context): ImplScope | KindScope | undefined => {
     const module = ctx.moduleStack.at(-1)!
     for (let i = module.scopeStack.length - 1; i >= 0; i--) {
         let scope = module.scopeStack[i]

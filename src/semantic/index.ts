@@ -8,7 +8,6 @@ import {
     anyType,
     genericToVirtual,
     isAssignable,
-    selfType,
     typeError,
     typeToVirtual,
     unitType,
@@ -30,6 +29,8 @@ import { useExprToVids } from './use-expr'
 import { Type } from '../ast/type'
 import { notFoundError, semanticError } from './error'
 import { todo } from '../util/todo'
+import { checkAccessExpr } from './access'
+import { resolveSelfType } from '../scope/kind'
 
 export const checkModule = (module: Module, ctx: Context, brief: boolean = false): void => {
     const vid = vidToString(module.identifier)
@@ -182,8 +183,9 @@ const checkFnDef = (fnDef: FnDef, ctx: Context, brief: boolean = false): void =>
 
 const checkParam = (param: Param, index: number, ctx: Context): void => {
     if (!param.paramType) {
-        if (index === 0 && instanceScope(ctx) && param.pattern.kind === 'name' && param.pattern.value === 'self') {
-            param.type = selfType
+        const instScope = instanceScope(ctx)
+        if (index === 0 && instScope && param.pattern.kind === 'name' && param.pattern.value === 'self') {
+            param.type = resolveSelfType(instScope.type === 'impl-def' ? instScope.implDef : instScope.kindDef)
         } else {
             ctx.errors.push(semanticError(ctx, param, 'parameter type not specified'))
             param.type = unknownType
@@ -235,12 +237,26 @@ const checkImplDef = (implDef: ImplDef, ctx: Context, brief: boolean = false) =>
 }
 
 const checkVarDef = (varDef: VarDef, ctx: Context, brief: boolean = false): void => {
-    checkExpr(varDef.expr, ctx)
+    const topLevel = ctx.moduleStack.at(-1)!.scopeStack.length === 1
+
+    if (topLevel && brief) {
+        if (!varDef.varType) {
+            ctx.errors.push(semanticError(ctx, varDef, `top level \`${varDef.kind}\` must have explicit type`))
+            return
+        }
+    }
+
     if (varDef.varType) {
         checkType(varDef.varType, ctx)
         varDef.type = typeToVirtual(varDef.varType)
-        if (!isAssignable(varDef.expr.type!, varDef.type, ctx)) {
-            ctx.errors.push(typeError(ctx, varDef, varDef.type, varDef.expr.type!))
+    }
+
+    if (!brief) return
+
+    checkExpr(varDef.expr, ctx)
+    if (varDef.varType) {
+        if (!isAssignable(varDef.expr.type!, varDef.type!, ctx)) {
+            ctx.errors.push(typeError(ctx, varDef, varDef.type!, varDef.expr.type!))
         }
     } else {
         varDef.type = varDef.expr.type
@@ -279,6 +295,10 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
 
 const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     if (binaryExpr.binaryOp.kind === 'access-op') {
+        checkAccessExpr(binaryExpr, ctx)
+        return
+    }
+    if (binaryExpr.binaryOp.kind === 'assign-op') {
         // TODO
         return
     }
@@ -286,7 +306,7 @@ const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     checkOperand(binaryExpr.rOperand, ctx)
 
     const opImplFnId = operatorImplMap.get(binaryExpr.binaryOp.kind)
-    if (!opImplFnId) return
+    if (!opImplFnId) throw Error(`operator ${binaryExpr.binaryOp.kind} without impl function`)
 
     const opImplId = vidFromScope(opImplFnId)
 
@@ -317,7 +337,7 @@ ${virtualTypeToString(binaryExpr.rOperand.type!)})`
     }
 }
 
-const checkOperand = (operand: Operand, ctx: Context): void => {
+export const checkOperand = (operand: Operand, ctx: Context): void => {
     switch (operand.kind) {
         case 'operand-expr':
             checkOperand(operand.operand, ctx)
@@ -348,16 +368,16 @@ const checkOperand = (operand: Operand, ctx: Context): void => {
             // TODO
             break
         case 'string-literal':
-            operand.type = { kind: 'variant-type', identifier: vidFromString('std::String'), typeParams: [] }
+            operand.type = { kind: 'type-def', identifier: vidFromString('std::String'), generics: [] }
             break
         case 'char-literal':
-            operand.type = { kind: 'variant-type', identifier: vidFromString('std::Char'), typeParams: [] }
+            operand.type = { kind: 'type-def', identifier: vidFromString('std::Char'), generics: [] }
             break
         case 'int-literal':
-            operand.type = { kind: 'variant-type', identifier: vidFromString('std::Int'), typeParams: [] }
+            operand.type = { kind: 'type-def', identifier: vidFromString('std::Int'), generics: [] }
             break
         case 'float-literal':
-            operand.type = { kind: 'variant-type', identifier: vidFromString('std::Float'), typeParams: [] }
+            operand.type = { kind: 'type-def', identifier: vidFromString('std::Float'), generics: [] }
             break
         case 'identifier':
             checkIdentifier(operand, ctx)
