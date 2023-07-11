@@ -9,6 +9,7 @@ import { getLocationRange } from './parser'
 import { defaultConfig } from './config'
 import { Source } from './source'
 import { buildModule, buildPackage } from './package/build'
+import { findImpls } from './scope/impl'
 
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
 
@@ -40,10 +41,12 @@ if (!std) {
     process.exit(1)
 }
 
+const modules = [...std.modules, moduleAst]
 const ctx: Context = {
     config: defaultConfig(),
     moduleStack: [],
-    modules: [...std.modules, moduleAst],
+    modules,
+    impls: modules.flatMap(findImpls),
     errors: [],
     warnings: []
 }

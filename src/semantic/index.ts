@@ -30,11 +30,11 @@ import { Type } from '../ast/type'
 import { notFoundError, semanticError } from './error'
 import { todo } from '../util/todo'
 import { checkAccessExpr } from './access'
-import { resolveSelfType } from '../scope/kind'
+import { resolveSelfType } from '../scope/impl'
 
 export const checkModule = (module: Module, ctx: Context, brief: boolean = false): void => {
     const vid = vidToString(module.identifier)
-    if (ctx.moduleStack.some(m => vidToString(m.identifier) === vid)) {
+    if (ctx.moduleStack.length > 100) {
         const stackVids = ctx.moduleStack.map(m => vidToString(m.identifier))
         const refChain = [...stackVids.slice(stackVids.indexOf(vid)), vid].join(' -> ')
         ctx.errors.push(semanticError(ctx, module, `circular module reference: ${refChain}`))

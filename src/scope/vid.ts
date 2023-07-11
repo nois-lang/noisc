@@ -17,9 +17,9 @@ export interface VirtualIdentifier {
 
 export type Definition = Module | VarDef | FnDef | KindDef | ImplDef | TypeDef | Generic | Param | { kind: 'self' }
 
-export interface VirtualIdentifierMatch {
+export interface VirtualIdentifierMatch<D = Definition> {
     qualifiedVid: VirtualIdentifier
-    def: Definition
+    def: D
 }
 
 export function vidFromString(str: string): VirtualIdentifier {
@@ -90,6 +90,7 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context): VirtualIdentif
         }
     }
     for (let useExpr of [...defaultImportedVids(), ...module.references!]) {
+        if (vidToString(useExpr) === vidToString(module.identifier)) continue
         if (useExpr.name === vidFirst(vid)) {
             const merged: VirtualIdentifier = {
                 scope: [...useExpr.scope, ...vid.scope],

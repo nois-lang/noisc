@@ -4,6 +4,7 @@ import { idToVid, vidFromString, vidToString, VirtualIdentifier } from '../scope
 import { AstNode } from '../ast'
 import { semanticError, SemanticError } from '../semantic/error'
 import { resolveGeneric } from '../scope/type'
+import { findTypeKinds } from '../scope/kind'
 
 export interface Typed {
     type: VirtualType
@@ -120,7 +121,11 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
     // TODO: kinds
     // TODO: type params
     if ((t.kind === 'variant-type' || t.kind === 'type-def') && (target.kind === 'variant-type' || target.kind === 'type-def')) {
-        return vidToString(t.identifier) === vidToString(target.identifier)
+        if (vidToString(t.identifier) === vidToString(target.identifier)) {
+            return true
+        }
+        const tKinds = findTypeKinds(t.identifier, ctx)
+        return tKinds.some(k => k.def.name.value === vidToString(target.identifier))
     }
     if (t.kind === 'fn-type' && target.kind === 'fn-type') {
         for (let i = 0; i < target.paramTypes.length; i++) {

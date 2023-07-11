@@ -9,6 +9,7 @@ export interface Context {
     config: Config
     moduleStack: Module[]
     modules: Module[]
+    impls: ImplDef[]
     errors: SemanticError[]
     warnings: SemanticError[]
 }
