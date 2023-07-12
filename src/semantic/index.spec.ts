@@ -1,6 +1,5 @@
 import { defaultConfig } from '../config'
 import { Context, pathToVid } from '../scope'
-import { Module } from '../ast'
 import { join, relative } from 'path'
 import { getPackageModuleSources } from '../package/io'
 import { checkModule } from './index'
@@ -8,6 +7,7 @@ import { Source } from '../source'
 import { expect } from '@jest/globals'
 import { vidFromString } from '../scope/vid'
 import { buildModule } from '../package/build'
+import { findImpls } from '../scope/kind'
 
 describe('semantic', () => {
 
@@ -25,7 +25,8 @@ describe('semantic', () => {
         const ctx: Context = {
             config,
             moduleStack: [],
-            modules: <Module[]>stdModules,
+            modules: stdModules,
+            impls: stdModules.flatMap(findImpls),
             errors: [],
             warnings: []
         }
