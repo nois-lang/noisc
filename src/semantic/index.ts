@@ -383,16 +383,32 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
             // TODO
             break
         case 'string-literal':
-            operand.type = { kind: 'type-def', identifier: vidFromString('std::String'), generics: [] }
+            operand.type = {
+                kind: 'type-def',
+                identifier: resolveVid(vidFromString('String'), ctx)!.qualifiedVid,
+                generics: []
+            }
             break
         case 'char-literal':
-            operand.type = { kind: 'type-def', identifier: vidFromString('std::Char'), generics: [] }
+            operand.type = {
+                kind: 'type-def',
+                identifier: resolveVid(vidFromString('Char'), ctx)!.qualifiedVid,
+                generics: []
+            }
             break
         case 'int-literal':
-            operand.type = { kind: 'type-def', identifier: vidFromString('std::Int'), generics: [] }
+            operand.type = {
+                kind: 'type-def',
+                identifier: resolveVid(vidFromString('Int'), ctx)!.qualifiedVid,
+                generics: []
+            }
             break
         case 'float-literal':
-            operand.type = { kind: 'type-def', identifier: vidFromString('std::Float'), generics: [] }
+            operand.type = {
+                kind: 'type-def',
+                identifier: resolveVid(vidFromString('Float'), ctx)!.qualifiedVid,
+                generics: []
+            }
             break
         case 'identifier':
             checkIdentifier(operand, ctx)

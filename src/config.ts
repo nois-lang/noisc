@@ -3,5 +3,5 @@ export interface Config {
 }
 
 export const defaultConfig = (): Config => ({
-    typecheck: false
+    typecheck: true
 })
