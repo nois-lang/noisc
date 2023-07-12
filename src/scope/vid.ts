@@ -82,13 +82,27 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context): VirtualIdentif
     if (vidToString(vid) === selfType.name && instanceScope(ctx)) {
         return { qualifiedVid: vid, def: { kind: 'self' } }
     }
+
     for (let i = module.scopeStack.length - 1; i >= 0; i--) {
         let scope = module.scopeStack[i]
         const found = scope.definitions.get(vidToString(vid))
         if (found) {
+            // TODO: clarify this logic, e.g. for kind fns
+            // if found in lowest stack, so it is available outside of module, thus should be module-qualified
+            if (i === 0) {
+                const merged: VirtualIdentifier = {
+                    scope: [...module.identifier.scope, module.identifier.name, ...vid.scope],
+                    name: vid.name
+                }
+                return { qualifiedVid: merged, def: found }
+            }
             return { qualifiedVid: vid, def: found }
         }
     }
+
+    const ref = resolveVidMatched(vid, ctx)
+    if (ref) return ref
+
     for (let useExpr of [...defaultImportedVids(), ...module.references!]) {
         if (vidToString(useExpr) === vidToString(module.identifier)) continue
         if (useExpr.name === vidFirst(vid)) {

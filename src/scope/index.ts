@@ -18,12 +18,14 @@ export type Scope = KindScope | ImplScope | CommonScope
 
 export interface KindScope {
     type: 'kind-def',
+    selfType: VirtualType,
     kindDef: KindDef,
     definitions: Map<string, Definition>
 }
 
 export interface ImplScope {
     type: 'impl-def',
+    selfType: VirtualType,
     implDef: ImplDef,
     definitions: Map<string, Definition>
 }
@@ -37,7 +39,7 @@ export const findImpl = (vId: VirtualIdentifier, type: VirtualType, ctx: Context
     // TODO: go through imports only
     return ctx.modules
         .flatMap(m => m.block.statements.filter(s => s.kind === 'impl-def').map(s => <ImplDef>s))
-        .filter(i => !i.forKind || isAssignable(type, typeToVirtual(i.forKind), ctx))
+        .filter(i => !i.forKind || isAssignable(type, typeToVirtual(i.forKind, ctx), ctx))
         .find(i => i.name.value === vId.name)
 }
 

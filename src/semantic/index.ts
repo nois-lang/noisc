@@ -30,7 +30,7 @@ import { Type } from '../ast/type'
 import { notFoundError, semanticError } from './error'
 import { todo } from '../util/todo'
 import { checkAccessExpr } from './access'
-import { resolveSelfType } from '../scope/impl'
+import { getImplTargetType, kindDefToTypeDefType } from '../scope/kind'
 
 export const checkModule = (module: Module, ctx: Context, brief: boolean = false): void => {
     const vid = vidToString(module.identifier)
@@ -110,7 +110,9 @@ const checkStatement = (statement: Statement, ctx: Context, brief: boolean = fal
         case 'operand-expr':
         case 'unary-expr':
         case 'binary-expr':
-            checkExpr(statement, ctx)
+            if (!brief) {
+                checkExpr(statement, ctx)
+            }
             break
         case 'return-stmt':
             break
@@ -163,9 +165,9 @@ const checkFnDef = (fnDef: FnDef, ctx: Context, brief: boolean = false): void =>
 
     fnDef.type = {
         kind: 'fn-type',
-        generics: fnDef.generics.map(genericToVirtual),
+        generics: fnDef.generics.map(g => genericToVirtual(g, ctx)),
         paramTypes,
-        returnType: fnDef.returnType ? typeToVirtual(fnDef.returnType) : unitType
+        returnType: fnDef.returnType ? typeToVirtual(fnDef.returnType, ctx) : unitType
     }
 
     if (!brief) {
@@ -185,14 +187,14 @@ const checkParam = (param: Param, index: number, ctx: Context): void => {
     if (!param.paramType) {
         const instScope = instanceScope(ctx)
         if (index === 0 && instScope && param.pattern.kind === 'name' && param.pattern.value === 'self') {
-            param.type = resolveSelfType(instScope.type === 'impl-def' ? instScope.implDef : instScope.kindDef)
+            param.type = instScope.selfType
         } else {
             ctx.errors.push(semanticError(ctx, param, 'parameter type not specified'))
             param.type = unknownType
         }
     } else {
         checkType(param.paramType, ctx)
-        param.type = typeToVirtual(param.paramType)
+        param.type = typeToVirtual(param.paramType, ctx)
     }
     switch (param.pattern.kind) {
         case 'operand-expr':
@@ -211,7 +213,12 @@ const checkKindDef = (kindDef: KindDef, ctx: Context, brief: boolean = false) =>
     }
 
     // TODO: add generics
-    module.scopeStack.push({ type: 'kind-def', kindDef, definitions: new Map() })
+    module.scopeStack.push({
+        type: 'kind-def',
+        selfType: kindDefToTypeDefType(kindDef, ctx),
+        kindDef,
+        definitions: new Map()
+    })
 
     checkBlock(kindDef.block, ctx, brief)
 
@@ -227,7 +234,12 @@ const checkImplDef = (implDef: ImplDef, ctx: Context, brief: boolean = false) =>
     }
 
     // TODO: add generics
-    module.scopeStack.push({ type: 'impl-def', implDef, definitions: new Map() })
+    module.scopeStack.push({
+        type: 'impl-def',
+        selfType: getImplTargetType(implDef, ctx),
+        implDef,
+        definitions: new Map()
+    })
 
     if (!brief) {
         checkBlock(implDef.block, ctx)
@@ -248,7 +260,7 @@ const checkVarDef = (varDef: VarDef, ctx: Context, brief: boolean = false): void
 
     if (varDef.varType) {
         checkType(varDef.varType, ctx)
-        varDef.type = typeToVirtual(varDef.varType)
+        varDef.type = typeToVirtual(varDef.varType, ctx)
     }
 
     if (!brief) return
@@ -270,6 +282,9 @@ const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     // todo
 }
 
+/**
+ * TODO: fix false positive
+ */
 const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const callOp = <CallOp>unaryExpr.unaryOp
     const operand = unaryExpr.operand
@@ -418,11 +433,11 @@ const checkType = (type: Type, ctx: Context) => {
                 ctx.errors.push(notFoundError(ctx, type.identifier, vid))
                 return
             }
-            type.typeParams.forEach(tp => checkType(tp, ctx))
             if (!['type-def', 'kind-def', 'generic', 'self'].includes(ref.def.kind)) {
                 ctx.errors.push(semanticError(ctx, type.identifier, `expected type, got \`${ref.def.kind}\``))
                 return
             }
+            type.typeParams.forEach(tp => checkType(tp, ctx))
             // TODO: type params typecheck
             return
         case 'fn-type':

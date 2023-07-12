@@ -1,7 +1,6 @@
 import { Context, instanceScope } from './index'
 import { selfType, typeToVirtual, VirtualType } from '../typecheck'
 import { resolveVid, vidFromString, vidToString } from './vid'
-import { VariantType } from '../ast/type'
 
 export const resolveGeneric = (generic: VirtualType, ctx: Context): VirtualType => {
     if (generic.kind !== 'generic') return generic
@@ -13,7 +12,7 @@ export const resolveGeneric = (generic: VirtualType, ctx: Context): VirtualType 
                 return { kind: 'type-def', identifier: vidFromString(scope.kindDef.name.value), generics: [] }
             case 'impl-def':
                 if (scope.implDef.forKind) {
-                    return typeToVirtual(<VariantType>scope.implDef.forKind)
+                    return typeToVirtual(scope.implDef.forKind, ctx)
                 } else {
                     const identifier = vidFromString(scope.implDef.name.value)
                     const ref = resolveVid(identifier, ctx)

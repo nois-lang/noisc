@@ -1,6 +1,6 @@
 import { Context } from '../scope'
 import { Generic, Type } from '../ast/type'
-import { idToVid, vidFromString, vidToString, VirtualIdentifier } from '../scope/vid'
+import { idToVid, resolveVid, vidFromString, vidToString, VirtualIdentifier } from '../scope/vid'
 import { AstNode } from '../ast'
 import { semanticError, SemanticError } from '../semantic/error'
 import { resolveGeneric } from '../scope/type'
@@ -87,28 +87,38 @@ export const virtualTypeToString = (vt: VirtualType): string => {
     }
 }
 
-export const typeToVirtual = (type: Type): VirtualType => {
+export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
     switch (type.kind) {
         case 'variant-type':
-            const identifier = idToVid(type.identifier)
-            if (identifier.name === selfType.name) return selfType
-            return {
-                kind: 'variant-type',
-                identifier: identifier,
-                typeParams: type.typeParams.map(typeToVirtual)
+            const vid = idToVid(type.identifier)
+            const ref = resolveVid(vid, ctx)
+            if (!ref) {
+                ctx.errors.push(semanticError(ctx, type, `identifier ${vidToString(vid)} not found`))
+                return unknownType
+            }
+            if (ref.def.kind === 'self') {
+                return selfType
+            } else if (ref.def.kind === 'generic') {
+                return genericToVirtual(ref.def, ctx)
+            } else if (ref.def.kind === 'kind-def' || ref.def.kind === 'type-def') {
+                // TODO: generics
+                return { kind: 'type-def', identifier: ref.qualifiedVid, generics: [] }
+            } else {
+                ctx.errors.push(semanticError(ctx, type.identifier, `expected type, got \`${ref.def.kind}\``))
+                return unknownType
             }
         case 'fn-type':
             return {
                 kind: 'fn-type',
-                generics: type.generics.map(genericToVirtual),
-                paramTypes: type.paramTypes.map(typeToVirtual),
-                returnType: typeToVirtual(type.returnType)
+                generics: type.generics.map(g => genericToVirtual(g, ctx)),
+                paramTypes: type.paramTypes.map(pt => typeToVirtual(pt, ctx)),
+                returnType: typeToVirtual(type.returnType, ctx)
             }
     }
 }
 
-export const genericToVirtual = (generic: Generic): VirtualGeneric =>
-    ({ kind: 'generic', name: generic.name.value, bounds: generic.bounds.map(typeToVirtual) })
+export const genericToVirtual = (generic: Generic, ctx: Context): VirtualGeneric =>
+    ({ kind: 'generic', name: generic.name.value, bounds: generic.bounds.map(b => typeToVirtual(b, ctx)) })
 
 export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context): boolean => {
     if (!ctx.config.typecheck) return true
@@ -118,14 +128,13 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
     if (t.kind === anyType.kind || target.kind === anyType.kind) {
         return true
     }
-    // TODO: kinds
     // TODO: type params
     if ((t.kind === 'variant-type' || t.kind === 'type-def') && (target.kind === 'variant-type' || target.kind === 'type-def')) {
         if (vidToString(t.identifier) === vidToString(target.identifier)) {
             return true
         }
-        const tKinds = findTypeKinds(t.identifier, ctx)
-        return tKinds.some(k => k.def.name.value === vidToString(target.identifier))
+        const kindRefs = findTypeKinds(t.identifier, ctx)
+        return kindRefs.some(ref => vidToString(ref.qualifiedVid) === vidToString(target.identifier))
     }
     if (t.kind === 'fn-type' && target.kind === 'fn-type') {
         for (let i = 0; i < target.paramTypes.length; i++) {

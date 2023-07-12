@@ -9,7 +9,7 @@ import { getLocationRange } from './parser'
 import { defaultConfig } from './config'
 import { Source } from './source'
 import { buildModule, buildPackage } from './package/build'
-import { findImpls } from './scope/impl'
+import { findImpls } from './scope/kind'
 
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
 
