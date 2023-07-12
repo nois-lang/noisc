@@ -172,7 +172,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context, brief: boolean = false): void =>
 
     if (!brief) {
         if (!fnDef.block) {
-            if (instanceScope(ctx)?.type === 'kind-def') {
+            if (instanceScope(ctx)?.type !== 'kind-def') {
                 ctx.warnings.push(semanticError(ctx, fnDef, `fn \`${fnDef.name.value}\` has no body -> must be native`))
             }
         } else {
