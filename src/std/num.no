@@ -1,1 +1,1 @@
-kind Num {}
+kind Num<Self: Add + Sub + Mult + Div + Exp + Mod + Eq + Cmp> {}
