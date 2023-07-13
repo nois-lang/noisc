@@ -1,6 +1,6 @@
 type Int
 
-impl Num for Float {}
+impl Num for Int {}
 
 impl Add for Int {
     fn add(self, other: Self): Self {

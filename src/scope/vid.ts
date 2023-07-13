@@ -4,7 +4,7 @@ import { Context, instanceScope } from './index'
 import { FnDef, ImplDef, KindDef, Statement, VarDef } from '../ast/statement'
 import { todo } from '../util/todo'
 import { Pattern } from '../ast/match'
-import { TypeDef } from '../ast/type-def'
+import { TypeCon, TypeDef } from '../ast/type-def'
 import { Generic } from '../ast/type'
 import { checkModule } from '../semantic'
 import { selfType } from '../typecheck'
@@ -15,7 +15,17 @@ export interface VirtualIdentifier {
     name: string
 }
 
-export type Definition = Module | VarDef | FnDef | KindDef | ImplDef | TypeDef | Generic | Param | { kind: 'self' }
+export type Definition = Module | VarDef | FnDef | KindDef | ImplDef | TypeDef | TypeConDef | Generic | Param | SelfDef
+
+export type SelfDef = {
+    kind: 'self'
+}
+
+export interface TypeConDef {
+    kind: 'type-con',
+    typeCon: TypeCon,
+    typeDef: VirtualIdentifierMatch<TypeDef>
+}
 
 export interface VirtualIdentifierMatch<D = Definition> {
     qualifiedVid: VirtualIdentifier
@@ -42,6 +52,10 @@ export const idToVid = (id: Identifier): VirtualIdentifier => ({
     scope: id.scope.map(s => s.value),
     name: id.name.value
 })
+
+export const concatVid = (a: VirtualIdentifier, b: VirtualIdentifier): VirtualIdentifier => {
+    return { scope: [...a.scope, a.name, ...b.scope], name: b.name }
+}
 
 export const statementVid = (statement: Statement): VirtualIdentifier | undefined => {
     switch (statement.kind) {
@@ -77,6 +91,18 @@ export const patternVid = (pattern: Pattern): VirtualIdentifier | undefined => {
 }
 
 export const resolveVid = (vid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch | undefined => {
+    const createRef = (i: number, found: Definition, matchVid = vid) => {
+        // if found in the lowest stack, so it is available outside of module, thus should be module-qualified
+        if (i === 0) {
+            const merged: VirtualIdentifier = {
+                scope: [...module.identifier.scope, module.identifier.name, ...matchVid.scope],
+                name: matchVid.name
+            }
+            return { qualifiedVid: merged, def: found }
+        }
+        return { qualifiedVid: vid, def: found }
+    }
+
     const module = ctx.moduleStack.at(-1)!
 
     if (vidToString(vid) === selfType.name && instanceScope(ctx)) {
@@ -85,18 +111,32 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context): VirtualIdentif
 
     for (let i = module.scopeStack.length - 1; i >= 0; i--) {
         let scope = module.scopeStack[i]
-        const found = scope.definitions.get(vidToString(vid))
+        let found = scope.definitions.get(vidFirst(vid))
         if (found) {
-            // TODO: clarify this logic, e.g. for kind fns
-            // if found in lowest stack, so it is available outside of module, thus should be module-qualified
-            if (i === 0) {
-                const merged: VirtualIdentifier = {
-                    scope: [...module.identifier.scope, module.identifier.name, ...vid.scope],
-                    name: vid.name
+            // cases for module-local references of type cons and kind fns
+            if (vid.scope.length === 1) {
+                const ref = createRef(i, found, vidFromScope(vid))
+                if (ref.def.kind === 'type-def') {
+                    const variant = ref.def.variants.find(v => v.name.value === vid.name)
+                    if (!variant) return undefined
+                    const typeConDef: TypeConDef = {
+                        kind: 'type-con',
+                        typeCon: variant,
+                        typeDef: <VirtualIdentifierMatch<TypeDef>>ref
+                    }
+                    return createRef(i, typeConDef)
                 }
-                return { qualifiedVid: merged, def: found }
+                if (ref.def.kind === 'kind-def') {
+                    const fn = ref.def.block.statements
+                        .filter(s => s.kind === 'fn-def')
+                        .map(s => <FnDef>s)
+                        .find(s => s.name.value === vid.name)
+                    if (!fn) return undefined
+                    return createRef(i, fn)
+                }
+                return undefined
             }
-            return { qualifiedVid: vid, def: found }
+            return createRef(i, found)
         }
     }
 

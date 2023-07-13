@@ -2,8 +2,9 @@ import { buildName, Name } from './operand'
 import { ParseNode } from '../parser'
 import { AstNode, filterNonAstNodes } from './index'
 import { buildGeneric, buildType, Generic, Type } from './type'
+import { Typed } from '../typecheck'
 
-export interface TypeDef extends AstNode<'type-def'> {
+export interface TypeDef extends AstNode<'type-def'>, Partial<Typed> {
     name: Name
     generics: Generic[]
     variants: TypeCon[]

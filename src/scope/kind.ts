@@ -1,4 +1,12 @@
-import { idToVid, resolveVid, vidFromString, vidToString, VirtualIdentifier, VirtualIdentifierMatch } from './vid'
+import {
+    concatVid,
+    idToVid,
+    resolveVid,
+    vidFromString,
+    vidToString,
+    VirtualIdentifier,
+    VirtualIdentifierMatch
+} from './vid'
 import { Context } from './index'
 import { ImplDef, KindDef } from '../ast/statement'
 import { Module } from '../ast'
@@ -18,7 +26,10 @@ export const findImplKindsWithFn = (typeVid: VirtualIdentifier, methodName: stri
 export const findTypeKinds = (typeVid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch<KindDef>[] => {
     return ctx.impls.flatMap(impl => {
         const targetVid = getImplTargetVid(impl)
-        const qualifiedTargetVid = resolveVid(targetVid, ctx)!.qualifiedVid
+        const ref = resolveVid(targetVid, ctx)
+        // not all impl refs will resolve with current module imports
+        if (!ref) return []
+        const qualifiedTargetVid = ref.qualifiedVid
         if (vidToString(qualifiedTargetVid) === vidToString(typeVid)) {
             const def = resolveVid(vidFromString(impl.name.value), ctx)
             if (!def || def.def.kind !== 'kind-def') return []
@@ -53,7 +64,7 @@ export const kindDefToTypeDefType = (kindDef: KindDef, ctx: Context): TypeDefTyp
     const module = ctx.moduleStack.at(-1)!
     return ({
         kind: 'type-def',
-        identifier: { scope: [...module.identifier.scope, module.identifier.name], name: kindDef.name.value },
+        identifier: concatVid(module.identifier, vidFromString(kindDef.name.value)),
         generics: []
     })
 }

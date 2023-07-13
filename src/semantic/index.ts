@@ -15,8 +15,9 @@ import {
     VirtualFnType,
     virtualTypeToString
 } from '../typecheck'
-import { CallOp } from '../ast/op'
+import { CallOp, ConOp } from '../ast/op'
 import {
+    concatVid,
     idToVid,
     resolveVid,
     statementToDefinition,
@@ -31,6 +32,7 @@ import { notFoundError, semanticError } from './error'
 import { todo } from '../util/todo'
 import { checkAccessExpr } from './access'
 import { getImplTargetType, kindDefToTypeDefType } from '../scope/kind'
+import { TypeCon, TypeDef } from '../ast/type-def'
 
 export const checkModule = (module: Module, ctx: Context, brief: boolean = false): void => {
     const vid = vidToString(module.identifier)
@@ -67,12 +69,14 @@ const checkBlock = (block: Block, ctx: Context, brief: boolean = false): void =>
 }
 
 const checkStatement = (statement: Statement, ctx: Context, brief: boolean = false): void => {
-    const topLevel = ctx.moduleStack.at(-1)!.scopeStack.length === 1
+    const module = ctx.moduleStack.at(-1)!
+    const scope = module.scopeStack.at(-1)!
+    const topLevel = module.scopeStack.length === 1
+
     if (topLevel && !['var-def', 'fn-def', 'kind-def', 'impl-def', 'type-def'].includes(statement.kind)) {
         ctx.errors.push(semanticError(ctx, statement, `top level \`${statement.kind}\` is not allowed`))
         return
     }
-    const scope = ctx.moduleStack.at(-1)!.scopeStack.at(-1)!
     if (['impl-def', 'kind-def'].includes(scope.type) && statement.kind !== 'fn-def') {
         ctx.errors.push(semanticError(ctx, statement, `\`${statement.kind}\` in instance scope is not allowed`))
         return
@@ -105,6 +109,8 @@ const checkStatement = (statement: Statement, ctx: Context, brief: boolean = fal
             break
         case 'type-def':
             // todo
+            if (!brief) break
+            checkTypeDef(statement, ctx)
             pushDefToStack()
             break
         case 'operand-expr':
@@ -127,12 +133,9 @@ const checkExpr = (expr: Expr, ctx: Context): void => {
             break
         case 'unary-expr':
             checkUnaryExpr(expr, ctx)
-            // TODO: type
-            expr.type = unknownType
             break
         case 'binary-expr':
             checkBinaryExpr(expr, ctx)
-            expr.type = unknownType
             break
     }
 }
@@ -248,6 +251,35 @@ const checkImplDef = (implDef: ImplDef, ctx: Context, brief: boolean = false) =>
     module.scopeStack.pop()
 }
 
+const checkTypeDef = (typeDef: TypeDef, ctx: Context) => {
+    const module = ctx.moduleStack.at(-1)!
+
+    if (instanceScope(ctx)) {
+        ctx.errors.push(semanticError(ctx, typeDef, `\`${typeDef.kind}\` within instance scope`))
+        return
+    }
+
+    module.scopeStack.push({ type: 'type-def', definitions: new Map(typeDef.generics.map(g => [g.name.value, g])) })
+
+    typeDef.variants.forEach(v => checkTypeCon(v, ctx))
+    // TODO: check duplicate type cons
+
+    typeDef.type = {
+        kind: 'type-def',
+        identifier: concatVid(module.identifier, vidFromString(typeDef.name.value)),
+        generics: typeDef.generics.map(g => genericToVirtual(g, ctx))
+    }
+
+    module.scopeStack.pop()
+}
+
+const checkTypeCon = (typeCon: TypeCon, ctx: Context) => {
+    typeCon.fieldDefs.forEach(fieldDef => {
+        checkType(fieldDef.fieldType, ctx)
+        // TODO: check duplicate field defs
+    })
+}
+
 const checkVarDef = (varDef: VarDef, ctx: Context, brief: boolean = false): void => {
     const topLevel = ctx.moduleStack.at(-1)!.scopeStack.length === 1
 
@@ -276,10 +308,23 @@ const checkVarDef = (varDef: VarDef, ctx: Context, brief: boolean = false): void
 }
 
 const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
-    if (unaryExpr.unaryOp.kind === 'call-op') {
-        checkCallExpr(unaryExpr, ctx)
+    switch (unaryExpr.unaryOp.kind) {
+        case 'call-op':
+            checkCallExpr(unaryExpr, ctx)
+            break
+        case 'con-op':
+            checkConExpr(unaryExpr, ctx)
+            break
+        case 'neg-op':
+            // todo
+            break
+        case 'not-op':
+            // todo
+            break
+        case 'spread-op':
+            // todo
+            break
     }
-    // todo
 }
 
 /**
@@ -306,6 +351,32 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         ctx.errors.push(typeError(ctx, callOp, operand.type!, t))
         return
     }
+}
+
+const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
+    const conOp = <ConOp>unaryExpr.unaryOp
+    const operand = unaryExpr.operand
+    if (operand.kind !== 'identifier') {
+        ctx.errors.push(semanticError(ctx, operand, `expected identifier, got ${operand.kind}`))
+        return
+    }
+    checkOperand(operand, ctx)
+    const vid = idToVid(operand)
+    const ref = resolveVid(vid, ctx)
+    if (!ref) {
+        ctx.errors.push(semanticError(ctx, operand, `identifier ${vidToString(vid)} not found`))
+        return
+    }
+    if (ref.def.kind !== 'type-con') {
+        ctx.errors.push(semanticError(
+            ctx,
+            operand,
+            `type error: ${virtualTypeToString(operand.type!)} is not a variant type constructor`
+        ))
+        return
+    }
+    // TODO: check con expr
+    unaryExpr.type = {kind: 'type-def', identifier: ref.def.typeDef.qualifiedVid, generics: []}
 }
 
 const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
