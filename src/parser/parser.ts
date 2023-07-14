@@ -113,6 +113,21 @@ export class Parser {
         }
     }
 
+    encounter(target: TokenKind, whitelist: TokenKind[]): boolean {
+        let i = this.pos
+        while (i < this.tokens.length) {
+            const token = this.tokens.at(i)?.kind || 'eof'
+            if (token === target) {
+                return true
+            }
+            if (!whitelist.includes(token)) {
+                return false
+            }
+            i++
+        }
+        return false
+    }
+
     buildTree(): ParseTree {
         const tokens = this.tokens
         const events = this.events

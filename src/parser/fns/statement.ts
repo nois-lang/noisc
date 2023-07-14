@@ -1,9 +1,9 @@
 import { Parser } from '../parser'
 import { parseTypeDef } from './type-def'
-import { parseExpr } from './expr'
+import { parseExpr, parseIdentifier } from './expr'
 import { parsePattern } from './match'
 import { exprFirstTokens, paramFirstTokens, useExprFirstTokens } from './index'
-import { parseType, parseTypeAnnot, parseVariantType } from './type'
+import { parseType, parseTypeAnnot } from './type'
 
 /**
  * statement ::= var-def | fn-def | kind-def | impl-def | type-def | return-stmt | expr
@@ -226,12 +226,12 @@ export const parseImplDef = (parser: Parser): void => {
 }
 
 /**
- * impl-for ::= FOR-KEYWORD variant-type
+ * impl-for ::= FOR-KEYWORD identifier
  */
 export const parseImplFor = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('for-keyword')
-    parseVariantType(parser)
+    parseIdentifier(parser)
     parser.close(mark, 'impl-for')
 }
 

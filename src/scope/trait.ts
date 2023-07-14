@@ -36,8 +36,7 @@ export const findImpls = (module: Module): ImplDef[] =>
 
 export const getImplTargetVid = (implDef: ImplDef): VirtualIdentifier => {
     if (implDef.forTrait) {
-        if (implDef.forTrait.kind !== 'variant-type') throw Error('non variant type as impl target')
-        return idToVid(implDef.forTrait.identifier)
+        return idToVid(implDef.forTrait)
     } else {
         return vidFromString(implDef.name.value)
     }
@@ -45,7 +44,6 @@ export const getImplTargetVid = (implDef: ImplDef): VirtualIdentifier => {
 
 export const getImplTargetType = (implDef: ImplDef, ctx: Context): VirtualType => {
     if (implDef.forTrait) {
-        if (implDef.forTrait.kind !== 'variant-type') throw Error('non variant type as impl target')
         return typeToVirtual(implDef.forTrait, ctx)
     } else {
         return { kind: 'type-def', identifier: vidFromString(implDef.name.value), generics: [] }

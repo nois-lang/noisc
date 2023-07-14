@@ -10,6 +10,7 @@ import {
 import { parseInfixOp, parsePostfixOp, parsePrefixOp } from './op'
 import { parseMatchExpr, parsePattern } from './match'
 import { parseBlock } from './statement'
+import { parseTypeParams } from './type'
 
 /**
  * expr ::= sub-expr (infix-op sub-expr)*
@@ -135,19 +136,20 @@ export const parseForExpr = (parser: Parser): void => {
 }
 
 /**
- * identifier ::= (NAME COLON COLON)* NAME
+ * identifier ::= (NAME COLON COLON)* NAME typeParams?
  */
 export const parseIdentifier = (parser: Parser): void => {
     const mark = parser.open()
-    while (parser.nth(1) === 'colon' && parser.nth(2) === 'colon' && !parser.eof()) {
+    while (parser.at('name') && parser.nth(1) === 'colon' && parser.nth(2) === 'colon' && !parser.eof()) {
         parser.expect('name')
         parser.expect('colon')
         parser.expect('colon')
     }
     if (parser.at('name')) {
         parser.expect('name')
-    } else {
-        parser.advanceWithError('expected name')
+    }
+    if (parser.at('o-angle') && parser.encounter('c-angle', ['name', 'colon', 'o-angle'])) {
+        parseTypeParams(parser)
     }
     parser.close(mark, 'identifier')
 }

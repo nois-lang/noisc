@@ -89,11 +89,11 @@ export const virtualTypeToString = (vt: VirtualType): string => {
 
 export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
     switch (type.kind) {
-        case 'variant-type':
-            const vid = idToVid(type.identifier)
+        case 'identifier':
+            const vid = idToVid(type)
             const ref = resolveVid(vid, ctx)
             if (!ref) {
-                ctx.errors.push(semanticError(ctx, type, `identifier ${vidToString(vid)} not found`))
+                ctx.errors.push(semanticError(ctx, type.name, `identifier ${vidToString(vid)} not found`))
                 return unknownType
             }
             if (ref.def.kind === 'self') {
@@ -104,7 +104,7 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
                 // TODO: generics
                 return { kind: 'type-def', identifier: ref.qualifiedVid, generics: [] }
             } else {
-                ctx.errors.push(semanticError(ctx, type.identifier, `expected type, got \`${ref.def.kind}\``))
+                ctx.errors.push(semanticError(ctx, type, `expected type, got \`${ref.def.kind}\``))
                 return unknownType
             }
         case 'fn-type':

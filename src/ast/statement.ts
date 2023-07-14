@@ -2,7 +2,7 @@ import { AstNode, buildParam, filterNonAstNodes, Param } from './index'
 import { buildTypeDef, TypeDef } from './type-def'
 import { buildExpr, Expr } from './expr'
 import { buildPattern, Pattern } from './match'
-import { buildName, Name } from './operand'
+import { buildIdentifier, buildName, Identifier, Name } from './operand'
 import { ParseNode, ParseTree } from '../parser'
 import { Typed } from '../typecheck'
 import { buildGeneric, buildType, Generic, Type } from './type'
@@ -104,7 +104,7 @@ export const buildTraitDef = (node: ParseNode): TraitDef => {
 export interface ImplDef extends AstNode<'impl-def'> {
     name: Name
     generics: Generic[]
-    forTrait?: Type
+    forTrait?: Identifier
     block: Block
 }
 
@@ -113,7 +113,7 @@ export const buildImplDef = (node: ParseNode): ImplDef => {
     let idx = 0
     const name = buildName(nodes[idx++])
     const generics = nodes.at(idx)?.kind === 'generics' ? filterNonAstNodes(nodes[idx++]).map(buildGeneric) : []
-    const forTrait = nodes.at(idx)?.kind === 'impl-for' ? buildType(nodes[idx++]) : undefined
+    const forTrait = nodes.at(idx)?.kind === 'impl-for' ? buildIdentifier(filterNonAstNodes(nodes[idx++])[0]) : undefined
     const block = buildBlock(nodes[idx++])
     return { kind: 'impl-def', parseNode: node, name, generics, forTrait, block }
 }

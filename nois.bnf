@@ -24,11 +24,11 @@ statement           ::= var-def | fn-def | trait-def | impl-def | type-def | ret
                     ;
       param         ::= pattern type-annot?
                     ;
-  trait-def          ::= TRAIT-KEYWORD NAME generics? block
+  trait-def         ::= TRAIT-KEYWORD NAME generics? block
                     ;
   impl-def          ::= IMPL-KEYWORD NAME generics? impl-for? block
                     ;
-    impl-for        ::= FOR-KEYWORD variant-type
+    impl-for        ::= FOR-KEYWORD identifier
                     ;
   type-def          ::= TYPE-KEYWORD NAME generics? (type-con-list | type-con-params)?
                     ;
@@ -94,7 +94,7 @@ statement           ::= var-def | fn-def | trait-def | impl-def | type-def | ret
                     ;
         field-init  ::= NAME COLON expr
                     ;
-identifier          ::= (NAME COLON COLON)* NAME
+identifier          ::= (NAME COLON COLON)* NAME type-params?
                     ;
 block               ::= O-BRACE statement* C-BRACE
                     ;
@@ -106,9 +106,7 @@ list-expr           ::= O-BRACKET (expr (COMMA expr)*)? COMMA? C-BRACKET
                     ;
 type-annot          ::= COLON type
                     ;
-type                ::= variant-type | fn-type
-                    ;
-  variant-type      ::= identifier type-params?
+type                ::= identifier | fn-type
                     ;
   type-params       ::= O-ANGLE (type (COMMA type)* COMMA?)? C-ANGLE
                     ;

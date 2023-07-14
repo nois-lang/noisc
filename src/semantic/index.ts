@@ -498,15 +498,15 @@ const addDefToScope = (ctx: Context, statement: Statement): void => {
 
 const checkType = (type: Type, ctx: Context) => {
     switch (type.kind) {
-        case 'variant-type':
-            const vid = idToVid(type.identifier)
+        case 'identifier':
+            const vid = idToVid(type)
             const ref = resolveVid(vid, ctx)
             if (!ref) {
-                ctx.errors.push(notFoundError(ctx, type.identifier, vid))
+                ctx.errors.push(notFoundError(ctx, type.name, vid))
                 return
             }
             if (!['type-def', 'trait-def', 'generic', 'self'].includes(ref.def.kind)) {
-                ctx.errors.push(semanticError(ctx, type.identifier, `expected type, got \`${ref.def.kind}\``))
+                ctx.errors.push(semanticError(ctx, type.name, `expected type, got \`${ref.def.kind}\``))
                 return
             }
             type.typeParams.forEach(tp => checkType(tp, ctx))

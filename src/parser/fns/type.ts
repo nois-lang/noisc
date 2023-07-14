@@ -12,30 +12,18 @@ export const parseTypeAnnot = (parser: Parser): void => {
 }
 
 /**
- * type ::= variant-type | fn-type
+ * type ::= identifier | fn-type
  */
 export const parseType = (parser: Parser): void => {
     const mark = parser.open()
     if (parser.at('name')) {
-        parseVariantType(parser)
+        parseIdentifier(parser)
     } else if (parser.at('pipe')) {
         parseFnType(parser)
     } else {
         parser.advanceWithError('expected type')
     }
     parser.close(mark, 'type')
-}
-
-/**
- * variant-type ::= identifier type-params?
- */
-export const parseVariantType = (parser: Parser): void => {
-    const mark = parser.open()
-    parseIdentifier(parser)
-    if (parser.at('o-angle')) {
-        parseTypeParams(parser)
-    }
-    parser.close(mark, 'variant-type')
 }
 
 /**
