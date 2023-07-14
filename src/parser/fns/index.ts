@@ -10,7 +10,7 @@ export const infixOpFirstTokens: TokenKind[] = ['ampersand', 'asterisk', 'c-angl
     'o-angle', 'percent', 'period', 'pipe', 'plus', 'slash']
 export const exprFirstTokens: TokenKind[] = ['char', 'name', 'if-keyword', 'while-keyword', 'for-keyword',
     'match-keyword', 'int', 'float', 'o-paren', 'string', 'o-bracket', 'pipe', ...prefixOpFirstTokens]
-export const paramFirstTokens: TokenKind[] = ['name']
+export const paramFirstTokens: TokenKind[] = ['name', 'underscore']
 export const useExprFirstTokens: TokenKind[] = ['name', 'asterisk', 'o-brace']
 export const fieldPatternFirstTokens: TokenKind[] = ['name', 'period']
 export const patternFollowTokens: TokenKind[] = ['arrow', 'c-paren', 'colon', 'comma', 'equals', 'if-keyword',
