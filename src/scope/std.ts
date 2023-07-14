@@ -6,6 +6,7 @@ export const defaultImportedVids = (): VirtualIdentifier[] => [
     'std::float::Float',
     'std::int::Int',
     'std::string::String',
+    'std::char::Char',
     'std::list::List',
     'std::math',
     'std::op::Add',

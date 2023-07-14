@@ -1,18 +1,19 @@
 import { Context, findImpl, findImplFn, instanceScope } from '../scope'
-import { Module, Param } from '../ast'
+import { AstNode, Module, Param } from '../ast'
 import { Block, FnDef, ImplDef, Statement, TraitDef, VarDef } from '../ast/statement'
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { operatorImplMap } from './op'
 import { Identifier, Operand } from '../ast/operand'
 import {
-    anyType,
     genericToVirtual,
     isAssignable,
+    Typed,
     typeError,
     typeToVirtual,
     unitType,
     unknownType,
     VirtualFnType,
+    VirtualType,
     virtualTypeToString
 } from '../typecheck'
 import { CallOp, ConOp } from '../ast/op'
@@ -300,7 +301,7 @@ const checkVarDef = (varDef: VarDef, ctx: Context, brief: boolean = false): void
     checkExpr(varDef.expr, ctx)
     if (varDef.varType) {
         if (!isAssignable(varDef.expr.type!, varDef.type!, ctx)) {
-            ctx.errors.push(typeError(ctx, varDef, varDef.type!, varDef.expr.type!))
+            ctx.errors.push(typeError(varDef, varDef.expr.type!, varDef.type!, ctx))
         }
     } else {
         varDef.type = varDef.expr.type
@@ -341,16 +342,8 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         return
     }
     callOp.args.forEach(a => checkOperand(a, ctx))
-    const t: VirtualFnType = {
-        kind: 'fn-type',
-        generics: [],
-        paramTypes: callOp.args.map(a => a.type!),
-        returnType: anyType
-    }
-    if (!isAssignable(t, operand.type!, ctx)) {
-        ctx.errors.push(typeError(ctx, callOp, operand.type!, t))
-        return
-    }
+
+    checkCallArgs(callOp, callOp.args, (<VirtualFnType>operand.type).paramTypes, ctx)
 }
 
 const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
@@ -411,16 +404,8 @@ ${virtualTypeToString(binaryExpr.rOperand.type!)})`
     if (!implFn.type) throw Error('untyped impl fn')
     if (implFn.type.kind !== 'fn-type') throw Error('impl fn type in not fn')
 
-    const t: VirtualFnType = {
-        kind: 'fn-type',
-        generics: [],
-        paramTypes: [binaryExpr.lOperand, binaryExpr.rOperand].map(o => o.type!),
-        returnType: implFn.type.returnType
-    }
-    if (!isAssignable(t, implFn.type, ctx)) {
-        ctx.errors.push(typeError(ctx, binaryExpr, implFn.type, t))
-        return
-    }
+    // TODO: figure out how to resolve generics without their scope
+    checkCallArgs(binaryExpr, [binaryExpr.lOperand, binaryExpr.rOperand], (<VirtualFnType>implFn.type).paramTypes, ctx)
 }
 
 export const checkOperand = (operand: Operand, ctx: Context): void => {
@@ -529,5 +514,25 @@ const checkType = (type: Type, ctx: Context) => {
             return
         case 'fn-type':
             break
+    }
+}
+
+export const checkCallArgs = (node: AstNode<any>,
+                              args: (AstNode<any> & Partial<Typed>)[],
+                              paramTypes: VirtualType[],
+                              ctx: Context): void => {
+    if (args.length !== paramTypes.length) {
+        ctx.errors.push(semanticError(ctx, node, `expected ${paramTypes.length} arguments, got ${args.length}`))
+        return
+    }
+
+    for (let i = 0; i < paramTypes.length; i++) {
+        const paramType = paramTypes[i]
+        const arg = args[i]
+        const argType = arg.type || unknownType
+
+        if (!isAssignable(argType, paramType, ctx)) {
+            ctx.errors.push(typeError(arg, argType, paramType, ctx))
+        }
     }
 }

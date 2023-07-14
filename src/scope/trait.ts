@@ -12,14 +12,6 @@ import { ImplDef, TraitDef } from '../ast/statement'
 import { Module } from '../ast'
 import { TypeDefType, typeToVirtual, VirtualType } from '../typecheck'
 
-export const findImplTraitsWithFn = (typeVid: VirtualIdentifier, methodName: string, ctx: Context): VirtualIdentifierMatch<TraitDef>[] => {
-    const traitRefs = findTypeTraits(typeVid, ctx)
-    return traitRefs.filter(ref =>
-        ref.def.block.statements
-            .some(s => s.kind === 'fn-def' && s.name.value === methodName)
-    )
-}
-
 /**
  * Find all impl traits for specified type, available in the current scope
  */

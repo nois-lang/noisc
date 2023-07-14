@@ -1,11 +1,11 @@
 import { BinaryExpr } from '../ast/expr'
 import { Context } from '../scope'
 import { semanticError } from './error'
-import { checkOperand } from './index'
+import { checkCallArgs, checkOperand } from './index'
 import { Operand } from '../ast/operand'
 import { CallOp } from '../ast/op'
-import { findImplTraitsWithFn } from '../scope/trait'
-import { anyType, isAssignable, typeError, VirtualFnType, VirtualType, virtualTypeToString } from '../typecheck'
+import { findTypeTraits } from '../scope/trait'
+import { VirtualFnType, VirtualType, virtualTypeToString } from '../typecheck'
 import { resolveVid, vidToString } from '../scope/vid'
 import { FnDef, TraitDef } from '../ast/statement'
 
@@ -44,7 +44,10 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
     const ref = resolveVid(lOperand.type.identifier, ctx)
     const traitRefs = ref?.def.kind === 'trait-def'
         ? [ref]
-        : findImplTraitsWithFn(lOperand.type.identifier, methodName, ctx)
+        : findTypeTraits(lOperand.type.identifier, ctx).filter(ref =>
+            ref.def.block.statements
+                .some(s => s.kind === 'fn-def' && s.name.value === methodName)
+        )
     if (traitRefs.length === 0) {
         ctx.errors.push(semanticError(ctx, rOperand, `method ${virtualTypeToString(lOperand.type!)}::${methodName} not found`))
         return undefined
@@ -62,17 +65,8 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
     const fn = <FnDef>kind.block.statements.find(s => s.kind === 'fn-def' && s.name.value === methodName)!
 
     callOp.args.forEach(a => checkOperand(a, ctx))
-    const t: VirtualFnType = {
-        kind: 'fn-type',
-        generics: [],
-        paramTypes: [lOperand.type!, ...callOp.args.map(a => a.type!)],
-        returnType: anyType
-    }
 
-    if (!isAssignable(t, fn.type!, ctx)) {
-        ctx.errors.push(typeError(ctx, rOperand, fn.type!, t))
-        return undefined
-    }
+    checkCallArgs(callOp, [lOperand, ...callOp.args], (<VirtualFnType>fn.type).paramTypes, ctx)
 
     return (<VirtualFnType>fn.type).returnType
 }

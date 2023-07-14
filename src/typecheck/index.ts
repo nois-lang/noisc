@@ -150,7 +150,7 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
     return false
 }
 
-export const typeError = (ctx: Context, node: AstNode<any>, expected: VirtualType, actual: VirtualType): SemanticError => {
+export const typeError = (node: AstNode<any>, actual: VirtualType, expected: VirtualType, ctx: Context): SemanticError => {
     const message = `\
 type error: expected ${virtualTypeToString(expected)}
             got      ${virtualTypeToString(actual)}`
