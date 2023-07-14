@@ -24,7 +24,7 @@ statement           ::= var-def | fn-def | trait-def | impl-def | type-def | ret
                     ;
       param         ::= pattern type-annot?
                     ;
-  trait-def          ::= KIND-KEYWORD NAME generics? block
+  trait-def          ::= TRAIT-KEYWORD NAME generics? block
                     ;
   impl-def          ::= IMPL-KEYWORD NAME generics? impl-for? block
                     ;
