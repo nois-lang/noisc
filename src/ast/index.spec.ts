@@ -47,4 +47,64 @@ describe('ast', () => {
         })
     })
 
+    describe('list init', () => {
+
+        it('empty', () => {
+            const ast = buildExpr(parseTree('[]'))
+            expect(compactAstNode(ast)).toEqual({
+                'kind': 'operand-expr',
+                'operand': {
+                    'kind': 'operand-expr',
+                    'operand': {
+                        'kind': 'operand-expr',
+                        'operand': {
+                            'kind': 'operand-expr',
+                            'operand': {
+                                'kind': 'list-expr',
+                                'exprs': []
+                            }
+                        }
+                    }
+                }
+            })
+        })
+
+        it('basic', () => {
+            const ast = buildExpr(parseTree('[1, 2, 3]'))
+            expect(compactAstNode(ast)).toEqual({
+                'kind': 'operand-expr',
+                'operand': {
+                    'kind': 'operand-expr',
+                    'operand': {
+                        'kind': 'operand-expr',
+                        'operand': {
+                            'kind': 'operand-expr',
+                            'operand': {
+                                'exprs': [{
+                                    'kind': 'operand-expr',
+                                    'operand': {
+                                        'kind': 'operand-expr',
+                                        'operand': { 'kind': 'int-literal', 'value': '1' }
+                                    }
+                                }, {
+                                    'kind': 'operand-expr',
+                                    'operand': {
+                                        'kind': 'operand-expr',
+                                        'operand': { 'kind': 'int-literal', 'value': '2' }
+                                    }
+                                }, {
+                                    'kind': 'operand-expr',
+                                    'operand': {
+                                        'kind': 'operand-expr',
+                                        'operand': { 'kind': 'int-literal', 'value': '3' }
+                                    }
+                                }], 'kind': 'list-expr'
+                            }
+                        }
+                    }
+                }
+            })
+        })
+    })
+
 })
