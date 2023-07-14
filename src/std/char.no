@@ -1,0 +1,9 @@
+type Char
+
+impl Display for Char {
+    fn fmt(self): String {
+        charToString(self)
+    }
+}
+
+fn charToString(char: Char): String
