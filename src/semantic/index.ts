@@ -1,6 +1,6 @@
 import { Context, findImpl, findImplFn, instanceScope } from '../scope'
 import { Module, Param } from '../ast'
-import { Block, FnDef, ImplDef, KindDef, Statement, VarDef } from '../ast/statement'
+import { Block, FnDef, ImplDef, Statement, TraitDef, VarDef } from '../ast/statement'
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { operatorImplMap } from './op'
 import { Identifier, Operand } from '../ast/operand'
@@ -31,7 +31,7 @@ import { Type } from '../ast/type'
 import { notFoundError, semanticError } from './error'
 import { todo } from '../util/todo'
 import { checkAccessExpr } from './access'
-import { getImplTargetType, kindDefToTypeDefType } from '../scope/kind'
+import { getImplTargetType, traitDefToTypeDefType } from '../scope/trait'
 import { TypeCon, TypeDef } from '../ast/type-def'
 
 export const checkModule = (module: Module, ctx: Context, brief: boolean = false): void => {
@@ -73,11 +73,11 @@ const checkStatement = (statement: Statement, ctx: Context, brief: boolean = fal
     const scope = module.scopeStack.at(-1)!
     const topLevel = module.scopeStack.length === 1
 
-    if (topLevel && !['var-def', 'fn-def', 'kind-def', 'impl-def', 'type-def'].includes(statement.kind)) {
+    if (topLevel && !['var-def', 'fn-def', 'trait-def', 'impl-def', 'type-def'].includes(statement.kind)) {
         ctx.errors.push(semanticError(ctx, statement, `top level \`${statement.kind}\` is not allowed`))
         return
     }
-    if (['impl-def', 'kind-def'].includes(scope.type) && statement.kind !== 'fn-def') {
+    if (['impl-def', 'trait-def'].includes(scope.type) && statement.kind !== 'fn-def') {
         ctx.errors.push(semanticError(ctx, statement, `\`${statement.kind}\` in instance scope is not allowed`))
         return
     }
@@ -97,9 +97,9 @@ const checkStatement = (statement: Statement, ctx: Context, brief: boolean = fal
             checkFnDef(statement, ctx, brief)
             pushDefToStack()
             break
-        case 'kind-def':
+        case 'trait-def':
             // todo
-            checkKindDef(statement, ctx, brief)
+            checkTraitDef(statement, ctx, brief)
             pushDefToStack()
             break
         case 'impl-def':
@@ -175,7 +175,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context, brief: boolean = false): void =>
 
     if (!brief) {
         if (!fnDef.block) {
-            if (instanceScope(ctx)?.type !== 'kind-def') {
+            if (instanceScope(ctx)?.type !== 'trait-def') {
                 ctx.warnings.push(semanticError(ctx, fnDef, `fn \`${fnDef.name.value}\` has no body -> must be native`))
             }
         } else {
@@ -207,23 +207,23 @@ const checkParam = (param: Param, index: number, ctx: Context): void => {
     }
 }
 
-const checkKindDef = (kindDef: KindDef, ctx: Context, brief: boolean = false) => {
+const checkTraitDef = (traitDef: TraitDef, ctx: Context, brief: boolean = false) => {
     const module = ctx.moduleStack.at(-1)!
 
     if (instanceScope(ctx)) {
-        ctx.errors.push(semanticError(ctx, kindDef, `\`${kindDef.kind}\` within instance scope`))
+        ctx.errors.push(semanticError(ctx, traitDef, `\`${traitDef.kind}\` within instance scope`))
         return
     }
 
     // TODO: add generics
     module.scopeStack.push({
-        type: 'kind-def',
-        selfType: kindDefToTypeDefType(kindDef, ctx),
-        kindDef,
+        type: 'trait-def',
+        selfType: traitDefToTypeDefType(traitDef, ctx),
+        traitDef,
         definitions: new Map()
     })
 
-    checkBlock(kindDef.block, ctx, brief)
+    checkBlock(traitDef.block, ctx, brief)
 
     module.scopeStack.pop()
 }
@@ -376,7 +376,7 @@ const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         return
     }
     // TODO: check con expr
-    unaryExpr.type = {kind: 'type-def', identifier: ref.def.typeDef.qualifiedVid, generics: []}
+    unaryExpr.type = { kind: 'type-def', identifier: ref.def.typeDef.qualifiedVid, generics: [] }
 }
 
 const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
@@ -520,7 +520,7 @@ const checkType = (type: Type, ctx: Context) => {
                 ctx.errors.push(notFoundError(ctx, type.identifier, vid))
                 return
             }
-            if (!['type-def', 'kind-def', 'generic', 'self'].includes(ref.def.kind)) {
+            if (!['type-def', 'trait-def', 'generic', 'self'].includes(ref.def.kind)) {
                 ctx.errors.push(semanticError(ctx, type.identifier, `expected type, got \`${ref.def.kind}\``))
                 return
             }

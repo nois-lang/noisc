@@ -1,5 +1,5 @@
 import { Module } from '../ast'
-import { FnDef, ImplDef, KindDef } from '../ast/statement'
+import { FnDef, ImplDef, TraitDef } from '../ast/statement'
 import { isAssignable, typeToVirtual, VirtualType } from '../typecheck'
 import { Definition, VirtualIdentifier } from './vid'
 import { Config } from '../config'
@@ -14,12 +14,12 @@ export interface Context {
     warnings: SemanticError[]
 }
 
-export type Scope = KindScope | ImplScope | CommonScope
+export type Scope = TraitScope | ImplScope | CommonScope
 
-export interface KindScope {
-    type: 'kind-def',
+export interface TraitScope {
+    type: 'trait-def',
     selfType: VirtualType,
-    kindDef: KindDef,
+    traitDef: TraitDef,
     definitions: Map<string, Definition>
 }
 
@@ -39,7 +39,7 @@ export const findImpl = (vId: VirtualIdentifier, type: VirtualType, ctx: Context
     // TODO: go through imports only
     return ctx.modules
         .flatMap(m => m.block.statements.filter(s => s.kind === 'impl-def').map(s => <ImplDef>s))
-        .filter(i => !i.forKind || isAssignable(type, typeToVirtual(i.forKind, ctx), ctx))
+        .filter(i => !i.forTrait || isAssignable(type, typeToVirtual(i.forTrait, ctx), ctx))
         .find(i => i.name.value === vId.name)
 }
 
@@ -63,13 +63,13 @@ export const pathToVid = (path: string, packageName?: string): VirtualIdentifier
 }
 
 /**
- * Checks whether current module scopeStack is within ImplDef or KindDef scope
+ * Checks whether current module scopeStack is within ImplDef or TraitDef scope
  */
-export const instanceScope = (ctx: Context): ImplScope | KindScope | undefined => {
+export const instanceScope = (ctx: Context): ImplScope | TraitScope | undefined => {
     const module = ctx.moduleStack.at(-1)!
     for (let i = module.scopeStack.length - 1; i >= 0; i--) {
         let scope = module.scopeStack[i]
-        if (scope.type === 'impl-def' || scope.type === 'kind-def') {
+        if (scope.type === 'impl-def' || scope.type === 'trait-def') {
             return scope
         }
     }

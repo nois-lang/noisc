@@ -8,22 +8,22 @@ import {
     VirtualIdentifierMatch
 } from './vid'
 import { Context } from './index'
-import { ImplDef, KindDef } from '../ast/statement'
+import { ImplDef, TraitDef } from '../ast/statement'
 import { Module } from '../ast'
 import { TypeDefType, typeToVirtual, VirtualType } from '../typecheck'
 
-export const findImplKindsWithFn = (typeVid: VirtualIdentifier, methodName: string, ctx: Context): VirtualIdentifierMatch<KindDef>[] => {
-    const kindRefs = findTypeKinds(typeVid, ctx)
-    return kindRefs.filter(ref =>
+export const findImplTraitsWithFn = (typeVid: VirtualIdentifier, methodName: string, ctx: Context): VirtualIdentifierMatch<TraitDef>[] => {
+    const traitRefs = findTypeTraits(typeVid, ctx)
+    return traitRefs.filter(ref =>
         ref.def.block.statements
             .some(s => s.kind === 'fn-def' && s.name.value === methodName)
     )
 }
 
 /**
- * Find all impl kinds for specified type, available in the current scope
+ * Find all impl traits for specified type, available in the current scope
  */
-export const findTypeKinds = (typeVid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch<KindDef>[] => {
+export const findTypeTraits = (typeVid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch<TraitDef>[] => {
     return ctx.impls.flatMap(impl => {
         const targetVid = getImplTargetVid(impl)
         const ref = resolveVid(targetVid, ctx)
@@ -32,7 +32,7 @@ export const findTypeKinds = (typeVid: VirtualIdentifier, ctx: Context): Virtual
         const qualifiedTargetVid = ref.qualifiedVid
         if (vidToString(qualifiedTargetVid) === vidToString(typeVid)) {
             const def = resolveVid(vidFromString(impl.name.value), ctx)
-            if (!def || def.def.kind !== 'kind-def') return []
+            if (!def || def.def.kind !== 'trait-def') return []
             return [{ qualifiedVid: def.qualifiedVid, def: def.def }]
         }
         return []
@@ -43,28 +43,28 @@ export const findImpls = (module: Module): ImplDef[] =>
     module.block.statements.flatMap(s => s.kind !== 'impl-def' ? [] : s)
 
 export const getImplTargetVid = (implDef: ImplDef): VirtualIdentifier => {
-    if (implDef.forKind) {
-        if (implDef.forKind.kind !== 'variant-type') throw Error('non variant type as impl target')
-        return idToVid(implDef.forKind.identifier)
+    if (implDef.forTrait) {
+        if (implDef.forTrait.kind !== 'variant-type') throw Error('non variant type as impl target')
+        return idToVid(implDef.forTrait.identifier)
     } else {
         return vidFromString(implDef.name.value)
     }
 }
 
 export const getImplTargetType = (implDef: ImplDef, ctx: Context): VirtualType => {
-    if (implDef.forKind) {
-        if (implDef.forKind.kind !== 'variant-type') throw Error('non variant type as impl target')
-        return typeToVirtual(implDef.forKind, ctx)
+    if (implDef.forTrait) {
+        if (implDef.forTrait.kind !== 'variant-type') throw Error('non variant type as impl target')
+        return typeToVirtual(implDef.forTrait, ctx)
     } else {
         return { kind: 'type-def', identifier: vidFromString(implDef.name.value), generics: [] }
     }
 }
 
-export const kindDefToTypeDefType = (kindDef: KindDef, ctx: Context): TypeDefType => {
+export const traitDefToTypeDefType = (traitDef: TraitDef, ctx: Context): TypeDefType => {
     const module = ctx.moduleStack.at(-1)!
     return ({
         kind: 'type-def',
-        identifier: concatVid(module.identifier, vidFromString(kindDef.name.value)),
+        identifier: concatVid(module.identifier, vidFromString(traitDef.name.value)),
         generics: []
     })
 }

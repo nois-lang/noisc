@@ -8,11 +8,11 @@ export const resolveGeneric = (generic: VirtualType, ctx: Context): VirtualType 
     if (generic.name === selfType.name) {
         const scope = instanceScope(ctx)
         switch (scope?.type) {
-            case 'kind-def':
-                return { kind: 'type-def', identifier: vidFromString(scope.kindDef.name.value), generics: [] }
+            case 'trait-def':
+                return { kind: 'type-def', identifier: vidFromString(scope.traitDef.name.value), generics: [] }
             case 'impl-def':
-                if (scope.implDef.forKind) {
-                    return typeToVirtual(scope.implDef.forKind, ctx)
+                if (scope.implDef.forTrait) {
+                    return typeToVirtual(scope.implDef.forTrait, ctx)
                 } else {
                     const identifier = vidFromString(scope.implDef.name.value)
                     const ref = resolveVid(identifier, ctx)

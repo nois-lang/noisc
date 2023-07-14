@@ -16,7 +16,7 @@ export const treeKinds = <const>[
     'generic-bounds',
     'params',
     'param',
-    'kind-def',
+    'trait-def',
     'impl-def',
     'impl-for',
     'type-def',

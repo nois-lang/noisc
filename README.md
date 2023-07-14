@@ -11,7 +11,7 @@
 ## Taste of Nois
 
 ```rust
-kind Area {
+trait Area {
     fn area(self): Num
 }
 
@@ -42,7 +42,7 @@ fn main() {
 
 - Expressive type system
 - Variant types and pattern matching
-- Type class polymorphism with `kinds`
+- Type class polymorphism with `traits`
 - Errors are a part of a function type signature
 - Automatic memory management
 - Implicit last block line returns

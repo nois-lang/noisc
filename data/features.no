@@ -12,8 +12,8 @@ type Option<T> {
     None
 }
 
-// kind
-kind Display {
+// trait
+trait Display {
     fn fmt(self, args: List<Display>): String
 }
 

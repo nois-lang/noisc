@@ -4,10 +4,10 @@ import { semanticError } from './error'
 import { checkOperand } from './index'
 import { Operand } from '../ast/operand'
 import { CallOp } from '../ast/op'
-import { findImplKindsWithFn } from '../scope/kind'
+import { findImplTraitsWithFn } from '../scope/trait'
 import { anyType, isAssignable, typeError, VirtualFnType, VirtualType, virtualTypeToString } from '../typecheck'
 import { resolveVid, vidToString } from '../scope/vid'
-import { FnDef, KindDef } from '../ast/statement'
+import { FnDef, TraitDef } from '../ast/statement'
 
 export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     const rOp = binaryExpr.rOperand
@@ -42,23 +42,23 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
     }
     const methodName = rOperand.name.value
     const ref = resolveVid(lOperand.type.identifier, ctx)
-    const kindRefs = ref?.def.kind === 'kind-def'
+    const traitRefs = ref?.def.kind === 'trait-def'
         ? [ref]
-        : findImplKindsWithFn(lOperand.type.identifier, methodName, ctx)
-    if (kindRefs.length === 0) {
+        : findImplTraitsWithFn(lOperand.type.identifier, methodName, ctx)
+    if (traitRefs.length === 0) {
         ctx.errors.push(semanticError(ctx, rOperand, `method ${virtualTypeToString(lOperand.type!)}::${methodName} not found`))
         return undefined
     }
-    if (kindRefs.length > 1) {
-        const kinds = kindRefs.map(f => vidToString(f.qualifiedVid)).join(', ')
+    if (traitRefs.length > 1) {
+        const traits = traitRefs.map(f => vidToString(f.qualifiedVid)).join(', ')
         ctx.errors.push(semanticError(
             ctx,
             rOperand,
-            `clashing method name ${virtualTypeToString(lOperand.type!)}::${methodName}: ${kinds}`)
+            `clashing method name ${virtualTypeToString(lOperand.type!)}::${methodName}: ${traits}`)
         )
         return undefined
     }
-    const kind = <KindDef>kindRefs[0].def
+    const kind = <TraitDef>traitRefs[0].def
     const fn = <FnDef>kind.block.statements.find(s => s.kind === 'fn-def' && s.name.value === methodName)!
 
     callOp.args.forEach(a => checkOperand(a, ctx))

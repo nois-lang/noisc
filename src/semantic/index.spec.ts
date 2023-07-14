@@ -7,7 +7,7 @@ import { Source } from '../source'
 import { expect } from '@jest/globals'
 import { vidFromString } from '../scope/vid'
 import { buildModule } from '../package/build'
-import { findImpls } from '../scope/kind'
+import { findImpls } from '../scope/trait'
 
 describe('semantic', () => {
 

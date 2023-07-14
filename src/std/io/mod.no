@@ -1,4 +1,4 @@
-kind Display {
+trait Display {
     fn fmt(self): String
 }
 

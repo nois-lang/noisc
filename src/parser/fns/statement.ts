@@ -15,8 +15,8 @@ export const parseStatement = (parser: Parser): void => {
         parseVarDef(parser)
     } else if (parser.at('fn-keyword')) {
         parseFnDef(parser)
-    } else if (parser.at('kind-keyword')) {
-        parseKindDef(parser)
+    } else if (parser.at('trait-keyword')) {
+        parseTraitDef(parser)
     } else if (parser.at('impl-keyword')) {
         parseImplDef(parser)
     } else if (parser.at('type-keyword')) {
@@ -197,15 +197,15 @@ export const parseGenericBounds = (parser: Parser): void => {
 /**
  * kind-def ::= KIND-KEYWORD NAME generics? block
  */
-export const parseKindDef = (parser: Parser): void => {
+export const parseTraitDef = (parser: Parser): void => {
     const mark = parser.open()
-    parser.expect('kind-keyword')
+    parser.expect('trait-keyword')
     parser.expect('name')
     if (parser.at('o-angle')) {
         parseGenerics(parser)
     }
     parseBlock(parser)
-    parser.close(mark, 'kind-def')
+    parser.close(mark, 'trait-def')
 }
 
 /**

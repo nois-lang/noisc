@@ -7,7 +7,7 @@ import { ParseNode, ParseTree } from '../parser'
 import { Typed } from '../typecheck'
 import { buildGeneric, buildType, Generic, Type } from './type'
 
-export type Statement = VarDef | FnDef | KindDef | ImplDef | TypeDef | ReturnStmt | Expr
+export type Statement = VarDef | FnDef | TraitDef | ImplDef | TypeDef | ReturnStmt | Expr
 
 export const buildStatement = (node: ParseNode): Statement => {
     const n = (<ParseTree>node).nodes[0]
@@ -16,8 +16,8 @@ export const buildStatement = (node: ParseNode): Statement => {
             return buildVarDef(n)
         case 'fn-def':
             return buildFnDef(n)
-        case 'kind-def':
-            return buildKindDef(n)
+        case 'trait-def':
+            return buildTraitDef(n)
         case 'impl-def':
             return buildImplDef(n)
         case 'type-def':
@@ -86,25 +86,25 @@ export const buildFnDef = (node: ParseNode): FnDef => {
     return { kind: 'fn-def', parseNode: node, name, generics, params, block, returnType }
 }
 
-export interface KindDef extends AstNode<'kind-def'> {
+export interface TraitDef extends AstNode<'trait-def'> {
     name: Name
     generics: Generic[]
     block: Block
 }
 
-export const buildKindDef = (node: ParseNode): KindDef => {
+export const buildTraitDef = (node: ParseNode): TraitDef => {
     const nodes = filterNonAstNodes(node)
     let idx = 0
     const name = buildName(nodes[idx++])
     const generics = nodes.at(idx)?.kind === 'generics' ? filterNonAstNodes(nodes[idx++]).map(buildGeneric) : []
     const block = buildBlock(nodes[idx++])
-    return { kind: 'kind-def', parseNode: node, name, generics, block }
+    return { kind: 'trait-def', parseNode: node, name, generics, block }
 }
 
 export interface ImplDef extends AstNode<'impl-def'> {
     name: Name
     generics: Generic[]
-    forKind?: Type
+    forTrait?: Type
     block: Block
 }
 
@@ -113,9 +113,9 @@ export const buildImplDef = (node: ParseNode): ImplDef => {
     let idx = 0
     const name = buildName(nodes[idx++])
     const generics = nodes.at(idx)?.kind === 'generics' ? filterNonAstNodes(nodes[idx++]).map(buildGeneric) : []
-    const forKind = nodes.at(idx)?.kind === 'impl-for' ? buildType(nodes[idx++]) : undefined
+    const forTrait = nodes.at(idx)?.kind === 'impl-for' ? buildType(nodes[idx++]) : undefined
     const block = buildBlock(nodes[idx++])
-    return { kind: 'impl-def', parseNode: node, name, generics, forKind, block }
+    return { kind: 'impl-def', parseNode: node, name, generics, forTrait, block }
 }
 
 export interface ReturnStmt extends AstNode<'return-stmt'>, Partial<Typed> {

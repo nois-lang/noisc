@@ -32,7 +32,7 @@ export const lexerPunctuationKinds = <const>[
 export const lexerKeywordKinds = <const>[
     'use-keyword',
     'type-keyword',
-    'kind-keyword',
+    'trait-keyword',
     'impl-keyword',
     'let-keyword',
     'fn-keyword',
@@ -73,7 +73,7 @@ export interface ParseToken {
 export const constTokenKindMap: Map<TokenKind, string> = new Map([
     ['use-keyword', 'use'],
     ['type-keyword', 'type'],
-    ['kind-keyword', 'kind'],
+    ['trait-keyword', 'trait'],
     ['if-keyword', 'if'],
     ['else-keyword', 'else'],
     ['return-keyword', 'return'],

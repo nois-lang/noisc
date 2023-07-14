@@ -1,6 +1,6 @@
 module              ::= use-stmt* statement*
                     ;
-statement           ::= var-def | fn-def | kind-def | impl-def | type-def | return-stmt | expr
+statement           ::= var-def | fn-def | trait-def | impl-def | type-def | return-stmt | expr
                     ;
   use-stmt          ::= USE-KEYWORD use-expr
                     ;
@@ -24,7 +24,7 @@ statement           ::= var-def | fn-def | kind-def | impl-def | type-def | retu
                     ;
       param         ::= pattern type-annot?
                     ;
-  kind-def          ::= KIND-KEYWORD NAME generics? block
+  trait-def          ::= KIND-KEYWORD NAME generics? block
                     ;
   impl-def          ::= IMPL-KEYWORD NAME generics? impl-for? block
                     ;

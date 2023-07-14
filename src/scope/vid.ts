@@ -1,7 +1,7 @@
 import { Identifier } from '../ast/operand'
 import { Module, Param } from '../ast'
 import { Context, instanceScope } from './index'
-import { FnDef, ImplDef, KindDef, Statement, VarDef } from '../ast/statement'
+import { FnDef, ImplDef, Statement, TraitDef, VarDef } from '../ast/statement'
 import { todo } from '../util/todo'
 import { Pattern } from '../ast/match'
 import { TypeCon, TypeDef } from '../ast/type-def'
@@ -15,7 +15,7 @@ export interface VirtualIdentifier {
     name: string
 }
 
-export type Definition = Module | VarDef | FnDef | KindDef | ImplDef | TypeDef | TypeConDef | Generic | Param | SelfDef
+export type Definition = Module | VarDef | FnDef | TraitDef | ImplDef | TypeDef | TypeConDef | Generic | Param | SelfDef
 
 export type SelfDef = {
     kind: 'self'
@@ -62,7 +62,7 @@ export const statementVid = (statement: Statement): VirtualIdentifier | undefine
         case 'var-def':
             return patternVid(statement.pattern)
         case 'fn-def':
-        case 'kind-def':
+        case 'trait-def':
         case 'type-def':
             return vidFromString(statement.name.value)
     }
@@ -73,7 +73,7 @@ export const statementToDefinition = (statement: Statement): Definition | undefi
     switch (statement.kind) {
         case 'var-def':
         case 'fn-def':
-        case 'kind-def':
+        case 'trait-def':
         case 'type-def':
             return statement
     }
@@ -126,7 +126,7 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context): VirtualIdentif
                     }
                     return createRef(i, typeConDef)
                 }
-                if (ref.def.kind === 'kind-def') {
+                if (ref.def.kind === 'trait-def') {
                     const fn = ref.def.block.statements
                         .filter(s => s.kind === 'fn-def')
                         .map(s => <FnDef>s)

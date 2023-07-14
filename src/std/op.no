@@ -1,15 +1,15 @@
-kind Add {
+trait Add {
     fn add(self, other: Self): Self
 }
 
-kind Sub {
+trait Sub {
     fn sub(self, other: Self): Self
 }
 
-kind Mult {
+trait Mult {
     fn mult(self, other: Self): Self
 }
 
-kind Div {
+trait Div {
     fn div(self, other: Self): Self
 }

@@ -4,7 +4,7 @@ import { idToVid, resolveVid, vidFromString, vidToString, VirtualIdentifier } fr
 import { AstNode } from '../ast'
 import { semanticError, SemanticError } from '../semantic/error'
 import { resolveGeneric } from '../scope/type'
-import { findTypeKinds } from '../scope/kind'
+import { findTypeTraits } from '../scope/trait'
 
 export interface Typed {
     type: VirtualType
@@ -100,7 +100,7 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
                 return selfType
             } else if (ref.def.kind === 'generic') {
                 return genericToVirtual(ref.def, ctx)
-            } else if (ref.def.kind === 'kind-def' || ref.def.kind === 'type-def') {
+            } else if (ref.def.kind === 'trait-def' || ref.def.kind === 'type-def') {
                 // TODO: generics
                 return { kind: 'type-def', identifier: ref.qualifiedVid, generics: [] }
             } else {
@@ -133,8 +133,8 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
         if (vidToString(t.identifier) === vidToString(target.identifier)) {
             return true
         }
-        const kindRefs = findTypeKinds(t.identifier, ctx)
-        return kindRefs.some(ref => vidToString(ref.qualifiedVid) === vidToString(target.identifier))
+        const traitRefs = findTypeTraits(t.identifier, ctx)
+        return traitRefs.some(ref => vidToString(ref.qualifiedVid) === vidToString(target.identifier))
     }
     if (t.kind === 'fn-type' && target.kind === 'fn-type') {
         for (let i = 0; i < target.paramTypes.length; i++) {
