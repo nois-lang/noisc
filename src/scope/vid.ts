@@ -15,6 +15,21 @@ export interface VirtualIdentifier {
     name: string
 }
 
+export const defKinds = <const>[
+    'module',
+    'self',
+    'type-con',
+    'var-def',
+    'fn-def',
+    'type-def',
+    'generic',
+    'param',
+    'trait-def',
+    'impl-def'
+]
+
+export type DefinitionKind = typeof defKinds[number]
+
 export type Definition = Module | VarDef | FnDef | TraitDef | ImplDef | TypeDef | TypeConDef | Generic | Param | SelfDef
 
 export type SelfDef = {
@@ -90,7 +105,7 @@ export const patternVid = (pattern: Pattern): VirtualIdentifier | undefined => {
     return undefined
 }
 
-export const resolveVid = (vid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch | undefined => {
+export const resolveVid = (vid: VirtualIdentifier, ctx: Context, ofKind = defKinds): VirtualIdentifierMatch | undefined => {
     const createRef = (i: number, found: Definition, matchVid = vid) => {
         // if found in the lowest stack, so it is available outside of module, thus should be module-qualified
         if (i === 0) {
@@ -111,7 +126,8 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context): VirtualIdentif
 
     for (let i = module.scopeStack.length - 1; i >= 0; i--) {
         let scope = module.scopeStack[i]
-        let found = scope.definitions.get(vidFirst(vid))
+        // TODO: in case when ofKind contains fn-def, check kind-defs and impl-defs for such fn
+        let found = ofKind.map(k => scope.definitions.get(k + vidToString(vid))).find(def => !!def)
         if (found) {
             // cases for module-local references of type cons and kind fns
             if (vid.scope.length === 1) {
@@ -127,7 +143,7 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context): VirtualIdentif
                     }
                     return createRef(i, typeConDef)
                 }
-                if (ref.def.kind === 'trait-def') {
+                if (ref.def.kind === 'trait-def' || ref.def.kind === 'impl-def') {
                     const fn = ref.def.block.statements
                         .filter(s => s.kind === 'fn-def')
                         .map(s => <FnDef>s)

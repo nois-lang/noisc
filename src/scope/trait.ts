@@ -15,7 +15,7 @@ import { TypeDefType, typeToVirtual, VirtualType } from '../typecheck'
 /**
  * Find all impl traits for specified type, available in the current scope
  */
-export const findTypeTraits = (typeVid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch<TraitDef>[] => {
+export const findTypeTraits = (typeVid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch<TraitDef | ImplDef>[] => {
     return ctx.impls.flatMap(impl => {
         const targetVid = getImplTargetVid(impl)
         const ref = resolveVid(targetVid, ctx)
@@ -24,8 +24,11 @@ export const findTypeTraits = (typeVid: VirtualIdentifier, ctx: Context): Virtua
         const qualifiedTargetVid = ref.qualifiedVid
         if (vidToString(qualifiedTargetVid) === vidToString(typeVid)) {
             const def = resolveVid(vidFromString(impl.name.value), ctx)
-            if (!def || def.def.kind !== 'trait-def') return []
-            return [{ qualifiedVid: def.qualifiedVid, def: def.def }]
+            if (!def) return []
+            if (def.def.kind === 'trait-def' || def.def.kind === 'impl-def') {
+                return [{ qualifiedVid: def.qualifiedVid, def: def.def }]
+            }
+            return []
         }
         return []
     })

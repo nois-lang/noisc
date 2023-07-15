@@ -1,4 +1,4 @@
-import { Context, findImpl, findImplFn, instanceScope } from '../scope'
+import { Context, defKey, findImpl, findImplFn, instanceScope } from '../scope'
 import { AstNode, Module, Param } from '../ast'
 import { Block, FnDef, ImplDef, Statement, TraitDef, VarDef } from '../ast/statement'
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
@@ -18,16 +18,7 @@ import {
     virtualTypeToString
 } from '../typecheck'
 import { CallOp, ConOp } from '../ast/op'
-import {
-    concatVid,
-    idToVid,
-    resolveVid,
-    statementToDefinition,
-    statementVid,
-    vidFromScope,
-    vidFromString,
-    vidToString
-} from '../scope/vid'
+import { concatVid, Definition, idToVid, resolveVid, vidFromScope, vidFromString, vidToString } from '../scope/vid'
 import { useExprToVids } from './use-expr'
 import { Type } from '../ast/type'
 import { notFoundError, semanticError } from './error'
@@ -88,7 +79,8 @@ const checkStatement = (statement: Statement, ctx: Context, brief: boolean = fal
 
     const pushDefToStack = () => {
         if (topLevel || brief) {
-            addDefToScope(ctx, statement)
+            const def = <Definition>statement
+            scope.definitions.set(defKey(def), def)
         }
     }
 
@@ -146,7 +138,7 @@ const checkExpr = (expr: Expr, ctx: Context): void => {
 
 const checkFnDef = (fnDef: FnDef, ctx: Context, brief: boolean = false): void => {
     const module = ctx.moduleStack.at(-1)!
-    module.scopeStack.push({ type: 'fn-def', definitions: new Map(fnDef.generics.map(g => [g.name.value, g])) })
+    module.scopeStack.push({ type: 'fn-def', definitions: new Map(fnDef.generics.map(g => [defKey(g), g])) })
 
     const paramTypes = fnDef.params.map((p, i) => {
         checkParam(p, i, ctx)
@@ -158,7 +150,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context, brief: boolean = false): void =>
             case 'hole':
                 break
             case 'name':
-                module.scopeStack.at(-1)!.definitions.set(p.pattern.value, p)
+                module.scopeStack.at(-1)!.definitions.set(defKey(p), p)
                 break
             case 'con-pattern':
                 todo('add con-pattern to scope')
@@ -229,7 +221,7 @@ const checkTraitDef = (traitDef: TraitDef, ctx: Context, brief: boolean = false)
         type: 'trait-def',
         selfType: traitDefToTypeDefType(traitDef, ctx),
         def: traitDef,
-        definitions: new Map(traitDef.generics.map(g => [g.name.value, g]))
+        definitions: new Map(traitDef.generics.map(g => [defKey(g), g]))
     })
 
     checkBlock(traitDef.block, ctx, brief)
@@ -249,7 +241,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context, brief: boolean = false) =>
         type: 'impl-def',
         selfType: getImplTargetType(implDef, ctx),
         def: implDef,
-        definitions: new Map(implDef.generics.map(g => [g.name.value, g]))
+        definitions: new Map(implDef.generics.map(g => [defKey(g), g]))
     })
 
     if (!brief) {
@@ -267,7 +259,7 @@ const checkTypeDef = (typeDef: TypeDef, ctx: Context) => {
         return
     }
 
-    module.scopeStack.push({ type: 'type-def', definitions: new Map(typeDef.generics.map(g => [g.name.value, g])) })
+    module.scopeStack.push({ type: 'type-def', definitions: new Map(typeDef.generics.map(g => [defKey(g), g])) })
 
     typeDef.type = {
         kind: 'type-def',
@@ -509,16 +501,6 @@ const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
     } else {
         identifier.type = 'type' in ref.def ? ref.def.type : unknownType
     }
-}
-
-const addDefToScope = (ctx: Context, statement: Statement): void => {
-    const vid = statementVid(statement)
-    if (!vid) return
-
-    const def = statementToDefinition(statement)
-    if (!def) return
-
-    ctx.moduleStack.at(-1)!.scopeStack.at(-1)!.definitions.set(vidToString(vid), def)
 }
 
 const checkType = (type: Type, ctx: Context) => {
