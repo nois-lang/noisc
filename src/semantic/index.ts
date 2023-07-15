@@ -219,12 +219,11 @@ const checkTraitDef = (traitDef: TraitDef, ctx: Context, brief: boolean = false)
         return
     }
 
-    // TODO: add generics
     module.scopeStack.push({
         type: 'trait-def',
         selfType: traitDefToTypeDefType(traitDef, ctx),
         traitDef,
-        definitions: new Map()
+        definitions: new Map(traitDef.generics.map(g => [g.name.value, g]))
     })
 
     checkBlock(traitDef.block, ctx, brief)
@@ -240,12 +239,11 @@ const checkImplDef = (implDef: ImplDef, ctx: Context, brief: boolean = false) =>
         return
     }
 
-    // TODO: add generics
     module.scopeStack.push({
         type: 'impl-def',
         selfType: getImplTargetType(implDef, ctx),
         implDef,
-        definitions: new Map()
+        definitions: new Map(implDef.generics.map(g => [g.name.value, g]))
     })
 
     if (!brief) {
@@ -520,6 +518,7 @@ const checkType = (type: Type, ctx: Context) => {
             // TODO: type params typecheck
             return
         case 'fn-type':
+            // TODO
             break
     }
 }
