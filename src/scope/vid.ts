@@ -7,7 +7,7 @@ import { Pattern } from '../ast/match'
 import { TypeCon, TypeDef } from '../ast/type-def'
 import { Generic } from '../ast/type'
 import { checkModule } from '../semantic'
-import { selfType } from '../typecheck'
+import { selfType, Typed } from '../typecheck'
 import { defaultImportedVids } from './std'
 
 export interface VirtualIdentifier {
@@ -21,7 +21,7 @@ export type SelfDef = {
     kind: 'self'
 }
 
-export interface TypeConDef {
+export interface TypeConDef extends Partial<Typed> {
     kind: 'type-con',
     typeCon: TypeCon,
     typeDef: VirtualIdentifierMatch<TypeDef>
@@ -122,7 +122,8 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context): VirtualIdentif
                     const typeConDef: TypeConDef = {
                         kind: 'type-con',
                         typeCon: variant,
-                        typeDef: <VirtualIdentifierMatch<TypeDef>>ref
+                        typeDef: <VirtualIdentifierMatch<TypeDef>>ref,
+                        type: variant.type
                     }
                     return createRef(i, typeConDef)
                 }

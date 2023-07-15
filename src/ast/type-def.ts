@@ -25,7 +25,7 @@ export const buildTypeDef = (node: ParseNode): TypeDef => {
     return { kind: 'type-def', parseNode: node, name, generics, variants }
 }
 
-export interface TypeCon extends AstNode<'type-con'> {
+export interface TypeCon extends AstNode<'type-con'>, Partial<Typed> {
     name: Name
     fieldDefs: FieldDef[]
 }

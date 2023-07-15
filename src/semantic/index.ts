@@ -263,23 +263,29 @@ const checkTypeDef = (typeDef: TypeDef, ctx: Context) => {
 
     module.scopeStack.push({ type: 'type-def', definitions: new Map(typeDef.generics.map(g => [g.name.value, g])) })
 
-    typeDef.variants.forEach(v => checkTypeCon(v, ctx))
-    // TODO: check duplicate type cons
-
     typeDef.type = {
         kind: 'type-def',
         identifier: concatVid(module.identifier, vidFromString(typeDef.name.value)),
         generics: typeDef.generics.map(g => genericToVirtual(g, ctx))
     }
 
+    typeDef.variants.forEach(v => checkTypeCon(v, typeDef, ctx))
+    // TODO: check duplicate type cons
+
     module.scopeStack.pop()
 }
 
-const checkTypeCon = (typeCon: TypeCon, ctx: Context) => {
+const checkTypeCon = (typeCon: TypeCon, typeDef: TypeDef, ctx: Context) => {
     typeCon.fieldDefs.forEach(fieldDef => {
         checkType(fieldDef.fieldType, ctx)
         // TODO: check duplicate field defs
     })
+    typeCon.type = {
+        kind: 'fn-type',
+        paramTypes: typeCon.fieldDefs.map(f => typeToVirtual(f.fieldType, ctx)),
+        returnType: typeDef.type ?? unknownType,
+        generics: typeDef.generics.map(g => genericToVirtual(g, ctx))
+    }
 }
 
 const checkVarDef = (varDef: VarDef, ctx: Context, brief: boolean = false): void => {
