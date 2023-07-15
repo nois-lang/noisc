@@ -3,7 +3,6 @@ import { Generic, Type } from '../ast/type'
 import { idToVid, resolveVid, vidFromString, vidToString, VirtualIdentifier } from '../scope/vid'
 import { AstNode } from '../ast'
 import { semanticError, SemanticError } from '../semantic/error'
-import { resolveGeneric } from '../scope/type'
 import { findTypeTraits } from '../scope/trait'
 
 export interface Typed {
@@ -122,8 +121,6 @@ export const genericToVirtual = (generic: Generic, ctx: Context): VirtualGeneric
 export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context): boolean => {
     if (!ctx.config.typecheck) return true
 
-    t = resolveGeneric(t, ctx)
-
     if (t.kind === anyType.kind || target.kind === anyType.kind) {
         return true
     }
@@ -139,7 +136,7 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
         for (let i = 0; i < target.paramTypes.length; i++) {
             const targetP = target.paramTypes[i]
             const tp = t.paramTypes.at(i)
-            if (!tp || !isAssignable(resolveGeneric(tp, ctx), targetP, ctx)) {
+            if (!tp || !isAssignable(tp, targetP, ctx)) {
                 return false
             }
         }

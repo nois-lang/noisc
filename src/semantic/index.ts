@@ -7,6 +7,7 @@ import { Identifier, Operand } from '../ast/operand'
 import {
     genericToVirtual,
     isAssignable,
+    selfType,
     Typed,
     typeError,
     typeToVirtual,
@@ -34,7 +35,7 @@ import { todo } from '../util/todo'
 import { checkAccessExpr } from './access'
 import { getImplTargetType, traitDefToTypeDefType } from '../scope/trait'
 import { TypeCon, TypeDef } from '../ast/type-def'
-import { resolveFnGenerics } from '../typecheck/generic'
+import { resolveFnGenerics, resolveInstanceGenerics } from '../typecheck/generic'
 
 export const checkModule = (module: Module, ctx: Context, brief: boolean = false): void => {
     if (module.checked) return
@@ -200,8 +201,13 @@ const checkParam = (param: Param, index: number, ctx: Context): void => {
             param.type = unknownType
         }
     } else {
+        const instScope = instanceScope(ctx)
         checkType(param.paramType, ctx)
-        param.type = typeToVirtual(param.paramType, ctx)
+        if (instScope && param.paramType.kind === 'identifier' && param.paramType.name.value === selfType.name) {
+            param.type = instScope.selfType
+        } else {
+            param.type = typeToVirtual(param.paramType, ctx)
+        }
     }
     switch (param.pattern.kind) {
         case 'operand-expr':
@@ -222,7 +228,7 @@ const checkTraitDef = (traitDef: TraitDef, ctx: Context, brief: boolean = false)
     module.scopeStack.push({
         type: 'trait-def',
         selfType: traitDefToTypeDefType(traitDef, ctx),
-        traitDef,
+        def: traitDef,
         definitions: new Map(traitDef.generics.map(g => [g.name.value, g]))
     })
 
@@ -242,7 +248,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context, brief: boolean = false) =>
     module.scopeStack.push({
         type: 'impl-def',
         selfType: getImplTargetType(implDef, ctx),
-        implDef,
+        def: implDef,
         definitions: new Map(implDef.generics.map(g => [g.name.value, g]))
     })
 
@@ -308,8 +314,10 @@ const checkVarDef = (varDef: VarDef, ctx: Context, brief: boolean = false): void
 
     checkExpr(varDef.expr, ctx)
     if (varDef.varType) {
-        if (!isAssignable(varDef.expr.type!, varDef.type!, ctx)) {
-            ctx.errors.push(typeError(varDef, varDef.expr.type!, varDef.type!, ctx))
+        const exprType = varDef.expr.type ?? unknownType
+        const varType = varDef.type ?? unknownType
+        if (!isAssignable(exprType, varType, ctx)) {
+            ctx.errors.push(typeError(varDef, exprType, varType, ctx))
         }
     } else {
         varDef.type = varDef.expr.type
@@ -351,10 +359,15 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     }
     callOp.args.forEach(a => checkOperand(a, ctx))
 
+    const instanceGenericMap = resolveInstanceGenerics(ctx)
     const fnType = <VirtualFnType>operand.type
     const typeArgs = operand.kind === 'identifier' ? operand.typeParams.map(tp => typeToVirtual(tp, ctx)) : []
     const genericMap = resolveFnGenerics(fnType, typeArgs, callOp.args)
-    checkCallArgs(callOp, callOp.args, fnType.paramTypes.map(pt => genericMap.get(virtualTypeToString(pt)) || pt), ctx)
+    const paramTypes = fnType.paramTypes.map(pt => {
+        const vt = virtualTypeToString(pt)
+        return genericMap.get(vt) ?? pt
+    })
+    checkCallArgs(callOp, callOp.args, paramTypes, ctx)
 }
 
 const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {

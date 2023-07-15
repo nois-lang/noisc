@@ -19,14 +19,14 @@ export type Scope = TraitScope | ImplScope | CommonScope
 export interface TraitScope {
     type: 'trait-def',
     selfType: VirtualType,
-    traitDef: TraitDef,
+    def: TraitDef,
     definitions: Map<string, Definition>
 }
 
 export interface ImplScope {
     type: 'impl-def',
     selfType: VirtualType,
-    implDef: ImplDef,
+    def: ImplDef,
     definitions: Map<string, Definition>
 }
 
