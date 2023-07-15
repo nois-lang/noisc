@@ -1,0 +1,24 @@
+type MapIter<T, U>(
+    iter: Iter<T>,
+    f: |T|: U
+)
+
+trait MapAdapter<Self: Iter<T>, T> {
+    fn map(self, f: |T|: U): MapIter<T>
+}
+
+impl MapAdapter<T> for Iter<T> {
+    fn map(self, f: |T|: U): MapIter<T> {
+        MapIter(self, f)
+    }
+}
+
+impl Iter<T> for MapIter<T> {
+    fn next(self): Option<T> {
+        self.next().map(self.f)
+    }
+}
+
+fn main() {
+    println([1, 2, 3].map(|i| i * 2))
+}

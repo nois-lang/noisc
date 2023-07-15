@@ -24,6 +24,7 @@ export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
         return
     }
 
+    // TODO: support self
     ctx.errors.push(semanticError(ctx, rOp, 'illegal operand, expected field access or method call'))
 }
 
