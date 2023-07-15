@@ -1,6 +1,6 @@
 import { BinaryExpr } from '../ast/expr'
 import { Context } from '../scope'
-import { semanticError } from './error'
+import { notFoundError, semanticError } from './error'
 import { checkCallArgs, checkOperand } from './index'
 import { Operand } from '../ast/operand'
 import { CallOp } from '../ast/op'
@@ -50,7 +50,7 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
                 .some(s => s.kind === 'fn-def' && s.name.value === methodName)
         )
     if (traitRefs.length === 0) {
-        ctx.errors.push(semanticError(ctx, rOperand, `method ${virtualTypeToString(lOperand.type!)}::${methodName} not found`))
+        ctx.errors.push(notFoundError(ctx, rOperand, `${virtualTypeToString(lOperand.type!)}::${methodName}`, 'method'))
         return undefined
     }
     if (traitRefs.length > 1) {

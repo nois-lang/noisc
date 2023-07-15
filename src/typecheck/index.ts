@@ -93,7 +93,6 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
             const vid = idToVid(type)
             const ref = resolveVid(vid, ctx)
             if (!ref) {
-                ctx.errors.push(semanticError(ctx, type.name, `identifier ${vidToString(vid)} not found`))
                 return unknownType
             }
             if (ref.def.kind === 'self') {

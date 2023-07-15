@@ -37,6 +37,7 @@ import { TypeCon, TypeDef } from '../ast/type-def'
 import { resolveFnGenerics } from '../typecheck/generic'
 
 export const checkModule = (module: Module, ctx: Context, brief: boolean = false): void => {
+    if (module.checked) return
     const vid = vidToString(module.identifier)
     if (ctx.moduleStack.length > 100) {
         const stackVids = ctx.moduleStack.map(m => vidToString(m.identifier))
@@ -164,7 +165,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context, brief: boolean = false): void =>
         }
     })
 
-    if (fnDef.returnType) {
+    if (fnDef.returnType && brief) {
         checkType(fnDef.returnType, ctx)
     }
 
@@ -189,6 +190,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context, brief: boolean = false): void =>
 }
 
 const checkParam = (param: Param, index: number, ctx: Context): void => {
+    if (param.type) return
     if (!param.paramType) {
         const instScope = instanceScope(ctx)
         if (index === 0 && instScope && param.pattern.kind === 'name' && param.pattern.value === 'self') {
@@ -283,6 +285,7 @@ const checkTypeCon = (typeCon: TypeCon, ctx: Context) => {
 }
 
 const checkVarDef = (varDef: VarDef, ctx: Context, brief: boolean = false): void => {
+    if (brief && varDef.type) return
     const topLevel = ctx.moduleStack.at(-1)!.scopeStack.length === 1
 
     if (topLevel && brief) {
@@ -361,7 +364,7 @@ const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const vid = idToVid(operand)
     const ref = resolveVid(vid, ctx)
     if (!ref) {
-        ctx.errors.push(semanticError(ctx, operand, `identifier ${vidToString(vid)} not found`))
+        ctx.errors.push(notFoundError(ctx, operand, vidToString(vid)))
         return
     }
     if (ref.def.kind !== 'type-con') {
@@ -483,7 +486,7 @@ const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
     const vid = idToVid(identifier)
     const ref = resolveVid(vid, ctx)
     if (!ref) {
-        ctx.errors.push(semanticError(ctx, identifier, `identifier ${vidToString(vid)} not found`))
+        ctx.errors.push(notFoundError(ctx, identifier, vidToString(vid)))
         identifier.type = unknownType
     } else {
         identifier.type = 'type' in ref.def ? ref.def.type : unknownType
@@ -506,7 +509,7 @@ const checkType = (type: Type, ctx: Context) => {
             const vid = idToVid(type)
             const ref = resolveVid(vid, ctx)
             if (!ref) {
-                ctx.errors.push(notFoundError(ctx, type.name, vid))
+                ctx.errors.push(notFoundError(ctx, type, vidToString(vid)))
                 return
             }
             if (!['type-def', 'trait-def', 'generic', 'self'].includes(ref.def.kind)) {

@@ -1,6 +1,5 @@
 import { AstNode, Module } from '../ast'
 import { Context } from '../scope'
-import { vidToString, VirtualIdentifier } from '../scope/vid'
 
 export interface SemanticError {
     module: Module,
@@ -11,6 +10,6 @@ export interface SemanticError {
 export const semanticError = (ctx: Context, node: AstNode<any>, message: string): SemanticError =>
     ({ module: ctx.moduleStack.at(-1)!, node, message })
 
-export const notFoundError = (ctx: Context, node: AstNode<any>, vid: VirtualIdentifier): SemanticError =>
-    semanticError(ctx, node, `\`${node.kind}\` \`${vidToString(vid)}\` not found`)
+export const notFoundError = (ctx: Context, node: AstNode<any>, id: string, name: string = node.kind): SemanticError =>
+    semanticError(ctx, node, `${name} ${id} not found`)
 
