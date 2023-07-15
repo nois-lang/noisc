@@ -34,6 +34,7 @@ import { todo } from '../util/todo'
 import { checkAccessExpr } from './access'
 import { getImplTargetType, traitDefToTypeDefType } from '../scope/trait'
 import { TypeCon, TypeDef } from '../ast/type-def'
+import { resolveFnGenerics } from '../typecheck/generic'
 
 export const checkModule = (module: Module, ctx: Context, brief: boolean = false): void => {
     const vid = vidToString(module.identifier)
@@ -343,7 +344,10 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     }
     callOp.args.forEach(a => checkOperand(a, ctx))
 
-    checkCallArgs(callOp, callOp.args, (<VirtualFnType>operand.type).paramTypes, ctx)
+    const fnType = <VirtualFnType>operand.type
+    const typeArgs = operand.kind === 'identifier' ? operand.typeParams.map(tp => typeToVirtual(tp, ctx)) : []
+    const genericMap = resolveFnGenerics(fnType, typeArgs, callOp.args)
+    checkCallArgs(callOp, callOp.args, fnType.paramTypes.map(pt => genericMap.get(virtualTypeToString(pt)) || pt), ctx)
 }
 
 const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
