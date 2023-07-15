@@ -346,6 +346,7 @@ const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
 
 /**
  * TODO: fix false positive
+ * TODO: better error when type-con is called as a function, e.g. Option::Some(4)
  */
 const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const callOp = <CallOp>unaryExpr.unaryOp
@@ -393,7 +394,7 @@ const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         return
     }
     // TODO: check con expr
-    unaryExpr.type = { kind: 'type-def', identifier: ref.def.typeDef.qualifiedVid, generics: [] }
+    unaryExpr.type = (<VirtualFnType>ref.def.typeCon.type).returnType
 }
 
 const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
