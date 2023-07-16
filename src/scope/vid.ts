@@ -40,7 +40,7 @@ export type SelfDef = {
 export interface TypeConDef extends Partial<Typed> {
     kind: 'type-con',
     typeCon: TypeCon,
-    typeDef: VirtualIdentifierMatch<TypeDef>
+    typeDef: TypeDef
 }
 
 export interface VirtualIdentifierMatch<D = Definition> {
@@ -127,34 +127,44 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context, ofKind: Definit
 
     for (let i = module.scopeStack.length - 1; i >= 0; i--) {
         let scope = module.scopeStack[i]
-        // TODO: in case when ofKind contains fn-def, check kind-defs and impl-defs for such fn
-        let found = ofKind.map(k => scope.definitions.get(k + vidToString(vid))).find(def => !!def)
-        if (found) {
-            // cases for module-local references of type cons and kind fns
-            if (vid.scope.length === 1) {
-                const ref = createRef(i, found, vidFromScope(vid))
-                if (ref.def.kind === 'type-def') {
-                    const variant = ref.def.variants.find(v => v.name.value === vid.name)
-                    if (!variant) return undefined
-                    const typeConDef: TypeConDef = {
-                        kind: 'type-con',
-                        typeCon: variant,
-                        typeDef: <VirtualIdentifierMatch<TypeDef>>ref,
-                        type: variant.type
+        let found = ofKind
+            .map(k => {
+                if (vid.scope.length === 1) {
+                    const parentVid = vidScopeToString(vid)
+                    if (k === 'fn-def') {
+                        const trait = ['trait-def', 'impl-def']
+                            .map(k => <TraitDef | ImplDef>scope.definitions.get(k + parentVid))
+                            .find(d => !!d)
+                        if (!trait) return undefined
+
+                        const fn = trait.block.statements
+                            .filter(s => s.kind === 'fn-def')
+                            .map(s => <FnDef>s)
+                            .find(s => s.name.value === vid.name)
+                        if (!fn) return undefined
+
+                        return createRef(i, fn)
                     }
-                    return createRef(i, typeConDef)
+                    if (k === 'type-con') {
+                        const typeDef = <TypeDef>scope.definitions.get('type-def' + parentVid)
+                        if (!typeDef) return undefined
+
+                        const typeCon = typeDef.variants.find(v => v.name.value === vid.name)
+                        if (!typeCon) return undefined
+
+                        return createRef(i, { kind: 'type-con', typeCon, typeDef })
+                    }
                 }
-                if (ref.def.kind === 'trait-def' || ref.def.kind === 'impl-def') {
-                    const fn = ref.def.block.statements
-                        .filter(s => s.kind === 'fn-def')
-                        .map(s => <FnDef>s)
-                        .find(s => s.name.value === vid.name)
-                    if (!fn) return undefined
-                    return createRef(i, fn)
+                const def = scope.definitions.get(k + vidToString(vid))
+                if (def) {
+                    return createRef(i, def)
                 }
                 return undefined
-            }
-            return createRef(i, found)
+            })
+            .find(def => !!def)
+
+        if (found) {
+            return found
         }
     }
 

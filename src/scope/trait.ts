@@ -13,17 +13,16 @@ import { Module } from '../ast'
 import { TypeDefType, typeToVirtual, VirtualType } from '../typecheck'
 
 /**
- * Find all impl traits for specified type, available in the current scope
+ * Find all implemented traits and self impls for specified type, available in the current scope
  */
 export const findTypeTraits = (typeVid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch<TraitDef | ImplDef>[] => {
     return ctx.impls.flatMap(impl => {
         const targetVid = getImplTargetVid(impl)
-        const ref = resolveVid(targetVid, ctx)
+        const ref = resolveVid(targetVid, ctx, ['trait-def', 'impl-def'])
         // not all impl refs will resolve with current module imports
         if (!ref) return []
-        const qualifiedTargetVid = ref.qualifiedVid
-        if (vidToString(qualifiedTargetVid) === vidToString(typeVid)) {
-            const def = resolveVid(vidFromString(impl.name.value), ctx)
+        if (vidToString(ref.qualifiedVid) === vidToString(typeVid)) {
+            const def = resolveVid(vidFromString(impl.name.value), ctx, ['trait-def', 'impl-def'])
             if (!def) return []
             if (def.def.kind === 'trait-def' || def.def.kind === 'impl-def') {
                 return [{ qualifiedVid: def.qualifiedVid, def: def.def }]
