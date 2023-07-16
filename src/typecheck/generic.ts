@@ -1,14 +1,7 @@
-import {
-    genericToVirtual,
-    selfType,
-    Typed,
-    unknownType,
-    VirtualFnType,
-    VirtualType,
-    virtualTypeToString
-} from './index'
+import { genericToVirtual, Typed, VirtualFnType, VirtualType, virtualTypeToString } from './index'
 import { AstNode } from '../ast'
 import { Context, instanceScope } from '../scope'
+import { selfType, unknownType } from './type'
 
 export const resolveFnGenerics = (fnType: VirtualFnType,
                                   typeArgs: VirtualType[],

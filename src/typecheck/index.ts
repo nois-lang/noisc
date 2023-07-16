@@ -1,9 +1,10 @@
 import { Context } from '../scope'
 import { Generic, Type } from '../ast/type'
-import { idToVid, resolveVid, vidFromString, vidToString, VirtualIdentifier } from '../scope/vid'
+import { idToVid, resolveVid, vidToString, VirtualIdentifier } from '../scope/vid'
 import { AstNode } from '../ast'
 import { semanticError, SemanticError } from '../semantic/error'
 import { findTypeTraits } from '../scope/trait'
+import { anyType, selfType, unknownType } from './type'
 
 export interface Typed {
     type: VirtualType
@@ -36,18 +37,6 @@ export interface AnyType {
 
 export interface UnknownType {
     kind: 'unknown-type'
-}
-
-export const anyType: AnyType = { kind: 'any-type' }
-
-export const unknownType: UnknownType = { kind: 'unknown-type' }
-
-export const selfType: VirtualGeneric = { kind: 'generic', name: 'Self', bounds: [] }
-
-export const unitType: VirtualVariantType = {
-    kind: 'variant-type',
-    identifier: vidFromString('std::Unit'),
-    typeParams: []
 }
 
 export interface VirtualGeneric {

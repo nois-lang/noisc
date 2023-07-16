@@ -1,6 +1,6 @@
 import { Module } from '../ast'
-import { FnDef, ImplDef, TraitDef } from '../ast/statement'
-import { isAssignable, typeToVirtual, VirtualType } from '../typecheck'
+import { ImplDef, TraitDef } from '../ast/statement'
+import { VirtualType } from '../typecheck'
 import { Definition, VirtualIdentifier } from './vid'
 import { Config } from '../config'
 import { SemanticError } from '../semantic/error'
@@ -63,20 +63,6 @@ export const defKey = (def: Definition): string => {
         case 'type-con':
             return def.kind + def.typeCon.name.value
     }
-}
-
-export const findImpl = (vId: VirtualIdentifier, type: VirtualType, ctx: Context): ImplDef | undefined => {
-    // TODO: go through imports only
-    return ctx.modules
-        .flatMap(m => m.block.statements.filter(s => s.kind === 'impl-def').map(s => <ImplDef>s))
-        .filter(i => !i.forTrait || isAssignable(type, typeToVirtual(i.forTrait, ctx), ctx))
-        .find(i => i.name.value === vId.name)
-}
-
-export const findImplFn = (implDef: ImplDef, vid: VirtualIdentifier, ctx: Context): FnDef | undefined => {
-    return implDef.block.statements
-        .filter(s => s.kind === 'fn-def' && s.name.value === vid.name)
-        .map(s => <FnDef>s).at(0)
 }
 
 export const pathToVid = (path: string, packageName?: string): VirtualIdentifier => {

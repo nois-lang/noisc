@@ -1,4 +1,4 @@
-import { Context, defKey, findImpl, findImplFn, instanceScope } from '../scope'
+import { Context, defKey, instanceScope } from '../scope'
 import { AstNode, Module, Param } from '../ast'
 import { Block, FnDef, ImplDef, Statement, TraitDef, VarDef } from '../ast/statement'
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
@@ -7,18 +7,15 @@ import { Identifier, Operand } from '../ast/operand'
 import {
     genericToVirtual,
     isAssignable,
-    selfType,
     Typed,
     typeError,
     typeToVirtual,
-    unitType,
-    unknownType,
     VirtualFnType,
     VirtualType,
     virtualTypeToString
 } from '../typecheck'
 import { CallOp, ConOp } from '../ast/op'
-import { concatVid, Definition, idToVid, resolveVid, vidFromScope, vidFromString, vidToString } from '../scope/vid'
+import { concatVid, Definition, idToVid, resolveVid, vidFromString, vidToString } from '../scope/vid'
 import { useExprToVids } from './use-expr'
 import { Type } from '../ast/type'
 import { notFoundError, semanticError } from './error'
@@ -27,6 +24,7 @@ import { checkAccessExpr } from './access'
 import { getImplTargetType, traitDefToTypeDefType } from '../scope/trait'
 import { TypeCon, TypeDef } from '../ast/type-def'
 import { resolveFnGenerics, resolveInstanceGenerics } from '../typecheck/generic'
+import { selfType, unitType, unknownType } from '../typecheck/type'
 
 export const checkModule = (module: Module, ctx: Context, brief: boolean = false): void => {
     if (module.checked) return
@@ -404,19 +402,7 @@ const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     const opImplFnId = operatorImplMap.get(binaryExpr.binaryOp.kind)
     if (!opImplFnId) throw Error(`operator ${binaryExpr.binaryOp.kind} without impl function`)
 
-    const opImplId = vidFromScope(opImplFnId)
-
-    const impl = findImpl(opImplId, binaryExpr.lOperand.type!, ctx)
-    if (!impl) {
-        const message = `no suitable impl \
-${vidToString(opImplId)}(\
-${virtualTypeToString(binaryExpr.lOperand.type!)}, \
-${virtualTypeToString(binaryExpr.rOperand.type!)})`
-        ctx.errors.push(semanticError(ctx, binaryExpr.binaryOp, message))
-        return
-    }
-
-    const implFn = findImplFn(impl, opImplFnId, ctx)
+    const implFn = <FnDef>resolveVid(opImplFnId, ctx, ['fn-def'])?.def
     if (!implFn) throw Error('impl fn not found')
     if (!implFn.type) throw Error('untyped impl fn')
     if (implFn.type.kind !== 'fn-type') throw Error('impl fn type in not fn')

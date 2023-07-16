@@ -7,8 +7,9 @@ import { Pattern } from '../ast/match'
 import { TypeCon, TypeDef } from '../ast/type-def'
 import { Generic } from '../ast/type'
 import { checkModule } from '../semantic'
-import { selfType, Typed } from '../typecheck'
+import { Typed } from '../typecheck'
 import { defaultImportedVids } from './std'
+import { selfType } from '../typecheck/type'
 
 export interface VirtualIdentifier {
     scope: string[]
@@ -47,7 +48,7 @@ export interface VirtualIdentifierMatch<D = Definition> {
     def: D
 }
 
-export function vidFromString(str: string): VirtualIdentifier {
+export const vidFromString = (str: string): VirtualIdentifier => {
     const tokens = str.split('::')
     return { scope: tokens.slice(0, -1), name: tokens.at(-1)! }
 }
@@ -105,7 +106,7 @@ export const patternVid = (pattern: Pattern): VirtualIdentifier | undefined => {
     return undefined
 }
 
-export const resolveVid = (vid: VirtualIdentifier, ctx: Context, ofKind = defKinds): VirtualIdentifierMatch | undefined => {
+export const resolveVid = (vid: VirtualIdentifier, ctx: Context, ofKind: DefinitionKind[] = [...defKinds]): VirtualIdentifierMatch | undefined => {
     const createRef = (i: number, found: Definition, matchVid = vid) => {
         // if found in the lowest stack, so it is available outside of module, thus should be module-qualified
         if (i === 0) {
