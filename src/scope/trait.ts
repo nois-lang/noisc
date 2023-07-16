@@ -40,6 +40,7 @@ export const getImplTargetVid = (implDef: ImplDef): VirtualIdentifier => {
     if (implDef.forTrait) {
         return idToVid(implDef.forTrait)
     } else {
+        // TODO: returns non qualified vid
         return vidFromString(implDef.name.value)
     }
 }
@@ -48,7 +49,11 @@ export const getImplTargetType = (implDef: ImplDef, ctx: Context): VirtualType =
     if (implDef.forTrait) {
         return typeToVirtual(implDef.forTrait, ctx)
     } else {
-        return { kind: 'type-def', identifier: vidFromString(implDef.name.value), generics: [] }
+        return {
+            kind: 'type-def',
+            identifier: resolveVid(vidFromString(implDef.name.value), ctx)!.qualifiedVid,
+            generics: []
+        }
     }
 }
 

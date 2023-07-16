@@ -62,8 +62,8 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
         )
         return undefined
     }
-    const kind = <TraitDef>traitRefs[0].def
-    const fn = <FnDef>kind.block.statements.find(s => s.kind === 'fn-def' && s.name.value === methodName)!
+    const traitDef = <TraitDef>traitRefs[0].def
+    const fn = <FnDef>traitDef.block.statements.find(s => s.kind === 'fn-def' && s.name.value === methodName)!
 
     callOp.args.forEach(a => checkOperand(a, ctx))
 
