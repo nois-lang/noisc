@@ -17,7 +17,8 @@ import { TypeDefType, typeToVirtual, VirtualType } from '../typecheck'
  */
 export const findTypeTraits = (typeVid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch<TraitDef | ImplDef>[] => {
     return ctx.impls.flatMap(impl => {
-        const targetVid = getImplTargetVid(impl)
+        const targetVid = getImplTargetVid(impl, ctx)
+        if (!targetVid) return []
         const ref = resolveVid(targetVid, ctx, ['trait-def', 'impl-def'])
         // not all impl refs will resolve with current module imports
         if (!ref) return []
@@ -36,12 +37,11 @@ export const findTypeTraits = (typeVid: VirtualIdentifier, ctx: Context): Virtua
 export const findImpls = (module: Module): ImplDef[] =>
     module.block.statements.flatMap(s => s.kind !== 'impl-def' ? [] : s)
 
-export const getImplTargetVid = (implDef: ImplDef): VirtualIdentifier => {
+export const getImplTargetVid = (implDef: ImplDef, ctx: Context): VirtualIdentifier | undefined => {
     if (implDef.forTrait) {
-        return idToVid(implDef.forTrait)
+        return resolveVid(idToVid(implDef.forTrait), ctx)?.qualifiedVid
     } else {
-        // TODO: returns non qualified vid
-        return vidFromString(implDef.name.value)
+        return resolveVid(vidFromString(implDef.name.value), ctx)?.qualifiedVid
     }
 }
 
@@ -59,9 +59,9 @@ export const getImplTargetType = (implDef: ImplDef, ctx: Context): VirtualType =
 
 export const traitDefToTypeDefType = (traitDef: TraitDef, ctx: Context): TypeDefType => {
     const module = ctx.moduleStack.at(-1)!
-    return ({
+    return {
         kind: 'type-def',
         identifier: concatVid(module.identifier, vidFromString(traitDef.name.value)),
         generics: []
-    })
+    }
 }
