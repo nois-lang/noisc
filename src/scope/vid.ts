@@ -127,6 +127,7 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context, ofKind: Definit
 
     for (let i = module.scopeStack.length - 1; i >= 0; i--) {
         let scope = module.scopeStack[i]
+        // TODO: check local type's constructors
         let found = ofKind
             .map(k => {
                 if (vid.scope.length === 1) {
