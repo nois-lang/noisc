@@ -59,7 +59,7 @@ export const defKey = (def: Definition): string => {
         case 'generic':
             return def.kind + def.name.value
         case 'impl-def':
-            return def.kind + def.name.value + (def.forTrait?.name ?? '')
+            return def.kind + def.identifier.name.value + (def.forTrait?.name ?? '')
         case 'type-con':
             return def.kind + def.typeCon.name.value
     }

@@ -10,7 +10,7 @@ import {
 import { parseInfixOp, parsePostfixOp, parsePrefixOp } from './op'
 import { parseMatchExpr, parsePattern } from './match'
 import { parseBlock } from './statement'
-import { parseTypeParams } from './type'
+import { parseType } from './type'
 
 /**
  * expr ::= sub-expr (infix-op sub-expr)*
@@ -136,7 +136,7 @@ export const parseForExpr = (parser: Parser): void => {
 }
 
 /**
- * identifier ::= (NAME COLON COLON)* NAME typeParams?
+ * identifier ::= (NAME COLON COLON)* NAME type-args?
  */
 export const parseIdentifier = (parser: Parser): void => {
     const mark = parser.open()
@@ -149,7 +149,23 @@ export const parseIdentifier = (parser: Parser): void => {
         parser.expect('name')
     }
     if (parser.at('o-angle') && parser.encounter('c-angle', ['name', 'colon', 'o-angle'])) {
-        parseTypeParams(parser)
+        parseTypeArgs(parser)
     }
     parser.close(mark, 'identifier')
+}
+
+/**
+ * type-args ::= O-ANGLE (type (COMMA type)* COMMA?)? C-ANGLE
+ */
+export const parseTypeArgs = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('o-angle')
+    while (!parser.at('c-angle') && !parser.eof()) {
+        parseType(parser)
+        if (!parser.at('c-angle')) {
+            parser.expect('comma')
+        }
+    }
+    parser.expect('c-angle')
+    parser.close(mark, 'type-args')
 }

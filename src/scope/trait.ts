@@ -23,7 +23,7 @@ export const findTypeTraits = (typeVid: VirtualIdentifier, ctx: Context): Virtua
         // not all impl refs will resolve with current module imports
         if (!ref) return []
         if (vidToString(ref.qualifiedVid) === vidToString(typeVid)) {
-            const def = resolveVid(vidFromString(impl.name.value), ctx, ['trait-def', 'impl-def'])
+            const def = resolveVid(idToVid(impl.identifier), ctx, ['trait-def', 'impl-def'])
             if (!def) return []
             if (def.def.kind === 'trait-def' || def.def.kind === 'impl-def') {
                 return [{ qualifiedVid: def.qualifiedVid, def: def.def }]
@@ -41,7 +41,7 @@ export const getImplTargetVid = (implDef: ImplDef, ctx: Context): VirtualIdentif
     if (implDef.forTrait) {
         return resolveVid(idToVid(implDef.forTrait), ctx)?.qualifiedVid
     } else {
-        return resolveVid(vidFromString(implDef.name.value), ctx)?.qualifiedVid
+        return resolveVid(idToVid(implDef.identifier), ctx)?.qualifiedVid
     }
 }
 
@@ -51,7 +51,7 @@ export const getImplTargetType = (implDef: ImplDef, ctx: Context): VirtualType =
     } else {
         return {
             kind: 'type-def',
-            identifier: resolveVid(vidFromString(implDef.name.value), ctx)!.qualifiedVid,
+            identifier: resolveVid(idToVid(implDef.identifier), ctx)!.qualifiedVid,
             generics: []
         }
     }

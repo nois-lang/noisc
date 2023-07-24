@@ -9,5 +9,5 @@ export const selfType: VirtualGeneric = { kind: 'generic', name: 'Self', bounds:
 export const unitType: VirtualVariantType = {
     kind: 'variant-type',
     identifier: { scope: ['std'], name: 'Unit' },
-    typeParams: []
+    typeArgs: []
 }

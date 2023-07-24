@@ -21,7 +21,7 @@ export interface TypeDefType {
 export interface VirtualVariantType {
     kind: 'variant-type'
     identifier: VirtualIdentifier
-    typeParams: VirtualType[]
+    typeArgs: VirtualType[]
 }
 
 export interface VirtualFnType {
@@ -58,11 +58,11 @@ export const virtualTypeToString = (vt: VirtualType): string => {
         }
         case 'variant-type':
             const t = vidToString(vt.identifier)
-            if (vt.typeParams.length === 0) {
+            if (vt.typeArgs.length === 0) {
                 return t
             } else {
-                const typeParams = vt.typeParams.map(virtualTypeToString)
-                return `${t}<${typeParams.join(', ')}>`
+                const typeArgs = vt.typeArgs.map(virtualTypeToString)
+                return `${t}<${typeArgs.join(', ')}>`
             }
         case 'fn-type':
             return `|${vt.paramTypes.map(virtualTypeToString).join(', ')}|: ${virtualTypeToString(vt.returnType)}`

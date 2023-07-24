@@ -51,20 +51,3 @@ export const parseFnTypeParams = (parser: Parser): void => {
     parser.expect('pipe')
     parser.close(mark, 'fn-type-params')
 }
-
-/**
- * type-params ::= O-ANGLE (type (COMMA type)* COMMA?)? C-ANGLE
- */
-export const parseTypeParams = (parser: Parser): void => {
-    const mark = parser.open()
-    parser.expect('o-angle')
-    while (!parser.at('c-angle') && !parser.eof()) {
-        parseType(parser)
-        if (!parser.at('c-angle')) {
-            parser.expect('comma')
-        }
-    }
-    parser.expect('c-angle')
-    parser.close(mark, 'type-params')
-}
-

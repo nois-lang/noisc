@@ -26,7 +26,7 @@ statement           ::= var-def | fn-def | trait-def | impl-def | type-def | ret
                     ;
   trait-def         ::= TRAIT-KEYWORD NAME generics? block
                     ;
-  impl-def          ::= IMPL-KEYWORD NAME generics? impl-for? block
+  impl-def          ::= IMPL-KEYWORD generics? identifier impl-for? block
                     ;
     impl-for        ::= FOR-KEYWORD identifier
                     ;
@@ -94,7 +94,15 @@ statement           ::= var-def | fn-def | trait-def | impl-def | type-def | ret
                     ;
         field-init  ::= NAME COLON expr
                     ;
-identifier          ::= (NAME COLON COLON)* NAME type-params?
+identifier          ::= (NAME COLON COLON)* NAME type-args?
+                    ;
+  type-args         ::= O-ANGLE (type (COMMA type)* COMMA?)? C-ANGLE
+                    ;
+type                ::= identifier | fn-type
+                    ;
+  fn-type           ::= fn-type-params type-annot
+                    ;
+    fn-type-params  ::= PIPE (type (COMMA type)* COMMA?)? PIPE
                     ;
 block               ::= O-BRACE statement* C-BRACE
                     ;
@@ -105,14 +113,6 @@ closure-expr        ::= closure-params type-annot? (block | expr)
 list-expr           ::= O-BRACKET (expr (COMMA expr)*)? COMMA? C-BRACKET
                     ;
 type-annot          ::= COLON type
-                    ;
-type                ::= identifier | fn-type
-                    ;
-  type-params       ::= O-ANGLE (type (COMMA type)* COMMA?)? C-ANGLE
-                    ;
-  fn-type           ::= fn-type-params type-annot
-                    ;
-    fn-type-params  ::= PIPE (type (COMMA type)* COMMA?)? PIPE
                     ;
 if-expr             ::= IF-KEYWORD expr block (ELSE-KEYWORD block)?
                     ;

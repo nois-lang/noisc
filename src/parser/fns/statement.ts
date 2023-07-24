@@ -209,15 +209,15 @@ export const parseTraitDef = (parser: Parser): void => {
 }
 
 /**
- * impl-def ::= IMPL-KEYWORD NAME generics? impl-for? block
+ * impl-def ::= IMPL-KEYWORD generics? identifier impl-for? block
  */
 export const parseImplDef = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('impl-keyword')
-    parser.expect('name')
     if (parser.at('o-angle')) {
         parseGenerics(parser)
     }
+    parseIdentifier(parser)
     if (parser.at('for-keyword')) {
         parseImplFor(parser)
     }

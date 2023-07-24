@@ -352,7 +352,7 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
 
     const instanceGenericMap = resolveInstanceGenerics(ctx)
     const fnType = <VirtualFnType>operand.type
-    const typeArgs = operand.kind === 'identifier' ? operand.typeParams.map(tp => typeToVirtual(tp, ctx)) : []
+    const typeArgs = operand.kind === 'identifier' ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
     const genericMap = resolveFnGenerics(fnType, typeArgs, callOp.args)
     const paramTypes = fnType.paramTypes.map(pt => {
         const vt = virtualTypeToString(pt)
@@ -502,7 +502,7 @@ const checkType = (type: Type, ctx: Context) => {
                 ctx.errors.push(semanticError(ctx, type.name, `expected type, got \`${ref.def.kind}\``))
                 return
             }
-            type.typeParams.forEach(tp => checkType(tp, ctx))
+            type.typeArgs.forEach(tp => checkType(tp, ctx))
             // TODO: type params typecheck
             return
         case 'fn-type':

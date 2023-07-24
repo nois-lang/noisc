@@ -154,16 +154,16 @@ export const buildFloatLiteral = (node: ParseNode): FloatLiteral => {
 export interface Identifier extends AstNode<'identifier'>, Partial<Typed> {
     scope: Name[]
     name: Name
-    typeParams: Type[]
+    typeArgs: Type[]
 }
 
 export const buildIdentifier = (node: ParseNode): Identifier => {
     const names = filterNonAstNodes(node).filter(n => n.kind === 'name').map(buildName)
     const scope = names.slice(0, -1)
     const name = names.at(-1)!
-    const typeParamsNode = filterNonAstNodes(node).find(n => n.kind === 'type-params')
-    const typeParams = typeParamsNode ? filterNonAstNodes(typeParamsNode).map(buildType) : []
-    return { kind: 'identifier', parseNode: node, scope, name, typeParams }
+    const typeArgsNode = filterNonAstNodes(node).find(n => n.kind === 'type-args')
+    const typeArgs = typeArgsNode ? filterNonAstNodes(typeArgsNode).map(buildType) : []
+    return { kind: 'identifier', parseNode: node, scope, name, typeArgs: typeArgs }
 }
 
 export interface Name extends AstNode<'name'>, Partial<Typed> {
