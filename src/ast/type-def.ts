@@ -4,7 +4,7 @@ import { AstNode, filterNonAstNodes } from './index'
 import { buildGeneric, buildType, Generic, Type } from './type'
 import { Typed } from '../typecheck'
 
-export interface TypeDef extends AstNode<'type-def'>, Partial<Typed> {
+export interface TypeDef extends AstNode<'type-def'> {
     name: Name
     generics: Generic[]
     variants: TypeCon[]

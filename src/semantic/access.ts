@@ -71,6 +71,7 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
 
     const fn = traitFnRefs[0].fn
     // TODO: resolve instance generics
+    const instanceType = lOperand.type!
     checkCallArgs(callOp, [lOperand, ...callOp.args], (<VirtualFnType>fn.type).paramTypes, ctx)
 
     return (<VirtualFnType>fn.type).returnType

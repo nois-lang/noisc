@@ -1,4 +1,4 @@
-import { Context, defKey, instanceScope } from '../scope'
+import { Context, defKey, instanceScope, TypeDefScope } from '../scope'
 import { AstNode, Module, Param } from '../ast'
 import { Block, FnDef, ImplDef, Statement, TraitDef, VarDef } from '../ast/statement'
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
@@ -15,9 +15,9 @@ import {
     virtualTypeToString
 } from '../typecheck'
 import { CallOp, ConOp } from '../ast/op'
-import { concatVid, Definition, idToVid, resolveVid, vidFromString, vidToString } from '../scope/vid'
+import { Definition, idToVid, resolveVid, vidFromString, vidToString } from '../scope/vid'
 import { useExprToVids } from './use-expr'
-import { Type } from '../ast/type'
+import { Generic, Type } from '../ast/type'
 import { notFoundError, semanticError } from './error'
 import { todo } from '../util/todo'
 import { checkAccessExpr } from './access'
@@ -257,30 +257,38 @@ const checkTypeDef = (typeDef: TypeDef, ctx: Context) => {
         return
     }
 
-    module.scopeStack.push({ type: 'type-def', definitions: new Map(typeDef.generics.map(g => [defKey(g), g])) })
+    module.scopeStack.push({
+        type: 'type-def',
+        def: typeDef,
+        vid: { scope: [...module.identifier.scope, module.identifier.name], name: typeDef.name.value },
+        definitions: new Map(typeDef.generics.map(g => [defKey(g), g]))
+    })
 
-    typeDef.type = {
-        kind: 'type-def',
-        identifier: concatVid(module.identifier, vidFromString(typeDef.name.value)),
-        generics: typeDef.generics.map(g => genericToVirtual(g, ctx))
-    }
-
-    typeDef.variants.forEach(v => checkTypeCon(v, typeDef, ctx))
+    typeDef.variants.forEach(v => checkTypeCon(v, ctx))
     // TODO: check duplicate type cons
 
     module.scopeStack.pop()
 }
 
-const checkTypeCon = (typeCon: TypeCon, typeDef: TypeDef, ctx: Context) => {
+const checkTypeCon = (typeCon: TypeCon, ctx: Context) => {
+    const module = ctx.moduleStack.at(-1)!
+    const typeDefScope = <TypeDefScope>module.scopeStack.at(-1)!
     typeCon.fieldDefs.forEach(fieldDef => {
         checkType(fieldDef.fieldType, ctx)
         // TODO: check duplicate field defs
     })
+    const generics = [...typeDefScope.definitions.values()]
+        .map(d => <Generic>d)
+        .filter(g => {
+            // TODO: only keep generics used by this type con
+            return true
+        })
+        .map(g => genericToVirtual(g, ctx))
     typeCon.type = {
         kind: 'fn-type',
         paramTypes: typeCon.fieldDefs.map(f => typeToVirtual(f.fieldType, ctx)),
-        returnType: typeDef.type ?? unknownType,
-        generics: typeDef.generics.map(g => genericToVirtual(g, ctx))
+        returnType: { kind: 'type-def', identifier: typeDefScope.vid, generics },
+        generics
     }
 }
 

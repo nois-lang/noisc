@@ -5,6 +5,7 @@ import { Definition, VirtualIdentifier } from './vid'
 import { Config } from '../config'
 import { SemanticError } from '../semantic/error'
 import { todo } from '../util/todo'
+import { TypeDef } from '../ast/type-def'
 
 export interface Context {
     config: Config
@@ -15,7 +16,7 @@ export interface Context {
     warnings: SemanticError[]
 }
 
-export type Scope = TraitScope | ImplScope | CommonScope
+export type Scope = TraitScope | ImplScope | TypeDefScope | CommonScope
 
 /**
  * Due to JS limitations, map id has to be composite, since different defs might have the same vid, e.g.
@@ -26,20 +27,27 @@ export type DefinitionMap = Map<string, Definition>
 
 export interface TraitScope {
     type: 'trait-def',
+    definitions: DefinitionMap
     selfType: VirtualType,
     def: TraitDef,
-    definitions: DefinitionMap
 }
 
 export interface ImplScope {
     type: 'impl-def',
+    definitions: DefinitionMap
     selfType: VirtualType,
     def: ImplDef,
+}
+
+export interface TypeDefScope {
+    type: 'type-def',
     definitions: DefinitionMap
+    def: TypeDef,
+    vid: VirtualIdentifier
 }
 
 export interface CommonScope {
-    type: 'module' | 'fn-def' | 'type-def' | 'block',
+    type: 'module' | 'fn-def' | 'block',
     definitions: DefinitionMap
 }
 
