@@ -12,10 +12,11 @@ import {
     typeToVirtual,
     VirtualFnType,
     VirtualType,
-    virtualTypeToString
+    virtualTypeToString,
+    VirtualVariantType
 } from '../typecheck'
 import { CallOp, ConOp } from '../ast/op'
-import { Definition, idToVid, resolveVid, vidFromString, vidToString } from '../scope/vid'
+import { Definition, idToVid, resolveVid, TypeConDef, vidFromString, vidToString } from '../scope/vid'
 import { useExprToVids } from './use-expr'
 import { Generic, Type } from '../ast/type'
 import { notFoundError, semanticError } from './error'
@@ -391,8 +392,23 @@ const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         ))
         return
     }
+    conOp.fields.map(f => checkExpr(f.expr, ctx))
     // TODO: check con expr
-    unaryExpr.type = (<VirtualFnType>ref.def.typeCon.type).returnType
+    const typeCon = (<TypeConDef>ref.def).typeCon
+    const typeConType = <VirtualFnType>typeCon.type!
+    // TODO: figure out typeArgs parameter here
+    const genericMap = resolveFnGenerics(typeConType, [], conOp.fields.map(f => f.expr))
+    typeConType.generics.forEach(g => {
+        if (!genericMap.get(g.name)) {
+            // TODO: find actual con op argument that's causing this
+            ctx.errors.push(semanticError(ctx, conOp, `unresolved type parameter ${g.name}`))
+        }
+    })
+    unaryExpr.type = {
+        kind: 'variant-type',
+        identifier: (<VirtualVariantType>typeConType.returnType).identifier,
+        typeArgs: typeConType.generics.map(g => genericMap.get(g.name)!)
+    }
 }
 
 const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
