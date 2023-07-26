@@ -22,6 +22,38 @@ export const resolveFnGenerics = (fnType: VirtualFnType,
     }))
 }
 
+export const resolveImplGenerics = (instanceType: VirtualType, implType: VirtualType): Map<string, VirtualType> => {
+    const map = new Map()
+    if (implType.kind === 'generic') {
+        map.set(implType.name, instanceType)
+        return map
+    }
+    const implTypeArgs = getTypeParams(implType)
+    const instTypeArgs = getTypeParams(instanceType)
+    for (let i = 0; i < implTypeArgs.length; i++) {
+        const implTypeArg = implTypeArgs[i]
+        const instTypeArg = instTypeArgs.at(i)
+        if (instTypeArg) {
+            resolveImplGenerics(instTypeArg, implTypeArg).forEach((v, k) => map.set(k, v))
+        }
+    }
+    return map
+}
+
+export const getTypeParams = (virtualType: VirtualType): VirtualType[] => {
+    switch (virtualType.kind) {
+        case 'type-def':
+            return virtualType.generics
+        case 'variant-type':
+            return virtualType.typeArgs
+        case 'any-type':
+        case 'fn-type':
+        case 'generic':
+        case 'unknown-type':
+            return []
+    }
+}
+
 export const resolveInstanceGenerics = (ctx: Context): Map<string, VirtualType> => {
     const instance = instanceScope(ctx)
     if (!instance) return new Map()

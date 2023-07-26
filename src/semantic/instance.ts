@@ -4,10 +4,11 @@ import { notFoundError, semanticError } from './error'
 import { checkCallArgs, checkOperand } from './index'
 import { Operand } from '../ast/operand'
 import { CallOp } from '../ast/op'
-import { findTypeTraits } from '../scope/trait'
+import { findTypeTraits, getImplTargetType } from '../scope/trait'
 import { VirtualFnType, VirtualType, virtualTypeToString } from '../typecheck'
 import { resolveVid, vidToString, VirtualIdentifierMatch } from '../scope/vid'
 import { FnDef, TraitDef } from '../ast/statement'
+import { resolveFnGenerics, resolveImplGenerics } from '../typecheck/generic'
 
 export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     const rOp = binaryExpr.rOperand
@@ -70,9 +71,17 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
     callOp.args.forEach(a => checkOperand(a, ctx))
 
     const fn = traitFnRefs[0].fn
-    // TODO: resolve instance generics
+    const fnType = <VirtualFnType>fn.type
     const instanceType = lOperand.type!
-    checkCallArgs(callOp, [lOperand, ...callOp.args], (<VirtualFnType>fn.type).paramTypes, ctx)
+    const implDef = traitFnRefs[0].ref.def
+    const implTargetType = getImplTargetType(implDef, ctx)
+    const implGenericMap = resolveImplGenerics(instanceType, implTargetType)
+    const fnGenericMap = resolveFnGenerics(fnType, [], callOp.args)
+    const paramTypes = fnType.paramTypes.map(pt => {
+        const vt = virtualTypeToString(pt)
+        return implGenericMap.get(vt) ?? fnGenericMap.get(vt) ?? pt
+    })
+    checkCallArgs(callOp, [lOperand, ...callOp.args], paramTypes, ctx)
 
     return (<VirtualFnType>fn.type).returnType
 }
