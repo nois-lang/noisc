@@ -8,7 +8,7 @@ import { findTypeTraits, getImplTargetType } from '../scope/trait'
 import { VirtualFnType, VirtualType, virtualTypeToString } from '../typecheck'
 import { resolveVid, vidToString, VirtualIdentifierMatch } from '../scope/vid'
 import { FnDef, TraitDef } from '../ast/statement'
-import { resolveFnGenerics, resolveImplGenerics } from '../typecheck/generic'
+import { resolveFnGenerics, resolveImplGenerics, resolveType } from '../typecheck/generic'
 
 export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     const rOp = binaryExpr.rOperand
@@ -77,11 +77,9 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
     const implTargetType = getImplTargetType(implDef, ctx)
     const implGenericMap = resolveImplGenerics(instanceType, implTargetType)
     const fnGenericMap = resolveFnGenerics(fnType, [], callOp.args)
-    const paramTypes = fnType.paramTypes.map(pt => {
-        const vt = virtualTypeToString(pt)
-        return implGenericMap.get(vt) ?? fnGenericMap.get(vt) ?? pt
-    })
+    const genericMaps = [implGenericMap, fnGenericMap]
+    const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps))
     checkCallArgs(callOp, [lOperand, ...callOp.args], paramTypes, ctx)
 
-    return (<VirtualFnType>fn.type).returnType
+    return resolveType(fnType.returnType, genericMaps)
 }

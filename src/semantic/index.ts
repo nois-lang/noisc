@@ -24,7 +24,7 @@ import { todo } from '../util/todo'
 import { checkAccessExpr } from './instance'
 import { getImplTargetType, traitDefToTypeDefType } from '../scope/trait'
 import { TypeCon, TypeDef } from '../ast/type-def'
-import { resolveFnGenerics, resolveInstanceGenerics } from '../typecheck/generic'
+import { resolveFnGenerics, resolveInstanceGenerics, resolveType } from '../typecheck/generic'
 import { selfType, unitType, unknownType } from '../typecheck/type'
 
 export const checkModule = (module: Module, ctx: Context, brief: boolean = false): void => {
@@ -359,14 +359,11 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     }
     callOp.args.forEach(a => checkOperand(a, ctx))
 
-    const instanceGenericMap = resolveInstanceGenerics(ctx)
     const fnType = <VirtualFnType>operand.type
     const typeArgs = operand.kind === 'identifier' ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
-    const genericMap = resolveFnGenerics(fnType, typeArgs, callOp.args)
-    const paramTypes = fnType.paramTypes.map(pt => {
-        const vt = virtualTypeToString(pt)
-        return genericMap.get(vt) ?? pt
-    })
+    const instanceGenericMap = resolveInstanceGenerics(ctx)
+    const fnGenericMap = resolveFnGenerics(fnType, typeArgs, callOp.args)
+    const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, [instanceGenericMap, fnGenericMap]))
     checkCallArgs(callOp, callOp.args, paramTypes, ctx)
 }
 
@@ -407,7 +404,7 @@ const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     unaryExpr.type = {
         kind: 'variant-type',
         identifier: (<VirtualVariantType>typeConType.returnType).identifier,
-        typeArgs: typeConType.generics.map(g => genericMap.get(g.name)!)
+        typeArgs: typeConType.generics.map(g => resolveType(g, [genericMap]))
     }
 }
 

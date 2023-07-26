@@ -61,3 +61,37 @@ export const resolveInstanceGenerics = (ctx: Context): Map<string, VirtualType> 
     // TODO: add generics
     return new Map([[selfType.name, instance.selfType]])
 }
+
+export const resolveType = (virtualType: VirtualType, genericMaps: Map<string, VirtualType>[]): VirtualType => {
+    switch (virtualType.kind) {
+        case 'type-def':
+            return {
+                kind: 'variant-type',
+                identifier: virtualType.identifier,
+                typeArgs: virtualType.generics.map(g => resolveType(g, genericMaps))
+            }
+        case 'variant-type':
+            return {
+                kind: 'variant-type',
+                identifier: virtualType.identifier,
+                typeArgs: virtualType.typeArgs.map(g => resolveType(g, genericMaps))
+            }
+        case 'generic':
+            const vt = virtualTypeToString(virtualType)
+            let resolved: VirtualType = unknownType
+            for (const map of genericMaps) {
+                const res = map.get(vt)
+                if (res) {
+                    resolved = res
+                }
+            }
+            // TODO: push error if type is still unknown
+            return resolved
+        case 'fn-type':
+            // TODO: resolve
+            return virtualType
+        case 'any-type':
+        case 'unknown-type':
+            return virtualType
+    }
+}

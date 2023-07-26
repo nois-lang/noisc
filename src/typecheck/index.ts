@@ -88,8 +88,11 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
             } else if (ref.def.kind === 'generic') {
                 return genericToVirtual(ref.def, ctx)
             } else if (ref.def.kind === 'trait-def' || ref.def.kind === 'type-def') {
-                // TODO: generics
-                return { kind: 'type-def', identifier: ref.qualifiedVid, generics: [] }
+                return {
+                    kind: 'type-def',
+                    identifier: ref.qualifiedVid,
+                    generics: ref.def.generics.map(g => genericToVirtual(g, ctx))
+                }
             } else {
                 ctx.errors.push(semanticError(ctx, type, `expected type, got \`${ref.def.kind}\``))
                 return unknownType
