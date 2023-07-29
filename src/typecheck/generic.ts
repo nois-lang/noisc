@@ -14,8 +14,8 @@ export const resolveFnGenerics = (fnType: VirtualFnType,
         for (let parI = 0; parI < fnType.paramTypes.length; parI++) {
             const pt = fnType.paramTypes[parI]
             if (virtualTypeToString(pt) === g.name) {
-                const arg = args[parI]
-                return [g.name, arg.type || unknownType]
+                const arg = args.at(parI)
+                return [g.name, arg?.type || unknownType]
             }
         }
         return [g.name, unknownType]

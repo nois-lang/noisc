@@ -51,7 +51,11 @@ const ctx: Context = {
     warnings: []
 }
 
-ctx.modules.forEach(m => { checkModule(m, ctx) })
+if (ctx.config.libCheck) {
+    ctx.modules.forEach(m => { checkModule(m, ctx) })
+} else {
+    checkModule(moduleAst, ctx)
+}
 
 if (ctx.errors.length > 0) {
     for (const error of ctx.errors) {

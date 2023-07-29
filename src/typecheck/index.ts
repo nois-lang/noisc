@@ -111,7 +111,7 @@ export const genericToVirtual = (generic: Generic, ctx: Context): VirtualGeneric
     ({ kind: 'generic', name: generic.name.value, bounds: generic.bounds.map(b => typeToVirtual(b, ctx)) })
 
 export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context): boolean => {
-    if (!ctx.config.typecheck) return true
+    if (!ctx.config.typeCheck) return true
 
     if (t.kind === anyType.kind || target.kind === anyType.kind) {
         return true
