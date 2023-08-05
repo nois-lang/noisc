@@ -365,6 +365,8 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const fnGenericMap = resolveFnGenerics(fnType, typeArgs, callOp.args)
     const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, [instanceGenericMap, fnGenericMap]))
     checkCallArgs(callOp, callOp.args, paramTypes, ctx)
+
+    unaryExpr.type = resolveType(fnType.returnType, [instanceGenericMap, fnGenericMap])
 }
 
 const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
@@ -532,10 +534,12 @@ const checkType = (type: Type, ctx: Context) => {
     }
 }
 
-export const checkCallArgs = (node: AstNode<any>,
-                              args: (AstNode<any> & Partial<Typed>)[],
-                              paramTypes: VirtualType[],
-                              ctx: Context): void => {
+export const checkCallArgs = (
+    node: AstNode<any>,
+    args: (AstNode<any> & Partial<Typed>)[],
+    paramTypes: VirtualType[],
+    ctx: Context
+): void => {
     if (args.length !== paramTypes.length) {
         ctx.errors.push(semanticError(ctx, node, `expected ${paramTypes.length} arguments, got ${args.length}`))
         return
