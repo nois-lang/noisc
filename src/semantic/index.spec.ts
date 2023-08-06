@@ -54,7 +54,7 @@ describe('semantic', () => {
     })
 
     describe('typecheck', () => {
-        xit('variant type arg', () => {
+        it('variant type arg', () => {
             const code = (type: string): string => `\
 type Foo<T> {
     A(v: T),
@@ -69,7 +69,7 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual([])
 
             ctx = check(code('String'))
-            expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected std::int::Int\n            got      std::string::String'])
+            expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected test::Foo<std::string::String>\n            got      test::Foo<std::int::Int>'])
         })
     })
 
@@ -116,7 +116,7 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected std::int::Int\n            got      std::string::String'])
         })
 
-        xit('instance and fn generics', () => {
+        it('instance and fn generics', () => {
             const code = (arg: string): string => `\
 type Foo<T> {
     A(v: T),
@@ -138,7 +138,7 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual([])
 
             ctx = check(code('"foo"'))
-            expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected std::int::Int\n            got      std::string::String'])
+            expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected test::Foo<std::int::Int>\n            got      test::Foo<std::string::String>'])
         })
     })
 })

@@ -124,7 +124,11 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
     if (t.kind === 'variant-type' && target.kind === 'variant-type') {
         if (vidToString(t.identifier) === vidToString(target.identifier)) {
             for (let i = 0; i < t.typeArgs.length; i++) {
-                // TODO
+                const tArg = t.typeArgs[i]
+                const targetArg = target.typeArgs[i]
+                if (!isAssignable(tArg, targetArg, ctx)) {
+                    return false
+                }
             }
             return true
         }
