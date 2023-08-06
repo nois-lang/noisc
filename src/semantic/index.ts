@@ -466,30 +466,30 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
             break
         case 'string-literal':
             operand.type = {
-                kind: 'type-def',
+                kind: 'variant-type',
                 identifier: resolveVid(vidFromString('String'), ctx)!.qualifiedVid,
-                generics: []
+                typeArgs: []
             }
             break
         case 'char-literal':
             operand.type = {
-                kind: 'type-def',
+                kind: 'variant-type',
                 identifier: resolveVid(vidFromString('Char'), ctx)!.qualifiedVid,
-                generics: []
+                typeArgs: []
             }
             break
         case 'int-literal':
             operand.type = {
-                kind: 'type-def',
+                kind: 'variant-type',
                 identifier: resolveVid(vidFromString('Int'), ctx)!.qualifiedVid,
-                generics: []
+                typeArgs: []
             }
             break
         case 'float-literal':
             operand.type = {
-                kind: 'type-def',
+                kind: 'variant-type',
                 identifier: resolveVid(vidFromString('Float'), ctx)!.qualifiedVid,
-                generics: []
+                typeArgs: []
             }
             break
         case 'identifier':

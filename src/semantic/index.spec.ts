@@ -53,6 +53,26 @@ describe('semantic', () => {
         })
     })
 
+    describe('typecheck', () => {
+        xit('variant type arg', () => {
+            const code = (type: string): string => `\
+type Foo<T> {
+    A(v: T),
+    B
+}
+
+fn main() {
+    let f = Foo::A(v: 4)
+    let check: Foo<${type}> = f
+}`
+            let ctx = check(code('Int'))
+            expect(ctx.errors.map(e => e.message)).toEqual([])
+
+            ctx = check(code('String'))
+            expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected std::int::Int\n            got      std::string::String'])
+        })
+    })
+
     describe('generics', () => {
         it('instance generics', () => {
             const code = (arg: string): string => `\
@@ -70,6 +90,7 @@ impl <T> Foo<T> {
 fn main() {
     let f = Foo::A(v: 4)
     let a = f.foo(${arg})
+    let check: Foo<Int> = a
 }`
             let ctx = check(code('6'))
             expect(ctx.errors.map(e => e.message)).toEqual([])
@@ -85,7 +106,33 @@ fn foo<T>(a: T): T {
 }
 
 fn main() {
-    let f: Int = foo(${arg})
+    let f = foo(${arg})
+    let check: Int = f
+}`
+            let ctx = check(code('6'))
+            expect(ctx.errors.map(e => e.message)).toEqual([])
+
+            ctx = check(code('"foo"'))
+            expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected std::int::Int\n            got      std::string::String'])
+        })
+
+        xit('instance and fn generics', () => {
+            const code = (arg: string): string => `\
+type Foo<T> {
+    A(v: T),
+    B
+}
+
+impl <T> Foo<T> {
+    fn foo<O>(self, other: O): Foo<O> {
+        Foo::A(v: other)
+    }
+}
+
+fn main() {
+    let f = Foo::A(v: 4)
+    let a = f.foo(${arg})
+    let check: Foo<Int> = a
 }`
             let ctx = check(code('6'))
             expect(ctx.errors.map(e => e.message)).toEqual([])

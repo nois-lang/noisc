@@ -5,6 +5,7 @@ import { AstNode } from '../ast'
 import { semanticError, SemanticError } from '../semantic/error'
 import { findTypeTraits } from '../scope/trait'
 import { anyType, selfType, unknownType } from './type'
+import { todo } from '../util/todo'
 
 export interface Typed {
     type: VirtualType
@@ -89,9 +90,9 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
                 return genericToVirtual(ref.def, ctx)
             } else if (ref.def.kind === 'trait-def' || ref.def.kind === 'type-def') {
                 return {
-                    kind: 'type-def',
+                    kind: 'variant-type',
                     identifier: ref.qualifiedVid,
-                    generics: ref.def.generics.map(g => genericToVirtual(g, ctx))
+                    typeArgs: type.typeArgs.map(arg => typeToVirtual(arg, ctx))
                 }
             } else {
                 ctx.errors.push(semanticError(ctx, type, `expected type, got \`${ref.def.kind}\``))
@@ -117,8 +118,14 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
         return true
     }
     // TODO: type params
-    if ((t.kind === 'variant-type' || t.kind === 'type-def') && (target.kind === 'variant-type' || target.kind === 'type-def')) {
+    if (t.kind === 'type-def' || target.kind === 'type-def') {
+        todo('type-def in typecheck')
+    }
+    if (t.kind === 'variant-type' && target.kind === 'variant-type') {
         if (vidToString(t.identifier) === vidToString(target.identifier)) {
+            for (let i = 0; i < t.typeArgs.length; i++) {
+                // TODO
+            }
             return true
         }
         const traitRefs = findTypeTraits(t.identifier, ctx)
