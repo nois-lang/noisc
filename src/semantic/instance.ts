@@ -5,7 +5,7 @@ import { checkCallArgs, checkOperand } from './index'
 import { Operand } from '../ast/operand'
 import { CallOp } from '../ast/op'
 import { findTypeTraits, getImplTargetType } from '../scope/trait'
-import { VirtualFnType, VirtualType, virtualTypeToString } from '../typecheck'
+import { VirtualFnType, VirtualType, typeToVirtual, virtualTypeToString } from '../typecheck'
 import { resolveVid, vidToString, VirtualIdentifierMatch } from '../scope/vid'
 import { FnDef, TraitDef } from '../ast/statement'
 import { resolveFnGenerics, resolveImplGenerics, resolveType } from '../typecheck/generic'
@@ -76,7 +76,11 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
     const implDef = traitFnRefs[0].ref.def
     const implTargetType = getImplTargetType(implDef, ctx)
     const implGenericMap = resolveImplGenerics(instanceType, implTargetType)
-    const fnGenericMap = resolveFnGenerics(fnType, [], callOp.args)
+    const fnGenericMap = resolveFnGenerics(
+        fnType,
+        lOperand.kind === 'identifier' ? lOperand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : [],
+        [lOperand, ...callOp.args]
+    )
     const genericMaps = [implGenericMap, fnGenericMap]
     const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps))
     checkCallArgs(callOp, [lOperand, ...callOp.args], paramTypes, ctx)
