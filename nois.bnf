@@ -16,9 +16,7 @@ statement           ::= var-def | fn-def | trait-def | impl-def | type-def | ret
                     ;
     generics        ::= O-ANGLE (generic (COMMA generic)* COMMA?)? C-ANGLE
                     ;
-      generic       ::= NAME COLON generic-bounds
-                    ;
-      generic-bounds::= type (PLUS type)*
+      generic       ::= NAME (COLON type-bounds)?
                     ;
     params          ::= O-PAREN (param (COMMA param)*)? COMMA? C-PAREN
                     ;
@@ -98,7 +96,9 @@ identifier          ::= (NAME COLON COLON)* NAME type-args?
                     ;
   type-args         ::= O-ANGLE (type (COMMA type)* COMMA?)? C-ANGLE
                     ;
-type                ::= identifier | fn-type
+type                ::= type-bounds | fn-type
+                    ;
+  type-bounds       ::= identifier (PLUS identifier)*
                     ;
   fn-type           ::= fn-type-params type-annot
                     ;

@@ -2,30 +2,45 @@ import { buildIdentifier, buildName, Identifier, Name } from './operand'
 import { ParseNode } from '../parser'
 import { AstNode, filterNonAstNodes } from './index'
 
-export type Type = Identifier | FnType
+export type Type = Identifier | TypeBounds | FnType
 
 export const buildType = (node: ParseNode): Type => {
     const n = filterNonAstNodes(node)[0]
     if (node.kind === 'type-annot') {
         return buildType(n)
     }
-    if (n.kind === 'identifier') {
-        return buildIdentifier(n)
+    if (n.kind === 'type-bounds') {
+        const typeBounds = buildTypeBounds(n)
+        if (typeBounds.bounds.length === 1) {
+            return typeBounds.bounds[0]
+        } else {
+            return typeBounds
+        }
     } else {
         return buildFnType(n)
     }
 }
 
+export interface TypeBounds extends AstNode<'type-bounds'> {
+    bounds: Identifier[]
+}
+
+export const buildTypeBounds = (node: ParseNode): TypeBounds => {
+    const nodes = filterNonAstNodes(node)
+    const bounds = nodes.map(buildIdentifier)
+    return { kind: 'type-bounds', parseNode: node, bounds }
+}
+
 export interface Generic extends AstNode<'generic'> {
     name: Name
-    bounds: Type[]
+    bounds: Identifier[]
 }
 
 export const buildGeneric = (node: ParseNode): Generic => {
     const nodes = filterNonAstNodes(node)
     const name = buildName(nodes[0])
-    const bounds = nodes.at(1)?.kind === 'generic-bounds' ? filterNonAstNodes(nodes[1]).map(buildType) : []
-    return { kind: 'generic', parseNode: node, name, bounds }
+    const bounds = nodes.at(1) ? buildTypeBounds(nodes[1]).bounds : []
+    return { kind: 'generic', parseNode: node, name, bounds: bounds }
 }
 
 export interface FnType extends AstNode<'fn-type'> {

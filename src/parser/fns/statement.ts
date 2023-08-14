@@ -1,9 +1,9 @@
 import { Parser } from '../parser'
-import { parseTypeDef } from './type-def'
 import { parseExpr, parseIdentifier } from './expr'
-import { parsePattern } from './match'
 import { exprFirstTokens, paramFirstTokens, useExprFirstTokens } from './index'
-import { parseType, parseTypeAnnot } from './type'
+import { parsePattern } from './match'
+import { parseTypeAnnot, parseTypeBounds } from './type'
+import { parseTypeDef } from './type-def'
 
 /**
  * statement ::= var-def | fn-def | kind-def | impl-def | type-def | return-stmt | expr
@@ -169,29 +169,16 @@ export const parseGenerics = (parser: Parser): void => {
     parser.close(mark, 'generics')
 }
 /**
- * generic ::= NAME (COLON generic-bounds)?
+ * generic ::= NAME (COLON type)?
  */
 export const parseGeneric = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('name')
     if (parser.at('colon')) {
         parser.expect('colon')
-        parseGenericBounds(parser)
+        parseTypeBounds(parser)
     }
     parser.close(mark, 'generic')
-}
-
-/**
- * generic-bounds ::= type (PLUS type)*
- */
-export const parseGenericBounds = (parser: Parser): void => {
-    const mark = parser.open()
-    parseType(parser)
-    while (parser.at('plus') && !parser.eof()) {
-        parser.expect('plus')
-        parseType(parser)
-    }
-    parser.close(mark, 'generic-bounds')
 }
 
 /**

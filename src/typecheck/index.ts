@@ -105,6 +105,8 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
                 paramTypes: type.paramTypes.map(pt => typeToVirtual(pt, ctx)),
                 returnType: typeToVirtual(type.returnType, ctx)
             }
+        case 'type-bounds':
+            return todo('type-bounds')
     }
 }
 

@@ -12,18 +12,31 @@ export const parseTypeAnnot = (parser: Parser): void => {
 }
 
 /**
- * type ::= identifier | fn-type
+ * type ::= type-bounds | fn-type
  */
 export const parseType = (parser: Parser): void => {
     const mark = parser.open()
     if (parser.at('name')) {
-        parseIdentifier(parser)
+        parseTypeBounds(parser)
     } else if (parser.at('pipe')) {
         parseFnType(parser)
     } else {
         parser.advanceWithError('expected type')
     }
     parser.close(mark, 'type')
+}
+
+/**
+ * type-bounds ::= identifier (PLUS identifier)*
+ */
+export const parseTypeBounds = (parser: Parser): void => {
+    const mark = parser.open()
+    parseIdentifier(parser)
+    while (parser.at('plus') && !parser.eof()) {
+        parser.expect('plus')
+        parseIdentifier(parser)
+    }
+    parser.close(mark, 'type-bounds')
 }
 
 /**

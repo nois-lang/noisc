@@ -35,7 +35,7 @@ export type AstNodeKind
     | 'closure-expr'
     | 'list-expr'
     | 'param'
-    | 'variant-type'
+    | 'type-bounds'
     | 'fn-type'
     | 'generic'
     | 'if-expr'
