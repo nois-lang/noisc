@@ -1,5 +1,5 @@
 import { Parser } from '../parser'
-import { parseArgs, parseConOp } from './index'
+import { nameLikeTokens, parseArgs, parseConOp } from './index'
 
 /**
  * infix-op ::= add-op | sub-op | mult-op | div-op | exp-op | mod-op | access-op | eq-op | ne-op | ge-op | le-op | gt-op
@@ -118,7 +118,10 @@ export const parseSpreadOp = (parser: Parser): void => {
  */
 export const parsePostfixOp = (parser: Parser): void => {
     const mark = parser.open()
-    if (parser.at('o-paren') && parser.nth(1) === 'name' && parser.nth(2) === 'colon' && parser.nth(3) !== 'colon') {
+    if (parser.at('o-paren') &&
+        nameLikeTokens.includes(parser.nth(1)) &&
+        parser.nth(2) === 'colon' &&
+        parser.nth(3) !== 'colon') {
         parseConOp(parser)
     } else if (parser.at('o-paren')) {
         parseCallOp(parser)

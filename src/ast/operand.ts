@@ -3,9 +3,10 @@ import { AstNode, buildParam, filterNonAstNodes, Param } from './index'
 import { Block, buildBlock } from './statement'
 import { buildExpr, Expr } from './expr'
 import { ParseToken } from '../lexer/lexer'
-import { ParseNode } from '../parser'
+import { ParseNode, ParseTree } from '../parser'
 import { Typed } from '../typecheck'
 import { buildType, Type } from './type'
+import { nameLikeTokens } from '../parser/fns'
 
 export type Operand
     = IfExpr
@@ -60,9 +61,13 @@ export interface IfExpr extends AstNode<'if-expr'>, Partial<Typed> {
 
 export const buildIfExpr = (node: ParseNode): IfExpr => {
     const nodes = filterNonAstNodes(node)
-    const condition = buildExpr(nodes[0])
-    const thenBlock = buildBlock(nodes[1])
-    const elseBlock = nodes.at(2) ? buildBlock(nodes[1]) : undefined
+    let idx = 0
+    // skip if-keyword
+    idx++
+    const condition = buildExpr(nodes[idx++])
+    const thenBlock = buildBlock(nodes[idx++])
+    //                            v-- skip else keyword
+    const elseBlock = nodes.at(idx++) ? buildBlock(nodes[idx++]) : undefined
     return { kind: 'if-expr', parseNode: node, condition, thenBlock, elseBlock }
 }
 
@@ -73,8 +78,11 @@ export interface WhileExpr extends AstNode<'while-expr'>, Partial<Typed> {
 
 export const buildWhileExpr = (node: ParseNode): WhileExpr => {
     const nodes = filterNonAstNodes(node)
-    const condition = buildExpr(nodes[0])
-    const block = buildBlock(nodes[1])
+    let idx = 0
+    // skip while-keyword
+    idx++
+    const condition = buildExpr(nodes[idx++])
+    const block = buildBlock(nodes[idx++])
     return { kind: 'while-expr', parseNode: node, condition, block }
 }
 
@@ -86,9 +94,14 @@ export interface ForExpr extends AstNode<'for-expr'>, Partial<Typed> {
 
 export const buildForExpr = (node: ParseNode): ForExpr => {
     const nodes = filterNonAstNodes(node)
-    const pattern = buildPattern(nodes[0])
-    const expr = buildExpr(nodes[1])
-    const block = buildBlock(nodes[2])
+    let idx = 0
+    // skip for-keyword
+    idx++
+    const pattern = buildPattern(nodes[idx++])
+    // skip in-keyword
+    idx++
+    const expr = buildExpr(nodes[idx++])
+    const block = buildBlock(nodes[idx++])
     return { kind: 'for-expr', parseNode: node, pattern, expr, block }
 }
 
@@ -158,7 +171,7 @@ export interface Identifier extends AstNode<'identifier'>, Partial<Typed> {
 }
 
 export const buildIdentifier = (node: ParseNode): Identifier => {
-    const names = filterNonAstNodes(node).filter(n => n.kind === 'name').map(buildName)
+    const names = (<ParseTree>node).nodes.filter(n => nameLikeTokens.includes((<ParseToken>n).kind)).map(buildName)
     const scope = names.slice(0, -1)
     const name = names.at(-1)!
     const typeArgsNode = filterNonAstNodes(node).find(n => n.kind === 'type-args')

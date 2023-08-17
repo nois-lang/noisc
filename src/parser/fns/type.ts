@@ -1,3 +1,4 @@
+import { nameLikeTokens } from '.'
 import { Parser } from '../parser'
 import { parseIdentifier } from './expr'
 
@@ -16,7 +17,7 @@ export const parseTypeAnnot = (parser: Parser): void => {
  */
 export const parseType = (parser: Parser): void => {
     const mark = parser.open()
-    if (parser.at('name')) {
+    if (parser.atAny(nameLikeTokens)) {
         parseTypeBounds(parser)
     } else if (parser.at('pipe')) {
         parseFnType(parser)

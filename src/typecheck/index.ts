@@ -1,11 +1,12 @@
-import { Context } from '../scope'
-import { Generic, Type } from '../ast/type'
-import { idToVid, resolveVid, vidToString, VirtualIdentifier } from '../scope/vid'
 import { AstNode } from '../ast'
-import { semanticError, SemanticError } from '../semantic/error'
+import { Generic, Type } from '../ast/type'
+import { Context } from '../scope'
 import { findTypeTraits } from '../scope/trait'
-import { anyType, selfType, unknownType } from './type'
+import { idToVid, vidToString } from '../scope/util'
+import { VirtualIdentifier, resolveVid } from '../scope/vid'
+import { SemanticError, semanticError } from '../semantic/error'
 import { todo } from '../util/todo'
+import { anyType, selfType, unknownType } from './type'
 
 export interface Typed {
     type: VirtualType

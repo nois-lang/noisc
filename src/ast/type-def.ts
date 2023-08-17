@@ -13,6 +13,8 @@ export interface TypeDef extends AstNode<'type-def'> {
 export const buildTypeDef = (node: ParseNode): TypeDef => {
     const nodes = filterNonAstNodes(node)
     let idx = 0
+    // skip type-keyword
+    idx++
     const name = buildName(nodes[idx++])
     const generics = nodes.at(idx)?.kind === 'generics' ? filterNonAstNodes(nodes[idx++]).map(buildGeneric) : []
     let variants: TypeCon[] = []

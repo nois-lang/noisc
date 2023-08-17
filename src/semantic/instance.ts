@@ -1,14 +1,15 @@
 import { BinaryExpr } from '../ast/expr'
+import { CallOp } from '../ast/op'
+import { Operand } from '../ast/operand'
+import { FnDef, TraitDef } from '../ast/statement'
 import { Context } from '../scope'
+import { findTypeTraits, getImplTargetType } from '../scope/trait'
+import { vidToString } from '../scope/util'
+import { VirtualIdentifierMatch, resolveVid } from '../scope/vid'
+import { VirtualFnType, VirtualType, typeToVirtual, virtualTypeToString } from '../typecheck'
+import { resolveFnGenerics, resolveImplGenerics, resolveType } from '../typecheck/generic'
 import { notFoundError, semanticError } from './error'
 import { checkCallArgs, checkOperand } from './index'
-import { Operand } from '../ast/operand'
-import { CallOp } from '../ast/op'
-import { findTypeTraits, getImplTargetType } from '../scope/trait'
-import { VirtualFnType, VirtualType, typeToVirtual, virtualTypeToString } from '../typecheck'
-import { resolveVid, vidToString, VirtualIdentifierMatch } from '../scope/vid'
-import { FnDef, TraitDef } from '../ast/statement'
-import { resolveFnGenerics, resolveImplGenerics, resolveType } from '../typecheck/generic'
 
 export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     const rOp = binaryExpr.rOperand

@@ -9,6 +9,7 @@ import { VirtualIdentifier } from '../scope/vid'
 import { Source } from '../source'
 import { Scope } from '../scope'
 import { Typed } from '../typecheck'
+import { nameLikeTokens } from '../parser/fns'
 
 export interface AstNode<T extends AstNodeKind> {
     kind: T
@@ -76,7 +77,7 @@ export type AstNodeKind
     | 'or-op'
     | 'assign-op'
 
-export const astNodes: NodeKind[] = [...lexerDynamicKinds, ...treeKinds]
+export const astNodes: NodeKind[] = [...lexerDynamicKinds, ...nameLikeTokens, ...treeKinds]
 
 export const filterNonAstNodes = (node: ParseNode): ParseNode[] =>
     (<ParseTree>node).nodes.filter(n => astNodes.includes(n.kind))

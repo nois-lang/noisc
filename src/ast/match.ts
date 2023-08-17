@@ -5,6 +5,8 @@ import { buildUnaryOp, SpreadOp } from './op'
 import { Block, buildBlock } from './statement'
 import { ParseNode } from '../parser'
 import { Typed } from '../typecheck'
+import { nameLikeTokens } from '../parser/fns'
+import { ParseToken } from '../lexer/lexer'
 
 export interface MatchExpr extends AstNode<'match-expr'>, Partial<Typed> {
     expr: Expr
@@ -13,8 +15,11 @@ export interface MatchExpr extends AstNode<'match-expr'>, Partial<Typed> {
 
 export const buildMatchExpr = (node: ParseNode): MatchExpr => {
     const nodes = filterNonAstNodes(node)
-    const expr = buildExpr(nodes[0])
-    const clauses = filterNonAstNodes(nodes[1]).map(buildMatchClause)
+    let idx = 0
+    // skip match-keyword
+    idx++
+    const expr = buildExpr(nodes[idx++])
+    const clauses = filterNonAstNodes(nodes[idx++]).map(buildMatchClause)
     return { kind: 'match-expr', parseNode: node, expr, clauses }
 }
 
@@ -28,7 +33,7 @@ export const buildMatchClause = (node: ParseNode): MatchClause => {
     const nodes = filterNonAstNodes(node)
     let idx = 0
     const pattern = buildPattern(nodes[idx++])
-    const guard = nodes[idx].kind === 'guard' ? buildExpr(filterNonAstNodes(nodes[idx++])[0]) : undefined
+    const guard = nodes[idx].kind === 'guard' ? buildExpr(filterNonAstNodes(nodes[idx++])[1]) : undefined
     const block = nodes[idx].kind === 'expr' ? <Block>{ statements: [buildExpr(nodes[idx++])] } : buildBlock(nodes[idx++])
     return { kind: 'match-clause', parseNode: node, pattern, guard, block }
 }
@@ -37,7 +42,7 @@ export type Pattern = Name | ConPattern | Operand | UnaryExpr | Hole
 
 export const buildPattern = (node: ParseNode): Pattern => {
     const nodes = filterNonAstNodes(node)
-    if (nodes[0].kind === 'name') {
+    if (nameLikeTokens.includes((<ParseToken>nodes[0]).kind)) {
         return buildName(nodes[0])
     }
     if (nodes[0].kind === 'con-pattern') {

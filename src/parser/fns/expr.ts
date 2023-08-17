@@ -3,6 +3,7 @@ import { TokenKind } from '../../lexer/lexer'
 import {
     exprFirstTokens,
     infixOpFirstTokens,
+    nameLikeTokens,
     parseClosureExpr,
     postfixOpFirstTokens,
     prefixOpFirstTokens
@@ -70,7 +71,7 @@ export const parseOperand = (parser: Parser): void => {
         parser.expect('c-paren')
     } else if (parser.at('o-bracket')) {
         parseListExpr(parser)
-    } else if (parser.at('name')) {
+    } else if (parser.atAny(nameLikeTokens)) {
         parseIdentifier(parser)
     } else if (parser.atAny(dynamicTokens)) {
         parser.expectAny(dynamicTokens)
@@ -140,15 +141,15 @@ export const parseForExpr = (parser: Parser): void => {
  */
 export const parseIdentifier = (parser: Parser): void => {
     const mark = parser.open()
-    while (parser.at('name') && parser.nth(1) === 'colon' && parser.nth(2) === 'colon' && !parser.eof()) {
-        parser.expect('name')
+    while (parser.atAny(nameLikeTokens) && parser.nth(1) === 'colon' && parser.nth(2) === 'colon' && !parser.eof()) {
+        parser.expectAny(nameLikeTokens)
         parser.expect('colon')
         parser.expect('colon')
     }
-    if (parser.at('name')) {
-        parser.expect('name')
+    if (parser.atAny(nameLikeTokens)) {
+        parser.expectAny(nameLikeTokens)
     }
-    if (parser.at('o-angle') && parser.encounter('c-angle', ['name', 'colon', 'o-angle'])) {
+    if (parser.at('o-angle') && parser.encounter('c-angle', [...nameLikeTokens, 'colon', 'o-angle'])) {
         parseTypeArgs(parser)
     }
     parser.close(mark, 'identifier')

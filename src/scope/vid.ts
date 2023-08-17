@@ -1,15 +1,15 @@
-import { Identifier } from '../ast/operand'
 import { Module, Param } from '../ast'
-import { Context, instanceScope } from './index'
-import { FnDef, ImplDef, Statement, TraitDef, VarDef } from '../ast/statement'
-import { todo } from '../util/todo'
 import { Pattern } from '../ast/match'
-import { TypeCon, TypeDef } from '../ast/type-def'
+import { FnDef, ImplDef, Statement, TraitDef, VarDef } from '../ast/statement'
 import { Generic } from '../ast/type'
+import { TypeCon, TypeDef } from '../ast/type-def'
 import { checkModule } from '../semantic'
 import { Typed } from '../typecheck'
-import { defaultImportedVids } from './std'
 import { selfType } from '../typecheck/type'
+import { todo } from '../util/todo'
+import { Context, instanceScope } from './index'
+import { defaultImportedVids } from './std'
+import { vidFirst, vidFromString, vidScopeToString, vidToString } from './util'
 
 export interface VirtualIdentifier {
     scope: string[]
@@ -46,31 +46,6 @@ export interface TypeConDef extends Partial<Typed> {
 export interface VirtualIdentifierMatch<D = Definition> {
     qualifiedVid: VirtualIdentifier
     def: D
-}
-
-export const vidFromString = (str: string): VirtualIdentifier => {
-    const tokens = str.split('::')
-    return { scope: tokens.slice(0, -1), name: tokens.at(-1)! }
-}
-
-export const vidToString = (vid: VirtualIdentifier): string => [...vid.scope, vid.name].join('::')
-
-export const vidScopeToString = (vid: VirtualIdentifier) => vid.scope.join('::')
-
-export const vidFromScope = (vid: VirtualIdentifier): VirtualIdentifier => ({
-    scope: vid.scope.slice(0, -1),
-    name: vid.scope.at(-1)!
-})
-
-export const vidFirst = (vid: VirtualIdentifier): string => vid.scope.at(0) || vid.name
-
-export const idToVid = (id: Identifier): VirtualIdentifier => ({
-    scope: id.scope.map(s => s.value),
-    name: id.name.value
-})
-
-export const concatVid = (a: VirtualIdentifier, b: VirtualIdentifier): VirtualIdentifier => {
-    return { scope: [...a.scope, a.name, ...b.scope], name: b.name }
 }
 
 export const statementVid = (statement: Statement): VirtualIdentifier | undefined => {

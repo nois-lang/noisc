@@ -1,15 +1,15 @@
 import { existsSync, readFileSync } from 'fs'
 import { basename, join, resolve } from 'path'
-import { prettyError, prettySourceMessage, prettyWarning } from './error'
-import { checkModule } from './semantic'
-import { Context, pathToVid } from './scope'
-import { indexToLocation } from './location'
 import * as process from 'process'
-import { getLocationRange } from './parser'
 import { defaultConfig } from './config'
-import { Source } from './source'
+import { prettyError, prettySourceMessage, prettyWarning } from './error'
+import { indexToLocation } from './location'
 import { buildModule, buildPackage } from './package/build'
+import { getLocationRange } from './parser'
+import { Context, pathToVid } from './scope'
 import { findImpls } from './scope/trait'
+import { checkModule } from './semantic'
+import { Source } from './source'
 
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
 

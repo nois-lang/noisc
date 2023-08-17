@@ -1,7 +1,7 @@
 import { Parser } from '../parser'
 import { parseExpr, parseIdentifier } from './expr'
 import { parseBlock } from './statement'
-import { fieldPatternFirstTokens, patternFollowTokens, prefixOpFirstTokens } from './index'
+import { fieldPatternFirstTokens, nameLikeTokens, patternFollowTokens, prefixOpFirstTokens } from './index'
 import { parsePrefixOp, parseSpreadOp } from './op'
 
 /**
@@ -67,9 +67,9 @@ export const parsePattern = (parser: Parser): void => {
     // tough case to decide it is a name or a con-pattern, name should be followed by pattern follow tokens
     // because COLON is a follow token, we should check if it is a part of scope resolution
     const isFollowedByScopeRes = parser.nth(1) === 'colon' && parser.nth(2) === 'colon'
-    if (parser.at('name') && patternFollowTokens.includes(parser.nth(1)) && !isFollowedByScopeRes) {
-        parser.expect('name')
-    } else if (parser.at('name')) {
+    if (parser.atAny(nameLikeTokens) && patternFollowTokens.includes(parser.nth(1)) && !isFollowedByScopeRes) {
+        parser.expectAny(nameLikeTokens)
+    } else if (parser.atAny(nameLikeTokens)) {
         parseConPattern(parser)
     } else if (parser.consume('string')) {
     } else if (parser.consume('char')) {
@@ -77,8 +77,12 @@ export const parsePattern = (parser: Parser): void => {
         if (parser.atAny(prefixOpFirstTokens)) {
             parsePrefixOp(parser)
         }
-        if (parser.consume('int')) {
-        } else if (parser.consume('float')) {
+        if (parser.at('int')) {
+            parser.expect('int')
+        } else if (parser.at('float')) {
+            parser.expect('float')
+        } else {
+            parser.advanceWithError('expected pattern')
         }
     } else if (parser.at('underscore')) {
         parseHole(parser)
@@ -119,8 +123,8 @@ export const parseConPatternParams = (parser: Parser): void => {
  */
 export const parseFieldPattern = (parser: Parser): void => {
     const mark = parser.open()
-    if (parser.at('name')) {
-        parser.expect('name')
+    if (parser.atAny(nameLikeTokens)) {
+        parser.expectAny(nameLikeTokens)
         if (parser.consume('colon')) {
             parsePattern(parser)
         }

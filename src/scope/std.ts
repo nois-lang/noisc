@@ -1,4 +1,5 @@
-import { vidFromString, VirtualIdentifier } from './vid'
+import { vidFromString } from './util'
+import { VirtualIdentifier } from './vid'
 
 export const defaultImportedVids = (): VirtualIdentifier[] => [
     'std::unit::Unit',

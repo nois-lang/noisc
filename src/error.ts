@@ -15,7 +15,7 @@ export const prettyLexerError = (token: ParseToken): string => {
 
 export const prettySyntaxError = (error: SyntaxError): string => {
     const msg = error.message ?? `expected \`${error.expected.join(', ')}\``
-    return prettyError(`syntax error: ${msg}, got \`${error.got.kind}\``)
+    return prettyError(`sntax error: ${msg}, got \`${error.got.kind}\``)
 }
 
 export const prettyError = (message: string): string => {

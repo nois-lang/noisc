@@ -20,7 +20,7 @@ export class Parser {
         public events: ParseEvent[] = [],
         public errors: SyntaxError[] = [],
         public fuel: number = 256
-    ) {}
+    ) { }
 
     open(): number {
         const mark = this.events.length
@@ -113,6 +113,9 @@ export class Parser {
         }
     }
 
+    /**
+     * Check if `target` token is encountered before any other tokens *not* listed in `whitelist`
+     */
     encounter(target: TokenKind, whitelist: TokenKind[]): boolean {
         let i = this.pos
         while (i < this.tokens.length) {

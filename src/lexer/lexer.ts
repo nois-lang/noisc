@@ -27,7 +27,8 @@ export const lexerPunctuationKinds = <const>[
     'comma',
     'equals',
     'underscore',
-    'arrow']
+    'arrow'
+]
 
 export const lexerKeywordKinds = <const>[
     'use-keyword',

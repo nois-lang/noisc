@@ -1,5 +1,5 @@
 import { Parser } from '../parser'
-import { paramFirstTokens } from './index'
+import { nameLikeTokens, paramFirstTokens } from './index'
 import { parseTypeAnnot } from './type'
 import { parseGenerics } from './statement'
 
@@ -9,7 +9,7 @@ import { parseGenerics } from './statement'
 export const parseTypeDef = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('type-keyword')
-    parser.expect('name')
+    parser.expectAny(nameLikeTokens)
     if (parser.at('o-angle')) {
         parseGenerics(parser)
     }
@@ -42,7 +42,7 @@ export const parseTypeConParams = (parser: Parser): void => {
  */
 export const parseFieldDef = (parser: Parser): void => {
     const mark = parser.open()
-    parser.expect('name')
+    parser.expectAny(nameLikeTokens)
     parseTypeAnnot(parser)
     parser.close(mark, 'field-def')
 }
@@ -53,7 +53,7 @@ export const parseFieldDef = (parser: Parser): void => {
 export const parseTypeConList = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('o-brace')
-    while (parser.at('name') && !parser.eof()) {
+    while (parser.atAny(nameLikeTokens) && !parser.eof()) {
         parseTypeCon(parser)
         if (!parser.at('c-brace')) {
             parser.expect('comma')
@@ -68,7 +68,7 @@ export const parseTypeConList = (parser: Parser): void => {
  */
 export const parseTypeCon = (parser: Parser): void => {
     const mark = parser.open()
-    parser.expect('name')
+    parser.expectAny(nameLikeTokens)
     if (parser.at('o-paren')) {
         parseTypeConParams(parser)
     }

@@ -1,6 +1,6 @@
 import { Parser } from '../parser'
 import { parseExpr, parseIdentifier } from './expr'
-import { exprFirstTokens, paramFirstTokens, useExprFirstTokens } from './index'
+import { exprFirstTokens, nameLikeTokens, paramFirstTokens, useExprFirstTokens } from './index'
 import { parsePattern } from './match'
 import { parseTypeAnnot, parseTypeBounds } from './type'
 import { parseTypeDef } from './type-def'
@@ -47,14 +47,15 @@ export const parseUseStmt = (parser: Parser): void => {
  */
 export const parseUseExpr = (parser: Parser): void => {
     const mark = parser.open()
-    while (parser.at('name') && parser.nth(1) === 'colon' && parser.nth(2) === 'colon' && !parser.eof()) {
-        parser.expect('name')
+    while (parser.atAny(nameLikeTokens) && parser.nth(1) === 'colon' && parser.nth(2) === 'colon' && !parser.eof()) {
+        parser.expectAny(nameLikeTokens)
         parser.expect('colon')
         parser.expect('colon')
     }
     if (parser.at('o-brace')) {
         parseUseList(parser)
-    } else if (parser.consume('name')) {
+    } else if (parser.atAny(nameLikeTokens)) {
+        parser.expectAny(nameLikeTokens)
     } else if (parser.at('asterisk')) {
         parseWildcard(parser)
     } else {
@@ -109,7 +110,7 @@ export const parseWildcard = (parser: Parser): void => {
 export const parseFnDef = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('fn-keyword')
-    parser.expect('name')
+    parser.expectAny(nameLikeTokens)
     if (parser.at('o-angle')) {
         parseGenerics(parser)
     }
@@ -159,7 +160,7 @@ export const parseParam = (parser: Parser): void => {
 export const parseGenerics = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('o-angle')
-    while (parser.at('name') && !parser.eof()) {
+    while (parser.atAny(nameLikeTokens) && !parser.eof()) {
         parseGeneric(parser)
         if (!parser.at('c-angle')) {
             parser.expect('comma')
@@ -173,7 +174,7 @@ export const parseGenerics = (parser: Parser): void => {
  */
 export const parseGeneric = (parser: Parser): void => {
     const mark = parser.open()
-    parser.expect('name')
+    parser.expectAny(nameLikeTokens)
     if (parser.at('colon')) {
         parser.expect('colon')
         parseTypeBounds(parser)
@@ -187,7 +188,7 @@ export const parseGeneric = (parser: Parser): void => {
 export const parseTraitDef = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('trait-keyword')
-    parser.expect('name')
+    parser.expectAny(nameLikeTokens)
     if (parser.at('o-angle')) {
         parseGenerics(parser)
     }

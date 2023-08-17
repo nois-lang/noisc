@@ -1,12 +1,5 @@
-import {
-    concatVid,
-    idToVid,
-    resolveVid,
-    vidFromString,
-    vidToString,
-    VirtualIdentifier,
-    VirtualIdentifierMatch
-} from './vid'
+import { resolveVid, VirtualIdentifier, VirtualIdentifierMatch } from './vid'
+import { concatVid, idToVid, vidFromString, vidToString, } from './util'
 import { Context } from './index'
 import { ImplDef, TraitDef } from '../ast/statement'
 import { Module } from '../ast'

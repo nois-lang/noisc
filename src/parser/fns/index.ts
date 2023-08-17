@@ -1,18 +1,24 @@
-import { TokenKind } from '../../lexer/lexer'
+import { TokenKind, lexerKeywordKinds } from '../../lexer/lexer'
 import { Parser } from '../parser'
 import { parseExpr } from './expr'
 import { parseBlock, parseParam, parseStatement, parseUseStmt } from './statement'
 import { parseTypeAnnot } from './type'
 
+/**
+ * Tokens that can be used as a name AST node depending on context.
+ * Includes 'name' itself and all keyword tokens
+ */
+export const nameLikeTokens: TokenKind[] = ['name', ...lexerKeywordKinds]
+
 export const prefixOpFirstTokens: TokenKind[] = ['excl', 'minus', 'period', 'plus']
 export const postfixOpFirstTokens: TokenKind[] = ['o-paren']
 export const infixOpFirstTokens: TokenKind[] = ['ampersand', 'asterisk', 'c-angle', 'caret', 'equals', 'excl', 'minus',
     'o-angle', 'percent', 'period', 'pipe', 'plus', 'slash']
-export const exprFirstTokens: TokenKind[] = ['char', 'name', 'if-keyword', 'while-keyword', 'for-keyword',
+export const exprFirstTokens: TokenKind[] = ['char', ...nameLikeTokens, 'if-keyword', 'while-keyword', 'for-keyword',
     'match-keyword', 'int', 'float', 'o-paren', 'string', 'o-bracket', 'pipe', ...prefixOpFirstTokens]
-export const paramFirstTokens: TokenKind[] = ['name', 'underscore']
-export const useExprFirstTokens: TokenKind[] = ['name', 'asterisk', 'o-brace']
-export const fieldPatternFirstTokens: TokenKind[] = ['name', 'period']
+export const paramFirstTokens: TokenKind[] = [...nameLikeTokens, 'underscore']
+export const useExprFirstTokens: TokenKind[] = [...nameLikeTokens, 'asterisk', 'o-brace']
+export const fieldPatternFirstTokens: TokenKind[] = [...nameLikeTokens, 'period']
 export const patternFollowTokens: TokenKind[] = ['arrow', 'c-paren', 'colon', 'comma', 'equals', 'if-keyword',
     'in-keyword', 'pipe']
 
@@ -102,7 +108,7 @@ export const parseConOp = (parser: Parser): void => {
  */
 export const parseFieldInit = (parser: Parser): void => {
     const mark = parser.open()
-    parser.expect('name')
+    parser.expectAny(nameLikeTokens)
     parser.expect('colon')
     parseExpr(parser)
     parser.close(mark, 'field-init')

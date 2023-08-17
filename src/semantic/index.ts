@@ -16,7 +16,8 @@ import {
     VirtualVariantType
 } from '../typecheck'
 import { CallOp, ConOp } from '../ast/op'
-import { Definition, idToVid, resolveVid, TypeConDef, vidFromString, vidToString } from '../scope/vid'
+import { Definition, resolveVid, TypeConDef } from '../scope/vid'
+import { idToVid, vidFromString, vidToString } from '../scope/util'
 import { useExprToVids } from './use-expr'
 import { Generic, Type } from '../ast/type'
 import { notFoundError, semanticError } from './error'

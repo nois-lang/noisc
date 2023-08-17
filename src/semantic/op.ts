@@ -1,5 +1,6 @@
 import { AstNodeKind } from '../ast'
-import { vidFromString, VirtualIdentifier } from '../scope/vid'
+import { vidFromString } from '../scope/util'
+import { VirtualIdentifier } from '../scope/vid'
 
 export const operatorImplMap: Map<AstNodeKind, VirtualIdentifier> = new Map([
     ['neg-op', vidFromString('std::op::Neg::Neg')],
