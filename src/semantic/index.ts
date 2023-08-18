@@ -529,8 +529,10 @@ const checkType = (type: Type, ctx: Context) => {
                 return
             }
             type.typeArgs.forEach(tp => checkType(tp, ctx))
-            // TODO: type params typecheck
             return
+        case 'type-bounds':
+            // TODO
+            break
         case 'fn-type':
             // TODO
             break
