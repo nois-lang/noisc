@@ -102,7 +102,6 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context, ofKind: Definit
 
     for (let i = module.scopeStack.length - 1; i >= 0; i--) {
         let scope = module.scopeStack[i]
-        // TODO: check local type's constructors
         let found = ofKind
             .map(k => {
                 if (vid.scope.length === 1) {
@@ -125,7 +124,17 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context, ofKind: Definit
                         const typeDef = <TypeDef>scope.definitions.get('type-def' + parentVid)
                         if (!typeDef) return undefined
 
-                        const typeCon = typeDef.variants.find(v => v.name.value === vid.name)
+                        let typeCon: TypeCon | undefined
+                        if (typeDef.variants.length === 0) {
+                            // if type is defined without variant, match the default one 
+                            typeCon = {
+                                kind: 'type-con',
+                                parseNode: typeDef.parseNode,
+                                name: typeDef.name,
+                                fieldDefs: []
+                            }
+                        }
+                        typeCon = typeDef.variants.find(v => v.name.value === vid.name)
                         if (!typeCon) return undefined
 
                         return createRef(i, { kind: 'type-con', typeCon, typeDef })

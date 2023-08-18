@@ -140,5 +140,29 @@ fn main() {
             ctx = check(code('"foo"'))
             expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected test::Foo<std::int::Int>\n            got      test::Foo<std::string::String>'])
         })
+
+        xit('self operand', () => {
+            const code = (arg: string): string => `\
+type Foo
+
+impl Foo {
+    fn foo(self): Unit {
+        let s: ${arg} = self
+    }
+}
+
+fn main() {
+    let f = Foo::Foo()
+    f.foo()
+}`
+            let ctx = check(code('Self'))
+            expect(ctx.errors.map(e => e.message)).toEqual([])
+
+            ctx = check(code('Foo'))
+            expect(ctx.errors.map(e => e.message)).toEqual([])
+
+            ctx = check(code('Int'))
+            expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected test::Foo\n            got      std::int::Int>'])
+        })
     })
 })
