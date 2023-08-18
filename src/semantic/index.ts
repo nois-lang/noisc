@@ -364,14 +364,18 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const typeArgs = operand.kind === 'identifier' ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
     const instanceGenericMap = resolveInstanceGenerics(ctx)
     const fnGenericMap = resolveFnGenerics(fnType, typeArgs, callOp.args)
-    // TODO: match args to params before checkCallArgs
-    // TODO: pass arg AstNode
-    const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, [instanceGenericMap, fnGenericMap], unaryExpr, ctx))
+    const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(
+        pt,
+        [instanceGenericMap, fnGenericMap],
+        callOp.args.at(i) ?? unaryExpr,
+        ctx
+    ))
     checkCallArgs(callOp, callOp.args, paramTypes, ctx)
 
     unaryExpr.type = resolveType(fnType.returnType, [instanceGenericMap, fnGenericMap], unaryExpr, ctx)
 }
 
+// TODO: allow non-prefixed constructor expressions for single-variant types, e.g. Unit() instead of Unit::Unit()
 const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const conOp = <ConOp>unaryExpr.unaryOp
     const operand = unaryExpr.operand
@@ -400,6 +404,7 @@ const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const typeConType = <VirtualFnType>typeCon.type!
     // TODO: figure out typeArgs parameter here
     const genericMap = resolveFnGenerics(typeConType, [], conOp.fields.map(f => f.expr))
+    console.log(genericMap)
     typeConType.generics.forEach(g => {
         if (!genericMap.get(g.name)) {
             // TODO: find actual con op argument that's causing this

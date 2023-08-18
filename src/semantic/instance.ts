@@ -83,9 +83,12 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
         [lOperand, ...callOp.args]
     )
     const genericMaps = [implGenericMap, fnGenericMap]
-    // TODO: match args to params before checkCallArgs
-    // TODO: pass arg AstNode
-    const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, callOp, ctx))
+    const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(
+        pt,
+        genericMaps,
+        callOp.args.at(i) ?? callOp,
+        ctx
+    ))
     checkCallArgs(callOp, [lOperand, ...callOp.args], paramTypes, ctx)
 
     return resolveType(fnType.returnType, genericMaps, rOperand, ctx)
