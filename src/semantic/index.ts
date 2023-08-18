@@ -13,7 +13,7 @@ import {
     VirtualFnType,
     VirtualType,
     virtualTypeToString,
-    VirtualVariantType
+    VidType
 } from '../typecheck'
 import { CallOp, ConOp } from '../ast/op'
 import { Definition, resolveVid, TypeConDef } from '../scope/vid'
@@ -364,10 +364,12 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const typeArgs = operand.kind === 'identifier' ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
     const instanceGenericMap = resolveInstanceGenerics(ctx)
     const fnGenericMap = resolveFnGenerics(fnType, typeArgs, callOp.args)
-    const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, [instanceGenericMap, fnGenericMap]))
+    // TODO: match args to params before checkCallArgs
+    // TODO: pass arg AstNode
+    const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, [instanceGenericMap, fnGenericMap], unaryExpr, ctx))
     checkCallArgs(callOp, callOp.args, paramTypes, ctx)
 
-    unaryExpr.type = resolveType(fnType.returnType, [instanceGenericMap, fnGenericMap])
+    unaryExpr.type = resolveType(fnType.returnType, [instanceGenericMap, fnGenericMap], unaryExpr, ctx)
 }
 
 const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
@@ -405,9 +407,9 @@ const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         }
     })
     unaryExpr.type = {
-        kind: 'variant-type',
-        identifier: (<VirtualVariantType>typeConType.returnType).identifier,
-        typeArgs: typeConType.generics.map(g => resolveType(g, [genericMap]))
+        kind: 'vid-type',
+        identifier: (<VidType>typeConType.returnType).identifier,
+        typeArgs: typeConType.generics.map(g => resolveType(g, [genericMap], conOp, ctx))
     }
 }
 
@@ -467,28 +469,28 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
             break
         case 'string-literal':
             operand.type = {
-                kind: 'variant-type',
+                kind: 'vid-type',
                 identifier: resolveVid(vidFromString('String'), ctx)!.qualifiedVid,
                 typeArgs: []
             }
             break
         case 'char-literal':
             operand.type = {
-                kind: 'variant-type',
+                kind: 'vid-type',
                 identifier: resolveVid(vidFromString('Char'), ctx)!.qualifiedVid,
                 typeArgs: []
             }
             break
         case 'int-literal':
             operand.type = {
-                kind: 'variant-type',
+                kind: 'vid-type',
                 identifier: resolveVid(vidFromString('Int'), ctx)!.qualifiedVid,
                 typeArgs: []
             }
             break
         case 'float-literal':
             operand.type = {
-                kind: 'variant-type',
+                kind: 'vid-type',
                 identifier: resolveVid(vidFromString('Float'), ctx)!.qualifiedVid,
                 typeArgs: []
             }

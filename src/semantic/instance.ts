@@ -36,7 +36,7 @@ const checkFieldAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
 
 const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallOp, ctx: Context): VirtualType | undefined => {
     checkOperand(lOperand, ctx)
-    if (lOperand.type?.kind !== 'type-def' && lOperand.type?.kind !== 'variant-type') {
+    if (lOperand.type?.kind !== 'type-def' && lOperand.type?.kind !== 'vid-type') {
         return
     }
     if (rOperand.kind !== 'identifier' || rOperand.scope.length !== 0) {
@@ -83,8 +83,10 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
         [lOperand, ...callOp.args]
     )
     const genericMaps = [implGenericMap, fnGenericMap]
-    const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps))
+    // TODO: match args to params before checkCallArgs
+    // TODO: pass arg AstNode
+    const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, callOp, ctx))
     checkCallArgs(callOp, [lOperand, ...callOp.args], paramTypes, ctx)
 
-    return resolveType(fnType.returnType, genericMaps)
+    return resolveType(fnType.returnType, genericMaps, rOperand, ctx)
 }

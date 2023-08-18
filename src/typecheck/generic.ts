@@ -2,10 +2,13 @@ import { genericToVirtual, Typed, VirtualFnType, VirtualType, virtualTypeToStrin
 import { AstNode } from '../ast'
 import { Context, instanceScope } from '../scope'
 import { selfType, unknownType } from './type'
+import { semanticError } from '../semantic/error'
 
-export const resolveFnGenerics = (fnType: VirtualFnType,
-                                  typeArgs: VirtualType[],
-                                  args: (AstNode<any> & Partial<Typed>)[]): Map<string, VirtualType> => {
+export const resolveFnGenerics = (
+    fnType: VirtualFnType,
+    typeArgs: VirtualType[],
+    args: (AstNode<any> & Partial<Typed>)[]
+): Map<string, VirtualType> => {
     return new Map(fnType.generics.map((g, i) => {
         const typeArg = typeArgs.at(i)
         if (typeArg) {
@@ -44,7 +47,7 @@ export const getTypeParams = (virtualType: VirtualType): VirtualType[] => {
     switch (virtualType.kind) {
         case 'type-def':
             return virtualType.generics
-        case 'variant-type':
+        case 'vid-type':
             return virtualType.typeArgs
         case 'any-type':
         case 'fn-type':
@@ -57,24 +60,35 @@ export const getTypeParams = (virtualType: VirtualType): VirtualType[] => {
 export const resolveInstanceGenerics = (ctx: Context): Map<string, VirtualType> => {
     const instance = instanceScope(ctx)
     if (!instance) return new Map()
-    const generics = [instance.selfType, ...instance.def.generics.map(g => genericToVirtual(g, ctx))]
-    // TODO: add generics
-    return new Map([[selfType.name, instance.selfType]])
+    const generics = instance.def.generics.map(g => {
+        const vg = genericToVirtual(g, ctx)
+        return <const>[vg.name, vg]
+    })
+    return new Map([[selfType.name, instance.selfType], ...generics])
 }
 
-export const resolveType = (virtualType: VirtualType, genericMaps: Map<string, VirtualType>[]): VirtualType => {
+/**
+ * Recursively go through type and it's arguments and replace generics with types found in @param genericMaps.
+ * Set type to unknown if not found
+ */
+export const resolveType = (
+    virtualType: VirtualType,
+    genericMaps: Map<string, VirtualType>[],
+    node: AstNode<any>,
+    ctx: Context
+): VirtualType => {
     switch (virtualType.kind) {
         case 'type-def':
             return {
-                kind: 'variant-type',
+                kind: 'vid-type',
                 identifier: virtualType.identifier,
-                typeArgs: virtualType.generics.map(g => resolveType(g, genericMaps))
+                typeArgs: virtualType.generics.map(g => resolveType(g, genericMaps, node, ctx))
             }
-        case 'variant-type':
+        case 'vid-type':
             return {
-                kind: 'variant-type',
+                kind: 'vid-type',
                 identifier: virtualType.identifier,
-                typeArgs: virtualType.typeArgs.map(g => resolveType(g, genericMaps))
+                typeArgs: virtualType.typeArgs.map(g => resolveType(g, genericMaps, node, ctx))
             }
         case 'generic':
             const vt = virtualTypeToString(virtualType)
@@ -85,7 +99,9 @@ export const resolveType = (virtualType: VirtualType, genericMaps: Map<string, V
                     resolved = res
                 }
             }
-            // TODO: push error if type is still unknown
+            if (resolved.kind === 'unknown-type') {
+                ctx.errors.push(semanticError(ctx, node, `Unresolved generic ${vt}`))
+            }
             return resolved
         case 'fn-type':
             // TODO: resolve
