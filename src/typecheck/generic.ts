@@ -48,8 +48,6 @@ export const resolveGenericsOverStructure = (arg: VirtualType, param: VirtualTyp
 
 export const getTypeParams = (virtualType: VirtualType): VirtualType[] => {
     switch (virtualType.kind) {
-        case 'type-def':
-            return virtualType.generics
         case 'vid-type':
             return virtualType.typeArgs
         default:
@@ -78,12 +76,6 @@ export const resolveType = (
     ctx: Context
 ): VirtualType => {
     switch (virtualType.kind) {
-        case 'type-def':
-            return {
-                kind: 'vid-type',
-                identifier: virtualType.identifier,
-                typeArgs: virtualType.generics.map(g => resolveType(g, genericMaps, node, ctx))
-            }
         case 'vid-type':
             return {
                 kind: 'vid-type',
@@ -104,8 +96,12 @@ export const resolveType = (
             }
             return resolved
         case 'fn-type':
-            // TODO: resolve
-            return virtualType
+            return {
+                kind: 'fn-type',
+                paramTypes: virtualType.paramTypes.map(pt => resolveType(pt, genericMaps, node, ctx)),
+                returnType: resolveType(virtualType.returnType, genericMaps, node, ctx),
+                generics: virtualType.generics
+            }
         case 'any-type':
         case 'unknown-type':
             return virtualType

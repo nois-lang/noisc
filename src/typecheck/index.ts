@@ -12,13 +12,7 @@ export interface Typed {
     type: VirtualType
 }
 
-export type VirtualType = TypeDefType | VidType | VirtualFnType | VirtualGeneric | AnyType | UnknownType
-
-export interface TypeDefType {
-    kind: 'type-def'
-    identifier: VirtualIdentifier
-    generics: VirtualGeneric[]
-}
+export type VirtualType = VidType | VirtualFnType | VirtualGeneric | AnyType | UnknownType
 
 export interface VidType {
     kind: 'vid-type'
@@ -49,15 +43,6 @@ export interface VirtualGeneric {
 
 export const virtualTypeToString = (vt: VirtualType): string => {
     switch (vt.kind) {
-        case 'type-def': {
-            const t = vidToString(vt.identifier)
-            if (vt.generics.length === 0) {
-                return t
-            } else {
-                const generics = vt.generics.map(virtualTypeToString)
-                return `${t}<${generics.join(', ')}>`
-            }
-        }
         case 'vid-type': {
             const t = vidToString(vt.identifier)
             if (vt.typeArgs.length === 0) {
@@ -129,9 +114,6 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
         return true
     }
     // TODO: type params
-    if (t.kind === 'type-def' || target.kind === 'type-def') {
-        todo('type-def in typecheck')
-    }
     if (t.kind === 'vid-type' && target.kind === 'vid-type') {
         if (vidToString(t.identifier) === vidToString(target.identifier)) {
             for (let i = 0; i < t.typeArgs.length; i++) {

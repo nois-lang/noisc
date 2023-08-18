@@ -36,7 +36,7 @@ const checkFieldAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
 
 const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallOp, ctx: Context): VirtualType | undefined => {
     checkOperand(lOperand, ctx)
-    if (lOperand.type?.kind !== 'type-def' && lOperand.type?.kind !== 'vid-type') {
+    if (lOperand.type?.kind !== 'vid-type') {
         return
     }
     if (rOperand.kind !== 'identifier' || rOperand.scope.length !== 0) {

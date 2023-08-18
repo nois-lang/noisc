@@ -1,32 +1,32 @@
-import { Context, defKey, instanceScope, TypeDefScope } from '../scope'
 import { AstNode, Module, Param } from '../ast'
-import { Block, FnDef, ImplDef, Statement, TraitDef, VarDef } from '../ast/statement'
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
-import { operatorImplMap } from './op'
+import { CallOp, ConOp } from '../ast/op'
 import { Identifier, Operand } from '../ast/operand'
+import { Block, FnDef, ImplDef, Statement, TraitDef, VarDef } from '../ast/statement'
+import { Generic, Type } from '../ast/type'
+import { TypeCon, TypeDef } from '../ast/type-def'
+import { Context, defKey, instanceScope, TypeDefScope } from '../scope'
+import { getImplTargetType, traitDefToVirtualType } from '../scope/trait'
+import { idToVid, vidFromString, vidToString } from '../scope/util'
+import { Definition, resolveVid, TypeConDef } from '../scope/vid'
 import {
     genericToVirtual,
     isAssignable,
     Typed,
     typeError,
     typeToVirtual,
+    VidType,
     VirtualFnType,
     VirtualType,
-    virtualTypeToString,
-    VidType
+    virtualTypeToString
 } from '../typecheck'
-import { CallOp, ConOp } from '../ast/op'
-import { Definition, resolveVid, TypeConDef } from '../scope/vid'
-import { idToVid, vidFromString, vidToString } from '../scope/util'
-import { useExprToVids } from './use-expr'
-import { Generic, Type } from '../ast/type'
-import { notFoundError, semanticError } from './error'
-import { todo } from '../util/todo'
-import { checkAccessExpr } from './instance'
-import { getImplTargetType, traitDefToTypeDefType } from '../scope/trait'
-import { TypeCon, TypeDef } from '../ast/type-def'
 import { resolveFnGenerics, resolveInstanceGenerics, resolveType } from '../typecheck/generic'
 import { selfType, unitType, unknownType } from '../typecheck/type'
+import { todo } from '../util/todo'
+import { notFoundError, semanticError } from './error'
+import { checkAccessExpr } from './instance'
+import { operatorImplMap } from './op'
+import { useExprToVids } from './use-expr'
 
 export const checkModule = (module: Module, ctx: Context, brief: boolean = false): void => {
     if (module.checked) return
@@ -219,7 +219,7 @@ const checkTraitDef = (traitDef: TraitDef, ctx: Context, brief: boolean = false)
 
     module.scopeStack.push({
         type: 'trait-def',
-        selfType: traitDefToTypeDefType(traitDef, ctx),
+        selfType: traitDefToVirtualType(traitDef, ctx),
         def: traitDef,
         definitions: new Map(traitDef.generics.map(g => [defKey(g), g]))
     })
@@ -285,7 +285,7 @@ const checkTypeCon = (typeCon: TypeCon, ctx: Context) => {
     typeCon.type = {
         kind: 'fn-type',
         paramTypes: typeCon.fieldDefs.map(f => typeToVirtual(f.fieldType, ctx)),
-        returnType: { kind: 'type-def', identifier: typeDefScope.vid, generics },
+        returnType: { kind: 'vid-type', identifier: typeDefScope.vid, typeArgs: generics },
         generics
     }
 }

@@ -1,9 +1,9 @@
-import { resolveVid, VirtualIdentifier, VirtualIdentifierMatch } from './vid'
-import { concatVid, idToVid, vidFromString, vidToString, } from './util'
-import { Context } from './index'
-import { ImplDef, TraitDef } from '../ast/statement'
 import { Module } from '../ast'
-import { genericToVirtual, TypeDefType, typeToVirtual, VirtualType } from '../typecheck'
+import { ImplDef, TraitDef } from '../ast/statement'
+import { genericToVirtual, typeToVirtual, VirtualType } from '../typecheck'
+import { Context } from './index'
+import { concatVid, idToVid, vidFromString, vidToString, } from './util'
+import { resolveVid, VirtualIdentifier, VirtualIdentifierMatch } from './vid'
 
 /**
  * Find all implemented traits and self impls for specified type, available in the current scope
@@ -44,27 +44,27 @@ export const getImplTargetVid = (implDef: TraitDef | ImplDef, ctx: Context): Vir
 export const getImplTargetType = (implDef: TraitDef | ImplDef, ctx: Context): VirtualType => {
     if (implDef.kind === 'trait-def') {
         return {
-            kind: 'type-def',
+            kind: 'vid-type',
             identifier: resolveVid(vidFromString(implDef.name.value), ctx)!.qualifiedVid,
-            generics: implDef.generics.map(g => genericToVirtual(g, ctx))
+            typeArgs: implDef.generics.map(g => genericToVirtual(g, ctx))
         }
     }
     if (implDef.forTrait) {
         return typeToVirtual(implDef.forTrait, ctx)
     } else {
         return {
-            kind: 'type-def',
+            kind: 'vid-type',
             identifier: resolveVid(idToVid(implDef.identifier), ctx)!.qualifiedVid,
-            generics: implDef.generics.map(g => genericToVirtual(g, ctx))
+            typeArgs: implDef.generics.map(g => genericToVirtual(g, ctx))
         }
     }
 }
 
-export const traitDefToTypeDefType = (traitDef: TraitDef, ctx: Context): TypeDefType => {
+export const traitDefToVirtualType = (traitDef: TraitDef, ctx: Context): VirtualType => {
     const module = ctx.moduleStack.at(-1)!
     return {
-        kind: 'type-def',
+        kind: 'vid-type',
         identifier: concatVid(module.identifier, vidFromString(traitDef.name.value)),
-        generics: traitDef.generics.map(g => genericToVirtual(g, ctx))
+        typeArgs: traitDef.generics.map(g => genericToVirtual(g, ctx))
     }
 }
