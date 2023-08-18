@@ -58,7 +58,7 @@ export const virtualTypeToString = (vt: VirtualType): string => {
                 return `${t}<${generics.join(', ')}>`
             }
         }
-        case 'vid-type':
+        case 'vid-type': {
             const t = vidToString(vt.identifier)
             if (vt.typeArgs.length === 0) {
                 return t
@@ -66,14 +66,22 @@ export const virtualTypeToString = (vt: VirtualType): string => {
                 const typeArgs = vt.typeArgs.map(virtualTypeToString)
                 return `${t}<${typeArgs.join(', ')}>`
             }
-        case 'fn-type':
-            return `|${vt.paramTypes.map(virtualTypeToString).join(', ')}|: ${virtualTypeToString(vt.returnType)}`
+        }
+        case 'fn-type': {
+            const t = `|${vt.paramTypes.map(virtualTypeToString).join(', ')}|: ${virtualTypeToString(vt.returnType)}`
+            if (vt.generics.length === 0) {
+                return t
+            } else {
+                const generics = vt.generics.map(virtualTypeToString)
+                return `<${generics.join(', ')}>${t}`
+            }
+        }
         case 'generic':
             return vt.name
-        case 'unknown-type':
-            return '<unknown>'
         case 'any-type':
             return '*'
+        case 'unknown-type':
+            return '?'
     }
 }
 

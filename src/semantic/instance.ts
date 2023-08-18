@@ -7,7 +7,7 @@ import { findTypeTraits, getImplTargetType } from '../scope/trait'
 import { vidToString } from '../scope/util'
 import { VirtualIdentifierMatch, resolveVid } from '../scope/vid'
 import { VirtualFnType, VirtualType, typeToVirtual, virtualTypeToString } from '../typecheck'
-import { resolveFnGenerics, resolveImplGenerics, resolveType } from '../typecheck/generic'
+import { resolveFnGenerics, resolveGenericsOverStructure, resolveType } from '../typecheck/generic'
 import { notFoundError, semanticError } from './error'
 import { checkCallArgs, checkOperand } from './index'
 
@@ -76,11 +76,13 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
     const instanceType = lOperand.type!
     const implDef = traitFnRefs[0].ref.def
     const implTargetType = getImplTargetType(implDef, ctx)
-    const implGenericMap = resolveImplGenerics(instanceType, implTargetType)
+    const implGenericMap = resolveGenericsOverStructure(instanceType, implTargetType)
     const fnGenericMap = resolveFnGenerics(
         fnType,
-        lOperand.kind === 'identifier' ? lOperand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : [],
-        [lOperand, ...callOp.args]
+        [lOperand, ...callOp.args],
+        lOperand.kind === 'identifier' && lOperand.typeArgs.length > 0
+            ? lOperand.typeArgs.map(tp => typeToVirtual(tp, ctx))
+            : undefined,
     )
     const genericMaps = [implGenericMap, fnGenericMap]
     const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(

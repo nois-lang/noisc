@@ -3,41 +3,44 @@ import { AstNode } from '../ast'
 import { Context, instanceScope } from '../scope'
 import { selfType, unknownType } from './type'
 import { semanticError } from '../semantic/error'
+import { merge } from '../util/map'
 
 export const resolveFnGenerics = (
     fnType: VirtualFnType,
-    typeArgs: VirtualType[],
-    args: (AstNode<any> & Partial<Typed>)[]
+    args: (AstNode<any> & Partial<Typed>)[],
+    typeArgs?: VirtualType[],
 ): Map<string, VirtualType> => {
-    return new Map(fnType.generics.map((g, i) => {
-        const typeArg = typeArgs.at(i)
-        if (typeArg) {
-            return [g.name, typeArg]
-        }
-        for (let parI = 0; parI < fnType.paramTypes.length; parI++) {
-            const pt = fnType.paramTypes[parI]
-            if (virtualTypeToString(pt) === g.name) {
-                const arg = args.at(parI)
-                return [g.name, arg?.type || unknownType]
-            }
-        }
-        return [g.name, unknownType]
-    }))
+    if (typeArgs) {
+        return new Map<string, VirtualType>(fnType.generics.map((g, i) => [g.name, typeArgs[i]]))
+    }
+    return args
+        .map((arg, i) => {
+            const param = fnType.paramTypes[i]
+            return resolveGenericsOverStructure(arg.type!, param)
+        })
+        .reduce((acc, m) => merge(acc, m, (p, _) => p), new Map<string, VirtualType>())
 }
 
-export const resolveImplGenerics = (instanceType: VirtualType, implType: VirtualType): Map<string, VirtualType> => {
+/**
+ * Recursively walk over zipped pair (arg, param) and resolve generic virtual types.
+ *
+ * Examples: 
+ *   - `resolveGenerics(Foo<A, Bar<B>>, Foo<Int, Bar<Char>>)` will produce map [T -> Int, U -> Char]
+ *   - `resolveGenerics(T, Foo<Int>)`                         will produce map [T -> Foo<Int>]
+ */
+export const resolveGenericsOverStructure = (arg: VirtualType, param: VirtualType): Map<string, VirtualType> => {
     const map = new Map()
-    if (implType.kind === 'generic') {
-        map.set(implType.name, instanceType)
+    if (param.kind === 'generic') {
+        map.set(param.name, arg)
         return map
     }
-    const implTypeArgs = getTypeParams(implType)
-    const instTypeArgs = getTypeParams(instanceType)
-    for (let i = 0; i < implTypeArgs.length; i++) {
-        const implTypeArg = implTypeArgs[i]
-        const instTypeArg = instTypeArgs.at(i)
-        if (instTypeArg) {
-            resolveImplGenerics(instTypeArg, implTypeArg).forEach((v, k) => map.set(k, v))
+    const paramTypeArgs = getTypeParams(param)
+    const argTypeArgs = getTypeParams(arg)
+    for (let i = 0; i < paramTypeArgs.length; i++) {
+        const implTypeArg = paramTypeArgs[i]
+        const argTypeArg = argTypeArgs.at(i)
+        if (argTypeArg) {
+            resolveGenericsOverStructure(argTypeArg, implTypeArg).forEach((v, k) => map.set(k, v))
         }
     }
     return map
@@ -49,10 +52,7 @@ export const getTypeParams = (virtualType: VirtualType): VirtualType[] => {
             return virtualType.generics
         case 'vid-type':
             return virtualType.typeArgs
-        case 'any-type':
-        case 'fn-type':
-        case 'generic':
-        case 'unknown-type':
+        default:
             return []
     }
 }
@@ -100,7 +100,7 @@ export const resolveType = (
                 }
             }
             if (resolved.kind === 'unknown-type') {
-                ctx.errors.push(semanticError(ctx, node, `Unresolved generic ${vt}`))
+                ctx.errors.push(semanticError(ctx, node, `unresolved generic ${vt}`))
             }
             return resolved
         case 'fn-type':

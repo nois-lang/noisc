@@ -281,10 +281,6 @@ const checkTypeCon = (typeCon: TypeCon, ctx: Context) => {
     })
     const generics = [...typeDefScope.definitions.values()]
         .map(d => <Generic>d)
-        .filter(g => {
-            // TODO: only keep generics used by this type con
-            return true
-        })
         .map(g => genericToVirtual(g, ctx))
     typeCon.type = {
         kind: 'fn-type',
@@ -361,9 +357,11 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     callOp.args.forEach(a => checkOperand(a, ctx))
 
     const fnType = <VirtualFnType>operand.type
-    const typeArgs = operand.kind === 'identifier' ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
+    const typeArgs = operand.kind === 'identifier' && operand.typeArgs.length > 0
+        ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx))
+        : undefined
     const instanceGenericMap = resolveInstanceGenerics(ctx)
-    const fnGenericMap = resolveFnGenerics(fnType, typeArgs, callOp.args)
+    const fnGenericMap = resolveFnGenerics(fnType, callOp.args, typeArgs)
     const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(
         pt,
         [instanceGenericMap, fnGenericMap],
@@ -403,8 +401,7 @@ const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const typeCon = (<TypeConDef>ref.def).typeCon
     const typeConType = <VirtualFnType>typeCon.type!
     // TODO: figure out typeArgs parameter here
-    const genericMap = resolveFnGenerics(typeConType, [], conOp.fields.map(f => f.expr))
-    console.log(genericMap)
+    const genericMap = resolveFnGenerics(typeConType, conOp.fields.map(f => f.expr))
     typeConType.generics.forEach(g => {
         if (!genericMap.get(g.name)) {
             // TODO: find actual con op argument that's causing this
@@ -414,7 +411,7 @@ const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     unaryExpr.type = {
         kind: 'vid-type',
         identifier: (<VidType>typeConType.returnType).identifier,
-        typeArgs: typeConType.generics.map(g => resolveType(g, [genericMap], conOp, ctx))
+        typeArgs: typeConType.generics.map(g => resolveType(g, [genericMap], unaryExpr, ctx))
     }
 }
 
