@@ -29,7 +29,14 @@ import { operatorImplMap } from './op'
 import { useExprToVids } from './use-expr'
 
 export const checkModule = (module: Module, ctx: Context, brief: boolean = false): void => {
+    if (brief && module.briefed) return
     if (module.checked) return
+    if (brief) {
+        module.briefed = true
+    } else {
+        module.checked = true
+    }
+
     const vid = vidToString(module.identifier)
     if (ctx.moduleStack.length > 100) {
         const stackVids = ctx.moduleStack.map(m => vidToString(m.identifier))
@@ -45,9 +52,6 @@ export const checkModule = (module: Module, ctx: Context, brief: boolean = false
     checkBlock(module.block, ctx, brief)
 
     ctx.moduleStack.pop()
-    if (!brief) {
-        module.checked = true
-    }
 }
 
 const checkBlock = (block: Block, ctx: Context, brief: boolean = false): void => {
@@ -58,6 +62,7 @@ const checkBlock = (block: Block, ctx: Context, brief: boolean = false): void =>
     if (!brief) {
         block.statements.forEach(s => checkStatement(s, ctx))
     }
+
     // TODO: block type
 
     module.scopeStack.pop()
@@ -77,37 +82,30 @@ const checkStatement = (statement: Statement, ctx: Context, brief: boolean = fal
         return
     }
 
-    const pushDefToStack = () => {
-        if (topLevel || brief) {
-            const def = <Definition>statement
-            scope.definitions.set(defKey(def), def)
-        }
+    const pushDefToStack = (def: Definition) => {
+        scope.definitions.set(defKey(def), def)
     }
 
     switch (statement.kind) {
         case 'var-def':
             checkVarDef(statement, ctx, brief)
-            pushDefToStack()
+            pushDefToStack(statement)
             break
         case 'fn-def':
             checkFnDef(statement, ctx, brief)
-            pushDefToStack()
+            pushDefToStack(statement)
             break
         case 'trait-def':
-            // todo
             checkTraitDef(statement, ctx, brief)
-            pushDefToStack()
+            pushDefToStack(statement)
             break
         case 'impl-def':
-            // todo
             checkImplDef(statement, ctx, brief)
-            pushDefToStack()
+            pushDefToStack(statement)
             break
         case 'type-def':
-            // todo
-            if (!brief) break
             checkTypeDef(statement, ctx)
-            pushDefToStack()
+            pushDefToStack(statement)
             break
         case 'operand-expr':
         case 'unary-expr':
@@ -158,7 +156,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context, brief: boolean = false): void =>
         }
     })
 
-    if (fnDef.returnType && brief) {
+    if (fnDef.returnType) {
         checkType(fnDef.returnType, ctx)
     }
 
@@ -170,12 +168,12 @@ const checkFnDef = (fnDef: FnDef, ctx: Context, brief: boolean = false): void =>
     }
 
     if (!brief) {
-        if (!fnDef.block) {
+        if (fnDef.block) {
+            checkBlock(fnDef.block, ctx)
+        } else {
             if (instanceScope(ctx)?.type !== 'trait-def') {
                 ctx.warnings.push(semanticError(ctx, fnDef, `fn \`${fnDef.name.value}\` has no body -> must be native`))
             }
-        } else {
-            checkBlock(fnDef.block, ctx)
         }
     }
 
@@ -184,8 +182,11 @@ const checkFnDef = (fnDef: FnDef, ctx: Context, brief: boolean = false): void =>
 
 const checkParam = (param: Param, index: number, ctx: Context): void => {
     if (param.type) return
+
+    const module = ctx.moduleStack.at(-1)!
+    const instScope = instanceScope(ctx)
+
     if (!param.paramType) {
-        const instScope = instanceScope(ctx)
         if (index === 0 && instScope && param.pattern.kind === 'name' && param.pattern.value === 'self') {
             param.type = instScope.selfType
         } else {
@@ -193,7 +194,6 @@ const checkParam = (param: Param, index: number, ctx: Context): void => {
             param.type = unknownType
         }
     } else {
-        const instScope = instanceScope(ctx)
         checkType(param.paramType, ctx)
         if (instScope && param.paramType.kind === 'identifier' && param.paramType.name.value === selfType.name) {
             param.type = instScope.selfType
@@ -201,12 +201,15 @@ const checkParam = (param: Param, index: number, ctx: Context): void => {
             param.type = typeToVirtual(param.paramType, ctx)
         }
     }
+
     switch (param.pattern.kind) {
         case 'operand-expr':
         case 'unary-expr':
         case 'binary-expr':
             ctx.errors.push(semanticError(ctx, param.pattern, `\`${param.pattern.kind}\` can only be used in match expressions`))
     }
+
+    module.scopeStack.at(-1)!.definitions.set(defKey(param), param)
 }
 
 const checkTraitDef = (traitDef: TraitDef, ctx: Context, brief: boolean = false) => {
@@ -233,7 +236,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context, brief: boolean = false) =>
     const module = ctx.moduleStack.at(-1)!
 
     if (instanceScope(ctx)) {
-        ctx.errors.push(semanticError(ctx, implDef, `\`${implDef.kind}\` within instance scope`))
+        ctx.errors.push(semanticError(ctx, implDef, 'impl definition within instance scope'))
         return
     }
 
@@ -255,7 +258,7 @@ const checkTypeDef = (typeDef: TypeDef, ctx: Context) => {
     const module = ctx.moduleStack.at(-1)!
 
     if (instanceScope(ctx)) {
-        ctx.errors.push(semanticError(ctx, typeDef, `\`${typeDef.kind}\` within instance scope`))
+        ctx.errors.push(semanticError(ctx, typeDef, 'type definition within instance scope'))
         return
     }
 
@@ -273,6 +276,8 @@ const checkTypeDef = (typeDef: TypeDef, ctx: Context) => {
 }
 
 const checkTypeCon = (typeCon: TypeCon, ctx: Context) => {
+    if (typeCon.type) return
+
     const module = ctx.moduleStack.at(-1)!
     const typeDefScope = <TypeDefScope>module.scopeStack.at(-1)!
     typeCon.fieldDefs.forEach(fieldDef => {
@@ -294,7 +299,7 @@ const checkVarDef = (varDef: VarDef, ctx: Context, brief: boolean = false): void
     if (brief && varDef.type) return
     const topLevel = ctx.moduleStack.at(-1)!.scopeStack.length === 1
 
-    if (topLevel && brief) {
+    if (topLevel) {
         if (!varDef.varType) {
             ctx.errors.push(semanticError(ctx, varDef, `top level \`${varDef.kind}\` must have explicit type`))
             return
@@ -303,10 +308,10 @@ const checkVarDef = (varDef: VarDef, ctx: Context, brief: boolean = false): void
 
     if (varDef.varType) {
         checkType(varDef.varType, ctx)
-        varDef.type = typeToVirtual(varDef.varType, ctx)
+        varDef.type = resolveType(typeToVirtual(varDef.varType, ctx), [resolveInstanceGenerics(ctx)], varDef, ctx)
     }
 
-    if (!brief) return
+    if (brief) return
 
     checkExpr(varDef.expr, ctx)
     if (varDef.varType) {

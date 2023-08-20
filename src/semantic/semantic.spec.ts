@@ -39,9 +39,10 @@ describe('semantic', () => {
         }
 
         if (checkStd) {
-            stdModules.forEach(m => { checkModule(m, ctx) })
+            ctx.modules.forEach(m => { checkModule(m, ctx) })
+        } else {
+            checkModule(moduleAst, ctx)
         }
-        checkModule(moduleAst, ctx)
 
         return ctx
     }
@@ -141,7 +142,7 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected test::Foo<std::int::Int>\n            got      test::Foo<std::string::String>'])
         })
 
-        xit('self operand', () => {
+        it('self operand', () => {
             const code = (arg: string): string => `\
 type Foo
 
@@ -162,7 +163,13 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual([])
 
             ctx = check(code('Int'))
-            expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected test::Foo\n            got      std::int::Int>'])
+            expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected std::int::Int\n            got      test::Foo'])
+        })
+
+        xit('instance fns should not be available within itself', () => {
+            const code = 'trait Foo { fn foo() { foo() } }'
+            const ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual(['error'])
         })
     })
 })

@@ -112,6 +112,7 @@ export interface Module extends AstNode<'module'> {
      */
     references?: VirtualIdentifier[]
 
+    briefed?: boolean
     checked?: boolean
 }
 

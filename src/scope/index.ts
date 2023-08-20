@@ -87,7 +87,7 @@ export const pathToVid = (path: string, packageName?: string): VirtualIdentifier
 }
 
 /**
- * Checks whether current module scopeStack is within ImplDef or TraitDef scope
+ * Checks whether current module scope is within ImplDef or TraitDef scope
  */
 export const instanceScope = (ctx: Context): ImplScope | TraitScope | undefined => {
     const module = ctx.moduleStack.at(-1)!

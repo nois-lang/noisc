@@ -82,7 +82,29 @@ export const patternVid = (pattern: Pattern): VirtualIdentifier | undefined => {
 }
 
 export const resolveVid = (vid: VirtualIdentifier, ctx: Context, ofKind: DefinitionKind[] = [...defKinds]): VirtualIdentifierMatch | undefined => {
-    const createRef = (i: number, found: Definition, matchVid = vid) => {
+    const module = ctx.moduleStack.at(-1)!
+
+    let ref = resolveStackVid(vid, module, ctx, ofKind)
+    if (ref) return ref
+
+    ref = resolveVidMatched(vid, ctx)
+    if (ref) return ref
+
+    for (let useExpr of [...defaultImportedVids(), ...module.references!]) {
+        if (vidToString(useExpr) === vidToString(module.identifier)) continue
+        if (useExpr.name === vidFirst(vid)) {
+            const merged: VirtualIdentifier = {
+                scope: [...useExpr.scope, ...vid.scope],
+                name: vid.name
+            }
+            return resolveVidMatched(merged, ctx)
+        }
+    }
+    return undefined
+}
+
+export const resolveStackVid = (vid: VirtualIdentifier, module: Module, ctx: Context, ofKind: DefinitionKind[]): VirtualIdentifierMatch | undefined => {
+    const createRef = <T>(i: number, found: T, matchVid = vid): VirtualIdentifierMatch<T> => {
         // if found in the lowest stack, so it is available outside of module, thus should be module-qualified
         if (i === 0) {
             const merged: VirtualIdentifier = {
@@ -93,8 +115,6 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context, ofKind: Definit
         }
         return { qualifiedVid: vid, def: found }
     }
-
-    const module = ctx.moduleStack.at(-1)!
 
     if (vidToString(vid) === selfType.name && instanceScope(ctx)) {
         return { qualifiedVid: vid, def: { kind: 'self' } }
@@ -124,6 +144,8 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context, ofKind: Definit
                         const typeDef = <TypeDef>scope.definitions.get('type-def' + parentVid)
                         if (!typeDef) return undefined
 
+                        const typeDefVid = resolveVid(vidFromString(parentVid), ctx)!.qualifiedVid
+
                         let typeCon: TypeCon | undefined
                         if (typeDef.variants.length === 0) {
                             // if type is defined without variant, match the default one 
@@ -133,11 +155,20 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context, ofKind: Definit
                                 name: typeDef.name,
                                 fieldDefs: []
                             }
+                            typeCon.type = {
+                                kind: 'fn-type',
+                                paramTypes: [],
+                                returnType: { kind: 'vid-type', identifier: typeDefVid, typeArgs: [] },
+                                generics: []
+                            }
+                        } else {
+                            typeCon = typeDef.variants.find(v => v.name.value === vid.name)
                         }
-                        typeCon = typeDef.variants.find(v => v.name.value === vid.name)
                         if (!typeCon) return undefined
 
-                        return createRef(i, { kind: 'type-con', typeCon, typeDef })
+                        const ref = createRef<TypeConDef>(i, { kind: 'type-con', typeCon, typeDef })
+                        ref.def.type = typeCon.type
+                        return ref
                     }
                 }
                 const def = scope.definitions.get(k + vidToString(vid))
@@ -150,20 +181,6 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context, ofKind: Definit
 
         if (found) {
             return found
-        }
-    }
-
-    const ref = resolveVidMatched(vid, ctx)
-    if (ref) return ref
-
-    for (let useExpr of [...defaultImportedVids(), ...module.references!]) {
-        if (vidToString(useExpr) === vidToString(module.identifier)) continue
-        if (useExpr.name === vidFirst(vid)) {
-            const merged: VirtualIdentifier = {
-                scope: [...useExpr.scope, ...vid.scope],
-                name: vid.name
-            }
-            return resolveVidMatched(merged, ctx)
         }
     }
     return undefined
