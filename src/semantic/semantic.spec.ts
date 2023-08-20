@@ -171,5 +171,22 @@ fn main() {
             const ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual(['error'])
         })
+
+        xit('instance fns should not be available without trait qualifier', () => {
+            const code = (arg: string): string => `\
+trait Foo {
+    fn foo() {}
+}
+
+fn main() {
+    Foo::foo()
+    ${arg}
+}`
+            let ctx = check(code(''))
+            expect(ctx.errors.map(e => e.message)).toEqual(['error'])
+
+            ctx = check(code('Foo::'))
+            expect(ctx.errors.map(e => e.message)).toEqual([])
+        })
     })
 })

@@ -90,16 +90,9 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context, ofKind: Definit
     ref = resolveVidMatched(vid, ctx)
     if (ref) return ref
 
-    for (let useExpr of [...defaultImportedVids(), ...module.references!]) {
-        if (vidToString(useExpr) === vidToString(module.identifier)) continue
-        if (useExpr.name === vidFirst(vid)) {
-            const merged: VirtualIdentifier = {
-                scope: [...useExpr.scope, ...vid.scope],
-                name: vid.name
-            }
-            return resolveVidMatched(merged, ctx)
-        }
-    }
+    ref = resolveImportVid(vid, module, ctx)
+    if (ref) return ref
+
     return undefined
 }
 
@@ -207,3 +200,18 @@ export const resolveVidMatched = (vid: VirtualIdentifier, ctx: Context): Virtual
     }
     return undefined
 }
+
+export const resolveImportVid = (vid: VirtualIdentifier, module: Module, ctx: Context): VirtualIdentifierMatch | undefined => {
+    for (let useExpr of [...defaultImportedVids(), ...module.references!]) {
+        if (vidToString(useExpr) === vidToString(module.identifier)) continue
+        if (useExpr.name === vidFirst(vid)) {
+            const merged: VirtualIdentifier = {
+                scope: [...useExpr.scope, ...vid.scope],
+                name: vid.name
+            }
+            return resolveVidMatched(merged, ctx)
+        }
+    }
+    return undefined
+}
+
