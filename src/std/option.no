@@ -1,0 +1,4 @@
+type Option<T> {
+    Some(value: T),
+    None
+}

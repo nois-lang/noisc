@@ -1,0 +1,3 @@
+trait Iter<T> {
+    fn next(): Option<T>
+}
