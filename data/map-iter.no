@@ -1,19 +1,21 @@
+use std::iter
+
 type MapIter<T, U>(
     iter: Iter<T>,
     f: |T|: U
 )
 
 trait MapAdapter<Self: Iter<T>, T> {
-    fn map(self, f: |T|: U): MapIter<T>
+    fn map<U>(self, f: |T|: U): MapIter<T>
 }
 
-impl MapAdapter<T> for Iter<T> {
-    fn map(self, f: |T|: U): MapIter<T> {
-        MapIter(self, f)
+impl <T> MapAdapter for Iter<T> {
+    fn map<U>(self, f: |T|: U): MapIter<T> {
+        MapIter::MapIter(iter: self, f: f)
     }
 }
 
-impl Iter<T> for MapIter<T> {
+impl <T> Iter<T> for MapIter<T> {
     fn next(self): Option<T> {
         self.next().map(self.f)
     }
