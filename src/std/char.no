@@ -1,6 +1,6 @@
 type Char
 
-impl Display for Char {
+impl io::Display for Char {
     fn fmt(self): String {
         charToString(self)
     }

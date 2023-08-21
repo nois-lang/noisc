@@ -93,7 +93,7 @@ export const buildFnDef = (node: ParseNode): FnDef => {
     return { kind: 'fn-def', parseNode: node, name, generics, params, block, returnType }
 }
 
-export interface TraitDef extends AstNode<'trait-def'> {
+export interface TraitDef extends AstNode<'trait-def'>, Partial<Typed> {
     name: Name
     generics: Generic[]
     block: Block
@@ -110,7 +110,7 @@ export const buildTraitDef = (node: ParseNode): TraitDef => {
     return { kind: 'trait-def', parseNode: node, name, generics, block }
 }
 
-export interface ImplDef extends AstNode<'impl-def'> {
+export interface ImplDef extends AstNode<'impl-def'>, Partial<Typed> {
     identifier: Identifier
     generics: Generic[]
     forTrait?: Identifier

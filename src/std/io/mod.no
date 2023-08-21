@@ -6,4 +6,4 @@ fn println(display: Display): Unit {
     printlnStr(display.fmt())
 }
 
-fn printlnStr(display: Display): Unit
+fn printlnStr(string: String): Unit

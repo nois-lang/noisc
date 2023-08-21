@@ -6,7 +6,7 @@ impl Add for String {
     }
 }
 
-impl Display for String {
+impl io::Display for String {
     fn fmt(self): String {
         self
     }

@@ -104,7 +104,7 @@ const checkStatement = (statement: Statement, ctx: Context, brief: boolean = fal
             pushDefToStack(statement)
             break
         case 'type-def':
-            checkTypeDef(statement, ctx)
+            checkTypeDef(statement, ctx, brief)
             pushDefToStack(statement)
             break
         case 'operand-expr':
@@ -220,12 +220,15 @@ const checkTraitDef = (traitDef: TraitDef, ctx: Context, brief: boolean = false)
         return
     }
 
+    const selfType = traitDefToVirtualType(traitDef, ctx)
     module.scopeStack.push({
         type: 'trait-def',
-        selfType: traitDefToVirtualType(traitDef, ctx),
+        selfType,
         def: traitDef,
         definitions: new Map(traitDef.generics.map(g => [defKey(g), g]))
     })
+
+    traitDef.type = selfType
 
     checkBlock(traitDef.block, ctx, brief)
 
@@ -240,12 +243,20 @@ const checkImplDef = (implDef: ImplDef, ctx: Context, brief: boolean = false) =>
         return
     }
 
+    const selfType = getImplTargetType(implDef, ctx)
     module.scopeStack.push({
         type: 'impl-def',
-        selfType: getImplTargetType(implDef, ctx),
+        selfType, 
         def: implDef,
         definitions: new Map(implDef.generics.map(g => [defKey(g), g]))
     })
+
+    if (implDef.forTrait) {
+        checkIdentifier(implDef.forTrait, ctx)
+    }
+    checkIdentifier(implDef.identifier, ctx)
+
+    implDef.type = selfType 
 
     if (!brief) {
         checkBlock(implDef.block, ctx)
@@ -254,7 +265,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context, brief: boolean = false) =>
     module.scopeStack.pop()
 }
 
-const checkTypeDef = (typeDef: TypeDef, ctx: Context) => {
+const checkTypeDef = (typeDef: TypeDef, ctx: Context, brief: boolean = false) => {
     const module = ctx.moduleStack.at(-1)!
 
     if (instanceScope(ctx)) {
@@ -262,15 +273,22 @@ const checkTypeDef = (typeDef: TypeDef, ctx: Context) => {
         return
     }
 
+    const vid = { scope: [...module.identifier.scope, module.identifier.name], name: typeDef.name.value }
     module.scopeStack.push({
         type: 'type-def',
         def: typeDef,
-        vid: { scope: [...module.identifier.scope, module.identifier.name], name: typeDef.name.value },
+        vid,
         definitions: new Map(typeDef.generics.map(g => [defKey(g), g]))
     })
 
     typeDef.variants.forEach(v => checkTypeCon(v, ctx))
     // TODO: check duplicate type cons
+
+    typeDef.type = {
+        kind: 'vid-type',
+        identifier: vid,
+        typeArgs: typeDef.generics.map(g => genericToVirtual(g, ctx))
+    }
 
     module.scopeStack.pop()
 }
@@ -514,11 +532,13 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
 const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
     const vid = idToVid(identifier)
     const ref = resolveVid(vid, ctx)
-    if (!ref) {
+    if (ref) {
+        if ('type' in ref.def && ref.def.type) {
+            identifier.type = ref.def.type
+        }
+    } else {
         ctx.errors.push(notFoundError(ctx, identifier, vidToString(vid)))
         identifier.type = unknownType
-    } else {
-        identifier.type = 'type' in ref.def ? ref.def.type : unknownType
     }
 }
 
