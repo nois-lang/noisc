@@ -143,23 +143,6 @@ const checkFnDef = (fnDef: FnDef, ctx: Context, brief: boolean = false): void =>
         return p.type!
     })
 
-    fnDef.params.forEach(p => {
-        switch (p.pattern.kind) {
-            case 'hole':
-                break
-            case 'name':
-                module.scopeStack.at(-1)!.definitions.set(defKey(p), p)
-                break
-            case 'con-pattern':
-                todo('add con-pattern to scope')
-                break
-        }
-    })
-
-    if (fnDef.returnType) {
-        checkType(fnDef.returnType, ctx)
-    }
-
     fnDef.type = {
         kind: 'fn-type',
         generics: fnDef.generics.map(g => genericToVirtual(g, ctx)),
@@ -168,6 +151,23 @@ const checkFnDef = (fnDef: FnDef, ctx: Context, brief: boolean = false): void =>
     }
 
     if (!brief) {
+        fnDef.params.forEach(p => {
+            switch (p.pattern.kind) {
+                case 'hole':
+                    break
+                case 'name':
+                    module.scopeStack.at(-1)!.definitions.set(defKey(p), p)
+                    break
+                case 'con-pattern':
+                    todo('add con-pattern to scope')
+                    break
+            }
+        })
+
+        if (fnDef.returnType) {
+            checkType(fnDef.returnType, ctx)
+        }
+
         if (fnDef.block) {
             checkBlock(fnDef.block, ctx)
         } else {
@@ -246,19 +246,19 @@ const checkImplDef = (implDef: ImplDef, ctx: Context, brief: boolean = false) =>
     const selfType = getImplTargetType(implDef, ctx)
     module.scopeStack.push({
         type: 'impl-def',
-        selfType, 
+        selfType,
         def: implDef,
         definitions: new Map(implDef.generics.map(g => [defKey(g), g]))
     })
 
-    if (implDef.forTrait) {
-        checkIdentifier(implDef.forTrait, ctx)
-    }
-    checkIdentifier(implDef.identifier, ctx)
-
-    implDef.type = selfType 
+    implDef.type = selfType
 
     if (!brief) {
+        if (implDef.forTrait) {
+            checkIdentifier(implDef.forTrait, ctx)
+        }
+        checkIdentifier(implDef.identifier, ctx)
+
         checkBlock(implDef.block, ctx)
     }
 
