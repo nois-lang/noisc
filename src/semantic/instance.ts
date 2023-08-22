@@ -79,7 +79,7 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
     const implGenericMap = resolveGenericsOverStructure(instanceType, implTargetType)
     const fnGenericMap = resolveFnGenerics(
         fnType,
-        [lOperand, ...callOp.args],
+        [lOperand.type, ...callOp.args.map(a => a.type!)],
         lOperand.kind === 'identifier' && lOperand.typeArgs.length > 0
             ? lOperand.typeArgs.map(tp => typeToVirtual(tp, ctx))
             : undefined,

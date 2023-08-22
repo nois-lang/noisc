@@ -98,7 +98,7 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context, ofKind: Definit
 
 export const resolveStackVid = (vid: VirtualIdentifier, module: Module, ctx: Context, ofKind: DefinitionKind[]): VirtualIdentifierMatch | undefined => {
     const createRef = <T>(i: number, found: T, matchVid = vid): VirtualIdentifierMatch<T> => {
-        // if found in the lowest stack, so it is available outside of module, thus should be module-qualified
+        // if found in the lowest stack, it is available outside of module, thus should be module-qualified
         if (i === 0) {
             const merged: VirtualIdentifier = {
                 scope: [...module.identifier.scope, module.identifier.name, ...matchVid.scope],

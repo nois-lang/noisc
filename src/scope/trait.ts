@@ -1,6 +1,6 @@
 import { Module } from '../ast'
 import { ImplDef, TraitDef } from '../ast/statement'
-import { genericToVirtual, typeToVirtual, VirtualType } from '../typecheck'
+import { genericToVirtual, typeToVirtual, VirtualType, virtualTypeToString } from '../typecheck'
 import { Context } from './index'
 import { concatVid, idToVid, vidFromString, vidToString, } from './util'
 import { resolveVid, VirtualIdentifier, VirtualIdentifierMatch } from './vid'

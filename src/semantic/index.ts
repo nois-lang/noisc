@@ -5,7 +5,7 @@ import { Identifier, Operand } from '../ast/operand'
 import { Block, FnDef, ImplDef, Statement, TraitDef, VarDef } from '../ast/statement'
 import { Generic, Type } from '../ast/type'
 import { TypeCon, TypeDef } from '../ast/type-def'
-import { Context, defKey, instanceScope, TypeDefScope } from '../scope'
+import { Context, defKey, ImplScope, instanceScope, TypeDefScope } from '../scope'
 import { getImplTargetType, traitDefToVirtualType } from '../scope/trait'
 import { idToVid, vidFromString, vidToString } from '../scope/util'
 import { Definition, resolveVid, TypeConDef } from '../scope/vid'
@@ -243,13 +243,15 @@ const checkImplDef = (implDef: ImplDef, ctx: Context, brief: boolean = false) =>
         return
     }
 
-    const selfType = getImplTargetType(implDef, ctx)
     module.scopeStack.push({
         type: 'impl-def',
-        selfType,
+        selfType: unknownType,
         def: implDef,
         definitions: new Map(implDef.generics.map(g => [defKey(g), g]))
     })
+    const selfType = getImplTargetType(implDef, ctx);
+    // must be set afterwards since impl generics cannot be resolved
+    (<ImplScope>module.scopeStack.at(-1)!).selfType = selfType
 
     implDef.type = selfType
 
@@ -384,7 +386,7 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx))
         : undefined
     const instanceGenericMap = resolveInstanceGenerics(ctx)
-    const fnGenericMap = resolveFnGenerics(fnType, callOp.args, typeArgs)
+    const fnGenericMap = resolveFnGenerics(fnType, callOp.args.map(a => a.type!), typeArgs)
     const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(
         pt,
         [instanceGenericMap, fnGenericMap],
@@ -421,16 +423,27 @@ const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     }
     conOp.fields.map(f => checkExpr(f.expr, ctx))
     // TODO: check con expr
-    const typeCon = (<TypeConDef>ref.def).typeCon
+    const typeCon = ref.def.typeCon
     const typeConType = <VirtualFnType>typeCon.type!
     // TODO: figure out typeArgs parameter here
-    const genericMap = resolveFnGenerics(typeConType, conOp.fields.map(f => f.expr))
+    // TODO: fields might be specified out of order, match conOp.fields by name 
+    const genericMap = resolveFnGenerics(typeConType, conOp.fields.map(f => f.expr.type!))
     typeConType.generics.forEach(g => {
         if (!genericMap.get(g.name)) {
             // TODO: find actual con op argument that's causing this
             ctx.errors.push(semanticError(ctx, conOp, `unresolved type parameter ${g.name}`))
         }
     })
+    typeConType.paramTypes
+        .map(pt => resolveType(pt, [genericMap], typeCon, ctx))
+        .forEach((paramType, i) => {
+            // TODO: fields might be specified out of order, match conOp.fields by name 
+            const field = conOp.fields[i]
+            const argType = resolveType(field.expr.type!, [genericMap], field, ctx)
+            if (!isAssignable(argType, paramType, ctx)) {
+                ctx.errors.push(typeError(field, argType, paramType, ctx))
+            }
+        })
     unaryExpr.type = {
         kind: 'vid-type',
         identifier: (<VidType>typeConType.returnType).identifier,

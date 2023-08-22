@@ -7,22 +7,23 @@ import { merge } from '../util/map'
 
 export const resolveFnGenerics = (
     fnType: VirtualFnType,
-    args: (AstNode<any> & Partial<Typed>)[],
+    argTypes: VirtualType[],
     typeArgs?: VirtualType[],
 ): Map<string, VirtualType> => {
     if (typeArgs) {
         return new Map<string, VirtualType>(fnType.generics.map((g, i) => [g.name, typeArgs[i]]))
     }
-    return args
-        .map((arg, i) => {
+    return argTypes
+        .map((argType, i) => {
             const param = fnType.paramTypes[i]
-            return resolveGenericsOverStructure(arg.type!, param)
+            return resolveGenericsOverStructure(argType, param)
         })
         .reduce((acc, m) => merge(acc, m, (p, _) => p), new Map<string, VirtualType>())
 }
 
 /**
  * Recursively walk over zipped pair (arg, param) and resolve generic virtual types.
+ * In case when both arg and param are fns, walk over [...paramTypes, returnType] and do the same.
  *
  * Examples: 
  *   - `resolveGenerics(Foo<A, Bar<B>>, Foo<Int, Bar<Char>>)` will produce map [T -> Int, U -> Char]
@@ -30,17 +31,30 @@ export const resolveFnGenerics = (
  */
 export const resolveGenericsOverStructure = (arg: VirtualType, param: VirtualType): Map<string, VirtualType> => {
     const map = new Map()
+    if (arg.kind === 'unknown-type' || param.kind === 'unknown-type') {
+        return map
+    }
     if (param.kind === 'generic') {
         map.set(param.name, arg)
         return map
     }
-    const paramTypeArgs = getTypeParams(param)
-    const argTypeArgs = getTypeParams(arg)
-    for (let i = 0; i < paramTypeArgs.length; i++) {
-        const implTypeArg = paramTypeArgs[i]
-        const argTypeArg = argTypeArgs.at(i)
-        if (argTypeArg) {
-            resolveGenericsOverStructure(argTypeArg, implTypeArg).forEach((v, k) => map.set(k, v))
+    if (arg.kind === 'fn-type' && param.kind === 'fn-type') {
+        for (let i = 0; i < param.paramTypes.length; i++) {
+            const paramType = param.paramTypes[i]
+            const argType = arg.paramTypes.at(i)
+            if (!argType) break
+            resolveGenericsOverStructure(argType, paramType).forEach((v, k) => map.set(k, v))
+        }
+        resolveGenericsOverStructure(arg.returnType, param.returnType).forEach((v, k) => map.set(k, v))
+    } else {
+        const paramTypeArgs = getTypeParams(param)
+        const argTypeArgs = getTypeParams(arg)
+        for (let i = 0; i < paramTypeArgs.length; i++) {
+            const implTypeArg = paramTypeArgs[i]
+            const argTypeArg = argTypeArgs.at(i)
+            if (argTypeArg) {
+                resolveGenericsOverStructure(argTypeArg, implTypeArg).forEach((v, k) => map.set(k, v))
+            }
         }
     }
     return map
@@ -83,16 +97,14 @@ export const resolveType = (
                 typeArgs: virtualType.typeArgs.map(g => resolveType(g, genericMaps, node, ctx))
             }
         case 'generic':
+            // try to resolve generic with maps, in case of no matches keep as-is, it might get resolved later
             const vt = virtualTypeToString(virtualType)
-            let resolved: VirtualType = unknownType
+            let resolved: VirtualType = virtualType
             for (const map of genericMaps) {
                 const res = map.get(vt)
                 if (res) {
                     resolved = res
                 }
-            }
-            if (resolved.kind === 'unknown-type') {
-                ctx.errors.push(semanticError(ctx, node, `unresolved generic ${vt}`))
             }
             return resolved
         case 'fn-type':

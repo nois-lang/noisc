@@ -104,8 +104,13 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
     }
 }
 
-export const genericToVirtual = (generic: Generic, ctx: Context): VirtualGeneric =>
-    ({ kind: 'generic', name: generic.name.value, bounds: generic.bounds.map(b => typeToVirtual(b, ctx)) })
+export const genericToVirtual = (generic: Generic, ctx: Context): VirtualGeneric => {
+    return {
+        kind: 'generic',
+        name: generic.name.value,
+        bounds: generic.bounds.map(b => typeToVirtual(b, ctx))
+    }
+}
 
 export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context): boolean => {
     if (!ctx.config.typeCheck) return true
@@ -113,7 +118,11 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
     if (t.kind === anyType.kind || target.kind === anyType.kind) {
         return true
     }
-    // TODO: type params
+
+    if (t.kind === 'generic' && target.kind === 'generic') {
+        return t.name === target.name
+    }
+
     if (t.kind === 'vid-type' && target.kind === 'vid-type') {
         if (vidToString(t.identifier) === vidToString(target.identifier)) {
             for (let i = 0; i < t.typeArgs.length; i++) {
