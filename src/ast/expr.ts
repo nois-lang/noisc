@@ -81,8 +81,8 @@ export const buildBinaryExpr = (node: ParseNode): Expr => {
                 }
                 if ((o1Assoc !== 'right' && o1Prec === o2Prec) || o1Prec < o2Prec) {
                     operatorStack.pop()
-                    const lExp = exprStack.pop()!
                     const rExp = exprStack.pop()!
+                    const lExp = exprStack.pop()!
                     exprStack.push({
                         kind: 'binary-expr',
                         parseNode: lExp.parseNode,

@@ -1,3 +1,4 @@
+import { inspect } from 'util'
 import { tokenize } from '../lexer/lexer'
 import { parseModule } from '../parser/fns'
 import { Parser } from '../parser/parser'
@@ -72,36 +73,107 @@ describe('ast', () => {
         })
     })
 
-    it('expr', () => {
-        const ast = buildAst('1 + 2 * 3')
-        expect(compactAstNode(ast.block)).toEqual({
-            'kind': 'block',
-            'statements': [{
-                'binaryOp': { 'kind': 'add-op' },
-                'lOperand': {
-                    'operand': {
-                        'operand': { 'kind': 'int-literal', 'value': '1' },
-                        'kind': 'operand-expr'
-                    }, 'kind': 'operand-expr'
-                },
-                'rOperand': {
-                    'binaryOp': { 'kind': 'mult-op' },
+    describe('expr', () => {
+        it('basic', () => {
+            const ast = buildAst('1 + 2 * 3')
+            expect(compactAstNode(ast.block)).toEqual({
+                'kind': 'block',
+                'statements': [{
+                    'binaryOp': { 'kind': 'add-op' },
                     'lOperand': {
                         'operand': {
-                            'operand': { 'kind': 'int-literal', 'value': '2' },
+                            'operand': { 'kind': 'int-literal', 'value': '1' },
                             'kind': 'operand-expr'
                         }, 'kind': 'operand-expr'
                     },
                     'rOperand': {
-                        'operand': {
-                            'operand': { 'kind': 'int-literal', 'value': '3' },
-                            'kind': 'operand-expr'
-                        }, 'kind': 'operand-expr'
+                        'binaryOp': { 'kind': 'mult-op' },
+                        'lOperand': {
+                            'operand': {
+                                'operand': { 'kind': 'int-literal', 'value': '2' },
+                                'kind': 'operand-expr'
+                            }, 'kind': 'operand-expr'
+                        },
+                        'rOperand': {
+                            'operand': {
+                                'operand': { 'kind': 'int-literal', 'value': '3' },
+                                'kind': 'operand-expr'
+                            }, 'kind': 'operand-expr'
+                        },
+                        'kind': 'binary-expr'
                     },
                     'kind': 'binary-expr'
-                },
-                'kind': 'binary-expr'
-            }]
+                }]
+            })
+        })
+
+        it('method call', () => {
+            const ast = buildAst('a.b()')
+            expect(compactAstNode(ast.block)).toEqual({
+                kind: 'block',
+                statements: [{
+                    kind: 'binary-expr',
+                    binaryOp: { kind: 'access-op' },
+                    lOperand: {
+                        kind: 'operand-expr',
+                        operand: {
+                            kind: 'operand-expr',
+                            operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'a' }, typeArgs: [] }
+                        }
+                    },
+                    rOperand: {
+                        kind: 'unary-expr',
+                        unaryOp: { kind: 'call-op', args: [] },
+                        operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'b' }, typeArgs: [] }
+                    }
+                }]
+            })
+        })
+
+        it('method call chain', () => {
+            const ast = buildAst('a.b().c().d()')
+            expect(compactAstNode(ast.block)).toEqual({
+                kind: 'block',
+                statements: [{
+                    kind: 'binary-expr',
+                    binaryOp: { kind: 'access-op' },
+                    lOperand: {
+                        kind: 'binary-expr',
+                        binaryOp: { kind: 'access-op' },
+                        lOperand: {
+                            kind: 'binary-expr',
+                            binaryOp: { kind: 'access-op' },
+                            lOperand: {
+                                kind: 'operand-expr',
+                                operand: {
+                                    kind: 'operand-expr',
+                                    operand: {
+                                        kind: 'identifier',
+                                        scope: [],
+                                        name: { kind: 'name', value: 'a' },
+                                        typeArgs: []
+                                    }
+                                }
+                            },
+                            rOperand: {
+                                kind: 'unary-expr',
+                                unaryOp: { kind: 'call-op', args: [] },
+                                operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'b' }, typeArgs: [] }
+                            }
+                        },
+                        rOperand: {
+                            kind: 'unary-expr',
+                            unaryOp: { kind: 'call-op', args: [] },
+                            operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'c' }, typeArgs: [] }
+                        }
+                    },
+                    rOperand: {
+                        kind: 'unary-expr',
+                        unaryOp: { kind: 'call-op', args: [] },
+                        operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'd' }, typeArgs: [] }
+                    }
+                }]
+            })
         })
     })
 
