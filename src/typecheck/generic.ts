@@ -1,9 +1,8 @@
-import { genericToVirtual, Typed, VirtualFnType, VirtualType, virtualTypeToString } from './index'
 import { AstNode } from '../ast'
 import { Context, instanceScope } from '../scope'
-import { selfType, unknownType } from './type'
-import { semanticError } from '../semantic/error'
 import { merge } from '../util/map'
+import { genericToVirtual, VirtualFnType, VirtualType, virtualTypeToString } from './index'
+import { selfType } from './type'
 
 export const resolveFnGenerics = (
     fnType: VirtualFnType,
@@ -15,7 +14,10 @@ export const resolveFnGenerics = (
     }
     return argTypes
         .map((argType, i) => {
-            const param = fnType.paramTypes[i]
+            const param = fnType.paramTypes.at(i)
+            if (!param) {
+                throw Error('fn args >= params')
+            }
             return resolveGenericsOverStructure(argType, param)
         })
         .reduce((acc, m) => merge(acc, m, (p, _) => p), new Map<string, VirtualType>())
