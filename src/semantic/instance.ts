@@ -1,3 +1,4 @@
+import { checkCallArgs, checkOperand } from '.'
 import { BinaryExpr } from '../ast/expr'
 import { CallOp } from '../ast/op'
 import { Operand } from '../ast/operand'
@@ -9,7 +10,6 @@ import { VirtualIdentifierMatch, resolveVid } from '../scope/vid'
 import { VirtualFnType, VirtualType, typeToVirtual, virtualTypeToString } from '../typecheck'
 import { resolveFnGenerics, resolveGenericsOverStructure, resolveType } from '../typecheck/generic'
 import { notFoundError, semanticError } from './error'
-import { checkCallArgs, checkOperand } from './index'
 
 export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     const rOp = binaryExpr.rOperand
@@ -26,8 +26,7 @@ export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
         return
     }
 
-    // TODO: support self
-    ctx.errors.push(semanticError(ctx, rOp, 'illegal operand, expected field access or method call'))
+    ctx.errors.push(semanticError(ctx, rOp, `expected field access or method call, got ${rOp.kind}`))
 }
 
 const checkFieldAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
@@ -73,6 +72,13 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
 
     const fn = traitFnRefs[0].fn
     const fnType = <VirtualFnType>fn.type
+
+    // TODO: custom check for static methods
+    if (fnType.paramTypes.length !== callOp.args.length + 1) {
+        ctx.errors.push(semanticError(ctx, callOp, `expected ${fnType.paramTypes.length} arguments, got ${callOp.args.length}`))
+        return
+    }
+
     const instanceType = lOperand.type!
     const implDef = traitFnRefs[0].ref.def
     const implTargetType = getImplTargetType(implDef, ctx)

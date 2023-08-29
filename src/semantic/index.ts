@@ -5,19 +5,19 @@ import { Identifier, Operand } from '../ast/operand'
 import { Block, FnDef, ImplDef, Statement, TraitDef, VarDef } from '../ast/statement'
 import { Generic, Type } from '../ast/type'
 import { TypeCon, TypeDef } from '../ast/type-def'
-import { Context, defKey, ImplScope, instanceScope, TypeDefScope } from '../scope'
+import { Context, ImplScope, TypeDefScope, defKey, instanceScope } from '../scope'
 import { getImplTargetType, traitDefToVirtualType } from '../scope/trait'
 import { idToVid, vidFromString, vidToString } from '../scope/util'
-import { Definition, resolveVid, TypeConDef } from '../scope/vid'
+import { Definition, resolveVid } from '../scope/vid'
 import {
-    genericToVirtual,
-    isAssignable,
     Typed,
-    typeError,
-    typeToVirtual,
     VidType,
     VirtualFnType,
     VirtualType,
+    genericToVirtual,
+    isAssignable,
+    typeError,
+    typeToVirtual,
     virtualTypeToString
 } from '../typecheck'
 import { resolveFnGenerics, resolveInstanceGenerics, resolveType } from '../typecheck/generic'
