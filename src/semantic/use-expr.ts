@@ -1,6 +1,6 @@
 import { UseExpr } from '../ast/statement'
-import { resolveVidMatched, statementVid, VirtualIdentifier } from '../scope/vid'
 import { Context } from '../scope'
+import { resolveVid, statementVid, VirtualIdentifier } from '../scope/vid'
 import { semanticError } from './error'
 
 export const useExprToVids = (useExpr: UseExpr, ctx: Context): VirtualIdentifier[] => {
@@ -11,7 +11,7 @@ export const useExprToVids = (useExpr: UseExpr, ctx: Context): VirtualIdentifier
         })
     }
     if (useExpr.expr.kind === 'wildcard') {
-        const match = resolveVidMatched(useExprToVid(useExpr), ctx)
+        const match = resolveVid(useExprToVid(useExpr), ctx)
         if (!match) {
             ctx.errors.push(semanticError(ctx, useExpr, 'unresolved use expression'))
             return []
@@ -24,7 +24,7 @@ export const useExprToVids = (useExpr: UseExpr, ctx: Context): VirtualIdentifier
             const vid = statementVid(s)
             return vid ? [vid] : []
         })
-        return vids.map(vid => ({ scope: useExpr.scope.map(s => s.value), name: vid.name }))
+        return vids.map(vid => ({ names: [...useExpr.scope.map(s => s.value), vid.names.at(-1)!] }))
     }
     return [useExprToVid(useExpr)]
 }
@@ -35,7 +35,7 @@ const useExprToVid = (useExpr: UseExpr): VirtualIdentifier => {
     }
     if (useExpr.expr.kind === 'wildcard') {
         const last = useExpr.scope.at(-1)!
-        return { scope: useExpr.scope.slice(0, -1).map(n => n.value), name: last.value }
+        return { names: [...useExpr.scope.slice(0, -1).map(n => n.value), last.value] }
     }
-    return { scope: useExpr.scope.map(n => n.value), name: useExpr.expr.value }
+    return { names: [...useExpr.scope.map(n => n.value), useExpr.expr.value] }
 }

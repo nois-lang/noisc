@@ -85,7 +85,7 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
             } else if (ref.def.kind === 'trait-def' || ref.def.kind === 'type-def') {
                 return {
                     kind: 'vid-type',
-                    identifier: ref.qualifiedVid,
+                    identifier: ref.vid,
                     typeArgs: type.typeArgs.map(arg => typeToVirtual(arg, ctx))
                 }
             } else {
@@ -135,7 +135,7 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
             return true
         }
         const traitRefs = findTypeTraits(t.identifier, ctx)
-        return traitRefs.some(ref => vidToString(ref.qualifiedVid) === vidToString(target.identifier))
+        return traitRefs.some(ref => vidToString(ref.vid) === vidToString(target.identifier))
     }
     if (t.kind === 'fn-type' && target.kind === 'fn-type') {
         for (let i = 0; i < target.paramTypes.length; i++) {

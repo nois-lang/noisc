@@ -4,6 +4,7 @@ import * as process from 'process'
 import { defaultConfig } from './config'
 import { prettyError, prettySourceMessage, prettyWarning } from './error'
 import { indexToLocation } from './location'
+import { Package } from './package'
 import { buildModule, buildPackage } from './package/build'
 import { getLocationRange } from './parser'
 import { Context, pathToVid } from './scope'
@@ -36,23 +37,29 @@ if (!moduleAst) {
     process.exit(1)
 }
 
+const pkg: Package = {
+    path: source.filepath,
+    name: moduleAst?.identifier.names.at(-1)!,
+    modules: [moduleAst]
+}
+
 const std = buildPackage(join(__dirname, 'std'), 'std')
 if (!std) {
     process.exit(1)
 }
 
-const modules = [...std.modules, moduleAst]
+const packages = [std, pkg]
 const ctx: Context = {
     config: defaultConfig(),
     moduleStack: [],
-    modules,
-    impls: modules.flatMap(findImpls),
+    packages,
+    impls: packages.flatMap(p => p.modules).flatMap(findImpls),
     errors: [],
     warnings: []
 }
 
 if (ctx.config.libCheck) {
-    ctx.modules.forEach(m => { checkModule(m, ctx) })
+    ctx.packages.flatMap(p => p.modules).forEach(m => { checkModule(m, ctx) })
 } else {
     checkModule(moduleAst, ctx)
 }

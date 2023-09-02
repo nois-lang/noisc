@@ -15,11 +15,11 @@ export const findTypeTraits = (typeVid: VirtualIdentifier, ctx: Context): Virtua
         const ref = resolveVid(targetVid, ctx, ['trait-def', 'impl-def'])
         // not all impl refs will resolve with current module imports
         if (!ref) return []
-        if (vidToString(ref.qualifiedVid) === vidToString(typeVid)) {
+        if (vidToString(ref.vid) === vidToString(typeVid)) {
             const def = resolveVid(idToVid(impl.identifier), ctx, ['trait-def', 'impl-def'])
             if (!def) return []
             if (def.def.kind === 'trait-def' || def.def.kind === 'impl-def') {
-                return [{ qualifiedVid: def.qualifiedVid, def: def.def }]
+                return [{ vid: def.vid, def: def.def }]
             }
             return []
         }
@@ -32,12 +32,12 @@ export const findImpls = (module: Module): ImplDef[] =>
 
 export const getImplTargetVid = (implDef: TraitDef | ImplDef, ctx: Context): VirtualIdentifier | undefined => {
     if (implDef.kind === 'trait-def') {
-        return resolveVid(vidFromString(implDef.name.value), ctx)?.qualifiedVid
+        return resolveVid(vidFromString(implDef.name.value), ctx)?.vid
     }
     if (implDef.forTrait) {
-        return resolveVid(idToVid(implDef.forTrait), ctx)?.qualifiedVid
+        return resolveVid(idToVid(implDef.forTrait), ctx)?.vid
     } else {
-        return resolveVid(idToVid(implDef.identifier), ctx)?.qualifiedVid
+        return resolveVid(idToVid(implDef.identifier), ctx)?.vid
     }
 }
 
@@ -45,7 +45,7 @@ export const getImplTargetType = (implDef: TraitDef | ImplDef, ctx: Context): Vi
     if (implDef.kind === 'trait-def') {
         return {
             kind: 'vid-type',
-            identifier: resolveVid(vidFromString(implDef.name.value), ctx)!.qualifiedVid,
+            identifier: resolveVid(vidFromString(implDef.name.value), ctx)!.vid,
             typeArgs: implDef.generics.map(g => genericToVirtual(g, ctx))
         }
     }
@@ -54,7 +54,7 @@ export const getImplTargetType = (implDef: TraitDef | ImplDef, ctx: Context): Vi
     } else {
         return {
             kind: 'vid-type',
-            identifier: resolveVid(idToVid(implDef.identifier), ctx)!.qualifiedVid,
+            identifier: resolveVid(idToVid(implDef.identifier), ctx)!.vid,
             typeArgs: implDef.generics.map(g => genericToVirtual(g, ctx))
         }
     }

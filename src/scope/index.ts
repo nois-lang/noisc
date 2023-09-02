@@ -6,11 +6,12 @@ import { Config } from '../config'
 import { SemanticError } from '../semantic/error'
 import { todo } from '../util/todo'
 import { TypeDef } from '../ast/type-def'
+import { Package } from '../package'
 
 export interface Context {
     config: Config
     moduleStack: Module[]
-    modules: Module[]
+    packages: Package[]
     impls: ImplDef[]
     errors: SemanticError[]
     warnings: SemanticError[]
@@ -26,28 +27,28 @@ export type Scope = TraitScope | ImplScope | TypeDefScope | CommonScope
 export type DefinitionMap = Map<string, Definition>
 
 export interface TraitScope {
-    type: 'trait-def',
+    kind: 'trait-def',
     definitions: DefinitionMap
     selfType: VirtualType,
     def: TraitDef,
 }
 
 export interface ImplScope {
-    type: 'impl-def',
+    kind: 'impl-def',
     definitions: DefinitionMap
     selfType: VirtualType,
     def: ImplDef,
 }
 
 export interface TypeDefScope {
-    type: 'type-def',
+    kind: 'type-def',
     definitions: DefinitionMap
     def: TypeDef,
     vid: VirtualIdentifier
 }
 
 export interface CommonScope {
-    type: 'module' | 'fn-def' | 'block',
+    kind: 'module' | 'fn-def' | 'block',
     definitions: DefinitionMap
 }
 
@@ -56,7 +57,7 @@ export const defKey = (def: Definition): string => {
         case 'self':
             return def.kind
         case 'module':
-            return def.kind + def.identifier.name
+            return def.kind + def.identifier.names.at(-1)!
         case 'var-def':
         case 'param':
             if (def.pattern.kind !== 'name') return todo('var-def key')
@@ -81,19 +82,14 @@ export const pathToVid = (path: string, packageName?: string): VirtualIdentifier
     if (dirs.at(-1)!.toLowerCase() === 'mod') {
         dirs.pop()
     }
-    const scope = dirs.slice(0, -1)
-    const name = dirs.at(-1)!
-    return { scope, name }
+    return { names: dirs }
 }
 
-/**
- * Checks whether current module scope is within ImplDef or TraitDef scope
- */
 export const instanceScope = (ctx: Context): ImplScope | TraitScope | undefined => {
     const module = ctx.moduleStack.at(-1)!
     for (let i = module.scopeStack.length - 1; i >= 0; i--) {
         let scope = module.scopeStack[i]
-        if (scope.type === 'impl-def' || scope.type === 'trait-def') {
+        if (scope.kind === 'impl-def' || scope.kind === 'trait-def') {
             return scope
         }
     }

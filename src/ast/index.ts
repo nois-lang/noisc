@@ -111,6 +111,11 @@ export interface Module extends AstNode<'module'> {
      * All vids accessible from the current module, based on {@link useExprs}
      */
     references?: VirtualIdentifier[]
+    /**
+    * Persistent top level scope.
+    * Different from scopeStack[0] because it is available after checkModule(), not popped
+    */
+    topScope?: Scope
 
     briefed?: boolean
     checked?: boolean

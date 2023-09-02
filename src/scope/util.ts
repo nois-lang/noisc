@@ -1,28 +1,15 @@
 import { Identifier } from "../ast/operand"
 import { VirtualIdentifier } from "./vid"
 
-export const vidFromString = (str: string): VirtualIdentifier => {
-    const tokens = str.split('::')
-    return { scope: tokens.slice(0, -1), name: tokens.at(-1)! }
-}
+export const vidFromString = (str: string): VirtualIdentifier => ({ names: str.split('::') })
 
-export const vidToString = (vid: VirtualIdentifier): string => [...vid.scope, vid.name].join('::')
+export const vidToString = (vid: VirtualIdentifier): string => vid.names.join('::')
 
-export const vidScopeToString = (vid: VirtualIdentifier) => vid.scope.join('::')
+export const vidScopeToString = (vid: VirtualIdentifier) => vidToString(vidFromScope(vid))
 
-export const vidFromScope = (vid: VirtualIdentifier): VirtualIdentifier => ({
-    scope: vid.scope.slice(0, -1),
-    name: vid.scope.at(-1)!
-})
+export const vidFromScope = (vid: VirtualIdentifier): VirtualIdentifier => ({ names: vid.names.slice(0, -1) })
 
-export const vidFirst = (vid: VirtualIdentifier): string => vid.scope.at(0) || vid.name
+export const idToVid = (id: Identifier): VirtualIdentifier => ({ names: [...id.scope.map(s => s.value), id.name.value] })
 
-export const idToVid = (id: Identifier): VirtualIdentifier => ({
-    scope: id.scope.map(s => s.value),
-    name: id.name.value
-})
-
-export const concatVid = (a: VirtualIdentifier, b: VirtualIdentifier): VirtualIdentifier => {
-    return { scope: [...a.scope, a.name, ...b.scope], name: b.name }
-}
+export const concatVid = (a: VirtualIdentifier, b: VirtualIdentifier): VirtualIdentifier => ({ names: [...a.names, ...b.names] })
 

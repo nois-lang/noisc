@@ -8,6 +8,6 @@ export const selfType: VirtualGeneric = { kind: 'generic', name: 'Self', bounds:
 
 export const unitType: VidType = {
     kind: 'vid-type',
-    identifier: { scope: ['std'], name: 'Unit' },
+    identifier: { names: ['std', 'Unit'] },
     typeArgs: []
 }

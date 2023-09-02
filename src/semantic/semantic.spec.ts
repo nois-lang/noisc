@@ -1,45 +1,40 @@
-import { defaultConfig } from '../config'
-import { Context, pathToVid } from '../scope'
-import { join, relative } from 'path'
-import { getPackageModuleSources } from '../package/io'
-import { checkModule } from './index'
-import { Source } from '../source'
 import { expect } from '@jest/globals'
-import { buildModule } from '../package/build'
+import { join } from 'path'
+import { defaultConfig } from '../config'
+import { Package } from '../package'
+import { buildModule, buildPackage } from '../package/build'
+import { Context, pathToVid } from '../scope'
 import { findImpls } from '../scope/trait'
+import { Source } from '../source'
+import { checkModule } from './index'
 
 describe('semantic', () => {
 
     const check = (code: string, checkStd: boolean = false): Context => {
         const source: Source = { code, filepath: 'test.no' }
 
-        const moduleAst = buildModule(source, pathToVid(source.filepath))
-        if (!moduleAst) {
-            process.exit(1)
+        const moduleAst = buildModule(source, pathToVid(source.filepath))!
+        const pkg: Package = {
+            path: source.filepath,
+            name: moduleAst?.identifier.names.at(-1)!,
+            modules: [moduleAst]
         }
 
-        const stdPath = join(__dirname, '../std')
-        const stdModules = getPackageModuleSources(stdPath).map(s => {
-            const stdModule = buildModule(s, pathToVid(relative(stdPath, s.filepath), 'std'))
-            if (!stdModule) {
-                process.exit(1)
-            }
-            return stdModule
-        })
+        const std = buildPackage(join(__dirname, '..', 'std'), 'std')!
 
         const config = defaultConfig()
-        const modules = [...stdModules, moduleAst]
+        const packages = [std, pkg]
         const ctx: Context = {
             config,
             moduleStack: [],
-            modules,
-            impls: modules.flatMap(findImpls),
+            packages,
+            impls: packages.flatMap(p => p.modules).flatMap(findImpls),
             errors: [],
             warnings: []
         }
 
         if (checkStd) {
-            ctx.modules.forEach(m => { checkModule(m, ctx) })
+            ctx.packages.flatMap(p => p.modules).forEach(m => { checkModule(m, ctx) })
         } else {
             checkModule(moduleAst, ctx)
         }

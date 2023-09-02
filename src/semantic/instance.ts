@@ -43,8 +43,8 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
         return undefined
     }
     const methodName = rOperand.name.value
-    const ref = resolveVid(lOperand.type.identifier, ctx)
-    const traitRefs = ref?.def.kind === 'trait-def'
+    const ref = resolveVid(lOperand.type.identifier, ctx, ['trait-def', 'impl-def', 'type-def'])
+    const traitRefs = ref?.def.kind === 'trait-def' || ref?.def.kind === 'impl-def'
         ? [<VirtualIdentifierMatch<TraitDef>>ref]
         : findTypeTraits(lOperand.type.identifier, ctx)
     const traitFnRefs = traitRefs
@@ -58,7 +58,7 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
         return undefined
     }
     if (traitFnRefs.length > 1) {
-        const traits = traitFnRefs.map(fnRef => vidToString(fnRef.ref.qualifiedVid)).join(', ')
+        const traits = traitFnRefs.map(fnRef => vidToString(fnRef.ref.vid)).join(', ')
         ctx.errors.push(semanticError(
             ctx,
             rOperand,

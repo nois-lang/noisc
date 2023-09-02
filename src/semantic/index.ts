@@ -56,11 +56,16 @@ export const checkModule = (module: Module, ctx: Context, brief: boolean = false
 
 const checkBlock = (block: Block, ctx: Context, brief: boolean = false): void => {
     const module = ctx.moduleStack.at(-1)!
-    module.scopeStack.push({ type: 'block', definitions: new Map() })
+    module.scopeStack.push({ kind: 'block', definitions: new Map() })
 
     block.statements.forEach(s => checkStatement(s, ctx, true))
     if (!brief) {
         block.statements.forEach(s => checkStatement(s, ctx))
+    }
+
+    const topLevel = module.scopeStack.length === 1
+    if (topLevel && !module.topScope) {
+        module.topScope = module.scopeStack.at(-1)!
     }
 
     // TODO: block type
@@ -77,7 +82,7 @@ const checkStatement = (statement: Statement, ctx: Context, brief: boolean = fal
         ctx.errors.push(semanticError(ctx, statement, `top level \`${statement.kind}\` is not allowed`))
         return
     }
-    if (['impl-def', 'trait-def'].includes(scope.type) && statement.kind !== 'fn-def') {
+    if (['impl-def', 'trait-def'].includes(scope.kind) && statement.kind !== 'fn-def') {
         ctx.errors.push(semanticError(ctx, statement, `\`${statement.kind}\` in instance scope is not allowed`))
         return
     }
@@ -136,7 +141,7 @@ const checkExpr = (expr: Expr, ctx: Context): void => {
 
 const checkFnDef = (fnDef: FnDef, ctx: Context, brief: boolean = false): void => {
     const module = ctx.moduleStack.at(-1)!
-    module.scopeStack.push({ type: 'fn-def', definitions: new Map(fnDef.generics.map(g => [defKey(g), g])) })
+    module.scopeStack.push({ kind: 'fn-def', definitions: new Map(fnDef.generics.map(g => [defKey(g), g])) })
 
     const paramTypes = fnDef.params.map((p, i) => {
         checkParam(p, i, ctx)
@@ -171,7 +176,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context, brief: boolean = false): void =>
         if (fnDef.block) {
             checkBlock(fnDef.block, ctx)
         } else {
-            if (instanceScope(ctx)?.type !== 'trait-def') {
+            if (instanceScope(ctx)?.kind !== 'trait-def') {
                 ctx.warnings.push(semanticError(ctx, fnDef, `fn \`${fnDef.name.value}\` has no body -> must be native`))
             }
         }
@@ -222,7 +227,7 @@ const checkTraitDef = (traitDef: TraitDef, ctx: Context, brief: boolean = false)
 
     const selfType = traitDefToVirtualType(traitDef, ctx)
     module.scopeStack.push({
-        type: 'trait-def',
+        kind: 'trait-def',
         selfType,
         def: traitDef,
         definitions: new Map(traitDef.generics.map(g => [defKey(g), g]))
@@ -244,7 +249,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context, brief: boolean = false) =>
     }
 
     module.scopeStack.push({
-        type: 'impl-def',
+        kind: 'impl-def',
         selfType: unknownType,
         def: implDef,
         definitions: new Map(implDef.generics.map(g => [defKey(g), g]))
@@ -260,9 +265,9 @@ const checkImplDef = (implDef: ImplDef, ctx: Context, brief: boolean = false) =>
             checkIdentifier(implDef.forTrait, ctx)
         }
         checkIdentifier(implDef.identifier, ctx)
-
-        checkBlock(implDef.block, ctx)
     }
+
+    checkBlock(implDef.block, ctx, brief)
 
     module.scopeStack.pop()
 }
@@ -275,9 +280,9 @@ const checkTypeDef = (typeDef: TypeDef, ctx: Context, brief: boolean = false) =>
         return
     }
 
-    const vid = { scope: [...module.identifier.scope, module.identifier.name], name: typeDef.name.value }
+    const vid = { names: [...module.identifier.names, typeDef.name.value] }
     module.scopeStack.push({
-        type: 'type-def',
+        kind: 'type-def',
         def: typeDef,
         vid,
         definitions: new Map(typeDef.generics.map(g => [defKey(g), g]))
@@ -508,28 +513,28 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
         case 'string-literal':
             operand.type = {
                 kind: 'vid-type',
-                identifier: resolveVid(vidFromString('String'), ctx)!.qualifiedVid,
+                identifier: resolveVid(vidFromString('String'), ctx)!.vid,
                 typeArgs: []
             }
             break
         case 'char-literal':
             operand.type = {
                 kind: 'vid-type',
-                identifier: resolveVid(vidFromString('Char'), ctx)!.qualifiedVid,
+                identifier: resolveVid(vidFromString('Char'), ctx)!.vid,
                 typeArgs: []
             }
             break
         case 'int-literal':
             operand.type = {
                 kind: 'vid-type',
-                identifier: resolveVid(vidFromString('Int'), ctx)!.qualifiedVid,
+                identifier: resolveVid(vidFromString('Int'), ctx)!.vid,
                 typeArgs: []
             }
             break
         case 'float-literal':
             operand.type = {
                 kind: 'vid-type',
-                identifier: resolveVid(vidFromString('Float'), ctx)!.qualifiedVid,
+                identifier: resolveVid(vidFromString('Float'), ctx)!.vid,
                 typeArgs: []
             }
             break
