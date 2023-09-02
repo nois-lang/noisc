@@ -21,6 +21,3 @@ impl <T> Iter<T> for MapIter<T> {
     }
 }
 
-fn main() {
-    println([1, 2, 3].map(|i| i * 2))
-}

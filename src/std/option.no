@@ -2,3 +2,8 @@ type Option<T> {
     Some(value: T),
     None
 }
+
+impl <T> Option<T> {
+    fn map<U>(self, f: |T|: U): Option<U> {
+    }
+}
