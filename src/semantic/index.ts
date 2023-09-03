@@ -386,9 +386,9 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     callOp.args.forEach(a => checkOperand(a, ctx))
 
     const fnType = <VirtualFnType>operand.type
-    const typeArgs = operand.kind === 'identifier' && operand.typeArgs.length > 0
+    const typeArgs = operand.kind === 'identifier'
         ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx))
-        : undefined
+        : []
     const instanceGenericMap = resolveInstanceGenerics(ctx)
     const fnGenericMap = resolveFnGenerics(fnType, callOp.args.map(a => a.type!), typeArgs)
     const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(
@@ -431,7 +431,11 @@ const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const typeConType = <VirtualFnType>typeCon.type!
     // TODO: figure out typeArgs parameter here
     // TODO: fields might be specified out of order, match conOp.fields by name 
-    const genericMap = resolveFnGenerics(typeConType, conOp.fields.map(f => f.expr.type!))
+    const genericMap = resolveFnGenerics(
+        typeConType,
+        conOp.fields.map(f => f.expr.type!),
+        operand.typeArgs.map(t => typeToVirtual(t, ctx))
+    )
     typeConType.generics.forEach(g => {
         if (!genericMap.get(g.name)) {
             // TODO: find actual con op argument that's causing this

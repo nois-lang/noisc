@@ -66,9 +66,7 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
     const fnGenericMap = resolveFnGenerics(
         fnType,
         [lOperand.type, ...callOp.args.map(a => a.type!)],
-        lOperand.kind === 'identifier' && lOperand.typeArgs.length > 0
-            ? lOperand.typeArgs.map(tp => typeToVirtual(tp, ctx))
-            : undefined,
+        lOperand.kind === 'identifier' ? lOperand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : [],
     )
     const genericMaps = [implGenericMap, fnGenericMap]
     const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(

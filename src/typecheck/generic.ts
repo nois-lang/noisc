@@ -7,9 +7,9 @@ import { selfType } from './type'
 export const resolveFnGenerics = (
     fnType: VirtualFnType,
     argTypes: VirtualType[],
-    typeArgs?: VirtualType[],
+    typeArgs: VirtualType[] = [],
 ): Map<string, VirtualType> => {
-    if (typeArgs) {
+    if (typeArgs.length > 0) {
         return new Map<string, VirtualType>(fnType.generics.map((g, i) => [g.name, typeArgs[i]]))
     }
     return argTypes
