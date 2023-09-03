@@ -43,35 +43,16 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
         return undefined
     }
     const methodName = rOperand.name.value
-    const ref = resolveVid(lOperand.type.identifier, ctx, ['trait-def', 'impl-def', 'type-def'])
-    const traitRefs = ref?.def.kind === 'trait-def' || ref?.def.kind === 'impl-def'
-        ? [<VirtualIdentifierMatch<TraitDef>>ref]
-        : findTypeTraits(lOperand.type.identifier, ctx)
-    const traitFnRefs = traitRefs
-        .flatMap(ref => {
-            const fn = <FnDef | undefined>ref.def.block.statements
-                .find(s => s.kind === 'fn-def' && s.name.value === methodName)
-            return fn ? [{ ref, fn }] : []
-        })
-    if (traitFnRefs.length === 0) {
-        ctx.errors.push(notFoundError(ctx, rOperand, `${virtualTypeToString(lOperand.type!)}::${methodName}`, 'method'))
-        return undefined
-    }
-    if (traitFnRefs.length > 1) {
-        const traits = traitFnRefs.map(fnRef => vidToString(fnRef.ref.vid)).join(', ')
-        ctx.errors.push(semanticError(
-            ctx,
-            rOperand,
-            `clashing method name ${virtualTypeToString(lOperand.type!)}::${methodName}
-            across traits: ${traits}`)
-        )
-        return undefined
+    const traitFnVid = { names: [...lOperand.type.identifier.names, methodName] }
+    const ref = resolveVid(traitFnVid, ctx, ['method-def'])
+    if (!ref || ref.def.kind !== 'method-def') {
+        ctx.errors.push(notFoundError(ctx, rOperand, vidToString(traitFnVid)))
+        return
     }
 
     callOp.args.forEach(a => checkOperand(a, ctx))
 
-    const fn = traitFnRefs[0].fn
-    const fnType = <VirtualFnType>fn.type
+    const fnType = <VirtualFnType>ref.def.fn.type
 
     // TODO: custom check for static methods
     if (fnType.paramTypes.length !== callOp.args.length + 1) {
@@ -80,8 +61,7 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
     }
 
     const instanceType = lOperand.type!
-    const implDef = traitFnRefs[0].ref.def
-    const implTargetType = getImplTargetType(implDef, ctx)
+    const implTargetType = getImplTargetType(ref.def.trait, ctx)
     const implGenericMap = resolveGenericsOverStructure(instanceType, implTargetType)
     const fnGenericMap = resolveFnGenerics(
         fnType,

@@ -113,7 +113,8 @@ export interface Module extends AstNode<'module'> {
     references?: VirtualIdentifier[]
     /**
     * Persistent top level scope.
-    * Different from scopeStack[0] because it is available after checkModule(), not popped
+    * Different from scopeStack[0] because it is available after checkModule(), not popped.
+    * If module is accessed during its check, use scopeStack.at(0) instead
     */
     topScope?: Scope
 

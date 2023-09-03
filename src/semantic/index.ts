@@ -31,14 +31,13 @@ import { useExprToVids } from './use-expr'
 export const checkModule = (module: Module, ctx: Context, brief: boolean = false): void => {
     if (brief && module.briefed) return
     if (module.checked) return
-    if (brief) {
-        module.briefed = true
-    } else {
+    module.briefed = true
+    if (!brief) {
         module.checked = true
     }
 
-    const vid = vidToString(module.identifier)
     if (ctx.moduleStack.length > 100) {
+        const vid = vidToString(module.identifier)
         const stackVids = ctx.moduleStack.map(m => vidToString(m.identifier))
         const refChain = [...stackVids.slice(stackVids.indexOf(vid)), vid].join(' -> ')
         ctx.errors.push(semanticError(ctx, module, `circular module reference: ${refChain}`))

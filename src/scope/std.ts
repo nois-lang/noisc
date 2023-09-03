@@ -1,7 +1,7 @@
 import { vidFromString } from './util'
 import { VirtualIdentifier } from './vid'
 
-export const defaultImportedVids = (): VirtualIdentifier[] => [
+export const defaultImportedVids: VirtualIdentifier[] = [
     'std::unit::Unit',
     'std::num::Num',
     'std::float::Float',

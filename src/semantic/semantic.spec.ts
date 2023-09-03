@@ -139,7 +139,7 @@ fn main() {
 
         it('self operand', () => {
             const code = (arg: string): string => `\
-type Foo
+type Foo { Foo }
 
 impl Foo {
     fn foo(self): Unit {
