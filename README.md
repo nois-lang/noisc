@@ -46,3 +46,17 @@ fn main() {
 - Errors are a part of a function type signature (using `std::result::Result` return type)
 - Automatic memory management
 - Implicit last block line returns
+
+## Roadmap
+
+| Feature                      | Milestone           | Status           |
+|------------------------------|---------------------|------------------|
+| Lexer                        | 0.1.0               | ✅               |
+| Parser                       | 0.1.0               | ✅               |
+| Semantic checker             | 0.1.0               | 🚧               |
+| Type checker                 | 0.1.0               | 🚧               |
+| Code generator (JS target)   | 0.1.0               | ❌               |
+
+> - ✅ Implemented
+> - 🚧 In progress
+> - ❌ TBD
