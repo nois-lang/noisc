@@ -1,7 +1,7 @@
-import { inspect } from 'util'
 import { tokenize } from '../lexer/lexer'
 import { parseModule } from '../parser/fns'
 import { Parser } from '../parser/parser'
+import { vidFromString } from '../scope/util'
 import { Module, buildModuleAst, compactAstNode } from './index'
 
 describe('ast', () => {
@@ -13,7 +13,7 @@ describe('ast', () => {
         parseModule(p)
         const parseTree = p.buildTree()
 
-        return buildModuleAst(parseTree, { scope: [], name: 'test' }, source)
+        return buildModuleAst(parseTree, vidFromString('test'), source)
     }
 
     describe('type-def', () => {
@@ -73,6 +73,45 @@ describe('ast', () => {
         })
     })
 
+    describe('operand', () => {
+        it('operand-expr', () => {
+            const ast = buildAst('a.b')
+            expect(compactAstNode(ast.block)).toEqual({
+                "kind": "block",
+                "statements": [{
+                    "binaryOp": {
+                        "kind": "access-op",
+                    },
+                    "kind": "binary-expr",
+                    "lOperand": {
+                        "kind": "operand-expr",
+                        "operand": {
+                            "kind": "identifier",
+                            "name": {
+                                "kind": "name",
+                                "value": "a",
+                            },
+                            "scope": [],
+                            "typeArgs": [],
+                        },
+                    },
+                    "rOperand": {
+                        "kind": "operand-expr",
+                        "operand": {
+                            "kind": "identifier",
+                            "name": {
+                                "kind": "name",
+                                "value": "b",
+                            },
+                            "scope": [],
+                            "typeArgs": [],
+                        },
+                    },
+                }],
+            })
+        })
+    })
+
     describe('expr', () => {
         it('basic', () => {
             const ast = buildAst('1 + 2 * 3')
@@ -81,24 +120,18 @@ describe('ast', () => {
                 'statements': [{
                     'binaryOp': { 'kind': 'add-op' },
                     'lOperand': {
-                        'operand': {
-                            'operand': { 'kind': 'int-literal', 'value': '1' },
-                            'kind': 'operand-expr'
-                        }, 'kind': 'operand-expr'
+                        'operand': { 'kind': 'int-literal', 'value': '1' },
+                        'kind': 'operand-expr'
                     },
                     'rOperand': {
                         'binaryOp': { 'kind': 'mult-op' },
                         'lOperand': {
-                            'operand': {
-                                'operand': { 'kind': 'int-literal', 'value': '2' },
-                                'kind': 'operand-expr'
-                            }, 'kind': 'operand-expr'
+                            'operand': { 'kind': 'int-literal', 'value': '2' },
+                            'kind': 'operand-expr'
                         },
                         'rOperand': {
-                            'operand': {
-                                'operand': { 'kind': 'int-literal', 'value': '3' },
-                                'kind': 'operand-expr'
-                            }, 'kind': 'operand-expr'
+                            'operand': { 'kind': 'int-literal', 'value': '3' },
+                            'kind': 'operand-expr'
                         },
                         'kind': 'binary-expr'
                     },
@@ -116,10 +149,7 @@ describe('ast', () => {
                     binaryOp: { kind: 'access-op' },
                     lOperand: {
                         kind: 'operand-expr',
-                        operand: {
-                            kind: 'operand-expr',
-                            operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'a' }, typeArgs: [] }
-                        }
+                        operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'a' }, typeArgs: [] }
                     },
                     rOperand: {
                         kind: 'unary-expr',
@@ -146,13 +176,10 @@ describe('ast', () => {
                             lOperand: {
                                 kind: 'operand-expr',
                                 operand: {
-                                    kind: 'operand-expr',
-                                    operand: {
-                                        kind: 'identifier',
-                                        scope: [],
-                                        name: { kind: 'name', value: 'a' },
-                                        typeArgs: []
-                                    }
+                                    kind: 'identifier',
+                                    scope: [],
+                                    name: { kind: 'name', value: 'a' },
+                                    typeArgs: []
                                 }
                             },
                             rOperand: {
@@ -186,11 +213,8 @@ describe('ast', () => {
                 'statements': [{
                     'kind': 'operand-expr',
                     'operand': {
-                        'kind': 'operand-expr',
-                        'operand': {
-                            'kind': 'list-expr',
-                            'exprs': []
-                        }
+                        'kind': 'list-expr',
+                        'exprs': []
                     }
                 }]
             })
@@ -203,28 +227,21 @@ describe('ast', () => {
                 'statements': [{
                     'kind': 'operand-expr',
                     'operand': {
-                        'kind': 'operand-expr',
-                        'operand': {
-                            'exprs': [{
+                        'kind': 'list-expr',
+                        'exprs': [
+                            {
                                 'kind': 'operand-expr',
-                                'operand': {
-                                    'kind': 'operand-expr',
-                                    'operand': { 'kind': 'int-literal', 'value': '1' }
-                                }
-                            }, {
+                                'operand': { 'kind': 'int-literal', 'value': '1' }
+                            },
+                            {
                                 'kind': 'operand-expr',
-                                'operand': {
-                                    'kind': 'operand-expr',
-                                    'operand': { 'kind': 'int-literal', 'value': '2' }
-                                }
-                            }, {
+                                'operand': { 'kind': 'int-literal', 'value': '2' }
+                            },
+                            {
                                 'kind': 'operand-expr',
-                                'operand': {
-                                    'kind': 'operand-expr',
-                                    'operand': { 'kind': 'int-literal', 'value': '3' }
-                                }
-                            }], 'kind': 'list-expr'
-                        }
+                                'operand': { 'kind': 'int-literal', 'value': '3' }
+                            }
+                        ]
                     }
                 }]
             })

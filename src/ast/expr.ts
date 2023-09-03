@@ -47,11 +47,7 @@ export const buildExpr = (node: ParseNode): Expr => {
 export const buildSubExpr = (node: ParseNode): Expr => {
     const nodes = filterNonAstNodes(node)
     if (nodes.length === 1) {
-        return {
-            kind: 'operand-expr',
-            parseNode: node,
-            operand: buildOperandExpr(nodes[0])
-        }
+        return buildOperandExpr(nodes[0])
     }
     const isPrefix = nodes[0].kind === 'prefix-op'
     return {
