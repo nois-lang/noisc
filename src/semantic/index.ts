@@ -290,12 +290,6 @@ const checkTypeDef = (typeDef: TypeDef, ctx: Context, brief: boolean = false) =>
     typeDef.variants.forEach(v => checkTypeCon(v, ctx))
     // TODO: check duplicate type cons
 
-    typeDef.type = {
-        kind: 'vid-type',
-        identifier: vid,
-        typeArgs: typeDef.generics.map(g => genericToVirtual(g, ctx))
-    }
-
     module.scopeStack.pop()
 }
 
