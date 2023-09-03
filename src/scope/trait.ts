@@ -6,7 +6,7 @@ import { concatVid, idToVid, vidFromString, vidToString, } from './util'
 import { resolveVid, VirtualIdentifier, VirtualIdentifierMatch } from './vid'
 
 /**
- * Find all implemented traits and self impls for specified type, available in the current scope
+ * Find all implemented traits and self impls for specified type
  */
 export const findTypeTraits = (typeVid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch<TraitDef | ImplDef>[] => {
     return ctx.impls.flatMap(impl => {

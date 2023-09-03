@@ -9,6 +9,7 @@ import { selfType } from '../typecheck/type'
 import { todo } from '../util/todo'
 import { Context, Scope, instanceScope } from './index'
 import { defaultImportedVids } from './std'
+import { findImpls, findTypeTraits } from './trait'
 import { concatVid, vidFromString, vidToString } from './util'
 
 export interface VirtualIdentifier {
@@ -143,7 +144,8 @@ const resolveScopeVid = (
     vid: VirtualIdentifier,
     scope: Scope,
     ctx: Context,
-    ofKind: DefinitionKind[]
+    ofKind: DefinitionKind[],
+    moduleVid?: VirtualIdentifier
 ): VirtualIdentifierMatch | undefined => {
     for (let k of ofKind) {
         if (vid.names.length === 1) {
@@ -173,11 +175,24 @@ const resolveScopeVid = (
                 // match trait/impl def by first vid name
                 const traitDef = scope.definitions.get('trait-def' + traitName) ?? scope.definitions.get('impl-def' + traitName)
                 if (traitDef && (traitDef.kind === 'trait-def' || traitDef.kind === 'impl-def')) {
-                    // if matched, try to find fn with matching name
-                    // TODO: actual fn def could be in a implmented trait
+                    // if matched, try to find fn with matching name in specified trait
                     const fn = traitDef.block.statements.find(s => s.kind === 'fn-def' && s.name.value === fnName)
                     if (fn && fn.kind === 'fn-def') {
                         return { vid, def: { kind: 'method-def', fn, trait: traitDef, type: fn.type } }
+                    }
+                    // TODO: test this logic
+                    // lookup implemented traits that can contain that function
+                    const fullTypeVid = { names: [...(moduleVid?.names ?? []), traitName] }
+                    const traitDefs = findTypeTraits(fullTypeVid, ctx)
+                    for (let traitDef of traitDefs) {
+                        // TODO: refactor duplicated logic
+                        const fn = traitDef.def.block.statements.find(s => s.kind === 'fn-def' && s.name.value === fnName)
+                        if (fn && fn.kind === 'fn-def') {
+                            return {
+                                vid: { names: [...traitDef.vid.names, fnName] },
+                                def: { kind: 'method-def', fn, trait: traitDef.def, type: fn.type }
+                            }
+                        }
                     }
                 }
             }

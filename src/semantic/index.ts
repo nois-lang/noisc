@@ -371,6 +371,7 @@ const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
 
 /**
  * TODO: fix false positive
+ * TODO: call parameterless typeCon, e.g. Option::None()
  * TODO: better error when type-con is called as a function, e.g. Option::Some(4)
  */
 const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
