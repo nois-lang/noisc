@@ -28,7 +28,7 @@ export const resolveFnGenerics = (
  * In case when both arg and param are fns, walk over [...paramTypes, returnType] and do the same.
  *
  * Examples: 
- *   - `resolveGenerics(Foo<A, Bar<B>>, Foo<Int, Bar<Char>>)` will produce map [T -> Int, U -> Char]
+ *   - `resolveGenerics(Foo<A, Bar<B>>, Foo<Int, Bar<Char>>)` will produce map [A -> Int, B -> Char]
  *   - `resolveGenerics(T, Foo<Int>)`                         will produce map [T -> Foo<Int>]
  */
 export const resolveGenericsOverStructure = (arg: VirtualType, param: VirtualType): Map<string, VirtualType> => {

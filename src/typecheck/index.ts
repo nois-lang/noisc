@@ -76,7 +76,16 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
             const vid = idToVid(type)
             const ref = resolveVid(vid, ctx)
             if (!ref) {
-                return unknownType
+                // it can be a generic, because not all scopes are available
+                if (type.typeArgs.length === 0) {
+                    return {
+                        kind: 'generic',
+                        name: type.name.value,
+                        bounds: []
+                    }
+                } else {
+                    return unknownType
+                }
             }
             if (ref.def.kind === 'self') {
                 return selfType

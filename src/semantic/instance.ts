@@ -2,11 +2,12 @@ import { checkCallArgs, checkOperand } from '.'
 import { BinaryExpr, OperandExpr } from '../ast/expr'
 import { CallOp } from '../ast/op'
 import { Identifier, Operand } from '../ast/operand'
+import { FnType } from '../ast/type'
 import { Context } from '../scope'
 import { getImplTargetType } from '../scope/trait'
 import { vidToString } from '../scope/util'
 import { resolveVid } from '../scope/vid'
-import { VirtualFnType, VirtualType, typeToVirtual, virtualTypeToString } from '../typecheck'
+import { VirtualFnType, VirtualType, genericToVirtual, typeToVirtual, virtualTypeToString } from '../typecheck'
 import { resolveFnGenerics, resolveGenericsOverStructure, resolveType } from '../typecheck/generic'
 import { unknownType } from '../typecheck/type'
 import { allEqual } from '../util/array'
@@ -34,7 +35,7 @@ const checkFieldAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): VirtualType
         ctx.errors.push(semanticError(ctx, rOp, `expected field name`))
         return
     }
-    if (!lOp.type || lOp.type?.kind !== 'vid-type') {
+    if (!(lOp.type?.kind === 'vid-type')) {
         ctx.errors.push(semanticError(ctx, rOp, `expected variant type, got ${lOp.type?.kind ?? unknownType.kind}`))
         return
     }
@@ -52,6 +53,8 @@ const checkFieldAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): VirtualType
         return
     }
     // if field is defined in multiple variants, make sure their type is equal
+    // normaly single variant types use field access, but there is no reason to restrict multiple variants sharing the
+    // same field
     const typeCandidates = typeDef.variants
         .flatMap(v => v.fieldDefs.find(f => f.name.value === fieldName)?.fieldType ?? [])
         .map(t => typeToVirtual(t, ctx))
@@ -60,9 +63,14 @@ const checkFieldAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): VirtualType
         ctx.errors.push(semanticError(ctx, rOp, `field \`${fieldName}\` of \`${vidToString(typeRef.vid)}\` variants must be of the same type to be accessed`))
         return
     }
-    // Resolve typeDef generics
     const fieldType = typeCandidates[0]
-    return fieldType
+    const conGenericMap = resolveGenericsOverStructure(
+        lOp.type,
+        // TODO: not sure if this type should be a part of TypeDef. It makes sense, but actual type is not its instance
+        // type
+        { kind: 'vid-type', identifier: typeRef.vid, typeArgs: typeRef.def.generics.map(g => genericToVirtual(g, ctx)) }
+    )
+    return resolveType(fieldType, [conGenericMap], rOp, ctx)
 }
 
 const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallOp, ctx: Context): VirtualType | undefined => {

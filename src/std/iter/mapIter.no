@@ -1,24 +1,23 @@
-// TODO: blocked by access operator impl
-// use std::iter::Iter
-//
-// type MapIter<T, U>(
-//     iter: Iter<T>,
-//     f: |T|: U
-// )
-//
-// impl <T> Iter<T> for MapIter<T> {
-//     fn next(self): Option<T> {
-//         self.iter.next().map(self.f)
-//     }
-// }
-//
-// trait MapAdapter<Self: Iter<T>, T> {
-//     fn map<U>(self, f: |T|: U): MapIter<T>
-// }
-//
-// impl <T> MapAdapter for Iter<T> {
-//     fn map<U>(self, f: |T|: U): MapIter<T> {
-//         MapIter::MapIter(iter: self, f: f)
-//     }
-// }
-//
+use std::iter::Iter
+
+type MapIter<T, U>(
+    iter: Iter<T>,
+    f: |T|: U
+)
+
+impl <T> Iter<T> for MapIter<T> {
+    fn next(self): Option<T> {
+        self.iter.next().map(self.f)
+    }
+}
+
+trait MapAdapter<Self: Iter<T>, T> {
+    fn map<U>(self, f: |T|: U): MapIter<T>
+}
+
+impl <T> MapAdapter for Iter<T> {
+    fn map<U>(self, f: |T|: U): MapIter<T> {
+        MapIter::MapIter(iter: self, f: f)
+    }
+}
+
