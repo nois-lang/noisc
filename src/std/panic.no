@@ -1,0 +1,7 @@
+fn panic(message: String): Never {
+    todo("panic")
+}
+
+fn todo(message: String): Never {
+    todo("todo")
+}
