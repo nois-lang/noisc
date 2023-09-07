@@ -2,7 +2,6 @@ import { checkCallArgs, checkOperand } from '.'
 import { BinaryExpr, OperandExpr } from '../ast/expr'
 import { CallOp } from '../ast/op'
 import { Identifier, Operand } from '../ast/operand'
-import { FnType } from '../ast/type'
 import { Context } from '../scope'
 import { getImplTargetType } from '../scope/trait'
 import { vidToString } from '../scope/util'
@@ -76,7 +75,8 @@ const checkFieldAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): VirtualType
 const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallOp, ctx: Context): VirtualType | undefined => {
     checkOperand(lOperand, ctx)
     if (lOperand.type?.kind !== 'vid-type') {
-        return
+        ctx.errors.push(semanticError(ctx, rOperand, `expected instance type, got \`${virtualTypeToString(lOperand.type ?? unknownType)}\``))
+        return undefined
     }
     if (rOperand.kind !== 'identifier' || rOperand.scope.length !== 0) {
         ctx.errors.push(semanticError(ctx, rOperand, `expected method name, got \`${rOperand.kind}\``))

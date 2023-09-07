@@ -1,9 +1,9 @@
 import { Module } from '../ast'
 import { ImplDef, TraitDef } from '../ast/statement'
-import { genericToVirtual, typeToVirtual, VirtualType, virtualTypeToString } from '../typecheck'
+import { VirtualType, genericToVirtual, typeToVirtual } from '../typecheck'
 import { Context } from './index'
 import { concatVid, idToVid, vidFromString, vidToString, } from './util'
-import { resolveVid, VirtualIdentifier, VirtualIdentifierMatch } from './vid'
+import { VirtualIdentifier, VirtualIdentifierMatch, resolveVid } from './vid'
 
 /**
  * Find all implemented traits and self impls for specified type
@@ -12,14 +12,18 @@ export const findTypeTraits = (typeVid: VirtualIdentifier, ctx: Context): Virtua
     return ctx.impls.flatMap(impl => {
         const targetVid = getImplTargetVid(impl, ctx)
         if (!targetVid) return []
-        const ref = resolveVid(targetVid, ctx, ['trait-def', 'impl-def'])
+        const targetRef = resolveVid(targetVid, ctx, ['trait-def', 'impl-def'])
         // not all impl refs will resolve with current module imports
-        if (!ref) return []
-        if (vidToString(ref.vid) === vidToString(typeVid)) {
-            const def = resolveVid(idToVid(impl.identifier), ctx, ['trait-def', 'impl-def'])
-            if (!def) return []
-            if (def.def.kind === 'trait-def' || def.def.kind === 'impl-def') {
-                return [{ vid: def.vid, def: def.def }]
+        if (!targetRef) return []
+        if (vidToString(targetRef.vid) === vidToString(typeVid)) {
+            const ref = resolveVid(idToVid(impl.identifier), ctx, ['trait-def', 'impl-def'])
+            if (!ref) return []
+            if (ref.def.kind === 'trait-def' || ref.def.kind === 'impl-def') {
+                return [
+                    { vid: ref.vid, def: ref.def },
+                    // TODO: recursively check impls, some infinite recursion issue
+                    // ...findTypeTraits(getImplTargetVid(ref.def, ctx)!, ctx)
+                ]
             }
             return []
         }

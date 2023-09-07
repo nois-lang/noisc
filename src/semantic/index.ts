@@ -1,7 +1,7 @@
 import { AstNode, Module, Param } from '../ast'
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { CallOp, ConOp } from '../ast/op'
-import { Identifier, Operand } from '../ast/operand'
+import { Identifier, ListExpr, Operand } from '../ast/operand'
 import { Block, FnDef, ImplDef, Statement, TraitDef, VarDef } from '../ast/statement'
 import { Generic, Type } from '../ast/type'
 import { TypeCon, TypeDef } from '../ast/type-def'
@@ -478,6 +478,16 @@ const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     checkCallArgs(binaryExpr, [binaryExpr.lOperand, binaryExpr.rOperand], (<VirtualFnType>implFn.type).paramTypes, ctx)
 }
 
+const checkListExpr = (listExpr: ListExpr, ctx: Context): void => {
+    listExpr.exprs.forEach(e => checkExpr(e, ctx))
+    listExpr.type = {
+        kind: 'vid-type',
+        identifier: vidFromString('std::list::List'),
+        // TODO: calculate common type across items
+        typeArgs: [listExpr.exprs.at(0)?.type ?? unknownType]
+    }
+}
+
 export const checkOperand = (operand: Operand, ctx: Context): void => {
     switch (operand.kind) {
         case 'operand-expr':
@@ -506,33 +516,33 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
             checkBinaryExpr(operand, ctx)
             break
         case 'list-expr':
-            // TODO
+            checkListExpr(operand, ctx)
             break
         case 'string-literal':
             operand.type = {
                 kind: 'vid-type',
-                identifier: resolveVid(vidFromString('String'), ctx)!.vid,
+                identifier: vidFromString('std::string::String'),
                 typeArgs: []
             }
             break
         case 'char-literal':
             operand.type = {
                 kind: 'vid-type',
-                identifier: resolveVid(vidFromString('Char'), ctx)!.vid,
+                identifier: vidFromString('std::char::Char'),
                 typeArgs: []
             }
             break
         case 'int-literal':
             operand.type = {
                 kind: 'vid-type',
-                identifier: resolveVid(vidFromString('Int'), ctx)!.vid,
+                identifier: vidFromString('std::int::Int'),
                 typeArgs: []
             }
             break
         case 'float-literal':
             operand.type = {
                 kind: 'vid-type',
-                identifier: resolveVid(vidFromString('Float'), ctx)!.vid,
+                identifier: vidFromString('std::float::Float'),
                 typeArgs: []
             }
             break
