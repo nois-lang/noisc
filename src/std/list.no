@@ -1,1 +1,74 @@
-type List
+use std::iter::Iter
+
+type List<T>
+
+impl <T> List<T> {
+    fn iter(self): ListIter<T> {
+        ListIter::ListIter(list: self, index: 0)
+    }
+
+    fn at(self, index: Int): Option<T> {
+        listAt(self, index)
+    }
+
+    fn add(self, item: T): Unit {
+        listAdd(self, item)
+    }
+}
+
+type ListIter<T>(
+    list: List<T>,
+    index: Int,
+)
+
+impl <T> Iter<T> for ListIter<T> {
+    fn next(self): Option<T> {
+        match self.list.at(self.index) {
+            Option::Some(value) -> {
+                self.index = self.index + 1
+                Option::Some(value)
+            },
+            _ -> Option::None()
+        }
+    }
+}
+
+impl <T> Into<List> for Iter<T> {
+    fn into(self): List {
+        let list = []
+        // TODO: replace with while let
+        while True {
+            match self.next() {
+                Option::Some(value) -> {
+                    list.add(value)
+                },
+                Option::None() -> {
+                    break
+                },
+            }
+        }
+        list
+    }
+}
+
+impl Into<String> for List<String> {
+    fn into(self): List<String> {
+        let string = ""
+        for s in self {
+            // TODO: impl addMut() 
+            string = string + s
+        }
+        string
+    }
+}
+
+impl <T: Display> io::Display for List<T> {
+    fn fmt(self): String {
+        // TODO
+        // self.iter().map(Display::fmt).intersperse(", ").into<String>()
+    }
+}
+
+fn listAt<T>(list: List<T>, index: Int): Option<T>
+
+fn listAdd<T>(list: List<T>, item: T): Unit
