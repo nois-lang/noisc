@@ -1,6 +1,4 @@
-import { AnyType, UnknownType, VirtualGeneric, VidType } from './index'
-
-export const anyType: AnyType = { kind: 'any-type' }
+import { UnknownType, VidType, VirtualGeneric } from './index'
 
 export const unknownType: UnknownType = { kind: 'unknown-type' }
 

@@ -6,13 +6,13 @@ import { idToVid, vidToString } from '../scope/util'
 import { VirtualIdentifier, resolveVid } from '../scope/vid'
 import { SemanticError, semanticError } from '../semantic/error'
 import { todo } from '../util/todo'
-import { anyType, selfType, unknownType } from './type'
+import { selfType, unknownType } from './type'
 
 export interface Typed {
     type: VirtualType
 }
 
-export type VirtualType = VidType | VirtualFnType | VirtualGeneric | AnyType | UnknownType
+export type VirtualType = VidType | VirtualFnType | VirtualGeneric | UnknownType
 
 export interface VidType {
     kind: 'vid-type'
@@ -25,10 +25,6 @@ export interface VirtualFnType {
     generics: VirtualGeneric[]
     paramTypes: VirtualType[]
     returnType: VirtualType
-}
-
-export interface AnyType {
-    kind: 'any-type'
 }
 
 export interface UnknownType {
@@ -63,8 +59,6 @@ export const virtualTypeToString = (vt: VirtualType): string => {
         }
         case 'generic':
             return vt.name
-        case 'any-type':
-            return '*'
         case 'unknown-type':
             return '?'
     }
@@ -124,7 +118,7 @@ export const genericToVirtual = (generic: Generic, ctx: Context): VirtualGeneric
 export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context): boolean => {
     if (!ctx.config.typeCheck) return true
 
-    if (t.kind === anyType.kind || target.kind === anyType.kind) {
+    if (t.kind === 'unknown-type' || target.kind === 'unknown-type') {
         return true
     }
 

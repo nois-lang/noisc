@@ -116,7 +116,6 @@ export const resolveType = (
                 returnType: resolveType(virtualType.returnType, genericMaps, node, ctx),
                 generics: virtualType.generics
             }
-        case 'any-type':
         case 'unknown-type':
             return virtualType
     }
