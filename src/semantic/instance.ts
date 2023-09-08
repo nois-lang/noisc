@@ -35,7 +35,7 @@ const checkFieldAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): VirtualType
         return
     }
     if (!(lOp.type?.kind === 'vid-type')) {
-        ctx.errors.push(semanticError(ctx, rOp, `expected variant type, got ${lOp.type?.kind ?? unknownType.kind}`))
+        ctx.errors.push(semanticError(ctx, rOp, `expected variant type, got \`${virtualTypeToString(lOp.type ?? unknownType)}\``))
         return
     }
     const typeVid = lOp.type.identifier

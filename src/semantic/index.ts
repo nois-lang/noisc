@@ -5,7 +5,7 @@ import { Identifier, ListExpr, Operand } from '../ast/operand'
 import { Block, FnDef, ImplDef, Statement, TraitDef, VarDef } from '../ast/statement'
 import { Generic, Type } from '../ast/type'
 import { TypeCon, TypeDef } from '../ast/type-def'
-import { Context, ImplScope, TypeDefScope, defKey, instanceScope } from '../scope'
+import { Context, ImplScope, TraitScope, TypeDefScope, defKey, instanceScope } from '../scope'
 import { getImplTargetType, traitDefToVirtualType } from '../scope/trait'
 import { idToVid, vidFromString, vidToString } from '../scope/util'
 import { Definition, MethodDef, ParamDef, resolveVid } from '../scope/vid'
@@ -230,7 +230,7 @@ const checkParam = (param: Param, index: number, ctx: Context): void => {
 
     if (!param.paramType) {
         if (index === 0 && instScope && param.pattern.kind === 'name' && param.pattern.value === 'self') {
-            param.type = instScope.selfType
+            param.type = selfType
         } else {
             ctx.errors.push(semanticError(ctx, param, 'parameter type not specified'))
             param.type = unknownType
@@ -238,7 +238,7 @@ const checkParam = (param: Param, index: number, ctx: Context): void => {
     } else {
         checkType(param.paramType, ctx)
         if (instScope && param.paramType.kind === 'identifier' && param.paramType.name.value === selfType.name) {
-            param.type = instScope.selfType
+            param.type = selfType
         } else {
             param.type = typeToVirtual(param.paramType, ctx)
         }
@@ -263,15 +263,15 @@ const checkTraitDef = (traitDef: TraitDef, ctx: Context) => {
         return
     }
 
-    const selfType = traitDefToVirtualType(traitDef, ctx)
     module.scopeStack.push({
         kind: 'trait-def',
-        selfType,
+        selfType: unknownType,
         def: traitDef,
         definitions: new Map(traitDef.generics.map(g => [defKey(g), g]))
     })
-
-    traitDef.type = selfType
+    const selfType = traitDefToVirtualType(traitDef, ctx);
+    // must be set afterwards since impl generics cannot be resolved
+    (<TraitScope>module.scopeStack.at(-1)!).selfType = selfType
 
     checkBlock(traitDef.block, ctx)
 
@@ -295,8 +295,6 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
     const selfType = getImplTargetType(implDef, ctx);
     // must be set afterwards since impl generics cannot be resolved
     (<ImplScope>module.scopeStack.at(-1)!).selfType = selfType
-
-    implDef.type = selfType
 
     if (implDef.forTrait) {
         checkIdentifier(implDef.forTrait, ctx)
@@ -586,8 +584,29 @@ const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
     const vid = idToVid(identifier)
     const ref = resolveVid(vid, ctx)
     if (ref) {
-        if ('type' in ref.def && ref.def.type) {
-            identifier.type = ref.def.type
+        // TODO: refactor
+        switch (ref.def.kind) {
+            case 'module':
+                identifier.type = instanceScope(ctx)?.selfType
+                break
+            case 'var-def':
+            case 'fn-def':
+                identifier.type = ref.def.type
+                break
+            case 'param':
+                identifier.type = ref.def.param.type
+                break
+            case 'method-def':
+                identifier.type = ref.def.fn.type
+                break
+            case 'type-con':
+                identifier.type = ref.def.typeCon.type
+                break
+            case 'impl-def':
+            case 'type-def':
+            case 'generic':
+            case 'self':
+                break
         }
     } else {
         ctx.errors.push(notFoundError(ctx, identifier, vidToString(vid)))

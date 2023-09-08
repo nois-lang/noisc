@@ -179,8 +179,7 @@ trait Foo {
 }
 
 fn main() {
-    Foo::foo()
-    ${arg}
+    ${arg}foo()
 }`
             let ctx = check(code(''))
             expect(ctx.errors.map(e => e.message)).toEqual(['error'])
