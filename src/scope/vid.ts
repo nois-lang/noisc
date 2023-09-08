@@ -129,6 +129,16 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context, ofKind: Definit
         }
     }
 
+    // check in top scope
+    ref = resolveScopeVid(vid, module.topScope!, ctx, ofKind)
+    if (ref) {
+        checkTopLevelDefiniton(module, ref.def, ctx)
+        return {
+            vid: concatVid(module.identifier, ref.vid),
+            def: ref.def
+        }
+    }
+
     // check if fully qualified
     ref = resolveMatchedVid(vid, ctx, ofKind)
     if (ref) return ref
