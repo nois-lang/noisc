@@ -12,7 +12,7 @@ export const findTypeTraits = (typeVid: VirtualIdentifier, ctx: Context): Virtua
     return ctx.impls.flatMap(impl => {
         const targetVid = getImplTargetVid(impl, ctx)
         if (!targetVid) return []
-        const targetRef = resolveVid(targetVid, ctx, ['trait-def', 'impl-def'])
+        const targetRef = resolveVid(targetVid, ctx, ['type-def', 'trait-def'])
         // not all impl refs will resolve with current module imports
         if (!targetRef) return []
         if (vidToString(targetRef.vid) === vidToString(typeVid)) {
@@ -34,6 +34,12 @@ export const findTypeTraits = (typeVid: VirtualIdentifier, ctx: Context): Virtua
 export const findImpls = (module: Module): ImplDef[] =>
     module.block.statements.flatMap(s => s.kind !== 'impl-def' ? [] : s)
 
+/**
+ * Get type impl is attached to:
+ * trait A      -> A
+ * impl A       -> A
+ * impl A for B -> B
+ */
 export const getImplTargetVid = (implDef: TraitDef | ImplDef, ctx: Context): VirtualIdentifier | undefined => {
     if (implDef.kind === 'trait-def') {
         return vidFromString(implDef.name.value)
