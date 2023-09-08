@@ -3,13 +3,12 @@ import { Pattern } from '../ast/match'
 import { FnDef, ImplDef, Statement, TraitDef, VarDef } from '../ast/statement'
 import { Generic } from '../ast/type'
 import { TypeCon, TypeDef } from '../ast/type-def'
-import { checkModule } from '../semantic'
-import { Typed } from '../typecheck'
+import { checkTopLevelDefiniton } from '../semantic'
 import { selfType } from '../typecheck/type'
 import { todo } from '../util/todo'
 import { Context, Scope, instanceScope } from './index'
 import { defaultImportedVids } from './std'
-import { findImpls, findTypeTraits } from './trait'
+import { findTypeTraits } from './trait'
 import { concatVid, vidFromString, vidToString } from './util'
 
 export interface VirtualIdentifier {
@@ -32,22 +31,28 @@ export const defKinds = <const>[
 
 export type DefinitionKind = typeof defKinds[number]
 
-export type Definition = Module | VarDef | FnDef | TraitDef | ImplDef | TypeDef | TypeConDef | Generic | Param | SelfDef | MethodDef
+export type Definition = Module | VarDef | FnDef | TraitDef | ImplDef | TypeDef | TypeConDef | Generic | ParamDef | SelfDef | MethodDef
 
 export type SelfDef = {
     kind: 'self'
 }
 
-export interface TypeConDef extends Partial<Typed> {
+export interface TypeConDef {
     kind: 'type-con',
     typeCon: TypeCon,
     typeDef: TypeDef
 }
 
-export interface MethodDef extends Partial<Typed> {
+export interface MethodDef {
     kind: 'method-def',
     fn: FnDef,
     trait: ImplDef | TraitDef
+}
+
+export interface ParamDef {
+    kind: 'param',
+    param: Param,
+    index: number
 }
 
 export interface VirtualIdentifierMatch<D = Definition> {
@@ -114,6 +119,7 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context, ofKind: Definit
         if (ref) {
             // in case of top-level ref, qualify with module
             if (i === 0) {
+                checkTopLevelDefiniton(module, ref.def, ctx)
                 return {
                     vid: concatVid(module.identifier, ref.vid),
                     def: ref.def
@@ -128,6 +134,7 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context, ofKind: Definit
     if (ref) return ref
 
     // check if vid is partially qualified with use exprs
+    // TODO: figure out wildcard use exprs
     const matchedUseExpr = [...module.references!, ...defaultImportedVids].find(r => r.names.at(-1)! === vid.names[0])
     if (matchedUseExpr) {
         const qualifiedVid = { names: [...matchedUseExpr.names.slice(0, -1), ...vid.names] }
@@ -165,7 +172,7 @@ const resolveScopeVid = (
                     // if matched, try to find type con with matching name
                     const typeCon = typeDef.variants.find(v => v.name.value === typeConName)
                     if (typeCon && typeCon.kind === 'type-con') {
-                        return { vid, def: { kind: 'type-con', typeDef, typeCon, type: typeCon.type } }
+                        return { vid, def: { kind: 'type-con', typeDef, typeCon } }
                     }
                 }
             }
@@ -178,7 +185,7 @@ const resolveScopeVid = (
                     // if matched, try to find fn with matching name in specified trait
                     const fn = traitDef.block.statements.find(s => s.kind === 'fn-def' && s.name.value === fnName)
                     if (fn && fn.kind === 'fn-def') {
-                        return { vid, def: { kind: 'method-def', fn, trait: traitDef, type: fn.type } }
+                        return { vid, def: { kind: 'method-def', fn, trait: traitDef } }
                     }
                     // TODO: test this logic
                     // lookup implemented traits that can contain that function
@@ -190,7 +197,7 @@ const resolveScopeVid = (
                         if (fn && fn.kind === 'fn-def') {
                             return {
                                 vid: { names: [...traitDef.vid.names, fnName] },
-                                def: { kind: 'method-def', fn, trait: traitDef.def, type: fn.type }
+                                def: { kind: 'method-def', fn, trait: traitDef.def }
                             }
                         }
                     }
@@ -217,18 +224,17 @@ export const resolveMatchedVid = (
     // if vid is module, e.g. std::option
     module = pkg.modules.find(m => vidToString(m.identifier) === vidToString(vid))
     if (module) {
-        checkModule(module, ctx, true)
-        return { vid: vid, def: module }
+        // TODO: should anything be checked here?
+        return { vid, def: module }
     }
 
     // if vid is varDef, typeDef, trait or impl, e.g. std::option::Option
     module = pkg.modules.find(m => vidToString(m.identifier) === vidToString({ names: vid.names.slice(0, -1) }))
     if (module) {
-        checkModule(module, ctx, true)
-        const topScope = module.topScope ?? module.scopeStack.at(0)
         const moduleLocalVid = { names: vid.names.slice(-1) }
-        const ref = resolveScopeVid(moduleLocalVid, topScope!, ctx, ofKind)
+        const ref = resolveScopeVid(moduleLocalVid, module.topScope!, ctx, ofKind)
         if (ref) {
+            checkTopLevelDefiniton(module, ref.def, ctx)
             return { vid, def: ref.def }
         }
     }
@@ -236,11 +242,10 @@ export const resolveMatchedVid = (
     // if vid is typeCon or traitFn, e.g. std::option::Option::Some
     module = pkg.modules.find(m => vidToString(m.identifier) === vidToString({ names: vid.names.slice(0, -2) }))
     if (module) {
-        checkModule(module, ctx, true)
-        const topScope = module.topScope ?? module.scopeStack.at(0)
         const moduleLocalVid = { names: vid.names.slice(-2) }
-        const ref = resolveScopeVid(moduleLocalVid, topScope!, ctx, ofKind)
+        const ref = resolveScopeVid(moduleLocalVid, module.topScope!, ctx, ofKind)
         if (ref) {
+            checkTopLevelDefiniton(module, ref.def, ctx)
             return { vid, def: ref.def }
         }
     }

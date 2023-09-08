@@ -4,7 +4,7 @@ import { Context } from '../scope'
 import { findTypeTraits } from '../scope/trait'
 import { idToVid, vidToString } from '../scope/util'
 import { VirtualIdentifier, resolveVid } from '../scope/vid'
-import { SemanticError, semanticError } from '../semantic/error'
+import { SemanticError, notFoundError, semanticError } from '../semantic/error'
 import { todo } from '../util/todo'
 import { selfType, unknownType } from './type'
 
@@ -78,6 +78,7 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
                         bounds: []
                     }
                 } else {
+                    ctx.errors.push(notFoundError(ctx, type, vidToString(vid)))
                     return unknownType
                 }
             }

@@ -5,5 +5,5 @@
  * @returns {Unit}
  */
 function printlnStr(str) {
-    console.log(str)
+    console.info(str)
 }

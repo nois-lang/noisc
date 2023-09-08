@@ -9,7 +9,7 @@ import { buildModule, buildPackage } from './package/build'
 import { getLocationRange } from './parser'
 import { Context, pathToVid } from './scope'
 import { findImpls } from './scope/trait'
-import { checkModule } from './semantic'
+import { checkModule, prepareModule } from './semantic'
 import { Source } from './source'
 
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
@@ -21,7 +21,7 @@ Usage: nois file`
 
 const path = process.argv.slice(2).at(0)
 if (!path) {
-    console.log(usage)
+    console.info(usage)
     process.exit()
 }
 const sourcePath = resolve(path)
@@ -58,6 +58,14 @@ const ctx: Context = {
     warnings: []
 }
 
+// AOT top scope init solves:
+// 1. Module defs can be referenced before their initialization
+// 2. Vids resolved from another module needn't to check the whole module, only that specific definition
+ctx.packages.forEach(p => {
+    p.modules.forEach(m => {
+        prepareModule(m)
+    })
+})
 if (ctx.config.libCheck) {
     ctx.packages.flatMap(p => p.modules).forEach(m => { checkModule(m, ctx) })
 } else {

@@ -36,13 +36,9 @@ export const findImpls = (module: Module): ImplDef[] =>
 
 export const getImplTargetVid = (implDef: TraitDef | ImplDef, ctx: Context): VirtualIdentifier | undefined => {
     if (implDef.kind === 'trait-def') {
-        return resolveVid(vidFromString(implDef.name.value), ctx)?.vid
+        return vidFromString(implDef.name.value)
     }
-    if (implDef.forTrait) {
-        return resolveVid(idToVid(implDef.forTrait), ctx)?.vid
-    } else {
-        return resolveVid(idToVid(implDef.identifier), ctx)?.vid
-    }
+    return idToVid(implDef.forTrait ? implDef.forTrait : implDef.identifier)
 }
 
 export const getImplTargetType = (implDef: TraitDef | ImplDef, ctx: Context): VirtualType => {

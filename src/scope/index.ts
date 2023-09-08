@@ -1,15 +1,17 @@
 import { Module } from '../ast'
 import { ImplDef, TraitDef } from '../ast/statement'
-import { VirtualType } from '../typecheck'
-import { Definition, VirtualIdentifier } from './vid'
-import { Config } from '../config'
-import { SemanticError } from '../semantic/error'
-import { todo } from '../util/todo'
 import { TypeDef } from '../ast/type-def'
+import { Config } from '../config'
 import { Package } from '../package'
+import { SemanticError } from '../semantic/error'
+import { VirtualType } from '../typecheck'
+import { todo } from '../util/todo'
+import { vidToString } from './util'
+import { Definition, VirtualIdentifier } from './vid'
 
 export interface Context {
     config: Config
+    // TODO: store reference chain instead of plain modules
     moduleStack: Module[]
     packages: Package[]
     impls: ImplDef[]
@@ -54,14 +56,16 @@ export interface CommonScope {
 
 export const defKey = (def: Definition): string => {
     switch (def.kind) {
+        case 'module':
+            return def.kind + vidToString(def.identifier)
         case 'self':
             return def.kind
-        case 'module':
-            return def.kind + def.identifier.names.at(-1)!
         case 'var-def':
-        case 'param':
             if (def.pattern.kind !== 'name') return todo('var-def key')
             return def.kind + def.pattern.value
+        case 'param':
+            if (def.param.pattern.kind !== 'name') return todo('var-def key')
+            return def.kind + def.param.pattern.value
         case 'fn-def':
         case 'trait-def':
         case 'type-def':

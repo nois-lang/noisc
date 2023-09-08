@@ -5,7 +5,7 @@ import { lexerDynamicKinds } from '../lexer/lexer'
 import { buildName, Name } from './operand'
 import { buildExpr, Expr } from './expr'
 import { buildType, Type } from './type'
-import { VirtualIdentifier } from '../scope/vid'
+import { VirtualIdentifier, VirtualIdentifierMatch } from '../scope/vid'
 import { Source } from '../source'
 import { Scope } from '../scope'
 import { Typed } from '../typecheck'
@@ -113,13 +113,10 @@ export interface Module extends AstNode<'module'> {
     references?: VirtualIdentifier[]
     /**
     * Persistent top level scope.
-    * Different from scopeStack[0] because it is available after checkModule(), not popped.
+    * Different from scopeStack[0] because it is always available
     * If module is accessed during its check, use scopeStack.at(0) instead
     */
     topScope?: Scope
-
-    briefed?: boolean
-    checked?: boolean
 }
 
 export const buildModuleAst = (node: ParseNode, id: VirtualIdentifier, source: Source): Module => {

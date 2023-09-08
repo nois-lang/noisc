@@ -6,7 +6,7 @@ import { buildModule, buildPackage } from '../package/build'
 import { Context, pathToVid } from '../scope'
 import { findImpls } from '../scope/trait'
 import { Source } from '../source'
-import { checkModule } from './index'
+import { checkModule, prepareModule } from './index'
 
 describe('semantic', () => {
 
@@ -33,6 +33,11 @@ describe('semantic', () => {
             warnings: []
         }
 
+        ctx.packages.forEach(p => {
+            p.modules.forEach(m => {
+                prepareModule(m)
+            })
+        })
         if (checkStd) {
             ctx.packages.flatMap(p => p.modules).forEach(m => { checkModule(m, ctx) })
         } else {
@@ -181,6 +186,21 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual(['error'])
 
             ctx = check(code('Foo::'))
+            expect(ctx.errors.map(e => e.message)).toEqual([])
+        })
+    })
+
+    describe('statement order', () => {
+        it('type is used in method def before it is defined', () => {
+            const code = `\
+type Foo
+
+impl Foo {
+    fn foo(): Bar {}
+}
+
+type Bar`
+            let ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual([])
         })
     })

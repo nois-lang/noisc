@@ -8,7 +8,7 @@ import { TypeCon, TypeDef } from '../ast/type-def'
 import { Context, ImplScope, TypeDefScope, defKey, instanceScope } from '../scope'
 import { getImplTargetType, traitDefToVirtualType } from '../scope/trait'
 import { idToVid, vidFromString, vidToString } from '../scope/util'
-import { Definition, resolveVid } from '../scope/vid'
+import { Definition, MethodDef, ParamDef, resolveVid } from '../scope/vid'
 import {
     Typed,
     VidType,
@@ -22,21 +22,40 @@ import {
 } from '../typecheck'
 import { resolveFnGenerics, resolveInstanceGenerics, resolveType } from '../typecheck/generic'
 import { selfType, unitType, unknownType } from '../typecheck/type'
-import { todo } from '../util/todo'
+import { assert, todo } from '../util/todo'
 import { notFoundError, semanticError } from './error'
 import { checkAccessExpr } from './instance'
 import { operatorImplMap } from './op'
 import { useExprToVids } from './use-expr'
 
-export const checkModule = (module: Module, ctx: Context, brief: boolean = false): void => {
-    if (brief && module.briefed) return
-    if (module.checked) return
-    module.briefed = true
-    if (!brief) {
-        module.checked = true
-    }
+export const prepareModule = (module: Module): void => {
+    const defMap = new Map()
+    module.block.statements.map(s => {
+        switch (s.kind) {
+            case 'var-def':
+            case 'fn-def':
+            case 'trait-def':
+            case 'impl-def':
+            case 'type-def':
+                defMap.set(defKey(s), s)
+                break
+            case 'operand-expr':
+            case 'unary-expr':
+            case 'binary-expr':
+            case 'return-stmt':
+                break
+        }
+    })
+    module.topScope = { kind: 'module', definitions: defMap }
 
-    if (ctx.moduleStack.length > 100) {
+    // TODO: check duplicate useExprs
+    // TODO: check self references
+    module.references = module.useExprs.flatMap(useExpr => useExprToVids(useExpr))
+}
+
+export const checkModule = (module: Module, ctx: Context): void => {
+    assert(!!module.topScope, 'module top scope is not set')
+    if (ctx.moduleStack.find(m => vidToString(m.identifier) === vidToString(module.identifier))) {
         const vid = vidToString(module.identifier)
         const stackVids = ctx.moduleStack.map(m => vidToString(m.identifier))
         const refChain = [...stackVids.slice(stackVids.indexOf(vid)), vid].join(' -> ')
@@ -44,35 +63,58 @@ export const checkModule = (module: Module, ctx: Context, brief: boolean = false
         return
     }
     ctx.moduleStack.push(module)
-    // TODO: check duplicate useExprs
-    // TODO: check self references
-    module.references = module.useExprs.flatMap(useExpr => useExprToVids(useExpr, ctx))
 
-    checkBlock(module.block, ctx, brief)
+    checkBlock(module.block, ctx)
 
     ctx.moduleStack.pop()
 }
 
-const checkBlock = (block: Block, ctx: Context, brief: boolean = false): void => {
+/*
+ * Can be called outside of scope, module's own scope stack is preserved
+ */
+export const checkTopLevelDefiniton = (module: Module, definiton: Definition, ctx: Context): void => {
+    assert(!!module.topScope, 'module top scope is not set')
+    ctx.moduleStack.push(module)
+    // since this can be called while module is still being checked and has state, it should be preserved
+    const oldStack = module.scopeStack
+    module.scopeStack = [module.topScope!]
+
+    switch (definiton.kind) {
+        case 'type-con':
+            checkTypeDef(definiton.typeDef, ctx)
+            break
+        case 'method-def':
+            // TODO: narrow to not check unrelated methods
+            checkStatement(definiton.trait, ctx)
+            break
+        case 'param':
+            checkParam(definiton.param, definiton.index, ctx)
+            break
+        case 'generic':
+        case 'module':
+        case 'self':
+            break
+        default:
+            checkStatement(definiton, ctx)
+            break
+    }
+
+    module.scopeStack = oldStack
+    ctx.moduleStack.pop()
+}
+
+const checkBlock = (block: Block, ctx: Context): void => {
     const module = ctx.moduleStack.at(-1)!
     module.scopeStack.push({ kind: 'block', definitions: new Map() })
 
-    block.statements.forEach(s => checkStatement(s, ctx, true))
-    if (!brief) {
-        block.statements.forEach(s => checkStatement(s, ctx))
-    }
-
-    const topLevel = module.scopeStack.length === 1
-    if (topLevel && !module.topScope) {
-        module.topScope = module.scopeStack.at(-1)!
-    }
+    block.statements.forEach(s => checkStatement(s, ctx))
 
     // TODO: block type
 
     module.scopeStack.pop()
 }
 
-const checkStatement = (statement: Statement, ctx: Context, brief: boolean = false): void => {
+const checkStatement = (statement: Statement, ctx: Context): void => {
     const module = ctx.moduleStack.at(-1)!
     const scope = module.scopeStack.at(-1)!
     const topLevel = module.scopeStack.length === 1
@@ -92,31 +134,29 @@ const checkStatement = (statement: Statement, ctx: Context, brief: boolean = fal
 
     switch (statement.kind) {
         case 'var-def':
-            checkVarDef(statement, ctx, brief)
+            checkVarDef(statement, ctx)
             pushDefToStack(statement)
             break
         case 'fn-def':
-            checkFnDef(statement, ctx, brief)
+            checkFnDef(statement, ctx)
             pushDefToStack(statement)
             break
         case 'trait-def':
-            checkTraitDef(statement, ctx, brief)
+            checkTraitDef(statement, ctx)
             pushDefToStack(statement)
             break
         case 'impl-def':
-            checkImplDef(statement, ctx, brief)
+            checkImplDef(statement, ctx)
             pushDefToStack(statement)
             break
         case 'type-def':
-            checkTypeDef(statement, ctx, brief)
+            checkTypeDef(statement, ctx)
             pushDefToStack(statement)
             break
         case 'operand-expr':
         case 'unary-expr':
         case 'binary-expr':
-            if (!brief) {
-                checkExpr(statement, ctx)
-            }
+            checkExpr(statement, ctx)
             break
         case 'return-stmt':
             break
@@ -138,11 +178,24 @@ const checkExpr = (expr: Expr, ctx: Context): void => {
     }
 }
 
-const checkFnDef = (fnDef: FnDef, ctx: Context, brief: boolean = false): void => {
+const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
+    if (fnDef.type) return
+
     const module = ctx.moduleStack.at(-1)!
     module.scopeStack.push({ kind: 'fn-def', definitions: new Map(fnDef.generics.map(g => [defKey(g), g])) })
 
     const paramTypes = fnDef.params.map((p, i) => {
+        switch (p.pattern.kind) {
+            case 'hole':
+                break
+            case 'name':
+                const paramDef: ParamDef = { kind: 'param', param: p, index: i }
+                module.scopeStack.at(-1)!.definitions.set(defKey(paramDef), paramDef)
+                break
+            case 'con-pattern':
+                todo('add con-pattern to scope')
+                break
+        }
         checkParam(p, i, ctx)
         return p.type!
     })
@@ -154,30 +207,15 @@ const checkFnDef = (fnDef: FnDef, ctx: Context, brief: boolean = false): void =>
         returnType: fnDef.returnType ? typeToVirtual(fnDef.returnType, ctx) : unitType
     }
 
-    if (!brief) {
-        fnDef.params.forEach(p => {
-            switch (p.pattern.kind) {
-                case 'hole':
-                    break
-                case 'name':
-                    module.scopeStack.at(-1)!.definitions.set(defKey(p), p)
-                    break
-                case 'con-pattern':
-                    todo('add con-pattern to scope')
-                    break
-            }
-        })
+    if (fnDef.returnType) {
+        checkType(fnDef.returnType, ctx)
+    }
 
-        if (fnDef.returnType) {
-            checkType(fnDef.returnType, ctx)
-        }
-
-        if (fnDef.block) {
-            checkBlock(fnDef.block, ctx)
-        } else {
-            if (instanceScope(ctx)?.kind !== 'trait-def') {
-                ctx.warnings.push(semanticError(ctx, fnDef, `fn \`${fnDef.name.value}\` has no body -> must be native`))
-            }
+    if (fnDef.block) {
+        checkBlock(fnDef.block, ctx)
+    } else {
+        if (instanceScope(ctx)?.kind !== 'trait-def') {
+            ctx.warnings.push(semanticError(ctx, fnDef, `fn \`${fnDef.name.value}\` has no body -> must be native`))
         }
     }
 
@@ -213,10 +251,11 @@ const checkParam = (param: Param, index: number, ctx: Context): void => {
             ctx.errors.push(semanticError(ctx, param.pattern, `\`${param.pattern.kind}\` can only be used in match expressions`))
     }
 
-    module.scopeStack.at(-1)!.definitions.set(defKey(param), param)
+    const paramDef: ParamDef = { kind: 'param', param, index }
+    module.scopeStack.at(-1)!.definitions.set(defKey(paramDef), paramDef)
 }
 
-const checkTraitDef = (traitDef: TraitDef, ctx: Context, brief: boolean = false) => {
+const checkTraitDef = (traitDef: TraitDef, ctx: Context) => {
     const module = ctx.moduleStack.at(-1)!
 
     if (instanceScope(ctx)) {
@@ -234,12 +273,12 @@ const checkTraitDef = (traitDef: TraitDef, ctx: Context, brief: boolean = false)
 
     traitDef.type = selfType
 
-    checkBlock(traitDef.block, ctx, brief)
+    checkBlock(traitDef.block, ctx)
 
     module.scopeStack.pop()
 }
 
-const checkImplDef = (implDef: ImplDef, ctx: Context, brief: boolean = false) => {
+const checkImplDef = (implDef: ImplDef, ctx: Context) => {
     const module = ctx.moduleStack.at(-1)!
 
     if (instanceScope(ctx)) {
@@ -259,25 +298,18 @@ const checkImplDef = (implDef: ImplDef, ctx: Context, brief: boolean = false) =>
 
     implDef.type = selfType
 
-    if (!brief) {
-        if (implDef.forTrait) {
-            checkIdentifier(implDef.forTrait, ctx)
-        }
-        checkIdentifier(implDef.identifier, ctx)
+    if (implDef.forTrait) {
+        checkIdentifier(implDef.forTrait, ctx)
     }
+    checkIdentifier(implDef.identifier, ctx)
 
-    checkBlock(implDef.block, ctx, brief)
+    checkBlock(implDef.block, ctx)
 
     module.scopeStack.pop()
 }
 
-const checkTypeDef = (typeDef: TypeDef, ctx: Context, brief: boolean = false) => {
+export const checkTypeDef = (typeDef: TypeDef, ctx: Context) => {
     const module = ctx.moduleStack.at(-1)!
-
-    if (instanceScope(ctx)) {
-        ctx.errors.push(semanticError(ctx, typeDef, 'type definition within instance scope'))
-        return
-    }
 
     const vid = { names: [...module.identifier.names, typeDef.name.value] }
     module.scopeStack.push({
@@ -313,8 +345,8 @@ const checkTypeCon = (typeCon: TypeCon, ctx: Context) => {
     }
 }
 
-const checkVarDef = (varDef: VarDef, ctx: Context, brief: boolean = false): void => {
-    if (brief && varDef.type) return
+const checkVarDef = (varDef: VarDef, ctx: Context): void => {
+    if (varDef.type) return
     const topLevel = ctx.moduleStack.at(-1)!.scopeStack.length === 1
 
     if (topLevel) {
@@ -328,8 +360,6 @@ const checkVarDef = (varDef: VarDef, ctx: Context, brief: boolean = false): void
         checkType(varDef.varType, ctx)
         varDef.type = resolveType(typeToVirtual(varDef.varType, ctx), [resolveInstanceGenerics(ctx)], varDef, ctx)
     }
-
-    if (brief) return
 
     checkExpr(varDef.expr, ctx)
     if (varDef.varType) {
@@ -396,8 +426,6 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
 
     unaryExpr.type = resolveType(fnType.returnType, [instanceGenericMap, fnGenericMap], unaryExpr, ctx)
 }
-
-// TODO: allow non-prefixed constructor expressions for single-variant types, e.g. Unit() instead of Unit::Unit()
 const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const conOp = <ConOp>unaryExpr.unaryOp
     const operand = unaryExpr.operand
@@ -421,7 +449,6 @@ const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         return
     }
     conOp.fields.map(f => checkExpr(f.expr, ctx))
-    // TODO: check con expr
     const typeCon = ref.def.typeCon
     const typeConType = <VirtualFnType>typeCon.type!
     // TODO: figure out typeArgs parameter here
@@ -466,16 +493,16 @@ const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     checkOperand(binaryExpr.lOperand, ctx)
     checkOperand(binaryExpr.rOperand, ctx)
 
-    const opImplFnId = operatorImplMap.get(binaryExpr.binaryOp.kind)
-    if (!opImplFnId) throw Error(`operator ${binaryExpr.binaryOp.kind} without impl function`)
+    const opImplFnVid = operatorImplMap.get(binaryExpr.binaryOp.kind)
+    if (!opImplFnVid) throw Error(`operator ${binaryExpr.binaryOp.kind} without impl function`)
 
-    const implFn = <FnDef>resolveVid(opImplFnId, ctx, ['fn-def'])?.def
-    if (!implFn) throw Error('impl fn not found')
-    if (!implFn.type) throw Error('untyped impl fn')
-    if (implFn.type.kind !== 'fn-type') throw Error('impl fn type in not fn')
+    const methodRef = <MethodDef>resolveVid(opImplFnVid, ctx, ['method-def'])?.def
+    if (!methodRef) throw Error('impl fn not found')
+    if (!methodRef.fn.type) throw Error('untyped impl fn')
+    if (methodRef.fn.type.kind !== 'fn-type') throw Error('impl fn type in not fn')
 
     // TODO: figure out how to resolve generics without their scope
-    checkCallArgs(binaryExpr, [binaryExpr.lOperand, binaryExpr.rOperand], (<VirtualFnType>implFn.type).paramTypes, ctx)
+    checkCallArgs(binaryExpr, [binaryExpr.lOperand, binaryExpr.rOperand], (<VirtualFnType>methodRef.fn.type).paramTypes, ctx)
 }
 
 const checkListExpr = (listExpr: ListExpr, ctx: Context): void => {
