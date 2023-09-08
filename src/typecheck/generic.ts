@@ -33,11 +33,11 @@ export const resolveFnGenerics = (
  */
 export const resolveGenericsOverStructure = (arg: VirtualType, param: VirtualType): Map<string, VirtualType> => {
     const map = new Map()
-    if (arg.kind === 'unknown-type' || param.kind === 'unknown-type') {
-        return map
-    }
     if (param.kind === 'generic') {
         map.set(param.name, arg)
+        return map
+    }
+    if (arg.kind === 'unknown-type' || param.kind === 'unknown-type') {
         return map
     }
     if (arg.kind === 'fn-type' && param.kind === 'fn-type') {
