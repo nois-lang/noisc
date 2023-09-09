@@ -168,13 +168,16 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected std::int::Int\n            got      test::Foo'])
         })
 
-        xit('instance fns should not be available within itself', () => {
+        it('instance fns should not be available within itself', () => {
             const code = 'trait Foo { fn foo() { foo() } }'
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual(['error'])
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'identifier foo not found',
+                'type error: non-callable operand of type `?`'
+            ])
         })
 
-        xit('instance fns should not be available without trait qualifier', () => {
+        it('instance fns should not be available without trait qualifier', () => {
             const code = (arg: string): string => `\
 trait Foo {
     fn foo() {}
@@ -184,7 +187,10 @@ fn main() {
     ${arg}foo()
 }`
             let ctx = check(code(''))
-            expect(ctx.errors.map(e => e.message)).toEqual(['error'])
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'identifier foo not found',
+                'type error: non-callable operand of type `?`'
+            ])
 
             ctx = check(code('Foo::'))
             expect(ctx.errors.map(e => e.message)).toEqual([])
@@ -201,6 +207,17 @@ impl Foo {
 }
 
 type Bar`
+            let ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual([])
+        })
+
+        it('fn is used in fn before it is defined', () => {
+            const code = `\
+fn main() {
+    foo()
+}
+
+fn foo() {}`
             let ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual([])
         })

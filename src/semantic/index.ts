@@ -405,7 +405,7 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     checkOperand(operand, ctx)
 
     if (operand.type!.kind !== 'fn-type') {
-        const message = `type error: non-callable operand of type ${virtualTypeToString(operand.type!)}`
+        const message = `type error: non-callable operand of type \`${virtualTypeToString(operand.type!)}\``
         ctx.errors.push(semanticError(ctx, operand, message))
         return
     }
