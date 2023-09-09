@@ -123,7 +123,9 @@ export const resolveVid = (vid: VirtualIdentifier,
         if (ref) {
             // in case of top-level ref, qualify with module
             if (i === 0) {
-                checkTopLevelDefiniton(module, ref.def, ctx)
+                if (ctx.check) {
+                    checkTopLevelDefiniton(module, ref.def, ctx)
+                }
                 return {
                     vid: concatVid(module.identifier, ref.vid),
                     def: ref.def
@@ -136,7 +138,9 @@ export const resolveVid = (vid: VirtualIdentifier,
     // check in top scope
     ref = resolveScopeVid(vid, module.topScope!, ctx, ofKind, module.identifier)
     if (ref) {
-        checkTopLevelDefiniton(module, ref.def, ctx)
+        if (ctx.check) {
+            checkTopLevelDefiniton(module, ref.def, ctx)
+        }
         return {
             vid: concatVid(module.identifier, ref.vid),
             def: ref.def
@@ -166,7 +170,7 @@ const resolveScopeVid = (
     scope: Scope,
     ctx: Context,
     ofKind: DefinitionKind[],
-    moduleVid: VirtualIdentifier
+    moduleVid: VirtualIdentifier,
 ): VirtualIdentifierMatch | undefined => {
     for (let k of ofKind) {
         if (vid.names.length === 1) {

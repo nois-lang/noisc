@@ -5,6 +5,7 @@ import { buildModule, buildPackage } from '../package/build'
 import { Context, pathToVid } from '../scope'
 import { Source } from '../source'
 import { checkModule, prepareModule } from './index'
+import { buildImplRelations } from '../scope/trait'
 
 describe('semantic', () => {
 
@@ -26,8 +27,10 @@ describe('semantic', () => {
             config,
             moduleStack: [],
             packages,
+            impls: [],
             errors: [],
-            warnings: []
+            warnings: [],
+            check: false
         }
 
         ctx.packages.forEach(p => {
@@ -35,6 +38,8 @@ describe('semantic', () => {
                 prepareModule(m)
             })
         })
+        ctx.impls = buildImplRelations(ctx)
+        ctx.check = true
         if (checkStd) {
             ctx.packages.flatMap(p => p.modules).forEach(m => { checkModule(m, ctx) })
         } else {

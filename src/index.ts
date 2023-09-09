@@ -8,9 +8,11 @@ import { Package } from './package'
 import { buildModule, buildPackage } from './package/build'
 import { getLocationRange } from './parser'
 import { Context, pathToVid } from './scope'
-import { findImpls } from './scope/trait'
+import { buildImplRelations, findImpls } from './scope/trait'
 import { checkModule, prepareModule } from './semantic'
 import { Source } from './source'
+import { vidToString } from './scope/util'
+import { virtualTypeToString } from './typecheck'
 
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
 
@@ -53,8 +55,10 @@ const ctx: Context = {
     config: defaultConfig(),
     moduleStack: [],
     packages,
+    impls: [],
     errors: [],
-    warnings: []
+    warnings: [],
+    check: false
 }
 
 // AOT top scope init solves:
@@ -65,6 +69,8 @@ ctx.packages.forEach(p => {
         prepareModule(m)
     })
 })
+ctx.impls = buildImplRelations(ctx)
+ctx.check = true
 if (ctx.config.libCheck) {
     ctx.packages.flatMap(p => p.modules).forEach(m => { checkModule(m, ctx) })
 } else {

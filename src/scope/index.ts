@@ -6,6 +6,7 @@ import { Package } from '../package'
 import { SemanticError } from '../semantic/error'
 import { VirtualType } from '../typecheck'
 import { todo } from '../util/todo'
+import { ImplRelation } from './trait'
 import { vidToString } from './util'
 import { Definition, VirtualIdentifier } from './vid'
 
@@ -14,8 +15,13 @@ export interface Context {
     // TODO: store reference chain instead of plain modules
     moduleStack: Module[]
     packages: Package[]
+    impls: ImplRelation[]
     errors: SemanticError[]
     warnings: SemanticError[]
+    /**
+     * Whether should perform semantic checking or not
+     */
+    check: boolean
 }
 
 export type Scope = TraitScope | ImplScope | TypeDefScope | CommonScope
