@@ -1,4 +1,3 @@
-import { expect } from '@jest/globals'
 import { join } from 'path'
 import { defaultConfig } from '../config'
 import { Package } from '../package'

@@ -1,5 +1,4 @@
 import { tokenize } from './lexer'
-import { expect } from '@jest/globals'
 
 describe('lexer', () => {
 

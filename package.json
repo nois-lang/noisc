@@ -9,7 +9,11 @@
     "build:lib": "tsc -p tsconfig.lib.json",
     "test": "jest --watchAll",
     "ci": "jest --ci",
-    "postinstall": "npm run build:lib"
+    "postinstall": "npm run build:lib",
+    "bun:run": "bun run src/index.ts",
+    "bun:build": "bun build --target=node --outdir=dist src/index.ts",
+    "bun:build:lib": "bun build --outdir=dist src/lib.ts",
+    "bun:ci": "bun test"
   },
   "repository": {
     "type": "git",
