@@ -142,8 +142,8 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
             }
             return true
         }
-        const traitRefs = findSupertypes(t.identifier, ctx)
-        return traitRefs.some(ref => vidToString(ref.vid) === vidToString(target.identifier))
+        const superRefs = findSupertypes(t.identifier, ctx)
+        return superRefs.some(ref => vidToString(ref.vid) === vidToString(target.identifier))
     }
     if (t.kind === 'fn-type' && target.kind === 'fn-type') {
         for (let i = 0; i < target.paramTypes.length; i++) {

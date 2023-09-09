@@ -8,7 +8,7 @@ import { selfType } from '../typecheck/type'
 import { todo } from '../util/todo'
 import { Context, Scope, instanceScope } from './index'
 import { defaultImportedVids } from './std'
-import { findSupertypes } from './trait'
+import { findImpls, findSupertypes, findTypeImpls } from './trait'
 import { concatVid, vidFromString, vidToString } from './util'
 
 export interface VirtualIdentifier {
@@ -108,7 +108,8 @@ export const patternVid = (pattern: Pattern): VirtualIdentifier | undefined => {
 export const resolveVid = (vid: VirtualIdentifier,
     ctx: Context,
     // exclude impl-def since it cannot be requested by vid
-    ofKind: DefinitionKind[] = ['module', 'self', 'type-con', 'var-def', 'fn-def', 'generic', 'param', 'type-def', 'trait-def', 'method-def']
+    ofKind: DefinitionKind[] = ['module', 'self', 'type-con', 'var-def', 'fn-def', 'generic', 'param', 'type-def', 'trait-def', 'method-def'],
+    checkSuper: boolean = true
 ): VirtualIdentifierMatch | undefined => {
     const module = ctx.moduleStack.at(-1)!
     let ref: VirtualIdentifierMatch | undefined
@@ -171,6 +172,7 @@ const resolveScopeVid = (
     ctx: Context,
     ofKind: DefinitionKind[],
     moduleVid: VirtualIdentifier,
+    checkSuper: boolean = true
 ): VirtualIdentifierMatch | undefined => {
     for (let k of ofKind) {
         if (vid.names.length === 1) {
@@ -208,11 +210,19 @@ const resolveScopeVid = (
                         return { vid, def: { kind: 'method-def', fn, trait: traitDef } }
                     }
                 }
-                // lookup implemented traits that can contain that function
-                const fullTypeVid = { names: [...(moduleVid?.names ?? []), traitName] }
-                const superDefs = findSupertypes(fullTypeVid, ctx)
-                for (let typeDef of superDefs) {
-                    // TODO: recursively check supertypes for this method
+                if (traitDef && checkSuper) {
+                    // lookup supertypes' traits/impls that might contain that function
+                    const fullTypeVid = { names: [...(moduleVid?.names ?? []), traitName] }
+                    const superDefs = findSupertypes(fullTypeVid, ctx)
+                    for (let superDef of superDefs) {
+                        // don't check itself
+                        if (vidToString(fullTypeVid) === vidToString(superDef.vid)) continue
+                        const fullMethodVid = { names: [...superDef.vid.names, fnName] }
+                        const methodRef = resolveVid(fullMethodVid, ctx, ['method-def'], false)
+                        if (methodRef && methodRef.def.kind === 'method-def') {
+                            return methodRef
+                        }
+                    }
                 }
             }
         }

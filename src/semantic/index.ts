@@ -72,30 +72,30 @@ export const checkModule = (module: Module, ctx: Context): void => {
 /*
  * Can be called outside of scope, module's own scope stack is preserved
  */
-export const checkTopLevelDefiniton = (module: Module, definiton: Definition, ctx: Context): void => {
+export const checkTopLevelDefiniton = (module: Module, definition: Definition, ctx: Context): void => {
     assert(!!module.topScope, 'module top scope is not set')
     ctx.moduleStack.push(module)
     // since this can be called while module is still being checked and has state, it should be preserved
     const oldStack = module.scopeStack
     module.scopeStack = [module.topScope!]
 
-    switch (definiton.kind) {
+    switch (definition.kind) {
         case 'type-con':
-            checkTypeDef(definiton.typeDef, ctx)
+            checkTypeDef(definition.typeDef, ctx)
             break
         case 'method-def':
             // TODO: narrow to not check unrelated methods
-            checkStatement(definiton.trait, ctx)
+            checkStatement(definition.trait, ctx)
             break
         case 'param':
-            checkParam(definiton.param, definiton.index, ctx)
+            checkParam(definition.param, definition.index, ctx)
             break
         case 'generic':
         case 'module':
         case 'self':
             break
         default:
-            checkStatement(definiton, ctx)
+            checkStatement(definition, ctx)
             break
     }
 

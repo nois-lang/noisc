@@ -69,6 +69,7 @@ ctx.packages.forEach(p => {
         prepareModule(m)
     })
 })
+// TODO: all impls should probably be checked, either when method is resolved, or just with checkTopLevelDefinition
 ctx.impls = buildImplRelations(ctx)
 ctx.check = true
 if (ctx.config.libCheck) {

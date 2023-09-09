@@ -102,8 +102,19 @@ export const buildImplRelations = (ctx: Context): ImplRelation[] => {
  * Find all supertypes (types/traits implemented by specified type), ignoring current scope
  */
 export const findSupertypes = (typeVid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch<TraitDef | TypeDef>[] => {
-    // TODO
-    return []
+    const ref = resolveVid(typeVid, ctx)
+    if (!ref) return []
+
+    const supertypes = ctx.impls
+        .filter(i => i.forType.kind === 'vid-type' && vidToString(i.forType.identifier) === vidToString(typeVid))
+        .map(i => i.typeDef)
+
+    return supertypes
+}
+
+export const findTypeImpls = (typeVid: VirtualIdentifier, ctx: Context): ImplRelation[] => {
+    const vid = vidToString(typeVid)
+    return ctx.impls.filter(i => vidToString(i.typeDef.vid) === vid)
 }
 
 export const findImpls = (module: Module): (TraitDef | ImplDef)[] =>
@@ -123,22 +134,9 @@ export const getImplTargetVid = (implDef: TraitDef | ImplDef): VirtualIdentifier
 }
 
 export const getImplTargetType = (implDef: TraitDef | ImplDef, ctx: Context): VirtualType => {
-    if (implDef.kind === 'trait-def') {
-        return {
-            kind: 'vid-type',
-            identifier: resolveVid(vidFromString(implDef.name.value), ctx)!.vid,
-            typeArgs: implDef.generics.map(g => genericToVirtual(g, ctx))
-        }
-    }
-    if (implDef.forTrait) {
-        return typeToVirtual(implDef.forTrait, ctx)
-    } else {
-        return {
-            kind: 'vid-type',
-            identifier: resolveVid(idToVid(implDef.identifier), ctx)!.vid,
-            typeArgs: implDef.generics.map(g => genericToVirtual(g, ctx))
-        }
-    }
+    const implRel = ctx.impls.find(i => i.implDef === implDef)
+    assert(!!implRel, `impl relation not found`)
+    return implRel!.forType
 }
 
 export const traitDefToVirtualType = (traitDef: TraitDef, ctx: Context): VirtualType => {
