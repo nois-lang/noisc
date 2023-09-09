@@ -1,38 +1,21 @@
 import { Module } from '../ast'
 import { ImplDef, TraitDef } from '../ast/statement'
+import { TypeDef } from '../ast/type-def'
 import { VirtualType, genericToVirtual, typeToVirtual } from '../typecheck'
 import { Context } from './index'
-import { concatVid, idToVid, vidFromString, vidToString, } from './util'
+import { concatVid, idToVid, vidFromString } from './util'
 import { VirtualIdentifier, VirtualIdentifierMatch, resolveVid } from './vid'
 
 /**
- * Find all implemented traits and self impls for specified type
+ * Find all supertypes (types/traits implemented by specified type), ignoring current scope
  */
-export const findTypeTraits = (typeVid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch<TraitDef | ImplDef>[] => {
-    return ctx.impls.flatMap(impl => {
-        const targetVid = getImplTargetVid(impl, ctx)
-        if (!targetVid) return []
-        const targetRef = resolveVid(targetVid, ctx, ['type-def', 'trait-def'])
-        // not all impl refs will resolve with current module imports
-        if (!targetRef) return []
-        if (vidToString(targetRef.vid) === vidToString(typeVid)) {
-            const ref = resolveVid(idToVid(impl.identifier), ctx, ['trait-def', 'impl-def'])
-            if (!ref) return []
-            if (ref.def.kind === 'trait-def' || ref.def.kind === 'impl-def') {
-                return [
-                    { vid: ref.vid, def: ref.def },
-                    // TODO: recursively check impls, some infinite recursion issue
-                    // ...findTypeTraits(getImplTargetVid(ref.def, ctx)!, ctx)
-                ]
-            }
-            return []
-        }
-        return []
-    })
+export const findSupertypes = (typeVid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch<TraitDef | TypeDef>[] => {
+    // TODO
+    return []
 }
 
-export const findImpls = (module: Module): ImplDef[] =>
-    module.block.statements.flatMap(s => s.kind !== 'impl-def' ? [] : s)
+export const findImpls = (module: Module): (TraitDef | ImplDef)[] =>
+    module.block.statements.flatMap(s => (s.kind === 'trait-def' || s.kind === 'impl-def') ? s : [])
 
 /**
  * Get type impl is attached to:
@@ -40,7 +23,7 @@ export const findImpls = (module: Module): ImplDef[] =>
  * impl A       -> A
  * impl A for B -> B
  */
-export const getImplTargetVid = (implDef: TraitDef | ImplDef, ctx: Context): VirtualIdentifier | undefined => {
+export const getImplTargetVid = (implDef: TraitDef | ImplDef): VirtualIdentifier => {
     if (implDef.kind === 'trait-def') {
         return vidFromString(implDef.name.value)
     }

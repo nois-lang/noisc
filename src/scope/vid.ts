@@ -8,7 +8,7 @@ import { selfType } from '../typecheck/type'
 import { todo } from '../util/todo'
 import { Context, Scope, instanceScope } from './index'
 import { defaultImportedVids } from './std'
-import { findTypeTraits } from './trait'
+import { findSupertypes } from './trait'
 import { concatVid, vidFromString, vidToString } from './util'
 
 export interface VirtualIdentifier {
@@ -21,12 +21,12 @@ export const defKinds = <const>[
     'type-con',
     'var-def',
     'fn-def',
-    'type-def',
     'generic',
     'param',
+    'type-def',
     'trait-def',
-    'impl-def',
-    'method-def'
+    'method-def',
+    'impl-def'
 ]
 
 export type DefinitionKind = typeof defKinds[number]
@@ -105,7 +105,11 @@ export const patternVid = (pattern: Pattern): VirtualIdentifier | undefined => {
  *  - Module ref, e.g. std::string
  *  - `Self`
  */
-export const resolveVid = (vid: VirtualIdentifier, ctx: Context, ofKind: DefinitionKind[] = [...defKinds]): VirtualIdentifierMatch | undefined => {
+export const resolveVid = (vid: VirtualIdentifier,
+    ctx: Context,
+    // exclude impl-def since it cannot be requested by vid
+    ofKind: DefinitionKind[] = ['module', 'self', 'type-con', 'var-def', 'fn-def', 'generic', 'param', 'type-def', 'trait-def', 'method-def']
+): VirtualIdentifierMatch | undefined => {
     const module = ctx.moduleStack.at(-1)!
     let ref: VirtualIdentifierMatch | undefined
 
@@ -115,7 +119,7 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context, ofKind: Definit
 
     // walk through scopes inside out
     for (let i = module.scopeStack.length - 1; i >= 0; i--) {
-        ref = resolveScopeVid(vid, module.scopeStack[i], ctx, ofKind)
+        ref = resolveScopeVid(vid, module.scopeStack[i], ctx, ofKind, module.identifier)
         if (ref) {
             // in case of top-level ref, qualify with module
             if (i === 0) {
@@ -130,7 +134,7 @@ export const resolveVid = (vid: VirtualIdentifier, ctx: Context, ofKind: Definit
     }
 
     // check in top scope
-    ref = resolveScopeVid(vid, module.topScope!, ctx, ofKind)
+    ref = resolveScopeVid(vid, module.topScope!, ctx, ofKind, module.identifier)
     if (ref) {
         checkTopLevelDefiniton(module, ref.def, ctx)
         return {
@@ -162,7 +166,7 @@ const resolveScopeVid = (
     scope: Scope,
     ctx: Context,
     ofKind: DefinitionKind[],
-    moduleVid?: VirtualIdentifier
+    moduleVid: VirtualIdentifier
 ): VirtualIdentifierMatch | undefined => {
     for (let k of ofKind) {
         if (vid.names.length === 1) {
@@ -190,27 +194,21 @@ const resolveScopeVid = (
             if (k === 'method-def') {
                 const [traitName, fnName] = vid.names
                 // match trait/impl def by first vid name
-                const traitDef = scope.definitions.get('trait-def' + traitName) ?? scope.definitions.get('impl-def' + traitName)
+                const traitDef = scope.definitions.get('trait-def' + traitName)
+                    ?? scope.definitions.get('impl-def' + traitName)
+                    ?? scope.definitions.get('type-def' + traitName)
                 if (traitDef && (traitDef.kind === 'trait-def' || traitDef.kind === 'impl-def')) {
                     // if matched, try to find fn with matching name in specified trait
                     const fn = traitDef.block.statements.find(s => s.kind === 'fn-def' && s.name.value === fnName)
                     if (fn && fn.kind === 'fn-def') {
                         return { vid, def: { kind: 'method-def', fn, trait: traitDef } }
                     }
-                    // TODO: test this logic
-                    // lookup implemented traits that can contain that function
-                    const fullTypeVid = { names: [...(moduleVid?.names ?? []), traitName] }
-                    const traitDefs = findTypeTraits(fullTypeVid, ctx)
-                    for (let traitDef of traitDefs) {
-                        // TODO: refactor duplicated logic
-                        const fn = traitDef.def.block.statements.find(s => s.kind === 'fn-def' && s.name.value === fnName)
-                        if (fn && fn.kind === 'fn-def') {
-                            return {
-                                vid: { names: [...traitDef.vid.names, fnName] },
-                                def: { kind: 'method-def', fn, trait: traitDef.def }
-                            }
-                        }
-                    }
+                }
+                // lookup implemented traits that can contain that function
+                const fullTypeVid = { names: [...(moduleVid?.names ?? []), traitName] }
+                const superDefs = findSupertypes(fullTypeVid, ctx)
+                for (let typeDef of superDefs) {
+                    // TODO: recursively check supertypes for this method
                 }
             }
         }
@@ -242,7 +240,7 @@ export const resolveMatchedVid = (
     module = pkg.modules.find(m => vidToString(m.identifier) === vidToString({ names: vid.names.slice(0, -1) }))
     if (module) {
         const moduleLocalVid = { names: vid.names.slice(-1) }
-        const ref = resolveScopeVid(moduleLocalVid, module.topScope!, ctx, ofKind)
+        const ref = resolveScopeVid(moduleLocalVid, module.topScope!, ctx, ofKind, module.identifier)
         if (ref) {
             checkTopLevelDefiniton(module, ref.def, ctx)
             return { vid, def: ref.def }
@@ -253,7 +251,7 @@ export const resolveMatchedVid = (
     module = pkg.modules.find(m => vidToString(m.identifier) === vidToString({ names: vid.names.slice(0, -2) }))
     if (module) {
         const moduleLocalVid = { names: vid.names.slice(-2) }
-        const ref = resolveScopeVid(moduleLocalVid, module.topScope!, ctx, ofKind)
+        const ref = resolveScopeVid(moduleLocalVid, module.topScope!, ctx, ofKind, module.identifier)
         if (ref) {
             checkTopLevelDefiniton(module, ref.def, ctx)
             return { vid, def: ref.def }

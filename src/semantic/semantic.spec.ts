@@ -3,7 +3,6 @@ import { defaultConfig } from '../config'
 import { Package } from '../package'
 import { buildModule, buildPackage } from '../package/build'
 import { Context, pathToVid } from '../scope'
-import { findImpls } from '../scope/trait'
 import { Source } from '../source'
 import { checkModule, prepareModule } from './index'
 
@@ -27,7 +26,6 @@ describe('semantic', () => {
             config,
             moduleStack: [],
             packages,
-            impls: packages.flatMap(p => p.modules).flatMap(findImpls),
             errors: [],
             warnings: []
         }
@@ -96,7 +94,7 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual([])
 
             ctx = check(code('"foo"'))
-            expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected std::int::Int\n            got      std::string::String'])
+            expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected test::Foo<std::int::Int>\n            got      test::Foo<std::string::String>'])
         })
 
         it('fn generics', () => {

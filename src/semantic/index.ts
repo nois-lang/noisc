@@ -279,6 +279,9 @@ const checkTraitDef = (traitDef: TraitDef, ctx: Context) => {
 }
 
 const checkImplDef = (implDef: ImplDef, ctx: Context) => {
+    if (implDef.checked) return
+    implDef.checked = true
+
     const module = ctx.moduleStack.at(-1)!
 
     if (instanceScope(ctx)) {

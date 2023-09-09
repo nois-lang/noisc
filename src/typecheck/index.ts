@@ -1,7 +1,7 @@
 import { AstNode } from '../ast'
 import { Generic, Type } from '../ast/type'
 import { Context } from '../scope'
-import { findTypeTraits } from '../scope/trait'
+import { findSupertypes } from '../scope/trait'
 import { idToVid, vidToString } from '../scope/util'
 import { VirtualIdentifier, resolveVid } from '../scope/vid'
 import { SemanticError, notFoundError, semanticError } from '../semantic/error'
@@ -10,6 +10,10 @@ import { selfType, unknownType } from './type'
 
 export interface Typed {
     type: VirtualType
+}
+
+export interface Checked {
+    checked: boolean
 }
 
 export type VirtualType = VidType | VirtualFnType | VirtualGeneric | UnknownType
@@ -138,7 +142,7 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
             }
             return true
         }
-        const traitRefs = findTypeTraits(t.identifier, ctx)
+        const traitRefs = findSupertypes(t.identifier, ctx)
         return traitRefs.some(ref => vidToString(ref.vid) === vidToString(target.identifier))
     }
     if (t.kind === 'fn-type' && target.kind === 'fn-type') {

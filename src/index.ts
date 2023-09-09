@@ -53,7 +53,6 @@ const ctx: Context = {
     config: defaultConfig(),
     moduleStack: [],
     packages,
-    impls: packages.flatMap(p => p.modules).flatMap(findImpls),
     errors: [],
     warnings: []
 }

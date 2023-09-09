@@ -14,7 +14,6 @@ export interface Context {
     // TODO: store reference chain instead of plain modules
     moduleStack: Module[]
     packages: Package[]
-    impls: ImplDef[]
     errors: SemanticError[]
     warnings: SemanticError[]
 }
@@ -74,7 +73,7 @@ export const defKey = (def: Definition): string => {
         case 'method-def':
             return 'fn-def' + def.fn.name.value
         case 'impl-def':
-            return def.kind + def.identifier.name.value + (def.forTrait?.name ?? '')
+            return def.kind + def.identifier.name.value
         case 'type-con':
             return def.kind + def.typeCon.name.value
     }

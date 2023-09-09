@@ -1,7 +1,7 @@
 import { ParseToken } from '../lexer/lexer'
 import { ParseNode } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
-import { Typed } from '../typecheck'
+import { Checked, Typed } from '../typecheck'
 import { buildExpr, Expr } from './expr'
 import { AstNode, buildParam, filterNonAstNodes, Param } from './index'
 import { buildPattern, Pattern } from './match'
@@ -110,7 +110,7 @@ export const buildTraitDef = (node: ParseNode): TraitDef => {
     return { kind: 'trait-def', parseNode: node, name, generics, block }
 }
 
-export interface ImplDef extends AstNode<'impl-def'> {
+export interface ImplDef extends AstNode<'impl-def'>, Partial<Checked> {
     identifier: Identifier
     generics: Generic[]
     forTrait?: Identifier
