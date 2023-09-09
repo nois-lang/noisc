@@ -20,7 +20,7 @@ import {
     typeToVirtual,
     virtualTypeToString
 } from '../typecheck'
-import { resolveFnGenerics, resolveInstanceGenerics, resolveType } from '../typecheck/generic'
+import { resolveFnGenerics, instanceGenericMap, resolveType } from '../typecheck/generic'
 import { selfType, unitType, unknownType } from '../typecheck/type'
 import { assert, todo } from '../util/todo'
 import { notFoundError, semanticError } from './error'
@@ -356,7 +356,7 @@ const checkVarDef = (varDef: VarDef, ctx: Context): void => {
 
     if (varDef.varType) {
         checkType(varDef.varType, ctx)
-        varDef.type = resolveType(typeToVirtual(varDef.varType, ctx), [resolveInstanceGenerics(ctx)], varDef, ctx)
+        varDef.type = resolveType(typeToVirtual(varDef.varType, ctx), [instanceGenericMap(ctx)], varDef, ctx)
     }
 
     checkExpr(varDef.expr, ctx)
@@ -412,17 +412,17 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const typeArgs = operand.kind === 'identifier'
         ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx))
         : []
-    const instanceGenericMap = resolveInstanceGenerics(ctx)
+    const instanceMap = instanceGenericMap(ctx)
     const fnGenericMap = resolveFnGenerics(fnType, callOp.args.map(a => a.type!), typeArgs)
     const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(
         pt,
-        [instanceGenericMap, fnGenericMap],
+        [instanceMap, fnGenericMap],
         callOp.args.at(i) ?? unaryExpr,
         ctx
     ))
     checkCallArgs(callOp, callOp.args, paramTypes, ctx)
 
-    unaryExpr.type = resolveType(fnType.returnType, [instanceGenericMap, fnGenericMap], unaryExpr, ctx)
+    unaryExpr.type = resolveType(fnType.returnType, [instanceMap, fnGenericMap], unaryExpr, ctx)
 }
 const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const conOp = <ConOp>unaryExpr.unaryOp
@@ -586,15 +586,16 @@ const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
     if (ref) {
         // TODO: refactor
         switch (ref.def.kind) {
-            case 'module':
-                identifier.type = instanceScope(ctx)?.selfType
-                break
-            case 'var-def':
-            case 'fn-def':
-                identifier.type = ref.def.type
+            case 'self':
+                identifier.type = instanceScope(ctx)!.selfType
                 break
             case 'param':
-                identifier.type = ref.def.param.type
+                // TODO: there might be a better place to resolve Self
+                if (ref.def.param.type === selfType) {
+                    identifier.type = resolveType(ref.def.param.type, [instanceGenericMap(ctx)], identifier, ctx)
+                } else {
+                    identifier.type = ref.def.param.type
+                }
                 break
             case 'method-def':
                 identifier.type = ref.def.fn.type
@@ -602,10 +603,14 @@ const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
             case 'type-con':
                 identifier.type = ref.def.typeCon.type
                 break
+            case 'var-def':
+            case 'fn-def':
+                identifier.type = ref.def.type
+                break
             case 'impl-def':
             case 'type-def':
             case 'generic':
-            case 'self':
+            case 'module':
                 break
         }
     } else {

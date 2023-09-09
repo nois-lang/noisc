@@ -71,7 +71,7 @@ export const getTypeParams = (virtualType: VirtualType): VirtualType[] => {
     }
 }
 
-export const resolveInstanceGenerics = (ctx: Context): Map<string, VirtualType> => {
+export const instanceGenericMap = (ctx: Context): Map<string, VirtualType> => {
     const instance = instanceScope(ctx)
     if (!instance) return new Map()
     const generics = instance.def.generics.map(g => {
