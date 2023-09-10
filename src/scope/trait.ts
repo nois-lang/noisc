@@ -44,58 +44,60 @@ export const buildImplRelations = (ctx: Context): ImplRelation[] => {
         )
     return impls.flatMap(([module, impl]) => {
         ctx.moduleStack.push(module)
-        let implRel: ImplRelation | undefined
-        if (impl.kind === 'trait-def') {
-            const implType: VirtualType = {
-                kind: 'vid-type',
-                identifier: { names: [...module.identifier.names, impl.name.value] },
-                typeArgs: impl.generics.map(g => genericToVirtual(g, ctx))
-            }
-            const ref = resolveVid(implType.identifier, ctx, ['trait-def'])
-            assert(!!ref, 'traitDef did not find itself by name')
-            const traitRef = <VirtualIdentifierMatch<TraitDef>>ref!
-            implRel = {
-                module,
-                implType,
-                forType: implType,
-                typeDef: traitRef,
-                forDef: traitRef,
-                implDef: impl,
-            }
-        } else {
-            const implVid = idToVid(impl.identifier)
-            const ref = resolveVid(implVid, ctx, ['trait-def', 'type-def'])
-            if (!ref || (ref.def.kind !== 'trait-def' && ref.def.kind !== 'type-def')) {
-                ctx.errors.push(notFoundError(ctx, impl.identifier, vidToString(implVid)))
-                ctx.moduleStack.pop()
-                return []
-            }
-            const implRef = <VirtualIdentifierMatch<TypeDef | TraitDef>>ref
-
-            let forDef: VirtualIdentifierMatch<TypeDef | TraitDef> = implRef
-            if (impl.forTrait) {
-                const ref = resolveVid(idToVid(impl.forTrait), ctx, ['type-def', 'trait-def'])
-                if (!ref || (ref.def.kind !== 'type-def' && ref.def.kind !== 'trait-def')) {
-                    ctx.errors.push(notFoundError(ctx, impl.identifier, vidToString(implVid), 'trait'))
-                    ctx.moduleStack.pop()
-                    return []
-                }
-                forDef = <VirtualIdentifierMatch<TypeDef | TraitDef>>ref
-            }
-
-            const implType = typeToVirtual(impl.identifier, ctx)
-            implRel = {
-                module,
-                implType,
-                forType: impl.forTrait ? typeToVirtual(impl.forTrait, ctx) : implType,
-                typeDef: <VirtualIdentifierMatch<TypeDef | TraitDef>>ref,
-                forDef: forDef,
-                implDef: impl,
-            }
-        }
+        const implRel = getImplRel(impl, ctx)
         ctx.moduleStack.pop()
-        return [implRel!]
+        return implRel ? [implRel] : []
     })
+}
+
+const getImplRel = (impl: TraitDef | ImplDef, ctx: Context): ImplRelation | undefined => {
+    const module = ctx.moduleStack.at(-1)!
+    if (impl.kind === 'trait-def') {
+        const implType: VirtualType = {
+            kind: 'vid-type',
+            identifier: { names: [...module.identifier.names, impl.name.value] },
+            typeArgs: impl.generics.map(g => genericToVirtual(g, ctx))
+        }
+        const ref = resolveVid(implType.identifier, ctx, ['trait-def'])
+        assert(!!ref, 'traitDef did not find itself by name')
+        const traitRef = <VirtualIdentifierMatch<TraitDef>>ref!
+        return {
+            module,
+            implType,
+            forType: implType,
+            typeDef: traitRef,
+            forDef: traitRef,
+            implDef: impl,
+        }
+    } else {
+        const implVid = idToVid(impl.identifier)
+        const ref = resolveVid(implVid, ctx, ['trait-def', 'type-def'])
+        if (!ref || (ref.def.kind !== 'trait-def' && ref.def.kind !== 'type-def')) {
+            ctx.errors.push(notFoundError(ctx, impl.identifier, vidToString(implVid)))
+            return undefined
+        }
+        const implRef = <VirtualIdentifierMatch<TypeDef | TraitDef>>ref
+
+        let forDef: VirtualIdentifierMatch<TypeDef | TraitDef> = implRef
+        if (impl.forTrait) {
+            const ref = resolveVid(idToVid(impl.forTrait), ctx, ['type-def', 'trait-def'])
+            if (!ref || (ref.def.kind !== 'type-def' && ref.def.kind !== 'trait-def')) {
+                ctx.errors.push(notFoundError(ctx, impl.identifier, vidToString(implVid), 'trait'))
+                return undefined
+            }
+            forDef = <VirtualIdentifierMatch<TypeDef | TraitDef>>ref
+        }
+
+        const implType = typeToVirtual(impl.identifier, ctx)
+        return {
+            module,
+            implType,
+            forType: impl.forTrait ? typeToVirtual(impl.forTrait, ctx) : implType,
+            typeDef: <VirtualIdentifierMatch<TypeDef | TraitDef>>ref,
+            forDef: forDef,
+            implDef: impl,
+        }
+    }
 }
 
 /**
