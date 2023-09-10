@@ -9,6 +9,9 @@ export const defaultImportedVids: VirtualIdentifier[] = [
     'std::int::Int',
     'std::string::String',
     'std::char::Char',
+    'std::bool::Bool',
+    'std::bool::true',
+    'std::bool::false',
     'std::list::List',
 
     'std::panic::todo',
