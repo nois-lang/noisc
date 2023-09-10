@@ -465,6 +465,10 @@ const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
             ctx.errors.push(semanticError(ctx, conOp, `unresolved type parameter ${g.name}`))
         }
     })
+    if (typeConType.paramTypes.length !== conOp.fields.length) {
+        ctx.errors.push(semanticError(ctx, conOp, `expected ${typeConType.paramTypes.length} arguments, got ${conOp.fields.length}`))
+        return
+    }
     typeConType.paramTypes
         .map(pt => resolveType(pt, [genericMap], typeCon, ctx))
         .forEach((paramType, i) => {
