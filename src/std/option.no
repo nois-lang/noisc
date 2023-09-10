@@ -5,6 +5,12 @@ type Option<T> {
 
 impl <T> Option<T> {
     fn map<U>(self, f: |T|: U): Option<U> {
-        todo("map")
+        todo("Option::map")
+    }
+    fn take(self): Option<T> {
+        todo("Option::take")
+    }
+    fn isSome(self): Bool {
+        todo("Option::isSome")
     }
 }

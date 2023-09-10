@@ -1,0 +1,30 @@
+use std::iter::Iter
+
+type IntersperseIter<T>(
+    iter: Iter<T>,
+    separator: T,
+    needsSeparator: Bool
+)
+
+impl <T> Iter<T> for IntersperseIter<T> {
+    fn next(self): Option<T> {
+        if self.needsSeparator && self.iter.peek().isSome() {
+            self.needsSeparator = false
+            Option::Some(self.separator)
+        } else {
+            self.needsSeparator = true
+            self.iter.next()
+        }
+    }
+}
+
+trait IntersperseAdapter<Self: Iter<T>, T> {
+    fn intersperse(self, separator: T): IntersperseIter<T>
+}
+
+impl <T> IntersperseAdapter<T> for Iter<T> {
+    fn intersperse<U>(self, separator: T): IntersperseIter<T> {
+        IntersperseIter::IntersperseIter(iter: self, separator: separator, needsSeparator: false)
+    }
+}
+

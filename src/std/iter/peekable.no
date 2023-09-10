@@ -1,0 +1,37 @@
+use std::iter::Iter
+
+type PeekableIter<T>(
+    iter: Iter<T>,
+    peeked: Option<Option<T>>,
+)
+
+impl <T> Iter<T> for PeekableIter<T> {
+    fn next(self): Option<T> {
+        match self.peeked.take() {
+            Option::Some(value) -> v,
+            Option::None() -> self.iter.next(),
+        }
+    }
+
+    fn peek(self): Option<T> {
+        match self.peeked {
+            Option::Some(value) -> value,
+            Option::None() -> {
+                self.peeked = self.iter.next()
+                self.peeked
+            },
+        }
+    }
+}
+
+trait PeekableAdapter<Self: Iter<T>, T> {
+    fn peek(self): Option<T>
+}
+
+impl <T> PeekableAdapter<T> for Iter<T> {
+    fn peek<U>(self): PeekableIter<T> {
+        // PeekableIter::PeekableIter(iter: self, peeked: Option::None())
+        todo("PeekableAdapter::peek")
+    }
+}
+
