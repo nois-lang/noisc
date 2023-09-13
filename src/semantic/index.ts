@@ -26,6 +26,7 @@ import { assert, todo } from '../util/todo'
 import { notFoundError, semanticError } from './error'
 import { checkAccessExpr } from './instance'
 import { operatorImplMap } from './op'
+import { typeNames } from './type-def'
 import { useExprToVids } from './use-expr'
 
 export const prepareModule = (module: Module): void => {
@@ -335,13 +336,21 @@ const checkTypeCon = (typeCon: TypeCon, ctx: Context) => {
         checkType(fieldDef.fieldType, ctx)
         // TODO: check duplicate field defs
     })
+
     const generics = [...typeDefScope.definitions.values()]
         .map(d => <Generic>d)
         .map(g => genericToVirtual(g, ctx))
+
+    // names used in fieldDef, needed to match what typeDef generics are being used
+    const names = typeCon.fieldDefs.flatMap(f => typeNames(f.fieldType))
+    // unused generics needs to be replaced with `?` because some type cons ignore type def generics,
+    // e.g. `Option::None()` should have type of `||: Option<?>`
+    const typeArgs = generics.map(g => names.includes(g.name) ? g : unknownType)
+
     typeCon.type = {
         kind: 'fn-type',
         paramTypes: typeCon.fieldDefs.map(f => typeToVirtual(f.fieldType, ctx)),
-        returnType: { kind: 'vid-type', identifier: typeDefScope.vid, typeArgs: generics },
+        returnType: { kind: 'vid-type', identifier: typeDefScope.vid, typeArgs },
         generics
     }
 }
