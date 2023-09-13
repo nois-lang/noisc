@@ -1,12 +1,12 @@
+import { ParseToken } from '../lexer/lexer'
+import { ParseNode } from '../parser'
+import { nameLikeTokens } from '../parser/fns'
+import { Typed } from '../typecheck'
 import { buildExpr, buildOperandExpr, Expr, UnaryExpr } from './expr'
 import { AstNode, filterNonAstNodes, } from './index'
-import { buildIdentifier, buildName, buildOperand, Identifier, Name, Operand } from './operand'
 import { buildUnaryOp, SpreadOp } from './op'
+import { buildIdentifier, buildName, buildOperand, Identifier, Name, Operand } from './operand'
 import { Block, buildBlock } from './statement'
-import { ParseNode } from '../parser'
-import { Typed } from '../typecheck'
-import { nameLikeTokens } from '../parser/fns'
-import { ParseToken } from '../lexer/lexer'
 
 export interface MatchExpr extends AstNode<'match-expr'>, Partial<Typed> {
     expr: Expr
@@ -34,7 +34,7 @@ export const buildMatchClause = (node: ParseNode): MatchClause => {
     let idx = 0
     const pattern = buildPattern(nodes[idx++])
     const guard = nodes[idx].kind === 'guard' ? buildExpr(filterNonAstNodes(nodes[idx++])[1]) : undefined
-    const block = nodes[idx].kind === 'expr' ? <Block>{ statements: [buildExpr(nodes[idx++])] } : buildBlock(nodes[idx++])
+    const block = buildBlock(nodes[idx++])
     return { kind: 'match-clause', parseNode: node, pattern, guard, block }
 }
 

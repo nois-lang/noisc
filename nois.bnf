@@ -124,7 +124,7 @@ match-expr          ::= MATCH-KEYWORD expr match-clauses
                     ;
   match-clauses     ::= O-BRACE (match-clause (COMMA match-clause)*)? COMMA? C-BRACE
                     ;
-    match-clause    ::= pattern guard? ARROW (block | expr)
+    match-clause    ::= pattern guard? block
                     ;
       guard         ::= IF-KEYWORD expr
                     ;

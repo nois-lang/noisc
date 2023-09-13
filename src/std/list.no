@@ -24,11 +24,11 @@ type ListIter<T>(
 impl <T> Iter<T> for ListIter<T> {
     fn next(self): Option<T> {
         match self.list.at(self.index) {
-            Option::Some(value) -> {
+            Option::Some(value) {
                 self.index = self.index + 1
                 Option::Some(value)
             },
-            _ -> Option::None()
+            _ { Option::None() }
         }
     }
 }
@@ -39,12 +39,10 @@ impl <T> Into<List> for Iter<T> {
         // TODO: replace with while let
         while True {
             match self.next() {
-                Option::Some(value) -> {
+                Option::Some(value) {
                     list.add(value)
                 },
-                Option::None() -> {
-                    break
-                },
+                Option::None() { break },
             }
         }
         list

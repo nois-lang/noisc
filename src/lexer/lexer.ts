@@ -26,8 +26,7 @@ export const lexerPunctuationKinds = <const>[
     'colon',
     'comma',
     'equals',
-    'underscore',
-    'arrow'
+    'underscore'
 ]
 
 export const lexerKeywordKinds = <const>[
@@ -94,8 +93,6 @@ export const constTokenKindMap: Map<TokenKind, string> = new Map([
     ['c-brace', '}'],
     ['o-angle', '<'],
     ['c-angle', '>'],
-
-    ['arrow', '->'],
 
     ['plus', '+'],
     ['minus', '-'],

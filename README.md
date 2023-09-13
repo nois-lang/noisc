@@ -23,8 +23,8 @@ type Shape {
 impl Area for Shape {
     fn area(self): Num {
         match self {
-            Shape::Rect(width, height) -> width * height,
-            Shape::Circle(radius) -> math::pi * radius ^ 2
+            Shape::Rect(width, height) { width * height },
+            Shape::Circle(radius) { math::pi * radius ^ 2 }
         }
     }
 }

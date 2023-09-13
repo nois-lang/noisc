@@ -87,19 +87,19 @@ let Vec(x: b) = vec
 
 // match
 let b = match 4 {
-    1 -> "one",
-    n if n % 2 == 0 -> {
+    1 { "one" },
+    n if n % 2 == 0 {
         if (n > 5) { "good" } else { "not good" }
     },
-    _ -> "whatever",
+    _ { "whatever" },
 }
 
 // match type
 let b = match vec {
-    Vec(x: 1, y: 1) -> "one",
-    Vec(x: 1, ..) -> "x one whatever",
-    Vec(x) if x != 4  -> format("x is {} not 4", x),
-    _ -> "whatever",
+    Vec(x: 1, y: 1) { "one" },
+    Vec(x: 1, ..) { "x one whatever" },
+    Vec(x) if x != 4 { format("x is {} not 4", x) },
+    _ { "whatever"},
 }
 
 // TODO: if match

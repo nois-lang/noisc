@@ -19,7 +19,7 @@ export const exprFirstTokens: TokenKind[] = ['char', ...nameLikeTokens, 'if-keyw
 export const paramFirstTokens: TokenKind[] = [...nameLikeTokens, 'underscore']
 export const useExprFirstTokens: TokenKind[] = [...nameLikeTokens, 'asterisk', 'o-brace']
 export const fieldPatternFirstTokens: TokenKind[] = [...nameLikeTokens, 'period']
-export const patternFollowTokens: TokenKind[] = ['arrow', 'c-paren', 'colon', 'comma', 'equals', 'if-keyword',
+export const patternFollowTokens: TokenKind[] = ['c-paren', 'colon', 'comma', 'equals', 'if-keyword',
     'in-keyword', 'pipe']
 
 /**

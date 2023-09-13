@@ -32,7 +32,7 @@ export const parseMatchClauses = (parser: Parser): void => {
 }
 
 /**
- * match-clause ::= pattern guard? ARROW (block | expr)
+ * match-clause ::= pattern guard? block
  */
 export const parseMatchClause = (parser: Parser): void => {
     const mark = parser.open()
@@ -40,12 +40,7 @@ export const parseMatchClause = (parser: Parser): void => {
     if (parser.at('if-keyword')) {
         parseGuard(parser)
     }
-    parser.expect('arrow')
-    if (parser.at('o-brace')) {
-        parseBlock(parser)
-    } else {
-        parseExpr(parser)
-    }
+    parseBlock(parser)
     parser.close(mark, 'match-clause')
 }
 
