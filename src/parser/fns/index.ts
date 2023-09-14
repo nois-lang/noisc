@@ -53,7 +53,8 @@ export const parseArgs = (parser: Parser): void => {
 }
 
 /**
- * closure-expr ::= closure-params type-annot? (block | expr)
+ * TODO: closure generics
+ * closure-expr ::= closure-params type-annot? block
  */
 export const parseClosureExpr = (parser: Parser): void => {
     const mark = parser.open()
@@ -63,10 +64,8 @@ export const parseClosureExpr = (parser: Parser): void => {
     }
     if (parser.at('o-brace')) {
         parseBlock(parser)
-    } else if (parser.atAny(exprFirstTokens)) {
-        parseExpr(parser)
     } else {
-        parser.advanceWithError('block or expression expected')
+        parser.advanceWithError('expected block')
     }
     parser.close(mark, 'closure-expr')
 }

@@ -1,7 +1,7 @@
 import { AstNode, Module, Param } from '../ast'
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { CallOp, ConOp } from '../ast/op'
-import { Identifier, ListExpr, Operand } from '../ast/operand'
+import { ClosureExpr, Identifier, ListExpr, Operand } from '../ast/operand'
 import { Block, FnDef, ImplDef, Statement, TraitDef, VarDef } from '../ast/statement'
 import { Generic, Type } from '../ast/type'
 import { TypeCon, TypeDef } from '../ast/type-def'
@@ -383,6 +383,33 @@ const checkVarDef = (varDef: VarDef, ctx: Context): void => {
     }
 }
 
+/**
+ * TODO: provide expected type hint, e.g. varDef type or param type where closure is passed as arg
+ */
+const checkClosureExpr = (closureExpr: ClosureExpr, ctx: Context): void => {
+    if (closureExpr.params.some(p => !p.paramType)) {
+        // one approach is to assign every untyped parameter a generic that will be resolved once closure is called
+        // with args, e.g. `|a, b| { a + b }` will have type <A, B>|a: A, b: B|: ?
+        // no idea what to do with the return type though
+        todo("infer closure param types")
+    }
+    if (!closureExpr.returnType) {
+        todo("infer closure return type")
+    }
+
+    closureExpr.params.forEach((p, i) => checkParam(p, i, ctx))
+    checkType(closureExpr.returnType!, ctx)
+    checkBlock(closureExpr.block, ctx)
+    // TODO: typecheck block -> return type
+
+    closureExpr.type = {
+        kind: 'fn-type',
+        paramTypes: closureExpr.params.map(p => typeToVirtual(p.paramType!, ctx)),
+        returnType: typeToVirtual(closureExpr.returnType!, ctx),
+        generics: []
+    }
+}
+
 const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     switch (unaryExpr.unaryOp.kind) {
         case 'call-op':
@@ -548,7 +575,7 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
             // TODO
             break
         case 'closure-expr':
-            // TODO
+            checkClosureExpr(operand, ctx)
             break
         case 'unary-expr':
             checkUnaryExpr(operand, ctx)

@@ -115,8 +115,8 @@ export const buildClosureExpr = (node: ParseNode): ClosureExpr => {
     const nodes = filterNonAstNodes(node)
     let idx = 0
     const params = filterNonAstNodes(nodes[idx++]).filter(n => n.kind === 'param').map(n => buildParam(n))
-    const block = nodes[idx].kind === 'expr' ? <Block>{ statements: [buildExpr(nodes[idx++])] } : buildBlock(nodes[idx++])
-    const returnType = nodes.at(idx) ? buildType(nodes[idx++]) : undefined
+    const returnType = nodes.at(idx)?.kind === 'type-annot' ? buildType(nodes[idx++]) : undefined
+    const block = buildBlock(nodes[idx++])
     return { kind: 'closure-expr', parseNode: node, params, block, returnType }
 }
 

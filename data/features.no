@@ -110,8 +110,8 @@ let b = match vec {
 // }
 
 // closure
-let square: |Num|: Num = |a| a^2
-let here = || println("here")
+let square: |Num|: Num = |a| { a^2 }
+let here = || { println("here") }
 
 // fn reference
 let p = println

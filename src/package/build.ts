@@ -1,15 +1,15 @@
-import { getPackageModuleSources } from './io'
-import { pathToVid } from '../scope'
 import { relative } from 'path'
 import { buildModuleAst, Module } from '../ast'
-import { Source } from '../source'
-import { VirtualIdentifier } from '../scope/vid'
-import { erroneousTokenKinds, tokenize } from '../lexer/lexer'
 import { prettyLexerError, prettySourceMessage, prettySyntaxError } from '../error'
+import { erroneousTokenKinds, tokenize } from '../lexer/lexer'
 import { indexToLocation } from '../location'
-import { Parser } from '../parser/parser'
 import { parseModule } from '../parser/fns'
+import { Parser } from '../parser/parser'
+import { pathToVid } from '../scope'
+import { VirtualIdentifier } from '../scope/vid'
+import { Source } from '../source'
 import { Package } from './index'
+import { getPackageModuleSources } from './io'
 
 export const buildPackage = (path: string, name: string): Package | undefined => {
     const modules = getPackageModuleSources(path).map(s => buildModule(s, pathToVid(relative(path, s.filepath), name)))

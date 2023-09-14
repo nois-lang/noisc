@@ -8,11 +8,9 @@ import { Package } from './package'
 import { buildModule, buildPackage } from './package/build'
 import { getLocationRange } from './parser'
 import { Context, pathToVid } from './scope'
-import { buildImplRelations, findImpls } from './scope/trait'
+import { buildImplRelations } from './scope/trait'
 import { checkModule, prepareModule } from './semantic'
 import { Source } from './source'
-import { vidToString } from './scope/util'
-import { virtualTypeToString } from './typecheck'
 
 const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
 
