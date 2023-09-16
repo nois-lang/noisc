@@ -24,7 +24,7 @@ export interface Context {
     check: boolean
 }
 
-export type Scope = TraitScope | ImplScope | TypeDefScope | CommonScope
+export type Scope = InstanceScope | TypeDefScope | CommonScope
 
 /**
  * Due to JS limitations, map id has to be composite, since different defs might have the same vid, e.g.
@@ -34,29 +34,22 @@ export type Scope = TraitScope | ImplScope | TypeDefScope | CommonScope
 export type DefinitionMap = Map<string, Definition>
 
 // TODO: refactor TraitScope and ImplScope into a single InstanceScope
-export interface TraitScope {
-    kind: 'trait-def',
+export interface InstanceScope {
+    kind: 'instance',
     definitions: DefinitionMap
     selfType: VirtualType,
-    def: TraitDef,
-}
-
-export interface ImplScope {
-    kind: 'impl-def',
-    definitions: DefinitionMap
-    selfType: VirtualType,
-    def: ImplDef,
+    def: TraitDef | ImplDef,
 }
 
 export interface TypeDefScope {
-    kind: 'type-def',
+    kind: 'type',
     definitions: DefinitionMap
     def: TypeDef,
     vid: VirtualIdentifier
 }
 
 export interface CommonScope {
-    kind: 'module' | 'fn-def' | 'block',
+    kind: 'module' | 'fn' | 'block',
     definitions: DefinitionMap
 }
 
@@ -97,11 +90,11 @@ export const pathToVid = (path: string, packageName?: string): VirtualIdentifier
     return { names: dirs }
 }
 
-export const instanceScope = (ctx: Context): ImplScope | TraitScope | undefined => {
+export const instanceScope = (ctx: Context): InstanceScope | undefined => {
     const module = ctx.moduleStack.at(-1)!
     for (let i = module.scopeStack.length - 1; i >= 0; i--) {
         let scope = module.scopeStack[i]
-        if (scope.kind === 'impl-def' || scope.kind === 'trait-def') {
+        if (scope.kind === 'instance') {
             return scope
         }
     }

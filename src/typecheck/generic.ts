@@ -1,8 +1,7 @@
 import { AstNode } from '../ast'
-import { ImplDef, TraitDef } from '../ast/statement'
-import { Context, ImplScope, TraitScope, instanceScope } from '../scope'
+import { Context, InstanceScope } from '../scope'
 import { merge } from '../util/map'
-import { genericToVirtual, VirtualFnType, VirtualType, virtualTypeToString } from './index'
+import { VirtualFnType, VirtualType, genericToVirtual, virtualTypeToString } from './index'
 import { selfType } from './type'
 
 export const resolveFnGenerics = (
@@ -72,12 +71,12 @@ export const getTypeParams = (virtualType: VirtualType): VirtualType[] => {
     }
 }
 
-export const instanceGenericMap = (instanceScope: TraitScope | ImplScope, ctx: Context): Map<string, VirtualType> => {
-    const generics = instanceScope.def.generics.map(g => {
+export const instanceGenericMap = (instScope: InstanceScope, ctx: Context): Map<string, VirtualType> => {
+    const generics = instScope.def.generics.map(g => {
         const vg = genericToVirtual(g, ctx)
         return <const>[vg.name, vg]
     })
-    return new Map([[selfType.name, instanceScope.selfType], ...generics])
+    return new Map([[selfType.name, instScope.selfType], ...generics])
 }
 
 /**

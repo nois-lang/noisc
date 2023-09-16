@@ -5,7 +5,7 @@ import { ClosureExpr, Identifier, ListExpr, Operand } from '../ast/operand'
 import { Block, FnDef, ImplDef, Statement, TraitDef, VarDef } from '../ast/statement'
 import { Generic, Type } from '../ast/type'
 import { TypeCon, TypeDef } from '../ast/type-def'
-import { Context, ImplScope, TraitScope, TypeDefScope, defKey, instanceScope } from '../scope'
+import { Context, InstanceScope, TypeDefScope, defKey, instanceScope } from '../scope'
 import { getImplTargetType, traitDefToVirtualType } from '../scope/trait'
 import { idToVid, vidFromString, vidToString } from '../scope/util'
 import { Definition, MethodDef, ParamDef, resolveVid } from '../scope/vid'
@@ -183,7 +183,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
     if (fnDef.type) return
 
     const module = ctx.moduleStack.at(-1)!
-    module.scopeStack.push({ kind: 'fn-def', definitions: new Map(fnDef.generics.map(g => [defKey(g), g])) })
+    module.scopeStack.push({ kind: 'fn', definitions: new Map(fnDef.generics.map(g => [defKey(g), g])) })
 
     const paramTypes = fnDef.params.map((p, i) => {
         switch (p.pattern.kind) {
@@ -215,7 +215,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
     if (fnDef.block) {
         checkBlock(fnDef.block, ctx)
     } else {
-        if (instanceScope(ctx)?.kind !== 'trait-def') {
+        if (instanceScope(ctx)?.def.kind !== 'trait-def') {
             ctx.warnings.push(semanticError(ctx, fnDef, `fn \`${fnDef.name.value}\` has no body -> must be native`))
         }
     }
@@ -265,14 +265,14 @@ const checkTraitDef = (traitDef: TraitDef, ctx: Context) => {
     }
 
     module.scopeStack.push({
-        kind: 'trait-def',
+        kind: 'instance',
         selfType: unknownType,
         def: traitDef,
         definitions: new Map(traitDef.generics.map(g => [defKey(g), g]))
     })
     const selfType = traitDefToVirtualType(traitDef, ctx);
     // must be set afterwards since impl generics cannot be resolved
-    (<TraitScope>module.scopeStack.at(-1)!).selfType = selfType
+    (<InstanceScope>module.scopeStack.at(-1)!).selfType = selfType
 
     checkBlock(traitDef.block, ctx)
 
@@ -291,14 +291,14 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
     }
 
     module.scopeStack.push({
-        kind: 'impl-def',
+        kind: 'instance',
         selfType: unknownType,
         def: implDef,
         definitions: new Map(implDef.generics.map(g => [defKey(g), g]))
     })
     const selfType = getImplTargetType(implDef, ctx);
     // must be set afterwards since impl generics cannot be resolved
-    (<ImplScope>module.scopeStack.at(-1)!).selfType = selfType
+    (<InstanceScope>module.scopeStack.at(-1)!).selfType = selfType
 
     if (implDef.forTrait) {
         checkIdentifier(implDef.forTrait, ctx)
@@ -315,7 +315,7 @@ export const checkTypeDef = (typeDef: TypeDef, ctx: Context) => {
 
     const vid = { names: [...module.identifier.names, typeDef.name.value] }
     module.scopeStack.push({
-        kind: 'type-def',
+        kind: 'type',
         def: typeDef,
         vid,
         definitions: new Map(typeDef.generics.map(g => [defKey(g), g]))
@@ -657,20 +657,12 @@ const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
                 }
                 break
             case 'method-def':
-                // TODO: refactor
-                const instScope: TraitScope | ImplScope = ref.def.trait.kind === 'trait-def'
-                    ? {
-                        kind: 'trait-def',
-                        selfType: unknownType,
-                        def: ref.def.trait,
-                        definitions: new Map(ref.def.trait.generics.map(g => [defKey(g), g]))
-                    }
-                    : {
-                        kind: 'impl-def',
-                        selfType: unknownType,
-                        def: ref.def.trait,
-                        definitions: new Map(ref.def.trait.generics.map(g => [defKey(g), g]))
-                    }
+                const instScope: InstanceScope = {
+                    kind: 'instance',
+                    selfType: unknownType,
+                    def: ref.def.trait,
+                    definitions: new Map(ref.def.trait.generics.map(g => [defKey(g), g]))
+                }
                 // must be set afterwards since impl generics cannot be resolved
                 instScope.selfType = traitDefToVirtualType(ref.def.trait, ctx)
 
