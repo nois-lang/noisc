@@ -20,7 +20,7 @@ import {
     typeToVirtual,
     virtualTypeToString
 } from '../typecheck'
-import { resolveFnGenerics, instanceGenericMap, resolveType } from '../typecheck/generic'
+import { instanceGenericMap, resolveFnGenerics, resolveType } from '../typecheck/generic'
 import { selfType, unitType, unknownType } from '../typecheck/type'
 import { assert, todo } from '../util/todo'
 import { notFoundError, semanticError } from './error'
@@ -463,6 +463,7 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
 
     unaryExpr.type = resolveType(fnType.returnType, [instanceMap, fnGenericMap], unaryExpr, ctx)
 }
+
 const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const conOp = <ConOp>unaryExpr.unaryOp
     const operand = unaryExpr.operand
@@ -616,6 +617,9 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
             break
         case 'identifier':
             checkIdentifier(operand, ctx)
+            if (!operand.type) {
+                ctx.errors.push(semanticError(ctx, operand, `unknown type of identifier \`${vidToString(idToVid(operand))}\``))
+            }
             break
     }
     if (!operand.type) {
@@ -651,6 +655,7 @@ const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
                 identifier.type = ref.def.type
                 break
             case 'impl-def':
+            case 'trait-def':
             case 'type-def':
             case 'generic':
             case 'module':

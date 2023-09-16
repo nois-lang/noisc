@@ -62,8 +62,7 @@ impl Into<String> for List<String> {
 
 impl <T: Display> io::Display for List<T> {
     fn fmt(self): String {
-        // TODO
-        // self.iter().map(Display::fmt).intersperse(", ").into<String>()
+        self.iter().map(io::Display::fmt).intersperse(", ").into<String>()
     }
 }
 
