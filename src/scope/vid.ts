@@ -246,7 +246,6 @@ export const resolveMatchedVid = (
     // if vid is module, e.g. std::option
     module = pkg.modules.find(m => vidToString(m.identifier) === vidToString(vid))
     if (module) {
-        // TODO: should anything be checked here?
         return { vid, def: module }
     }
 

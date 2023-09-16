@@ -65,8 +65,6 @@ const checkFieldAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): VirtualType
     const fieldType = typeCandidates[0]
     const conGenericMap = resolveGenericsOverStructure(
         lOp.type,
-        // TODO: not sure if this type should be a part of TypeDef. It makes sense, but actual type is not its instance
-        // type
         { kind: 'vid-type', identifier: typeRef.vid, typeArgs: typeRef.def.generics.map(g => genericToVirtual(g, ctx)) }
     )
     return resolveType(fieldType, [conGenericMap], rOp, ctx)

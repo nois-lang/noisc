@@ -347,6 +347,8 @@ const checkTypeCon = (typeCon: TypeCon, ctx: Context) => {
     // e.g. `Option::None()` should have type of `||: Option<?>`
     const typeArgs = generics.map(g => names.includes(g.name) ? g : unknownType)
 
+    // TODO: introduce a new type kind 'type-con', that, unlike fn type, will also record field names
+    // it should be assignable to fn type if argument position matches
     typeCon.type = {
         kind: 'fn-type',
         paramTypes: typeCon.fieldDefs.map(f => typeToVirtual(f.fieldType, ctx)),
@@ -437,16 +439,16 @@ const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
 }
 
 /**
- * TODO: fix false positive
  * TODO: call parameterless typeCon, e.g. Option::None()
  * TODO: better error when type-con is called as a function, e.g. Option::Some(4)
  */
 const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const callOp = <CallOp>unaryExpr.unaryOp
     const operand = unaryExpr.operand
+
     checkOperand(operand, ctx)
 
-    if (operand.type!.kind !== 'fn-type') {
+    if (operand.type?.kind !== 'fn-type') {
         const message = `type error: non-callable operand of type \`${virtualTypeToString(operand.type!)}\``
         ctx.errors.push(semanticError(ctx, operand, message))
         return
@@ -644,7 +646,6 @@ const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
                 identifier.type = instanceScope(ctx)!.selfType
                 break
             case 'param':
-                // TODO: there might be a better place to resolve Self
                 if (ref.def.param.type === selfType) {
                     const instScope = instanceScope(ctx)
                     identifier.type = resolveType(ref.def.param.type,

@@ -67,7 +67,7 @@ const ctx: Context = {
     check: false
 }
 
-// AOT top scope init solves:
+// AOT module preparation allows:
 // 1. Module defs can be referenced before their initialization
 // 2. Vids resolved from another module needn't to check the whole module, only that specific definition
 ctx.packages.forEach(p => {
