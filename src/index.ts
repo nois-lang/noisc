@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'fs'
 import { basename, join, resolve } from 'path'
 import * as process from 'process'
-import { defaultConfig } from './config'
+import { fromCmdFlags } from './config'
 import { prettyError, prettySourceMessage, prettyWarning } from './error'
 import { indexToLocation } from './location'
 import { Package } from './package'
@@ -17,10 +17,17 @@ const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).t
 export const usage = `\
 Nois transpiler - v${version}
 
-Usage: nois file`
+Usage: nois [OPTIONS] file
+Options:
+    -h, --help                  Display this message
+    --typeCheck=[true|false]    Perform type checking, so that values can be assigned to the corresponding definitions
+                                (default \`true\`)
+    --libCheck==[true|false]    Perform semantic checking on every source file. If \`false\`, only definitions required
+                                by the main file will be checked (default \`false\`)
+`
 
-const path = process.argv.slice(2).at(0)
-if (!path) {
+const path = process.argv.at(-1)!
+if (!path || process.argv.includes('--help') || process.argv.includes('-h')) {
     console.info(usage)
     process.exit()
 }
@@ -49,8 +56,9 @@ if (!std) {
 }
 
 const packages = [std, pkg]
+const config = fromCmdFlags(process.argv)
 const ctx: Context = {
-    config: defaultConfig(),
+    config,
     moduleStack: [],
     packages,
     impls: [],

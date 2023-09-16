@@ -27,7 +27,7 @@ export const prettyWarning = (message: string): string => {
 }
 
 export const prettySourceMessage = (message: string, location: Location, source: Source): string => {
-    const locationStr = `${location ? `${source.filepath}:${locationToString(location)}` : '<unknwon location>'}`
+    const locationStr = `${location ? `${source.filepath}:${locationToString(location)}` : '<unknown location>'}`
     const locationMsg = `${' '.repeat(2)}at ${locationStr}`
     return [message, locationMsg, '\n' + prettyLineAt(location, source)].join('\n')
 }
