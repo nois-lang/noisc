@@ -33,6 +33,7 @@ export type Scope = TraitScope | ImplScope | TypeDefScope | CommonScope
  */
 export type DefinitionMap = Map<string, Definition>
 
+// TODO: refactor TraitScope and ImplScope into a single InstanceScope
 export interface TraitScope {
     kind: 'trait-def',
     definitions: DefinitionMap

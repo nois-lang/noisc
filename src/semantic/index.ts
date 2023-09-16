@@ -368,7 +368,13 @@ const checkVarDef = (varDef: VarDef, ctx: Context): void => {
 
     if (varDef.varType) {
         checkType(varDef.varType, ctx)
-        varDef.type = resolveType(typeToVirtual(varDef.varType, ctx), [instanceGenericMap(ctx)], varDef, ctx)
+        const instScope = instanceScope(ctx)
+        varDef.type = resolveType(
+            typeToVirtual(varDef.varType, ctx),
+            [instScope ? instanceGenericMap(instScope, ctx) : new Map()],
+            varDef,
+            ctx
+        )
     }
 
     checkExpr(varDef.expr, ctx)
@@ -451,7 +457,8 @@ const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const typeArgs = operand.kind === 'identifier'
         ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx))
         : []
-    const instanceMap = instanceGenericMap(ctx)
+    const instScope = instanceScope(ctx)
+    const instanceMap = instScope ? instanceGenericMap(instScope, ctx) : new Map()
     const fnGenericMap = resolveFnGenerics(fnType, callOp.args.map(a => a.type!), typeArgs)
     const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(
         pt,
@@ -639,13 +646,39 @@ const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
             case 'param':
                 // TODO: there might be a better place to resolve Self
                 if (ref.def.param.type === selfType) {
-                    identifier.type = resolveType(ref.def.param.type, [instanceGenericMap(ctx)], identifier, ctx)
+                    const instScope = instanceScope(ctx)
+                    identifier.type = resolveType(ref.def.param.type,
+                        instScope ? [instanceGenericMap(instScope, ctx)] : [],
+                        identifier,
+                        ctx
+                    )
                 } else {
                     identifier.type = ref.def.param.type
                 }
                 break
             case 'method-def':
-                identifier.type = ref.def.fn.type
+                // TODO: refactor
+                const instScope: TraitScope | ImplScope = ref.def.trait.kind === 'trait-def'
+                    ? {
+                        kind: 'trait-def',
+                        selfType: unknownType,
+                        def: ref.def.trait,
+                        definitions: new Map(ref.def.trait.generics.map(g => [defKey(g), g]))
+                    }
+                    : {
+                        kind: 'impl-def',
+                        selfType: unknownType,
+                        def: ref.def.trait,
+                        definitions: new Map(ref.def.trait.generics.map(g => [defKey(g), g]))
+                    }
+                // must be set afterwards since impl generics cannot be resolved
+                instScope.selfType = traitDefToVirtualType(ref.def.trait, ctx)
+
+                identifier.type = resolveType(ref.def.fn.type!,
+                    [instanceGenericMap(instScope, ctx)],
+                    identifier,
+                    ctx
+                )
                 break
             case 'type-con':
                 identifier.type = ref.def.typeCon.type

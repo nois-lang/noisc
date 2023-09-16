@@ -141,11 +141,12 @@ export const getImplTargetType = (implDef: TraitDef | ImplDef, ctx: Context): Vi
     return implRel!.forType
 }
 
-export const traitDefToVirtualType = (traitDef: TraitDef, ctx: Context): VirtualType => {
+export const traitDefToVirtualType = (traitDef: TraitDef | ImplDef, ctx: Context): VirtualType => {
     const module = ctx.moduleStack.at(-1)!
+    const name = traitDef.kind === 'trait-def' ? traitDef.name.value : traitDef.identifier.name.value
     return {
         kind: 'vid-type',
-        identifier: concatVid(module.identifier, vidFromString(traitDef.name.value)),
+        identifier: concatVid(module.identifier, vidFromString(name)),
         typeArgs: traitDef.generics.map(g => genericToVirtual(g, ctx))
     }
 }
