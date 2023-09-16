@@ -10,7 +10,7 @@ import { parseTypeAnnot } from './type'
  */
 export const nameLikeTokens: TokenKind[] = ['name', ...lexerKeywordKinds]
 
-export const prefixOpFirstTokens: TokenKind[] = ['excl', 'minus', 'period', 'plus']
+export const prefixOpFirstTokens: TokenKind[] = ['excl', 'minus', 'period']
 export const postfixOpFirstTokens: TokenKind[] = ['o-paren']
 export const infixOpFirstTokens: TokenKind[] = ['ampersand', 'asterisk', 'c-angle', 'caret', 'equals', 'excl', 'minus',
     'o-angle', 'percent', 'period', 'pipe', 'plus', 'slash']

@@ -82,15 +82,13 @@ export const parseInfixOp = (parser: Parser): void => {
 }
 
 /**
- * prefix-op ::= add-op | sub-op | not-op | spread-op
+ * prefix-op ::= sub-op | not-op | spread-op
  */
 export const parsePrefixOp = (parser: Parser): void => {
     const mark = parser.open()
     const m = parser.open()
 
-    if (parser.consume('plus')) {
-        parser.close(m, 'add-op')
-    } else if (parser.consume('minus')) {
+    if (parser.consume('minus')) {
         parser.close(m, 'sub-op')
     } else if (parser.consume('excl')) {
         parser.close(m, 'not-op')

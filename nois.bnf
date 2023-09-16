@@ -76,7 +76,7 @@ statement           ::= var-def | fn-def | trait-def | impl-def | type-def | ret
       or-op         ::= PIPE PIPE;
       assign-op     ::= EQUALS;
 
-    prefix-op       ::= add-op | sub-op | not-op | spread-op
+    prefix-op       ::= sub-op | not-op | spread-op
                     ;
       not-op        ::= EXCL
                     ;
