@@ -16,14 +16,13 @@ import {
     VirtualType,
     genericToVirtual,
     isAssignable,
-    typeError,
     typeToVirtual,
     virtualTypeToString
 } from '../typecheck'
 import { instanceGenericMap, resolveFnGenerics, resolveType } from '../typecheck/generic'
 import { selfType, unitType, unknownType } from '../typecheck/type'
 import { assert, todo } from '../util/todo'
-import { notFoundError, semanticError } from './error'
+import { notFoundError, semanticError, typeError } from './error'
 import { checkAccessExpr } from './instance'
 import { operatorImplMap } from './op'
 import { typeNames } from './type-def'

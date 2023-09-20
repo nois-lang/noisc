@@ -1,10 +1,9 @@
-import { AstNode } from '../ast'
 import { Generic, Type } from '../ast/type'
 import { Context } from '../scope'
 import { findSupertypes } from '../scope/trait'
 import { idToVid, vidToString } from '../scope/util'
 import { VirtualIdentifier, resolveVid } from '../scope/vid'
-import { SemanticError, notFoundError, semanticError } from '../semantic/error'
+import { notFoundError, semanticError } from '../semantic/error'
 import { todo } from '../util/todo'
 import { selfType, unknownType } from './type'
 
@@ -159,9 +158,3 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
     return false
 }
 
-export const typeError = (node: AstNode<any>, actual: VirtualType, expected: VirtualType, ctx: Context): SemanticError => {
-    const message = `\
-type error: expected ${virtualTypeToString(expected)}
-            got      ${virtualTypeToString(actual)}`
-    return semanticError(ctx, node, message)
-}
