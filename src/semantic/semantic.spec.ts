@@ -222,4 +222,21 @@ fn foo() {}`
             expect(ctx.errors.map(e => e.message)).toEqual([])
         })
     })
+
+    describe('destructuring', () => {
+        it('destruct in fn param', () => {
+            const code = `\
+type Foo(a: Int, b: Int)
+
+fn bar(Foo::Foo(a, b): Foo) {
+    a()
+    b()
+}`
+            let ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: non-callable operand of type `std::int::Int`',
+                'type error: non-callable operand of type `std::int::Int`',
+            ])
+        })
+    })
 })

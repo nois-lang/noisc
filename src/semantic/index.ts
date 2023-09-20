@@ -1,7 +1,5 @@
-import exp = require('constants')
 import { AstNode, Module, Param } from '../ast'
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
-import { Pattern } from '../ast/match'
 import { CallOp, ConOp } from '../ast/op'
 import { ClosureExpr, Identifier, ListExpr, Operand } from '../ast/operand'
 import { Block, FnDef, ImplDef, Statement, TraitDef, VarDef } from '../ast/statement'
@@ -26,6 +24,7 @@ import { selfType, unitType, unknownType } from '../typecheck/type'
 import { assert, todo } from '../util/todo'
 import { notFoundError, semanticError, typeError } from './error'
 import { checkAccessExpr } from './instance'
+import { checkPattern } from './match'
 import { operatorImplMap } from './op'
 import { typeNames } from './type-def'
 import { useExprToVids } from './use-expr'
@@ -250,31 +249,6 @@ const checkParam = (param: Param, index: number, ctx: Context): void => {
             break
         default:
             checkPattern(param.pattern, param.type, ctx)
-            break
-    }
-}
-
-const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: Context): void => {
-    const module = ctx.moduleStack.at(-1)!
-    const scope = module.scopeStack.at(-1)!
-
-    switch (pattern.kind) {
-        case 'name':
-            pattern.type = expectedType
-            scope.definitions.set('name' + pattern.value, pattern)
-            break
-        case 'hole':
-            // TODO: typed hole reporting, Haskell style: https://wiki.haskell.org/GHC/Typed_holes
-            pattern.type = expectedType
-            break
-        case 'unary-expr':
-            // TODO: check unaryExpr
-            break
-        case 'operand-expr':
-            // TODO: check operandExpr
-            break
-        case 'con-pattern':
-            // TODO: check conPattern
             break
     }
 }
