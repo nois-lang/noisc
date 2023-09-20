@@ -48,7 +48,7 @@ const checkFieldAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): VirtualType
     const fieldName = rOp.name.value
     // check that every type variant has such field
     if (!(typeDef.variants.length > 0 && typeDef.variants.every(v => v.fieldDefs.find(f => f.name.value === fieldName)))) {
-        ctx.errors.push(semanticError(ctx, rOp, `field \`${fieldName}\` is not defined in all variants of type \`${vidToString(typeRef.vid)}`))
+        ctx.errors.push(semanticError(ctx, rOp, `field \`${fieldName}\` is not defined in all variants of type \`${vidToString(typeRef.vid)}\``))
         return
     }
     // if field is defined in multiple variants, make sure their type is equal

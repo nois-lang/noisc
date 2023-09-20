@@ -86,7 +86,7 @@ export const buildFieldPattern = (node: ParseNode): FieldPattern | SpreadOp => {
     return { kind: 'field-pattern', parseNode: node, name, pattern }
 }
 
-export interface Hole extends AstNode<'hole'> {
+export interface Hole extends AstNode<'hole'>, Partial<Typed> {
 }
 
 export const buildHole = (node: ParseNode): Hole => {

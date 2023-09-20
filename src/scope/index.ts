@@ -5,7 +5,6 @@ import { Config } from '../config'
 import { Package } from '../package'
 import { SemanticError } from '../semantic/error'
 import { VirtualType } from '../typecheck'
-import { todo } from '../util/todo'
 import { ImplRelation } from './trait'
 import { vidToString } from './util'
 import { Definition, VirtualIdentifier } from './vid'
@@ -27,8 +26,9 @@ export interface Context {
 export type Scope = InstanceScope | TypeDefScope | CommonScope
 
 /**
- * Due to JS limitations, map id has to be composite, since different defs might have the same vid, e.g.
+ * Map id has to be composite, since different defs might have the same vid, e.g.
  * type Option and impl Option.
+ * Due to JS limitations, definition must be converted into string first
  * Use {@link defKey} to create keys
  */
 export type DefinitionMap = Map<string, Definition>
@@ -59,12 +59,8 @@ export const defKey = (def: Definition): string => {
             return def.kind + vidToString(def.identifier)
         case 'self':
             return def.kind
-        case 'var-def':
-            if (def.pattern.kind !== 'name') return todo('var-def key')
-            return def.kind + def.pattern.value
-        case 'param':
-            if (def.param.pattern.kind !== 'name') return todo('var-def key')
-            return def.kind + def.param.pattern.value
+        case 'name':
+            return def.kind + def.value
         case 'fn-def':
         case 'trait-def':
         case 'type-def':

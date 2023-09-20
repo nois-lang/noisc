@@ -1,14 +1,16 @@
+import exp = require('constants')
 import { AstNode, Module, Param } from '../ast'
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
+import { Pattern } from '../ast/match'
 import { CallOp, ConOp } from '../ast/op'
 import { ClosureExpr, Identifier, ListExpr, Operand } from '../ast/operand'
 import { Block, FnDef, ImplDef, Statement, TraitDef, VarDef } from '../ast/statement'
 import { Generic, Type } from '../ast/type'
 import { TypeCon, TypeDef } from '../ast/type-def'
-import { Context, InstanceScope, TypeDefScope, defKey, instanceScope } from '../scope'
+import { Context, DefinitionMap, InstanceScope, TypeDefScope, defKey, instanceScope } from '../scope'
 import { getImplTargetType, traitDefToVirtualType } from '../scope/trait'
 import { idToVid, vidFromString, vidToString } from '../scope/util'
-import { Definition, MethodDef, ParamDef, resolveVid } from '../scope/vid'
+import { Definition, MethodDef, resolveVid } from '../scope/vid'
 import {
     Typed,
     VidType,
@@ -29,15 +31,26 @@ import { typeNames } from './type-def'
 import { useExprToVids } from './use-expr'
 
 export const prepareModule = (module: Module): void => {
-    const defMap = new Map()
+    const defMap: DefinitionMap = new Map()
     module.block.statements.map(s => {
         switch (s.kind) {
-            case 'var-def':
             case 'fn-def':
             case 'trait-def':
             case 'impl-def':
             case 'type-def':
                 defMap.set(defKey(s), s)
+                break
+            case 'var-def':
+                switch (s.pattern.kind) {
+                    case 'name':
+                        defMap.set(defKey(s.pattern), s.pattern)
+                        break
+                    case 'hole':
+                        break
+                    default:
+                        todo(`top level \`${s.pattern.kind}\``)
+                        break
+                }
                 break
             case 'operand-expr':
             case 'unary-expr':
@@ -87,8 +100,8 @@ export const checkTopLevelDefiniton = (module: Module, definition: Definition, c
             // TODO: narrow to not check unrelated methods
             checkStatement(definition.trait, ctx)
             break
-        case 'param':
-            checkParam(definition.param, definition.index, ctx)
+        case 'name':
+            // TODO: not sure what to check here, since definition does not contain parent
             break
         case 'generic':
         case 'module':
@@ -135,7 +148,6 @@ const checkStatement = (statement: Statement, ctx: Context): void => {
     switch (statement.kind) {
         case 'var-def':
             checkVarDef(statement, ctx)
-            pushDefToStack(statement)
             break
         case 'fn-def':
             checkFnDef(statement, ctx)
@@ -185,17 +197,6 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
     module.scopeStack.push({ kind: 'fn', definitions: new Map(fnDef.generics.map(g => [defKey(g), g])) })
 
     const paramTypes = fnDef.params.map((p, i) => {
-        switch (p.pattern.kind) {
-            case 'hole':
-                break
-            case 'name':
-                const paramDef: ParamDef = { kind: 'param', param: p, index: i }
-                module.scopeStack.at(-1)!.definitions.set(defKey(paramDef), paramDef)
-                break
-            case 'con-pattern':
-                todo('add con-pattern to scope')
-                break
-        }
         checkParam(p, i, ctx)
         return p.type!
     })
@@ -223,9 +224,6 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
 }
 
 const checkParam = (param: Param, index: number, ctx: Context): void => {
-    if (param.type) return
-
-    const module = ctx.moduleStack.at(-1)!
     const instScope = instanceScope(ctx)
 
     if (!param.paramType) {
@@ -249,10 +247,36 @@ const checkParam = (param: Param, index: number, ctx: Context): void => {
         case 'unary-expr':
         case 'binary-expr':
             ctx.errors.push(semanticError(ctx, param.pattern, `\`${param.pattern.kind}\` can only be used in match expressions`))
+            break
+        default:
+            checkPattern(param.pattern, param.type, ctx)
+            break
     }
+}
 
-    const paramDef: ParamDef = { kind: 'param', param, index }
-    module.scopeStack.at(-1)!.definitions.set(defKey(paramDef), paramDef)
+const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: Context): void => {
+    const module = ctx.moduleStack.at(-1)!
+    const scope = module.scopeStack.at(-1)!
+
+    switch (pattern.kind) {
+        case 'name':
+            pattern.type = expectedType
+            scope.definitions.set('name' + pattern.value, pattern)
+            break
+        case 'hole':
+            // TODO: typed hole reporting, Haskell style: https://wiki.haskell.org/GHC/Typed_holes
+            pattern.type = expectedType
+            break
+        case 'unary-expr':
+            // TODO: check unaryExpr
+            break
+        case 'operand-expr':
+            // TODO: check operandExpr
+            break
+        case 'con-pattern':
+            // TODO: check conPattern
+            break
+    }
 }
 
 const checkTraitDef = (traitDef: TraitDef, ctx: Context) => {
@@ -357,7 +381,9 @@ const checkTypeCon = (typeCon: TypeCon, ctx: Context) => {
 }
 
 const checkVarDef = (varDef: VarDef, ctx: Context): void => {
-    if (varDef.type) return
+    if (varDef.checked) return
+    varDef.checked = true
+
     const topLevel = ctx.moduleStack.at(-1)!.scopeStack.length === 1
 
     if (topLevel) {
@@ -367,10 +393,12 @@ const checkVarDef = (varDef: VarDef, ctx: Context): void => {
         }
     }
 
+    let varType: VirtualType | undefined
+
     if (varDef.varType) {
         checkType(varDef.varType, ctx)
         const instScope = instanceScope(ctx)
-        varDef.type = resolveType(
+        varType = resolveType(
             typeToVirtual(varDef.varType, ctx),
             [instScope ? instanceGenericMap(instScope, ctx) : new Map()],
             varDef,
@@ -379,15 +407,17 @@ const checkVarDef = (varDef: VarDef, ctx: Context): void => {
     }
 
     checkExpr(varDef.expr, ctx)
-    if (varDef.varType) {
+
+    if (varType) {
         const exprType = varDef.expr.type ?? unknownType
-        const varType = varDef.type ?? unknownType
-        if (!isAssignable(exprType, varType, ctx)) {
+        if (!isAssignable(exprType, varType ?? unknownType, ctx)) {
             ctx.errors.push(typeError(varDef, exprType, varType, ctx))
         }
     } else {
-        varDef.type = varDef.expr.type
+        varType = varDef.expr.type
     }
+
+    checkPattern(varDef.pattern, varType!, ctx)
 }
 
 /**
@@ -644,16 +674,17 @@ const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
             case 'self':
                 identifier.type = instanceScope(ctx)!.selfType
                 break
-            case 'param':
-                if (ref.def.param.type === selfType) {
+            case 'name':
+                if (ref.def.type === selfType) {
                     const instScope = instanceScope(ctx)
-                    identifier.type = resolveType(ref.def.param.type,
+                    identifier.type = resolveType(
+                        ref.def.type,
                         instScope ? [instanceGenericMap(instScope, ctx)] : [],
                         identifier,
                         ctx
                     )
                 } else {
-                    identifier.type = ref.def.param.type
+                    identifier.type = ref.def.type
                 }
                 break
             case 'method-def':
@@ -675,7 +706,6 @@ const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
             case 'type-con':
                 identifier.type = ref.def.typeCon.type
                 break
-            case 'var-def':
             case 'fn-def':
                 identifier.type = ref.def.type
                 break

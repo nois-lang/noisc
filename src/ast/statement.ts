@@ -2,12 +2,12 @@ import { ParseToken } from '../lexer/lexer'
 import { ParseNode } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
 import { Checked, Typed } from '../typecheck'
-import { buildExpr, Expr } from './expr'
-import { AstNode, buildParam, filterNonAstNodes, Param } from './index'
-import { buildPattern, Pattern } from './match'
-import { buildIdentifier, buildName, Identifier, Name } from './operand'
-import { buildGeneric, buildType, Generic, Type } from './type'
-import { buildTypeDef, TypeDef } from './type-def'
+import { Expr, buildExpr } from './expr'
+import { AstNode, Param, buildParam, filterNonAstNodes } from './index'
+import { Pattern, buildPattern } from './match'
+import { Identifier, Name, buildIdentifier, buildName } from './operand'
+import { Generic, Type, buildGeneric, buildType } from './type'
+import { TypeDef, buildTypeDef } from './type-def'
 
 export type Statement = VarDef | FnDef | TraitDef | ImplDef | TypeDef | ReturnStmt | Expr
 
@@ -54,7 +54,7 @@ export const buildUseExpr = (node: ParseNode): UseExpr => {
 
 export interface Wildcard extends AstNode<'wildcard'> { }
 
-export interface VarDef extends AstNode<'var-def'>, Partial<Typed> {
+export interface VarDef extends AstNode<'var-def'>, Partial<Checked> {
     pattern: Pattern
     varType?: Type
     expr: Expr

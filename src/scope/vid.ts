@@ -1,6 +1,7 @@
-import { Module, Param } from '../ast'
+import { Module } from '../ast'
 import { Pattern } from '../ast/match'
-import { FnDef, ImplDef, Statement, TraitDef, VarDef } from '../ast/statement'
+import { Name } from '../ast/operand'
+import { FnDef, ImplDef, Statement, TraitDef } from '../ast/statement'
 import { Generic } from '../ast/type'
 import { TypeCon, TypeDef } from '../ast/type-def'
 import { checkTopLevelDefiniton } from '../semantic'
@@ -8,7 +9,7 @@ import { selfType } from '../typecheck/type'
 import { todo } from '../util/todo'
 import { Context, Scope, instanceScope } from './index'
 import { defaultImportedVids } from './std'
-import { findImpls, findSupertypes, findTypeImpls } from './trait'
+import { findSupertypes } from './trait'
 import { concatVid, vidFromString, vidToString } from './util'
 
 export interface VirtualIdentifier {
@@ -17,12 +18,11 @@ export interface VirtualIdentifier {
 
 export const defKinds = <const>[
     'module',
+    'name',
     'self',
     'type-con',
-    'var-def',
     'fn-def',
     'generic',
-    'param',
     'type-def',
     'trait-def',
     'method-def',
@@ -31,9 +31,9 @@ export const defKinds = <const>[
 
 export type DefinitionKind = typeof defKinds[number]
 
-export type Definition = Module | VarDef | FnDef | TraitDef | ImplDef | TypeDef | TypeConDef | Generic | ParamDef | SelfDef | MethodDef
+export type Definition = Module | Name | FnDef | TraitDef | ImplDef | TypeDef | TypeConDef | Generic | SelfDef | MethodDef
 
-export type SelfDef = {
+export interface SelfDef {
     kind: 'self'
 }
 
@@ -49,38 +49,9 @@ export interface MethodDef {
     trait: ImplDef | TraitDef
 }
 
-export interface ParamDef {
-    kind: 'param',
-    param: Param,
-    index: number
-}
-
 export interface VirtualIdentifierMatch<D = Definition> {
     vid: VirtualIdentifier
     def: D
-}
-
-export const statementVid = (statement: Statement): VirtualIdentifier | undefined => {
-    switch (statement.kind) {
-        case 'var-def':
-            return patternVid(statement.pattern)
-        case 'fn-def':
-        case 'trait-def':
-        case 'type-def':
-            return vidFromString(statement.name.value)
-    }
-    return undefined
-}
-
-export const statementToDefinition = (statement: Statement): Definition | undefined => {
-    switch (statement.kind) {
-        case 'var-def':
-        case 'fn-def':
-        case 'trait-def':
-        case 'type-def':
-            return statement
-    }
-    return undefined
 }
 
 export const patternVid = (pattern: Pattern): VirtualIdentifier | undefined => {
@@ -105,11 +76,11 @@ export const patternVid = (pattern: Pattern): VirtualIdentifier | undefined => {
  *  - Module ref, e.g. std::string
  *  - `Self`
  */
-export const resolveVid = (vid: VirtualIdentifier,
+export const resolveVid = (
+    vid: VirtualIdentifier,
     ctx: Context,
     // exclude impl-def since it cannot be requested by vid
-    ofKind: DefinitionKind[] = ['module', 'self', 'type-con', 'var-def', 'fn-def', 'generic', 'param', 'type-def', 'trait-def', 'method-def'],
-    checkSuper: boolean = true
+    ofKind: DefinitionKind[] = ['module', 'name', 'self', 'type-con', 'fn-def', 'generic', 'type-def', 'trait-def', 'method-def']
 ): VirtualIdentifierMatch | undefined => {
     const module = ctx.moduleStack.at(-1)!
     let ref: VirtualIdentifierMatch | undefined
@@ -218,7 +189,7 @@ const resolveScopeVid = (
                         // don't check itself
                         if (vidToString(fullTypeVid) === vidToString(superDef.vid)) continue
                         const fullMethodVid = { names: [...superDef.vid.names, fnName] }
-                        const methodRef = resolveVid(fullMethodVid, ctx, ['method-def'], false)
+                        const methodRef = resolveVid(fullMethodVid, ctx, ['method-def'])
                         if (methodRef && methodRef.def.kind === 'method-def') {
                             return methodRef
                         }
