@@ -3,9 +3,9 @@ import { defaultConfig } from '../config'
 import { Package } from '../package'
 import { buildModule, buildPackage } from '../package/build'
 import { Context, pathToVid } from '../scope'
+import { buildImplRelations } from '../scope/trait'
 import { Source } from '../source'
 import { checkModule, prepareModule } from './index'
-import { buildImplRelations } from '../scope/trait'
 
 describe('semantic', () => {
 
@@ -235,6 +235,42 @@ fn bar(Foo::Foo(a, b): Foo) {
             let ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual([
                 'type error: non-callable operand of type `std::int::Int`',
+                'type error: non-callable operand of type `std::int::Int`',
+            ])
+        })
+
+        it('destruct in fn param named', () => {
+            const code = `\
+type Foo(a: Int, b: Int)
+
+fn bar(Foo::Foo(a: namedA, b: namedB): Foo) {
+    a()
+    b()
+    namedA()
+    namedB()
+}`
+            let ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: non-callable operand of type `std::int::Int`',
+                'type error: non-callable operand of type `std::int::Int`',
+                'type error: non-callable operand of type `std::int::Int`',
+                'type error: non-callable operand of type `std::int::Int`',
+            ])
+        })
+
+        it('destruct in fn param recursive', () => {
+            const code = `\
+type Foo(b: Bar)
+
+type Bar(a: Int)
+
+fn bar(Foo::Foo(b: Bar::Bar(a)): Foo) {
+    b()
+    a()
+}`
+            let ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: non-callable operand of type `test::Bar`',
                 'type error: non-callable operand of type `std::int::Int`',
             ])
         })

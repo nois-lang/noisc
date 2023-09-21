@@ -128,6 +128,7 @@ match-expr          ::= MATCH-KEYWORD expr match-clauses
                     ;
       guard         ::= IF-KEYWORD expr
                     ;
+// TODO: named patterns, e.g. `a @ 5`
 pattern             ::= NAME | con-pattern | STRING | CHAR | prefix-op? (INT | FLOAT) | hole
                     ;
   con-pattern       ::= identifier con-pattern-params

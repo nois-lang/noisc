@@ -41,6 +41,9 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
     }
 }
 
+/**
+ * TODO: more detailed errors
+ */
 const mapConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Context): Name[] | undefined => {
     const defs: Name[] = []
     const conVid = idToVid(pattern.identifier)
@@ -59,6 +62,10 @@ const mapConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Context)
                 if (!field) return undefined
                 field.name.type = typeToVirtual(field.fieldType, ctx)
                 defs.push(field.name)
+
+                if (fp.pattern) {
+                    checkPattern(fp.pattern, field.name.type, ctx)
+                }
                 break
         }
     }
