@@ -2,7 +2,7 @@ type Float
 
 impl Num for Float {}
 
-impl Add for Float {
+impl op::Add for Float {
     fn add(self, other: Self): Self {
         addFloat(self, other)
     }

@@ -2,7 +2,7 @@ type Int
 
 impl Num for Int {}
 
-impl Add for Int {
+impl op::Add for Int {
     fn add(self, other: Self): Self {
         addInt(self, other)
     }

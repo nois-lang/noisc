@@ -1,3 +1,4 @@
+import { VirtualType } from '../typecheck'
 import { vidFromString } from './util'
 import { VirtualIdentifier } from './vid'
 
@@ -18,13 +19,12 @@ export const defaultImportedVids: VirtualIdentifier[] = [
     'std::panic::never',
 
     'std::math',
-    'std::op::Add',
-    'std::op::Sub',
-    'std::op::Mult',
-    'std::op::Div',
+    'std::op',
 
     'std::io',
     'std::io::println',
     'std::option::Option',
     'std::into::Into'
 ].map(s => vidFromString(s))
+
+export const bool: VirtualType = { kind: 'vid-type', identifier: { names: ['std', 'bool', 'Bool'] }, typeArgs: [] }

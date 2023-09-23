@@ -6,3 +6,19 @@ type Bool {
 let true: Bool = Bool::True()
 
 let false: Bool = Bool::False()
+
+impl op::And for Bool {
+    fn and(self, other: Self): Self {
+        andBool(self, other)
+    }
+}
+
+impl op::Or for Bool {
+    fn or(self, other: Self): Self {
+        orBool(self, other)
+    }
+}
+
+fn andBool(a: Bool, b: Bool): Bool
+
+fn orBool(a: Bool, b: Bool): Bool

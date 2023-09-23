@@ -1,6 +1,6 @@
 type String
 
-impl Add for String {
+impl op::Add for String {
     fn add(self, other: Self): Self {
         concatString(self, other)
     }

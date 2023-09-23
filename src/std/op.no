@@ -13,3 +13,15 @@ trait Mult {
 trait Div {
     fn div(self, other: Self): Self
 }
+
+trait And {
+    fn and(self, other: Self): Self
+}
+
+trait Or {
+    fn or(self, other: Self): Self
+}
+
+trait Eq {
+    fn eq(self, other: Self): Bool
+}

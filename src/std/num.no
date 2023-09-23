@@ -1,1 +1,1 @@
-trait Num<Self: Add + Sub + Mult + Div + Exp + Mod + Eq + Cmp> {}
+trait Num<Self: op::Add + op::Sub + op::Mult + op::Div + op::Exp + op::Mod + op::Eq + op::Cmp> {}

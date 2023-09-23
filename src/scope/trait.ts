@@ -3,6 +3,7 @@ import { ImplDef, TraitDef } from '../ast/statement'
 import { TypeDef } from '../ast/type-def'
 import { notFoundError } from '../semantic/error'
 import { VirtualType, genericToVirtual, typeToVirtual } from '../typecheck'
+import { unknownType } from '../typecheck/type'
 import { assert } from '../util/todo'
 import { Context } from './index'
 import { concatVid, idToVid, vidFromString, vidToString } from './util'
@@ -137,8 +138,7 @@ export const getImplTargetVid = (implDef: TraitDef | ImplDef): VirtualIdentifier
 
 export const getImplTargetType = (implDef: TraitDef | ImplDef, ctx: Context): VirtualType => {
     const implRel = ctx.impls.find(i => i.implDef === implDef)
-    assert(!!implRel, `impl relation not found`)
-    return implRel!.forType
+    return implRel?.forType ?? unknownType
 }
 
 export const traitDefToVirtualType = (traitDef: TraitDef | ImplDef, ctx: Context): VirtualType => {
