@@ -8,13 +8,14 @@ type IntersperseIter<T>(
 
 impl <T> Iter<T> for IntersperseIter<T> {
     fn next(self): Option<T> {
-        if self.needsSeparator && self.iter.peek().isSome() {
-            self.needsSeparator = false
-            Option::Some(self.separator)
-        } else {
-            self.needsSeparator = true
-            self.iter.next()
-        }
+        // TODO: resolve Self
+        // if self.needsSeparator && self.iter.peek().isSome() {
+        //     self.needsSeparator = false
+        //     Option::Some(self.separator)
+        // } else {
+        //     self.needsSeparator = true
+        //     self.iter.next()
+        // }
     }
 }
 

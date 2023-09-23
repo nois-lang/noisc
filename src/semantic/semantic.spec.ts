@@ -278,4 +278,24 @@ fn bar(Foo::Foo(b: Bar::Bar(a)): Foo) {
             ])
         })
     })
+
+    describe('if expr', () => {
+        it('simple', () => {
+            const code = (arg: string) => `\
+fn main() {
+    let a = if true { 4 } else { ${arg} }
+    a()
+}`
+            let ctx = check(code('5'))
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: non-callable operand of type `std::int::Int`',
+            ])
+
+            ctx = check(code('"foo"'))
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'if branches have incompatible types:\n    then: `std::int::Int`\n    else: `std::string::String`',
+                'type error: non-callable operand of type `?`',
+            ])
+        })
+    })
 })

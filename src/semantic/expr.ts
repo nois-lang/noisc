@@ -1,8 +1,10 @@
+import { assert } from 'console'
 import { checkBlock, checkCallArgs, checkIdentifier, checkParam, checkType } from '.'
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { CallOp, ConOp } from '../ast/op'
-import { ClosureExpr, ListExpr, Operand } from '../ast/operand'
+import { ClosureExpr, IfExpr, ListExpr, Operand } from '../ast/operand'
 import { Context, instanceScope } from '../scope'
+import { bool } from '../scope/std'
 import { idToVid, vidFromString, vidToString } from '../scope/util'
 import { MethodDef, resolveVid } from '../scope/vid'
 import {
@@ -41,7 +43,7 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
             operand.type = operand.operand.type
             break
         case 'if-expr':
-            // TODO
+            checkIfExpr(operand, ctx)
             break
         case 'while-expr':
             // TODO
@@ -140,12 +142,41 @@ export const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     if (!opImplFnVid) throw Error(`operator ${binaryExpr.binaryOp.kind} without impl function`)
 
     const methodRef = <MethodDef>resolveVid(opImplFnVid, ctx, ['method-def'])?.def
-    if (!methodRef) throw Error('impl fn not found')
-    if (!methodRef.fn.type) throw Error('untyped impl fn')
-    if (methodRef.fn.type.kind !== 'fn-type') throw Error('impl fn type in not fn')
+    assert(methodRef, 'impl fn not found')
+    assert(methodRef.fn.type, 'untyped impl fn')
+    assert(methodRef.fn.type!.kind === 'fn-type', 'impl fn type in not fn')
 
     // TODO: figure out how to resolve generics without their scope
     checkCallArgs(binaryExpr, [binaryExpr.lOperand, binaryExpr.rOperand], (<VirtualFnType>methodRef.fn.type).paramTypes, ctx)
+}
+
+export const checkIfExpr = (ifExpr: IfExpr, ctx: Context): void => {
+    checkExpr(ifExpr.condition, ctx)
+    const condType = ifExpr.condition.type ?? unknownType
+    if (condType.kind !== 'vid-type' || !isAssignable(condType, bool, ctx)) {
+        ctx.errors.push(typeError(ifExpr.condition, condType, bool, ctx))
+    }
+    checkBlock(ifExpr.thenBlock, ctx)
+    if (ifExpr.elseBlock) {
+        checkBlock(ifExpr.elseBlock, ctx)
+
+        // TODO: combine types
+        const thenType = virtualTypeToString(ifExpr.thenBlock.type ?? unknownType)
+        const elseType = virtualTypeToString(ifExpr.elseBlock.type ?? unknownType)
+        if (thenType !== elseType) {
+            ctx.errors.push(semanticError(ctx, ifExpr, `\
+if branches have incompatible types:
+    then: \`${thenType}\`
+    else: \`${elseType}\``))
+
+
+            ifExpr.type = unknownType
+            return
+        }
+    }
+
+
+    ifExpr.type = ifExpr.thenBlock.type
 }
 
 /**
