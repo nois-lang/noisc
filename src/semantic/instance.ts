@@ -1,4 +1,4 @@
-import { checkCallArgs, checkOperand } from '.'
+import { checkCallArgs } from '.'
 import { BinaryExpr, OperandExpr } from '../ast/expr'
 import { CallOp } from '../ast/op'
 import { Identifier, Operand } from '../ast/operand'
@@ -11,6 +11,7 @@ import { resolveFnGenerics, resolveGenericsOverStructure, resolveType } from '..
 import { unknownType } from '../typecheck/type'
 import { allEqual } from '../util/array'
 import { notFoundError, semanticError } from './error'
+import { checkOperand } from './expr'
 
 export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     const rOp = binaryExpr.rOperand
