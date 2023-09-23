@@ -2,7 +2,7 @@ import { ConPattern, Pattern } from "../ast/match"
 import { Name } from "../ast/operand"
 import { Context, defKey } from "../scope"
 import { idToVid } from "../scope/util"
-import { resolveVid } from "../scope/vid"
+import { NameDef, resolveVid } from "../scope/vid"
 import { VidType, VirtualType, typeToVirtual, virtualTypeToString } from "../typecheck"
 import { notFoundError, semanticError } from "./error"
 
@@ -13,7 +13,7 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
     switch (pattern.kind) {
         case 'name':
             pattern.type = expectedType
-            scope.definitions.set('name' + pattern.value, pattern)
+            scope.definitions.set('name' + pattern.value, { kind: 'name-def', name: pattern })
             break
         case 'hole':
             // TODO: typed hole reporting, Haskell style: https://wiki.haskell.org/GHC/Typed_holes
@@ -33,7 +33,10 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
 
             const defs = checkConPattern(pattern, expectedType, ctx)
             if (defs) {
-                defs.forEach(p => scope.definitions.set(defKey(p), p))
+                defs.forEach(p => {
+                    const nameDef: NameDef = { kind: 'name-def', name: p }
+                    return scope.definitions.set(defKey(nameDef), nameDef)
+                })
             }
             break
     }

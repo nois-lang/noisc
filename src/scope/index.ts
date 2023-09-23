@@ -59,8 +59,8 @@ export const defKey = (def: Definition): string => {
             return def.kind + vidToString(def.identifier)
         case 'self':
             return def.kind
-        case 'name':
-            return def.kind + def.value
+        case 'name-def':
+            return def.kind + def.name.value
         case 'fn-def':
         case 'trait-def':
         case 'type-def':

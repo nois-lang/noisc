@@ -6,7 +6,7 @@ import { TypeCon, TypeDef } from '../ast/type-def'
 import { Context, DefinitionMap, InstanceScope, TypeDefScope, defKey, instanceScope } from '../scope'
 import { getImplTargetType, traitDefToVirtualType } from '../scope/trait'
 import { idToVid, vidToString } from '../scope/util'
-import { Definition, resolveVid } from '../scope/vid'
+import { Definition, NameDef, resolveVid } from '../scope/vid'
 import {
     Typed,
     VirtualType,
@@ -36,7 +36,8 @@ export const prepareModule = (module: Module): void => {
             case 'var-def':
                 switch (s.pattern.kind) {
                     case 'name':
-                        defMap.set(defKey(s.pattern), s.pattern)
+                        const nameDef: NameDef = { kind: 'name-def', name: s.pattern, parent: s }
+                        defMap.set(defKey(nameDef), nameDef)
                         break
                     case 'hole':
                         break
@@ -93,8 +94,10 @@ export const checkTopLevelDefiniton = (module: Module, definition: Definition, c
             // TODO: narrow to not check unrelated methods
             checkStatement(definition.trait, ctx)
             break
-        case 'name':
-            // TODO: not sure what to check here, since definition does not contain parent
+        case 'name-def':
+            if (definition.parent) {
+                checkStatement(definition.parent, ctx)
+            }
             break
         case 'generic':
         case 'module':
@@ -115,7 +118,9 @@ export const checkBlock = (block: Block, ctx: Context): void => {
 
     block.statements.forEach(s => checkStatement(s, ctx))
 
-    // TODO: block type
+    // TODO: find return statements and combine type
+    const lastStatement = <Partial<Typed> | undefined>block.statements.at(-1)
+    block.type = lastStatement?.type ?? unknownType
 
     module.scopeStack.pop()
 }
@@ -339,11 +344,9 @@ const checkVarDef = (varDef: VarDef, ctx: Context): void => {
 
     const topLevel = ctx.moduleStack.at(-1)!.scopeStack.length === 1
 
-    if (topLevel) {
-        if (!varDef.varType) {
-            ctx.errors.push(semanticError(ctx, varDef, `top level \`${varDef.kind}\` must have explicit type`))
-            return
-        }
+    if (topLevel && !varDef.varType) {
+        ctx.errors.push(semanticError(ctx, varDef, `top level \`${varDef.kind}\` must have explicit type`))
+        return
     }
 
     let varType: VirtualType | undefined
@@ -382,17 +385,18 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
             case 'self':
                 identifier.type = instanceScope(ctx)!.selfType
                 break
-            case 'name':
-                if (ref.def.type === selfType) {
+            case 'name-def':
+                const name = ref.def.name
+                if (name.type === selfType) {
                     const instScope = instanceScope(ctx)
                     identifier.type = resolveType(
-                        ref.def.type,
+                        name.type,
                         instScope ? [instanceGenericMap(instScope, ctx)] : [],
                         identifier,
                         ctx
                     )
                 } else {
-                    identifier.type = ref.def.type
+                    identifier.type = name.type
                 }
                 break
             case 'method-def':

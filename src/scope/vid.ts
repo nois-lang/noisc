@@ -19,6 +19,7 @@ export interface VirtualIdentifier {
 export const defKinds = <const>[
     'module',
     'name',
+    'name-def',
     'self',
     'type-con',
     'fn-def',
@@ -31,7 +32,13 @@ export const defKinds = <const>[
 
 export type DefinitionKind = typeof defKinds[number]
 
-export type Definition = Module | Name | FnDef | TraitDef | ImplDef | TypeDef | TypeConDef | Generic | SelfDef | MethodDef
+export type Definition = Module | NameDef | FnDef | TraitDef | ImplDef | TypeDef | TypeConDef | Generic | SelfDef | MethodDef
+
+export interface NameDef {
+    kind: 'name-def'
+    name: Name
+    parent?: Statement
+}
 
 export interface SelfDef {
     kind: 'self'
@@ -80,7 +87,7 @@ export const resolveVid = (
     vid: VirtualIdentifier,
     ctx: Context,
     // exclude impl-def since it cannot be requested by vid
-    ofKind: DefinitionKind[] = ['module', 'name', 'self', 'type-con', 'fn-def', 'generic', 'type-def', 'trait-def', 'method-def']
+    ofKind: DefinitionKind[] = ['module', 'name', 'name-def', 'self', 'type-con', 'fn-def', 'generic', 'type-def', 'trait-def', 'method-def']
 ): VirtualIdentifierMatch | undefined => {
     const module = ctx.moduleStack.at(-1)!
     let ref: VirtualIdentifierMatch | undefined
