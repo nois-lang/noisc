@@ -172,7 +172,7 @@ fn main() {
             const code = 'trait Foo { fn foo() { foo() } }'
             const ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual([
-                'identifier foo not found',
+                'identifier `foo` not found',
                 'type error: non-callable operand of type `?`'
             ])
         })
@@ -188,7 +188,7 @@ fn main() {
 }`
             let ctx = check(code(''))
             expect(ctx.errors.map(e => e.message)).toEqual([
-                'identifier foo not found',
+                'identifier `foo` not found',
                 'type error: non-callable operand of type `?`'
             ])
 
@@ -251,8 +251,10 @@ fn bar(Foo::Foo(a: namedA, b: namedB): Foo) {
 }`
             let ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual([
-                'type error: non-callable operand of type `std::int::Int`',
-                'type error: non-callable operand of type `std::int::Int`',
+                'identifier `a` not found',
+                'type error: non-callable operand of type `?`',
+                'identifier `b` not found',
+                'type error: non-callable operand of type `?`',
                 'type error: non-callable operand of type `std::int::Int`',
                 'type error: non-callable operand of type `std::int::Int`',
             ])
@@ -270,7 +272,8 @@ fn bar(Foo::Foo(b: Bar::Bar(a)): Foo) {
 }`
             let ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual([
-                'type error: non-callable operand of type `test::Bar`',
+                'identifier `b` not found',
+                'type error: non-callable operand of type `?`',
                 'type error: non-callable operand of type `std::int::Int`',
             ])
         })
