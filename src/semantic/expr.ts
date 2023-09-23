@@ -5,6 +5,7 @@ import { CallOp, ConOp } from '../ast/op'
 import { ClosureExpr, IfExpr, ListExpr, Operand } from '../ast/operand'
 import { Context, instanceScope } from '../scope'
 import { bool } from '../scope/std'
+import { getImplTargetType } from '../scope/trait'
 import { idToVid, vidFromString, vidToString } from '../scope/util'
 import { MethodDef, resolveVid } from '../scope/vid'
 import {
@@ -14,7 +15,7 @@ import {
     typeToVirtual,
     virtualTypeToString
 } from '../typecheck'
-import { instanceGenericMap, resolveFnGenerics, resolveType } from '../typecheck/generic'
+import { instanceGenericMap, resolveFnGenerics, resolveGenericsOverStructure, resolveType } from '../typecheck/generic'
 import { unknownType } from '../typecheck/type'
 import { todo } from '../util/todo'
 import { notFoundError, semanticError, typeError } from './error'
@@ -139,15 +140,33 @@ export const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     checkOperand(binaryExpr.rOperand, ctx)
 
     const opImplFnVid = operatorImplMap.get(binaryExpr.binaryOp.kind)
-    if (!opImplFnVid) throw Error(`operator ${binaryExpr.binaryOp.kind} without impl function`)
+    assert(opImplFnVid, `operator ${binaryExpr.binaryOp.kind} without impl function`)
 
-    const methodRef = <MethodDef>resolveVid(opImplFnVid, ctx, ['method-def'])?.def
+    const methodRef = <MethodDef>resolveVid(opImplFnVid!, ctx, ['method-def'])?.def
     assert(methodRef, 'impl fn not found')
     assert(methodRef.fn.type, 'untyped impl fn')
     assert(methodRef.fn.type!.kind === 'fn-type', 'impl fn type in not fn')
 
-    // TODO: figure out how to resolve generics without their scope
-    checkCallArgs(binaryExpr, [binaryExpr.lOperand, binaryExpr.rOperand], (<VirtualFnType>methodRef.fn.type).paramTypes, ctx)
+    const implTargetType = getImplTargetType(methodRef.trait, ctx)
+    // TODO: lOperand acts as a type args provider for generics. Improve it
+    const implGenericMap = resolveGenericsOverStructure(binaryExpr.lOperand.type!, implTargetType)
+    const fnType = <VirtualFnType>methodRef.fn.type
+    const fnGenericMap = resolveFnGenerics(
+        fnType,
+        [binaryExpr.lOperand.type ?? unknownType, binaryExpr.rOperand.type ?? unknownType],
+        [],
+    )
+    // TODO: this whole logic with generic resoluion should be unified across
+    // checkBinaryExpr, checkCallExpr, checkMethodCallExpr, etc.
+    const genericMaps = [implGenericMap, fnGenericMap]
+    const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(
+        pt,
+        genericMaps,
+        [binaryExpr.lOperand, binaryExpr.rOperand].at(i) ?? binaryExpr,
+        ctx
+    ))
+    checkCallArgs(binaryExpr, [binaryExpr.lOperand, binaryExpr.rOperand], paramTypes, ctx)
+    binaryExpr.type = resolveType(fnType.returnType, genericMaps, binaryExpr, ctx)
 }
 
 export const checkIfExpr = (ifExpr: IfExpr, ctx: Context): void => {
