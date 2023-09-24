@@ -1,16 +1,14 @@
 import { Module } from '../ast'
-import { Pattern } from '../ast/match'
 import { Name } from '../ast/operand'
 import { FnDef, ImplDef, Statement, TraitDef } from '../ast/statement'
 import { Generic } from '../ast/type'
 import { TypeCon, TypeDef } from '../ast/type-def'
 import { checkTopLevelDefiniton } from '../semantic'
 import { selfType } from '../typecheck/type'
-import { todo } from '../util/todo'
 import { Context, Scope, instanceScope } from './index'
 import { defaultImportedVids } from './std'
 import { findSupertypes } from './trait'
-import { concatVid, vidFromString, vidToString } from './util'
+import { concatVid, vidToString } from './util'
 
 export interface VirtualIdentifier {
     names: string[]
@@ -59,16 +57,6 @@ export interface MethodDef {
 export interface VirtualIdentifierMatch<D = Definition> {
     vid: VirtualIdentifier
     def: D
-}
-
-export const patternVid = (pattern: Pattern): VirtualIdentifier | undefined => {
-    switch (pattern.kind) {
-        case 'name':
-            return vidFromString(pattern.value)
-        case 'con-pattern':
-            return todo('con-pattern vid')
-    }
-    return undefined
 }
 
 /**
