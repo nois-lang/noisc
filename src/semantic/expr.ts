@@ -1,4 +1,3 @@
-import { assert } from 'console'
 import { checkBlock, checkCallArgs, checkIdentifier, checkParam, checkType } from '.'
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { CallOp, ConOp } from '../ast/op'
@@ -17,7 +16,7 @@ import {
 } from '../typecheck'
 import { instanceGenericMap, resolveFnGenerics, resolveGenericsOverStructure, resolveType } from '../typecheck/generic'
 import { unknownType } from '../typecheck/type'
-import { todo } from '../util/todo'
+import { assert, todo } from '../util/todo'
 import { notFoundError, semanticError, typeError } from './error'
 import { checkAccessExpr } from './instance'
 import { operatorImplMap } from './op'
@@ -140,12 +139,12 @@ export const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     checkOperand(binaryExpr.rOperand, ctx)
 
     const opImplFnVid = operatorImplMap.get(binaryExpr.binaryOp.kind)
-    assert(opImplFnVid, `operator ${binaryExpr.binaryOp.kind} without impl function`)
+    assert(!!opImplFnVid, `operator ${binaryExpr.binaryOp.kind} without impl function`)
 
     // TODO: make sure method is callable on the lOperand type, e.g. !5 -> Not::not(5) should fail
     const methodRef = <MethodDef>resolveVid(opImplFnVid!, ctx, ['method-def'])?.def
-    assert(methodRef, 'impl fn not found')
-    assert(methodRef.fn.type, 'untyped impl fn')
+    assert(!!methodRef, 'impl fn not found')
+    assert(!!methodRef.fn.type, 'untyped impl fn')
     assert(methodRef.fn.type!.kind === 'fn-type', 'impl fn type in not fn')
 
     const implTargetType = getImplTargetType(methodRef.trait, ctx)
