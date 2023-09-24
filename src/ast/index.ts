@@ -44,6 +44,7 @@ export type AstNodeKind
     | 'for-expr'
     | 'match-expr'
     | 'match-clause'
+    | 'pattern'
     | 'con-pattern'
     | 'field-pattern'
     | 'hole'

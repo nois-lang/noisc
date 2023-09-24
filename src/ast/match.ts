@@ -38,9 +38,23 @@ export const buildMatchClause = (node: ParseNode): MatchClause => {
     return { kind: 'match-clause', parseNode: node, pattern, guard, block }
 }
 
-export type Pattern = Name | ConPattern | Operand | UnaryExpr | Hole
+
+export interface Pattern extends AstNode<'pattern'> {
+    name?: Name
+    expr: PatternExpr
+}
 
 export const buildPattern = (node: ParseNode): Pattern => {
+    const nodes = filterNonAstNodes(node)
+    let idx = 0
+    const name = nodes[idx].kind === 'pattern-bind' ? buildName(filterNonAstNodes(nodes[idx++])[0]) : undefined
+    const expr = buildPatternExpr(nodes[idx++])
+    return { kind: 'pattern', parseNode: node, name, expr }
+}
+
+export type PatternExpr = Name | ConPattern | Operand | UnaryExpr | Hole
+
+export const buildPatternExpr = (node: ParseNode): PatternExpr => {
     const nodes = filterNonAstNodes(node)
     if (nameLikeTokens.includes((<ParseToken>nodes[0]).kind)) {
         return buildName(nodes[0])

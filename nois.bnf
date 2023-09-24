@@ -1,141 +1,144 @@
-module              ::= use-stmt* statement*
-                    ;
-statement           ::= var-def | fn-def | trait-def | impl-def | type-def | return-stmt | expr
-                    ;
-  use-stmt          ::= USE-KEYWORD use-expr
-                    ;
-    use-expr        ::= (NAME COLON COLON)* (use-list | wildcard | NAME)
-                    ;
-      wildcard      ::= ASTERISK
-                    ;
-    use-list        ::= O-BRACE (use-expr (COMMA use-expr)*)? COMMA? C-BRACE
-                    ;
-  var-def           ::= LET-KEYWORD pattern type-annot? EQUALS expr
-                    ;
-  fn-def            ::= FN-KEYWORD NAME generics? params type-annot? block?
-                    ;
-    generics        ::= O-ANGLE (generic (COMMA generic)* COMMA?)? C-ANGLE
-                    ;
-      generic       ::= NAME (COLON type-bounds)?
-                    ;
-    params          ::= O-PAREN (param (COMMA param)*)? COMMA? C-PAREN
-                    ;
-      param         ::= pattern type-annot?
-                    ;
-  trait-def         ::= TRAIT-KEYWORD NAME generics? block
-                    ;
-  impl-def          ::= IMPL-KEYWORD generics? identifier impl-for? block
-                    ;
-    impl-for        ::= FOR-KEYWORD identifier
-                    ;
-  type-def          ::= TYPE-KEYWORD NAME generics? (type-con-list | type-con-params)?
-                    ;
-    type-con-params ::= O-PAREN (field-def (COMMA field-def)*)? COMMA? C-PAREN
-                    ;
-      field-def     ::= NAME type-annot
-                    ;
-    type-con-list   ::= O-BRACE (type-con (COMMA type-con)* COMMA?)? C-BRACE
-                    ;
-      type-con      ::= NAME type-con-params?
-                    ;
-  return-stmt       ::= RETURN-KEYWORD expr?
-                    ;
-  expr              ::= sub-expr (infix-op sub-expr)*
-                    ;
-    sub-expr        ::= prefix-op operand | operand postfix-op?
-                    ;
-      operand       ::= if-expr
-                    | while-expr
-                    | for-expr
-                    | match-expr
-                    | closure-expr
-                    | O-PAREN expr C-PAREN
-                    | list-expr
-                    | STRING
-                    | CHAR
-                    | INT
-                    | FLOAT
-                    | identifier
-                    ;
-    infix-op        ::= add-op | sub-op | mult-op | div-op | exp-op | mod-op | access-op | eq-op | ne-op
-                    | ge-op | le-op | gt-op | lt-op | and-op | or-op | assign-op;
-      add-op        ::= PLUS;
-      sub-op        ::= MINUS;
-      mult-op       ::= ASTERISK;
-      div-op        ::= SLASH;
-      exp-op        ::= CARET;
-      mod-op        ::= PERCENT;
-      access-op     ::= PERIOD;
-      eq-op         ::= EQUALS EQUALS;
-      ne-op         ::= EXCL EQUALS;
-      ge-op         ::= C-ANGLE EQUALS;
-      le-op         ::= O-ANGLE EQUALS;
-      gt-op         ::= C-ANGLE;
-      lt-op         ::= O-ANGLE;
-      and-op        ::= AMPERSAND AMPERSAND;
-      or-op         ::= PIPE PIPE;
-      assign-op     ::= EQUALS;
+module                ::= use-stmt* statement*
+                      ;
+statement             ::= var-def | fn-def | trait-def | impl-def | type-def | return-stmt | expr
+                      ;
+  use-stmt            ::= USE-KEYWORD use-expr
+                      ;
+    use-expr          ::= (NAME COLON COLON)* (use-list | wildcard | NAME)
+                      ;
+      wildcard        ::= ASTERISK
+                      ;
+    use-list          ::= O-BRACE (use-expr (COMMA use-expr)*)? COMMA? C-BRACE
+                      ;
+  var-def             ::= LET-KEYWORD pattern type-annot? EQUALS expr
+                      ;
+  fn-def              ::= FN-KEYWORD NAME generics? params type-annot? block?
+                      ;
+    generics          ::= O-ANGLE (generic (COMMA generic)* COMMA?)? C-ANGLE
+                      ;
+      generic         ::= NAME (COLON type-bounds)?
+                      ;
+    params            ::= O-PAREN (param (COMMA param)*)? COMMA? C-PAREN
+                      ;
+      param           ::= pattern type-annot?
+                      ;
+  trait-def           ::= TRAIT-KEYWORD NAME generics? block
+                      ;
+  impl-def            ::= IMPL-KEYWORD generics? identifier impl-for? block
+                      ;
+    impl-for          ::= FOR-KEYWORD identifier
+                      ;
+  type-def            ::= TYPE-KEYWORD NAME generics? (type-con-list | type-con-params)?
+                      ;
+    type-con-params   ::= O-PAREN (field-def (COMMA field-def)*)? COMMA? C-PAREN
+                      ;
+      field-def       ::= NAME type-annot
+                      ;
+    type-con-list     ::= O-BRACE (type-con (COMMA type-con)* COMMA?)? C-BRACE
+                      ;
+      type-con        ::= NAME type-con-params?
+                      ;
+  return-stmt         ::= RETURN-KEYWORD expr?
+                      ;
+  expr                ::= sub-expr (infix-op sub-expr)*
+                      ;
+    sub-expr          ::= prefix-op operand | operand postfix-op?
+                      ;
+      operand         ::= if-expr
+                      | while-expr
+                      | for-expr
+                      | match-expr
+                      | closure-expr
+                      | O-PAREN expr C-PAREN
+                      | list-expr
+                      | STRING
+                      | CHAR
+                      | INT
+                      | FLOAT
+                      | identifier
+                      ;
+    infix-op          ::= add-op | sub-op | mult-op | div-op | exp-op | mod-op | access-op | eq-op | ne-op
+                      | ge-op | le-op | gt-op | lt-op | and-op | or-op | assign-op;
+      add-op          ::= PLUS;
+      sub-op          ::= MINUS;
+      mult-op         ::= ASTERISK;
+      div-op          ::= SLASH;
+      exp-op          ::= CARET;
+      mod-op          ::= PERCENT;
+      access-op       ::= PERIOD;
+      eq-op           ::= EQUALS EQUALS;
+      ne-op           ::= EXCL EQUALS;
+      ge-op           ::= C-ANGLE EQUALS;
+      le-op           ::= O-ANGLE EQUALS;
+      gt-op           ::= C-ANGLE;
+      lt-op           ::= O-ANGLE;
+      and-op          ::= AMPERSAND AMPERSAND;
+      or-op           ::= PIPE PIPE;
+      assign-op       ::= EQUALS;
 
-    prefix-op       ::= sub-op | not-op | spread-op
-                    ;
-      not-op        ::= EXCL
-                    ;
-      spread-op     ::= PERIOD PERIOD
-                    ;
-    postfix-op      ::= call-op | con-op
-                    ;
-      call-op       ::= args
-                    ;
-        args        ::= O-PAREN (expr (COMMA expr)*)? COMMA? C-PAREN
-                    ;
-      con-op        ::= O-PAREN (field-init (COMMA field-init)*)? COMMA? C-PAREN
-                    ;
-        field-init  ::= NAME COLON expr
-                    ;
-identifier          ::= (NAME COLON COLON)* NAME type-args?
-                    ;
-  type-args         ::= O-ANGLE (type (COMMA type)* COMMA?)? C-ANGLE
-                    ;
-type                ::= type-bounds | fn-type
-                    ;
-  type-bounds       ::= identifier (PLUS identifier)*
-                    ;
-  fn-type           ::= fn-type-params type-annot
-                    ;
-    fn-type-params  ::= PIPE (type (COMMA type)* COMMA?)? PIPE
-                    ;
-block               ::= O-BRACE statement* C-BRACE
-                    ;
-closure-expr        ::= closure-params type-annot? block
-                    ;
-  closure-params    ::= PIPE (param (COMMA param)*)? COMMA? PIPE
-                    ;
-list-expr           ::= O-BRACKET (expr (COMMA expr)*)? COMMA? C-BRACKET
-                    ;
-type-annot          ::= COLON type
-                    ;
-if-expr             ::= IF-KEYWORD expr block (ELSE-KEYWORD block)?
-                    ;
-while-expr          ::= WHILE-KEYWORD expr block
-                    ;
-for-expr            ::= FOR-KEYWORD pattern IN-KEYWORD expr block
-                    ;
-match-expr          ::= MATCH-KEYWORD expr match-clauses
-                    ;
-  match-clauses     ::= O-BRACE (match-clause (COMMA match-clause)*)? COMMA? C-BRACE
-                    ;
-    match-clause    ::= pattern guard? block
-                    ;
-      guard         ::= IF-KEYWORD expr
-                    ;
-// TODO: named patterns, e.g. `a @ 5`
-pattern             ::= NAME | con-pattern | STRING | CHAR | prefix-op? (INT | FLOAT) | hole
-                    ;
-  con-pattern       ::= identifier con-pattern-params
-                    ;
-  con-pattern-params::= O-PAREN (field-pattern (COMMA field-pattern)*)? COMMA? C-PAREN
-                    ;
-    field-pattern   ::= NAME (COLON pattern)? | spread-op
-                    ;
-  hole              ::= UNDERSCORE
-                    ;
+    prefix-op         ::= sub-op | not-op | spread-op
+                      ;
+      not-op          ::= EXCL
+                      ;
+      spread-op       ::= PERIOD PERIOD
+                      ;
+    postfix-op        ::= call-op | con-op
+                      ;
+      call-op         ::= args
+                      ;
+        args          ::= O-PAREN (expr (COMMA expr)*)? COMMA? C-PAREN
+                      ;
+      con-op          ::= O-PAREN (field-init (COMMA field-init)*)? COMMA? C-PAREN
+                      ;
+        field-init    ::= NAME COLON expr
+                      ;
+identifier            ::= (NAME COLON COLON)* NAME type-args?
+                      ;
+  type-args           ::= O-ANGLE (type (COMMA type)* COMMA?)? C-ANGLE
+                      ;
+type                  ::= type-bounds | fn-type
+                      ;
+  type-bounds         ::= identifier (PLUS identifier)*
+                      ;
+  fn-type             ::= fn-type-params type-annot
+                      ;
+    fn-type-params    ::= PIPE (type (COMMA type)* COMMA?)? PIPE
+                      ;
+block                 ::= O-BRACE statement* C-BRACE
+                      ;
+closure-expr          ::= closure-params type-annot? block
+                      ;
+  closure-params      ::= PIPE (param (COMMA param)*)? COMMA? PIPE
+                      ;
+list-expr             ::= O-BRACKET (expr (COMMA expr)*)? COMMA? C-BRACKET
+                      ;
+type-annot            ::= COLON type
+                      ;
+if-expr               ::= IF-KEYWORD expr block (ELSE-KEYWORD block)?
+                      ;
+while-expr            ::= WHILE-KEYWORD expr block
+                      ;
+for-expr              ::= FOR-KEYWORD pattern IN-KEYWORD expr block
+                      ;
+match-expr            ::= MATCH-KEYWORD expr match-clauses
+                      ;
+  match-clauses       ::= O-BRACE (match-clause (COMMA match-clause)*)? COMMA? C-BRACE
+                      ;
+    match-clause      ::= pattern guard? block
+                      ;
+      guard           ::= IF-KEYWORD expr
+                      ;
+pattern               ::= pattern-bind? pattern-expr
+                      ;
+  pattern-bind        ::= NAME AT
+                      ;
+  pattern-expr        ::= NAME | con-pattern | STRING | CHAR | prefix-op? (INT | FLOAT) | hole
+                      ;
+    con-pattern       ::= identifier con-pattern-params
+                      ;
+    con-pattern-parms ::= O-PAREN (field-pattern (COMMA field-pattern)*)? COMMA? C-PAREN
+                      ;
+      field-pattern   ::= NAME (COLON pattern)? | spread-op
+                      ;
+    hole              ::= UNDERSCORE
+                      ;

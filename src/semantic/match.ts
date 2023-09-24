@@ -9,15 +9,16 @@ import { notFoundError, semanticError } from "./error"
 export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: Context): void => {
     const module = ctx.moduleStack.at(-1)!
     const scope = module.scopeStack.at(-1)!
+    const expr = pattern.expr
 
-    switch (pattern.kind) {
+    switch (expr.kind) {
         case 'name':
-            pattern.type = expectedType
-            scope.definitions.set('name' + pattern.value, { kind: 'name-def', name: pattern })
+            expr.type = expectedType
+            scope.definitions.set('name' + expr.value, { kind: 'name-def', name: expr })
             break
         case 'hole':
             // TODO: typed hole reporting, Haskell style: https://wiki.haskell.org/GHC/Typed_holes
-            pattern.type = expectedType
+            expr.type = expectedType
             break
         case 'unary-expr':
             // TODO: check unaryExpr
@@ -31,14 +32,20 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
                 return
             }
 
-            const defs = checkConPattern(pattern, expectedType, ctx)
+            const defs = checkConPattern(expr, expectedType, ctx)
             if (defs) {
                 defs.forEach(p => {
                     const nameDef: NameDef = { kind: 'name-def', name: p }
-                    return scope.definitions.set(defKey(nameDef), nameDef)
+                    scope.definitions.set(defKey(nameDef), nameDef)
                 })
             }
             break
+    }
+
+    if (pattern.name) {
+        pattern.name.type = expectedType
+        const nameDef: NameDef = { kind: 'name-def', name: pattern.name }
+        scope.definitions.set(defKey(nameDef), nameDef)
     }
 }
 

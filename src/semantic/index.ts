@@ -34,9 +34,9 @@ export const prepareModule = (module: Module): void => {
                 defMap.set(defKey(s), s)
                 break
             case 'var-def':
-                switch (s.pattern.kind) {
+                switch (s.pattern.expr.kind) {
                     case 'name':
-                        const nameDef: NameDef = { kind: 'name-def', name: s.pattern, parent: s }
+                        const nameDef: NameDef = { kind: 'name-def', name: s.pattern.expr, parent: s }
                         defMap.set(defKey(nameDef), nameDef)
                         break
                     case 'hole':
@@ -210,7 +210,7 @@ export const checkParam = (param: Param, index: number, ctx: Context): void => {
     const instScope = instanceScope(ctx)
 
     if (!param.paramType) {
-        if (index === 0 && instScope && param.pattern.kind === 'name' && param.pattern.value === 'self') {
+        if (index === 0 && instScope && param.pattern.expr.kind === 'name' && param.pattern.expr.value === 'self') {
             param.type = selfType
         } else {
             ctx.errors.push(semanticError(ctx, param, 'parameter type not specified'))
@@ -225,7 +225,7 @@ export const checkParam = (param: Param, index: number, ctx: Context): void => {
         }
     }
 
-    switch (param.pattern.kind) {
+    switch (param.pattern.expr.kind) {
         case 'operand-expr':
         case 'unary-expr':
         case 'binary-expr':

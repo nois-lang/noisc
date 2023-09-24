@@ -26,7 +26,8 @@ export const lexerPunctuationKinds = <const>[
     'colon',
     'comma',
     'equals',
-    'underscore'
+    'underscore',
+    'at'
 ]
 
 export const lexerKeywordKinds = <const>[
@@ -109,6 +110,7 @@ export const constTokenKindMap: Map<TokenKind, string> = new Map([
     ['comma', ','],
     ['equals', '='],
     ['underscore', '_'],
+    ['at', '@'],
 ])
 
 const floatRegex = /^((\d+(\.\d*)?e[+-]?\d+)|(\d+\.\d*)|(\d*\.\d+))/

@@ -55,9 +55,25 @@ export const parseGuard = (parser: Parser): void => {
 }
 
 /**
- * pattern ::= NAME | con-pattern | STRING | CHAR | prefix-op? (INT | FLOAT) | hole
+ * pattern ::= pattern-bind? pattern-expr
  */
 export const parsePattern = (parser: Parser): void => {
+    const mark = parser.open()
+    if (parser.at('name') && parser.nth(1) === 'at') {
+        parsePatternBind(parser)
+    }
+    parsePatternExpr(parser)
+    parser.close(mark, 'pattern')
+}
+
+export const parsePatternBind = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('name')
+    parser.expect('at')
+    parser.close(mark, 'pattern-bind')
+}
+
+export const parsePatternExpr = (parser: Parser): void => {
     const mark = parser.open()
     // tough case to decide it is a name or a con-pattern, name should be followed by pattern follow tokens
     // because COLON is a follow token, we should check if it is a part of scope resolution
@@ -84,7 +100,7 @@ export const parsePattern = (parser: Parser): void => {
     } else {
         parser.advanceWithError('expected pattern')
     }
-    parser.close(mark, 'pattern')
+    parser.close(mark, 'pattern-expr')
 }
 
 /**

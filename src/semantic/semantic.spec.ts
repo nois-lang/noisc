@@ -277,6 +277,19 @@ fn bar(Foo::Foo(b: Bar::Bar(a)): Foo) {
                 'type error: non-callable operand of type `std::int::Int`',
             ])
         })
+
+        it('destruct pattern binding', () => {
+            const code = `\
+type Foo(a: Int)
+
+fn bar(foo @ Foo::Foo(a): Foo) {
+    foo()
+}`
+            let ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: non-callable operand of type `test::Foo`',
+            ])
+        })
     })
 
     describe('if expr', () => {
