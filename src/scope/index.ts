@@ -1,5 +1,6 @@
 import { Module } from '../ast'
-import { ImplDef, TraitDef } from '../ast/statement'
+import { ClosureExpr } from '../ast/operand'
+import { FnDef, ImplDef, ReturnStmt, TraitDef } from '../ast/statement'
 import { TypeDef } from '../ast/type-def'
 import { Config } from '../config'
 import { Package } from '../package'
@@ -23,7 +24,7 @@ export interface Context {
     check: boolean
 }
 
-export type Scope = InstanceScope | TypeDefScope | CommonScope
+export type Scope = InstanceScope | TypeDefScope | FnDefScope | CommonScope
 
 /**
  * Map id has to be composite, since different defs might have the same vid, e.g.
@@ -48,8 +49,15 @@ export interface TypeDefScope {
     vid: VirtualIdentifier
 }
 
+export interface FnDefScope {
+    kind: 'fn',
+    definitions: DefinitionMap
+    def: FnDef | ClosureExpr,
+    returnStatements: ReturnStmt[]
+}
+
 export interface CommonScope {
-    kind: 'module' | 'fn' | 'block',
+    kind: 'module' | 'block',
     definitions: DefinitionMap
 }
 
@@ -96,3 +104,15 @@ export const instanceScope = (ctx: Context): InstanceScope | undefined => {
     }
     return undefined
 }
+
+export const fnScope = (ctx: Context): FnDefScope | undefined => {
+    const module = ctx.moduleStack.at(-1)!
+    for (let i = module.scopeStack.length - 1; i >= 0; i--) {
+        let scope = module.scopeStack[i]
+        if (scope.kind === 'fn') {
+            return scope
+        }
+    }
+    return undefined
+}
+

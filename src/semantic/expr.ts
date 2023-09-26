@@ -212,6 +212,10 @@ export const checkClosureExpr = (closureExpr: ClosureExpr, ctx: Context): void =
         todo("infer closure return type")
     }
 
+    const module = ctx.moduleStack.at(-1)!
+    // TODO: closure generics
+    module.scopeStack.push({ kind: 'fn', definitions: new Map(), def: closureExpr, returnStatements: [] })
+
     closureExpr.params.forEach((p, i) => checkParam(p, i, ctx))
     checkType(closureExpr.returnType!, ctx)
     checkBlock(closureExpr.block, ctx)
@@ -223,6 +227,8 @@ export const checkClosureExpr = (closureExpr: ClosureExpr, ctx: Context): void =
         returnType: typeToVirtual(closureExpr.returnType!, ctx),
         generics: []
     }
+
+    module.scopeStack.pop()
 }
 
 /**

@@ -1,9 +1,9 @@
 import { AstNode, Module, Param } from '../ast'
 import { Identifier } from '../ast/operand'
-import { Block, FnDef, ImplDef, Statement, TraitDef, VarDef } from '../ast/statement'
+import { Block, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '../ast/statement'
 import { Generic, Type } from '../ast/type'
 import { TypeCon, TypeDef } from '../ast/type-def'
-import { Context, DefinitionMap, InstanceScope, TypeDefScope, defKey, instanceScope } from '../scope'
+import { Context, DefinitionMap, InstanceScope, TypeDefScope, defKey, fnScope, instanceScope } from '../scope'
 import { getImplTargetType, traitDefToVirtualType } from '../scope/trait'
 import { idToVid, vidToString } from '../scope/util'
 import { Definition, NameDef, resolveVid } from '../scope/vid'
@@ -116,6 +116,7 @@ export const checkBlock = (block: Block, ctx: Context): void => {
     const module = ctx.moduleStack.at(-1)!
     module.scopeStack.push({ kind: 'block', definitions: new Map() })
 
+    // TODO: check for unreachable statements after return statement or fns returning `Never`
     block.statements.forEach(s => checkStatement(s, ctx))
 
     // TODO: find return statements and combine type
@@ -169,34 +170,55 @@ const checkStatement = (statement: Statement, ctx: Context): void => {
             checkExpr(statement, ctx)
             break
         case 'return-stmt':
+            checkReturnStmt(statement, ctx)
             break
     }
 }
 
+// TODO: if fn is a part of impl for, make sure it implements trait's fn and signature matches
 const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
     if (fnDef.type) return
 
     const module = ctx.moduleStack.at(-1)!
-    module.scopeStack.push({ kind: 'fn', definitions: new Map(fnDef.generics.map(g => [defKey(g), g])) })
+    module.scopeStack.push({
+        kind: 'fn',
+        definitions: new Map(fnDef.generics.map(g => [defKey(g), g])),
+        def: fnDef,
+        returnStatements: []
+    })
 
     const paramTypes = fnDef.params.map((p, i) => {
         checkParam(p, i, ctx)
         return p.type!
     })
 
-    fnDef.type = {
-        kind: 'fn-type',
-        generics: fnDef.generics.map(g => genericToVirtual(g, ctx)),
-        paramTypes,
-        returnType: fnDef.returnType ? typeToVirtual(fnDef.returnType, ctx) : unitType
-    }
-
     if (fnDef.returnType) {
         checkType(fnDef.returnType, ctx)
     }
 
+    const returnType = fnDef.returnType ? typeToVirtual(fnDef.returnType, ctx) : unitType
+    fnDef.type = {
+        kind: 'fn-type',
+        generics: fnDef.generics.map(g => genericToVirtual(g, ctx)),
+        paramTypes,
+        returnType
+    }
+
+    const instScope = instanceScope(ctx)
+    const genericMaps = instScope ? [instanceGenericMap(instScope, ctx)] : []
+    const returnTypeResolved = resolveType(returnType, genericMaps, fnDef.returnType ?? fnDef, ctx)
+
     if (fnDef.block) {
         checkBlock(fnDef.block, ctx)
+        const blockType = fnDef.block.type ?? unknownType
+        if (!isAssignable(blockType, returnTypeResolved, ctx)) {
+            ctx.errors.push(typeError(fnDef.block, blockType, returnTypeResolved, ctx))
+        }
+        fnScope(ctx)!.returnStatements.forEach(rs => {
+            if (!isAssignable(rs.type!, returnTypeResolved, ctx)) {
+                ctx.errors.push(typeError(rs, rs.type!, returnTypeResolved, ctx))
+            }
+        })
     } else {
         if (instanceScope(ctx)?.def.kind !== 'trait-def') {
             ctx.warnings.push(semanticError(ctx, fnDef, `fn \`${fnDef.name.value}\` has no body -> must be native`))
@@ -376,6 +398,21 @@ const checkVarDef = (varDef: VarDef, ctx: Context): void => {
     checkPattern(varDef.pattern, varType!, ctx)
 }
 
+export const checkReturnStmt = (returnStmt: ReturnStmt, ctx: Context) => {
+    const scope = fnScope(ctx)
+
+    if (!scope) {
+        ctx.errors.push(semanticError(ctx, returnStmt, `\`${returnStmt.kind}\` outside of function scope`))
+    }
+
+    if (returnStmt.returnExpr) {
+        checkExpr(returnStmt.returnExpr, ctx)
+    }
+    returnStmt.type = returnStmt.returnExpr?.type ?? unitType
+
+    scope?.returnStatements.push(returnStmt)
+}
+
 export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
     const vid = idToVid(identifier)
     const ref = resolveVid(vid, ctx)
@@ -447,6 +484,7 @@ export const checkType = (type: Type, ctx: Context) => {
                 ctx.errors.push(semanticError(ctx, type.name, `expected type, got \`${ref.def.kind}\``))
                 return
             }
+            // TODO: check that type args match to generics of typeDef
             type.typeArgs.forEach(tp => checkType(tp, ctx))
             return
         case 'type-bounds':
