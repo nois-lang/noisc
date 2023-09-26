@@ -126,6 +126,10 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
         return true
     }
 
+    if (t.kind === 'vid-type' && vidToString(t.identifier) === 'std::never::Never') {
+        return true
+    }
+
     if (t.kind === 'generic' && target.kind === 'generic') {
         return t.name === target.name
     }
@@ -134,7 +138,8 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
         if (vidToString(t.identifier) === vidToString(target.identifier)) {
             for (let i = 0; i < t.typeArgs.length; i++) {
                 const tArg = t.typeArgs[i]
-                const targetArg = target.typeArgs[i]
+                const targetArg = target.typeArgs.at(i)
+                if (!targetArg) return false
                 if (!isAssignable(tArg, targetArg, ctx)) {
                     return false
                 }
