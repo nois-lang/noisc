@@ -1,26 +1,41 @@
-use std::{io::Display, option::Option::*}
-
-// type
-type Unit
+// import
+use std::io::Display
 
 // sum type
 type Vec2(x: Float, y: Float)
 
-// variant type
-type Option<T> {
-    Some(value: T),
-    None
-}
-
-// trait
-trait Display {
-    fn fmt(self, args: List<Display>): String
+// inherent impl
+impl Vec2 {
+    fn size(self): Float {
+        self.x ^ 2. + self.y ^ 2.
+    }
 }
 
 // impl
 impl Display for Vec2 {
     fn fmt(self): String {
-        formatStruct(self)
+        "(" + self.x + ", " + self.y + ")"
+    }
+}
+
+// variant type
+type Shape {
+    Rectangle(width: Num, height: Num),
+    Circle(radius: Num),
+}
+
+// trait
+trait Area {
+    fn area(self): Num
+}
+
+// impl for variant type
+impl Area for Shape {
+    fn area(self): Num {
+        match self {
+            Shape::Rect(width, height) { width * height },
+            Shape::Circle(radius) { math::pi * radius ^ 2 }
+        }
     }
 }
 
@@ -32,91 +47,93 @@ fn foo<T: Add + Div>(a: T, b: T): T {
     a.add(b).div(b)
 }
 
-// define variable
-let n = 4
-// type hint
-let h: Int = 4
+fn main() {
+    // define variable
+    let n = 4
+    // type hint
+    let h: Int = 4
 
-// literals
-let i = 12
-let f = 12.34
-let c = 'a'
-let s = "abc"
-let b = True // note: this is a constructor of a variant type Bool and technically not a literal
-// list literals
-let l = [1, 2, 3]
+    // literals
+    let i = 12
+    let f = 12.34
+    let c = 'a'
+    let s = "abc"
+    let b = true
+    // list literals
+    let l = [1, 2, 3]
 
-// constructor
-let vec = Vec2(x: 2., y: 4.)
+    // constructor
+    let vec = Vec2::Vec2(x: 2., y: 4.)
 
-// field accessor
-vec.x
+    // field accessor
+    vec.x
 
-// function call
-println("hello")
+    // function call
+    println("hello")
 
-// method call
-vec.fmt()
+    // method call
+    vec.fmt()
 
-// alternative syntax
-Vec2::fmt(vec)
+    // alternative call syntax
+    Vec2::fmt(vec)
 
-// method call syntax for ambiguous methods
-Vec2::Display::fmt(vec)
+    // method call syntax for ambiguous methods
+    //Vec2::Display::fmt(vec)
 
-// if
-let d = if True { 4 } else { 2 + 6 }
+    // if
+    let d = if true { 4 } else { 2 + 6 }
 
-// while loop
-let e = while a < 5 {
-    a = a + 1
+    // while loop
+    let e = while d < 5 {
+        a = a + 1
+    }
+
+    // TODO: while let loop
+
+    // for loop
+    let f = for g in [1, 2, 3] {
+        println(g)
+        g + 1
+    }
+
+    // destructuring
+    let Vec2::Vec2(x) = vec
+
+    // destructuring alias
+    let Vec2::Vec2(x: b) = vec
+
+    // match
+    let b = match 4 {
+        1 { "one" },
+        n if n % 2 == 0 {
+            if (n > 5) { "good" } else { "not good" }
+        },
+        _ { "whatever" },
+    }
+
+    // match type
+    let b = match vec {
+        Vec2::Vec2(x: 1, y: 1) { "one" },
+        Vec2::Vec2(x: 1, ..) { "x one whatever" },
+        Vec2::Vec2(x) if x != 4 { format("x is {} not 4", x) },
+        _ { "whatever"},
+    }
+
+    // TODO: if match
+    // if let Option { value } = Some(42) {
+    //     println("value is {}", value)
+    // } else {
+    //     println("no value")
+    // }
+
+    // closure
+    let square: |Num|: Num = |a: Num|: Num { a^2 }
+    let here = ||: Unit { println("here") }
+
+    // fn reference
+    let p = println
+
+    // method reference
+    // equivalent to |v: Vec2| v.fmt()
+    let r = Vec2::fmt
 }
-
-// TODO: while let loop
-
-// for loop
-let f = for g in [1, 2, 3] {
-    println(g)
-}
-
-// destructuring
-let Vec(x) = vec
-
-// destructuring alias
-let Vec(x: b) = vec
-
-// match
-let b = match 4 {
-    1 { "one" },
-    n if n % 2 == 0 {
-        if (n > 5) { "good" } else { "not good" }
-    },
-    _ { "whatever" },
-}
-
-// match type
-let b = match vec {
-    Vec(x: 1, y: 1) { "one" },
-    Vec(x: 1, ..) { "x one whatever" },
-    Vec(x) if x != 4 { format("x is {} not 4", x) },
-    _ { "whatever"},
-}
-
-// TODO: if match
-// if let Option { value } = Some(42) {
-//     println("value is {}", value)
-// } else {
-//     println("no value")
-// }
-
-// closure
-let square: |Num|: Num = |a| { a^2 }
-let here = || { println("here") }
-
-// fn reference
-let p = println
-
-// method reference
-// equivalent to |v: Vec2| v.fmt()
-let p = Vec2.fmt
-

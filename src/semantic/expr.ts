@@ -143,7 +143,7 @@ export const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
 
     // TODO: make sure method is callable on the lOperand type, e.g. !5 -> Not::not(5) should fail
     const methodRef = <MethodDef>resolveVid(opImplFnVid!, ctx, ['method-def'])?.def
-    assert(!!methodRef, 'impl fn not found')
+    assert(!!methodRef, `impl fn \`${vidToString(opImplFnVid!)}\` not found`)
     assert(!!methodRef.fn.type, 'untyped impl fn')
     assert(methodRef.fn.type!.kind === 'fn-type', 'impl fn type in not fn')
 
