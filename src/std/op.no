@@ -22,6 +22,10 @@ trait Div {
     fn div(self, other: Self): Self
 }
 
+trait Exp {
+    fn exp(self, other: Self): Self
+}
+
 trait And {
     fn and(self, other: Self): Self
 }
