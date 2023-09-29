@@ -1,4 +1,5 @@
 import { nameLikeTokens } from '.'
+import { syntaxError } from '../../error'
 import { Parser } from '../parser'
 import { parseIdentifier } from './expr'
 
@@ -22,7 +23,7 @@ export const parseType = (parser: Parser): void => {
     } else if (parser.at('pipe')) {
         parseFnType(parser)
     } else {
-        parser.advanceWithError('expected type')
+        parser.advanceWithError(syntaxError(parser, 'expected type'))
     }
     parser.close(mark, 'type')
 }

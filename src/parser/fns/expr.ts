@@ -1,5 +1,6 @@
-import { Parser } from '../parser'
+import { syntaxError } from '../../error'
 import { TokenKind } from '../../lexer/lexer'
+import { Parser } from '../parser'
 import {
     exprFirstTokens,
     infixOpFirstTokens,
@@ -8,8 +9,8 @@ import {
     postfixOpFirstTokens,
     prefixOpFirstTokens
 } from './index'
-import { parseInfixOp, parsePostfixOp, parsePrefixOp } from './op'
 import { parseMatchExpr, parsePattern } from './match'
+import { parseInfixOp, parsePostfixOp, parsePrefixOp } from './op'
 import { parseBlock } from './statement'
 import { parseType } from './type'
 
@@ -24,7 +25,7 @@ export const parseExpr = (parser: Parser): void => {
         if (!parser.eof()) {
             parseSubExpr(parser)
         } else {
-            parser.advanceWithError('expected expression')
+            parser.advanceWithError(syntaxError(parser, 'expected expression'))
         }
     }
     parser.close(mark, 'expr')
@@ -76,7 +77,7 @@ export const parseOperand = (parser: Parser): void => {
     } else if (parser.atAny(dynamicTokens)) {
         parser.expectAny(dynamicTokens)
     } else {
-        parser.advanceWithError('expected operand')
+        parser.advanceWithError(syntaxError(parser, 'expected operand'))
     }
 
     parser.close(mark, 'operand')

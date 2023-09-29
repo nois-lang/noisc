@@ -1,3 +1,4 @@
+import { syntaxError } from '../../error'
 import { Parser } from '../parser'
 import { nameLikeTokens, parseArgs, parseConOp } from './index'
 
@@ -78,7 +79,7 @@ export const parseInfixOp = (parser: Parser): void => {
         return
     }
 
-    parser.advanceWithError('expected infix operator', mark)
+    parser.advanceWithError(syntaxError(parser, 'expected infix operator'), mark)
 }
 
 /**
@@ -97,7 +98,7 @@ export const parsePrefixOp = (parser: Parser): void => {
         parser.advance()
         parser.close(m, 'spread-op')
     } else {
-        parser.advanceWithError('expected prefix operator')
+        parser.advanceWithError(syntaxError(parser, 'expected prefix operator'))
         parser.close(m, 'error')
     }
 
@@ -124,7 +125,7 @@ export const parsePostfixOp = (parser: Parser): void => {
     } else if (parser.at('o-paren')) {
         parseCallOp(parser)
     } else {
-        parser.advanceWithError('expected postfix operator')
+        parser.advanceWithError(syntaxError(parser, 'expected postfix operator'))
     }
     parser.close(mark, 'postfix-op')
 }
@@ -137,7 +138,7 @@ export const parseCallOp = (parser: Parser): void => {
     if (parser.at('o-paren')) {
         parseArgs(parser)
     } else {
-        parser.advanceWithError('expected call operator')
+        parser.advanceWithError(syntaxError(parser, 'expected call operator'))
     }
     parser.close(mark, 'call-op')
 }

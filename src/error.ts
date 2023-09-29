@@ -1,12 +1,17 @@
-import { Location, locationToString, prettyLineAt } from './location'
-import { Source } from './source'
 import { ParseToken, TokenKind } from './lexer/lexer'
+import { Location, locationToString, prettyLineAt } from './location'
 import { red, yellow } from './output'
+import { Parser } from './parser/parser'
+import { Source } from './source'
 
 export interface SyntaxError {
     expected: TokenKind[],
     got: ParseToken,
     message?: string
+}
+
+export const syntaxError = (parser: Parser, message?: string): SyntaxError => {
+    return { expected: [], got: parser.tokens[parser.pos], message }
 }
 
 export const prettyLexerError = (token: ParseToken): string => {

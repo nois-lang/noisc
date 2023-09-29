@@ -114,7 +114,7 @@ fn main() {
     // match type
     let b = match vec {
         Vec2::Vec2(x: 1, y: 1) { "one" },
-        Vec2::Vec2(x: 1, ..) { "x one whatever" },
+        Vec2::Vec2(x: 1) { "x one whatever" },
         Vec2::Vec2(x) if x != 4 { format("x is {} not 4", x) },
         _ { "whatever"},
     }

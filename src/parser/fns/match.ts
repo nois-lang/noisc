@@ -1,8 +1,9 @@
+import { syntaxError } from '../../error'
 import { Parser } from '../parser'
 import { parseExpr, parseIdentifier } from './expr'
-import { parseBlock } from './statement'
 import { fieldPatternFirstTokens, nameLikeTokens, patternFollowTokens, prefixOpFirstTokens } from './index'
-import { parsePrefixOp, parseSpreadOp } from './op'
+import { parsePrefixOp } from './op'
+import { parseBlock } from './statement'
 
 /**
  * match-expr ::= MATCH-KEYWORD expr match-clauses
@@ -93,12 +94,12 @@ export const parsePatternExpr = (parser: Parser): void => {
         } else if (parser.at('float')) {
             parser.expect('float')
         } else {
-            parser.advanceWithError('expected pattern')
+            parser.advanceWithError(syntaxError(parser, 'expected pattern'))
         }
     } else if (parser.at('underscore')) {
         parseHole(parser)
     } else {
-        parser.advanceWithError('expected pattern')
+        parser.advanceWithError(syntaxError(parser, 'expected pattern'))
     }
     parser.close(mark, 'pattern-expr')
 }
@@ -130,17 +131,13 @@ export const parseConPatternParams = (parser: Parser): void => {
 }
 
 /**
- * field-pattern ::= NAME (COLON pattern) | spread-op
+ * field-pattern ::= NAME (COLON pattern)?
  */
 export const parseFieldPattern = (parser: Parser): void => {
     const mark = parser.open()
-    if (parser.atAny(nameLikeTokens)) {
-        parser.expectAny(nameLikeTokens)
-        if (parser.consume('colon')) {
-            parsePattern(parser)
-        }
-    } else if (parser.at('period')) {
-        parseSpreadOp(parser)
+    parser.expectAny(nameLikeTokens)
+    if (parser.consume('colon')) {
+        parsePattern(parser)
     }
     parser.close(mark, 'field-pattern')
 }

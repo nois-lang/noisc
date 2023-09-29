@@ -1,3 +1,4 @@
+import { syntaxError } from '../../error'
 import { TokenKind, lexerKeywordKinds } from '../../lexer/lexer'
 import { Parser } from '../parser'
 import { parseExpr } from './expr'
@@ -65,7 +66,7 @@ export const parseClosureExpr = (parser: Parser): void => {
     if (parser.at('o-brace')) {
         parseBlock(parser)
     } else {
-        parser.advanceWithError('expected block')
+        parser.advanceWithError(syntaxError(parser, 'expected block'))
     }
     parser.close(mark, 'closure-expr')
 }
@@ -114,5 +115,5 @@ export const parseFieldInit = (parser: Parser): void => {
 }
 
 export const parseTodo = (parser: Parser): void => {
-    parser.advanceWithError('todo')
+    parser.advanceWithError(syntaxError(parser, 'todo'))
 }

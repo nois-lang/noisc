@@ -138,7 +138,7 @@ pattern               ::= pattern-bind? pattern-expr
                       ;
     con-pattern-parms ::= O-PAREN (field-pattern (COMMA field-pattern)*)? COMMA? C-PAREN
                       ;
-      field-pattern   ::= NAME (COLON pattern)? | spread-op
+      field-pattern   ::= NAME (COLON pattern)?
                       ;
     hole              ::= UNDERSCORE
                       ;

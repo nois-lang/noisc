@@ -4,7 +4,7 @@ import { nameLikeTokens } from '../parser/fns'
 import { Typed } from '../typecheck'
 import { buildExpr, buildOperandExpr, Expr, UnaryExpr } from './expr'
 import { AstNode, filterNonAstNodes, } from './index'
-import { buildUnaryOp, SpreadOp } from './op'
+import { buildUnaryOp } from './op'
 import { buildFloatLiteral, buildIdentifier, buildIntLiteral, buildName, Identifier, Name, Operand } from './operand'
 import { Block, buildBlock } from './statement'
 
@@ -75,7 +75,7 @@ export const buildPatternExpr = (node: ParseNode): PatternExpr => {
 
 export interface ConPattern extends AstNode<'con-pattern'> {
     identifier: Identifier
-    fieldPatterns: (FieldPattern | SpreadOp)[]
+    fieldPatterns: FieldPattern[]
 }
 
 export const buildConPattern = (node: ParseNode): ConPattern => {
@@ -90,11 +90,8 @@ export interface FieldPattern extends AstNode<'field-pattern'> {
     pattern?: Pattern
 }
 
-export const buildFieldPattern = (node: ParseNode): FieldPattern | SpreadOp => {
+export const buildFieldPattern = (node: ParseNode): FieldPattern => {
     const nodes = filterNonAstNodes(node)
-    if (nodes[0].kind === 'spread-op') {
-        return { kind: 'spread-op', parseNode: node }
-    }
     const name = buildName(nodes[0])
     const pattern = nodes.at(1) ? buildPattern(nodes[1]) : undefined
     return { kind: 'field-pattern', parseNode: node, name, pattern }

@@ -1,5 +1,5 @@
-import { independentTokenKinds, ParseToken, TokenKind } from '../lexer/lexer'
 import { SyntaxError } from '../error'
+import { independentTokenKinds, ParseToken, TokenKind } from '../lexer/lexer'
 import { ParseTree, TreeKind } from './index'
 
 export type ParseEvent = OpenEvent | { type: 'close' } | { type: 'advance' }
@@ -95,11 +95,11 @@ export class Parser {
             }
         }
 
-        this.error({ expected: kinds, got: this.tokens[this.pos] })
+        this.advanceWithError({ expected: kinds, got: this.tokens[this.pos] })
     }
 
-    advanceWithError(message: string, mark: number = this.open()): void {
-        this.error({ expected: [], got: this.tokens[this.pos], message })
+    advanceWithError(e: SyntaxError, mark: number = this.open()): void {
+        this.error(e)
 
         if (!this.eof()) {
             this.advance()

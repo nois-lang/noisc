@@ -1,3 +1,4 @@
+import { syntaxError } from '../../error'
 import { Parser } from '../parser'
 import { parseExpr, parseIdentifier } from './expr'
 import { exprFirstTokens, nameLikeTokens, paramFirstTokens, useExprFirstTokens } from './index'
@@ -26,7 +27,7 @@ export const parseStatement = (parser: Parser): void => {
     } else if (parser.atAny(exprFirstTokens)) {
         parseExpr(parser)
     } else {
-        parser.advanceWithError('expected statement')
+        parser.advanceWithError(syntaxError(parser, 'expected statement'))
     }
 
     parser.close(mark, 'statement')
@@ -59,7 +60,7 @@ export const parseUseExpr = (parser: Parser): void => {
     } else if (parser.at('asterisk')) {
         parseWildcard(parser)
     } else {
-        parser.advanceWithError('expected use-expr')
+        parser.advanceWithError(syntaxError(parser, 'expected use-expr'))
     }
     parser.close(mark, 'use-expr')
 }

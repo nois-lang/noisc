@@ -1,7 +1,7 @@
 import { ConPattern, Pattern } from "../ast/match"
 import { Name } from "../ast/operand"
 import { Context, defKey } from "../scope"
-import { idToVid } from "../scope/util"
+import { idToVid, vidToString } from "../scope/util"
 import { NameDef, resolveVid } from "../scope/vid"
 import { VidType, VirtualType, typeToVirtual, virtualTypeToString } from "../typecheck"
 import { notFoundError, semanticError } from "./error"
@@ -55,7 +55,7 @@ const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Contex
     const ref = resolveVid(conVid, ctx, ['type-con'])
 
     if (!ref || ref.def.kind !== 'type-con') {
-        ctx.errors.push(notFoundError(ctx, pattern, virtualTypeToString(expectedType), 'type constructor'))
+        ctx.errors.push(notFoundError(ctx, pattern, vidToString(conVid), 'type constructor'))
         return undefined
     }
 
@@ -69,20 +69,13 @@ const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Contex
     }
 
     for (const fp of pattern.fieldPatterns) {
-        switch (fp.kind) {
-            case 'spread-op':
-                // TODO: spreadOp
-                break
-            case 'field-pattern':
-                const field = ref.def.typeCon.fieldDefs.find(fd => fd.name.value === fp.name.value)
-                if (!field) return undefined
-                field.name.type = typeToVirtual(field.fieldType, ctx)
-                if (fp.pattern) {
-                    checkPattern(fp.pattern, field.name.type, ctx)
-                } else {
-                    defs.push(field.name)
-                }
-                break
+        const field = ref.def.typeCon.fieldDefs.find(fd => fd.name.value === fp.name.value)
+        if (!field) return undefined
+        field.name.type = typeToVirtual(field.fieldType, ctx)
+        if (fp.pattern) {
+            checkPattern(fp.pattern, field.name.type, ctx)
+        } else {
+            defs.push(field.name)
         }
     }
 
