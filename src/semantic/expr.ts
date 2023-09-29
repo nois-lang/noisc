@@ -1,5 +1,6 @@
 import { checkBlock, checkCallArgs, checkIdentifier, checkParam, checkType } from '.'
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
+import { MatchExpr } from '../ast/match'
 import { CallOp, ConOp } from '../ast/op'
 import { ClosureExpr, IfExpr, ListExpr, Operand } from '../ast/operand'
 import { Context, instanceScope } from '../scope'
@@ -18,7 +19,9 @@ import { instanceGenericMap, resolveFnGenerics, resolveGenericsOverStructure, re
 import { unknownType } from '../typecheck/type'
 import { assert, todo } from '../util/todo'
 import { notFoundError, semanticError, typeError } from './error'
+import { checkExhaustion } from './exhaust'
 import { checkAccessExpr } from './instance'
+import { checkPattern } from './match'
 import { operatorImplMap } from './op'
 
 export const checkExpr = (expr: Expr, ctx: Context): void => {
@@ -52,7 +55,7 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
             // TODO
             break
         case 'match-expr':
-            // TODO
+            checkMatchExpr(operand, ctx)
             break
         case 'closure-expr':
             checkClosureExpr(operand, ctx)
@@ -196,6 +199,22 @@ if branches have incompatible types:
 
 
     ifExpr.type = ifExpr.thenBlock.type
+}
+
+export const checkMatchExpr = (matchExpr: MatchExpr, ctx: Context): void => {
+    checkExpr(matchExpr.expr, ctx)
+    matchExpr.clauses.forEach(clause => {
+        checkPattern(clause.pattern, matchExpr.expr.type ?? unknownType, ctx)
+        if (clause.guard) {
+            checkExpr(clause.guard, ctx)
+            const guardType = clause.guard.type ?? unknownType
+            if (guardType.kind !== 'vid-type' || !isAssignable(guardType, bool, ctx)) {
+                ctx.errors.push(typeError(clause.guard, guardType, bool, ctx))
+            }
+        }
+        checkBlock(clause.block, ctx)
+    })
+    checkExhaustion(matchExpr, ctx)
 }
 
 /**

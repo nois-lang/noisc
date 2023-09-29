@@ -8,7 +8,7 @@ type PeekableIter<T>(
 impl <T> Iter<T> for PeekableIter<T> {
     fn next(self): Option<T> {
         match self.peeked.take() {
-            Option::Some(value) { v },
+            Option::Some(value) { value },
             Option::None() { self.iter.next() },
         }
     }
@@ -30,8 +30,7 @@ trait PeekableAdapter<Self: Iter<T>, T> {
 
 impl <T> PeekableAdapter<T> for Iter<T> {
     fn peek<U>(self): PeekableIter<T> {
-        // PeekableIter::PeekableIter(iter: self, peeked: Option::None())
-        todo("PeekableAdapter::peek")
+        PeekableIter::PeekableIter(iter: self, peeked: Option::None())
     }
 }
 

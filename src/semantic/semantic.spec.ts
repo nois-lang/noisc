@@ -311,4 +311,51 @@ fn main() {
             ])
         })
     })
+
+    describe('match expr', () => {
+        it('non-exhaustive', () => {
+            const code = `\
+type Expr {
+    Add(l: Expr, r: Expr),
+    Const(v: Int)
+}
+
+
+fn main() {
+    let expr = Expr::Const(v: 4)
+    match expr {
+        Expr::Add(l: Expr::Add()) {},
+        Expr::Const() {},
+    }
+}`
+            const ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'non-exhaustive match expression',
+            ])
+        })
+
+        it('unreachable pattern', () => {
+            const code = `\
+type Expr {
+    Add(l: Expr, r: Expr),
+    Const(v: Int)
+}
+
+
+fn main() {
+    let expr = Expr::Const(v: 4)
+    match expr {
+        Expr::Add() {},
+        Expr::Const() {},
+        _ {},
+    }
+}`
+            const ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual([])
+
+            expect(ctx.warnings.map(e => e.message)).toEqual([
+                'unreachable pattern',
+            ])
+        })
+    })
 })
