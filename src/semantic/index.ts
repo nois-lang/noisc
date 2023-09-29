@@ -314,6 +314,9 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
 }
 
 export const checkTypeDef = (typeDef: TypeDef, ctx: Context) => {
+    if (typeDef.checked) return
+    typeDef.checked = true
+
     const module = ctx.moduleStack.at(-1)!
 
     const vid = { names: [...module.identifier.names, typeDef.name.value] }
