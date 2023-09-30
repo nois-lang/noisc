@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'fs'
-import { basename, join, resolve } from 'path'
+import { basename, dirname, join, resolve } from 'path'
 import * as process from 'process'
+import { fileURLToPath } from 'url'
 import { fromCmdFlags } from './config'
 import { prettyError, prettySourceMessage, prettyWarning } from './error'
 import { indexToLocation } from './location'
@@ -12,7 +13,8 @@ import { buildImplRelations } from './scope/trait'
 import { checkModule, prepareModule } from './semantic'
 import { Source } from './source'
 
-const version = JSON.parse(readFileSync(join(__dirname, '..', 'package.json')).toString()).version
+const dir = dirname(fileURLToPath(import.meta.url))
+const version = JSON.parse(readFileSync(join(dir, '..', 'package.json')).toString()).version
 
 export const usage = `\
 Nois transpiler - v${version}
@@ -50,7 +52,7 @@ const pkg: Package = {
     modules: [moduleAst]
 }
 
-const std = buildPackage(join(__dirname, 'std'), 'std')
+const std = buildPackage(join(dir, 'std'), 'std')
 if (!std) {
     process.exit(1)
 }

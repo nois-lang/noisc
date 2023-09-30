@@ -27,7 +27,7 @@
 
 import { MatchExpr, PatternExpr } from "../ast/match"
 import { Context } from "../scope"
-import { idToVid } from "../scope/util"
+import { idToVid, vidToString } from "../scope/util"
 import { TypeConDef, resolveVid } from "../scope/vid"
 import { assert, unreachable } from "../util/todo"
 import { semanticError } from "./error"
@@ -96,7 +96,7 @@ const matchPattern = (pattern: PatternExpr, tree: MatchTree, ctx: Context): bool
             if (tree.node.kind !== 'type') {
                 const vid = idToVid(pattern.identifier)
                 const def = resolveVid(vid, ctx, ['type-con'])?.def
-                if (!def || def.kind !== 'type-con') throw Error(`\`${vid}\` not found`)
+                if (!def || def.kind !== 'type-con') throw Error(`\`${vidToString(vid)}\` not found`)
 
                 const variants: Map<string, MatchTree> = new Map(
                     def.typeDef.variants.map(v => [v.name.value, { node: { kind: 'unmatched' } }])

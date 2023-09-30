@@ -1,4 +1,4 @@
-import { join } from 'path'
+import { dirname, join } from 'path'
 import { defaultConfig } from '../config'
 import { Package } from '../package'
 import { buildModule, buildPackage } from '../package/build'
@@ -6,6 +6,7 @@ import { Context, pathToVid } from '../scope'
 import { buildImplRelations } from '../scope/trait'
 import { Source } from '../source'
 import { checkModule, prepareModule } from './index'
+import { fileURLToPath } from 'url'
 
 describe('semantic', () => {
 
@@ -19,7 +20,7 @@ describe('semantic', () => {
             modules: [moduleAst]
         }
 
-        const std = buildPackage(join(__dirname, '..', 'std'), 'std')!
+        const std = buildPackage(join(dirname(fileURLToPath(import.meta.url)), '..', 'std'), 'std')!
 
         const config = defaultConfig()
         const packages = [std, pkg]
