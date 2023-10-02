@@ -40,6 +40,7 @@ export type AstNodeKind
     | 'fn-type'
     | 'generic'
     | 'if-expr'
+    | 'if-let-expr'
     | 'while-expr'
     | 'for-expr'
     | 'match-expr'

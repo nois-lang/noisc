@@ -1,15 +1,16 @@
-import { buildMatchExpr, buildPattern, MatchExpr, Pattern } from './match'
-import { AstNode, buildParam, filterNonAstNodes, Param } from './index'
-import { Block, buildBlock } from './statement'
-import { buildExpr, Expr } from './expr'
 import { ParseToken } from '../lexer/lexer'
 import { ParseNode, ParseTree } from '../parser'
-import { Typed } from '../typecheck'
-import { buildType, Type } from './type'
 import { nameLikeTokens } from '../parser/fns'
+import { Typed } from '../typecheck'
+import { buildExpr, Expr } from './expr'
+import { AstNode, buildParam, filterNonAstNodes, Param } from './index'
+import { buildMatchExpr, buildPattern, MatchExpr, Pattern } from './match'
+import { Block, buildBlock } from './statement'
+import { buildType, Type } from './type'
 
 export type Operand
     = IfExpr
+    | IfLetExpr
     | WhileExpr
     | ForExpr
     | MatchExpr
@@ -27,6 +28,8 @@ export const buildOperand = (node: ParseNode): Operand => {
     switch (n.kind) {
         case 'if-expr':
             return buildIfExpr(n)
+        case 'if-let-expr':
+            return buildIfLetExpr(n)
         case 'while-expr':
             return buildWhileExpr(n)
         case 'for-expr':
@@ -66,9 +69,32 @@ export const buildIfExpr = (node: ParseNode): IfExpr => {
     idx++
     const condition = buildExpr(nodes[idx++])
     const thenBlock = buildBlock(nodes[idx++])
-    //                            v-- skip else keyword
-    const elseBlock = nodes.at(idx++) ? buildBlock(nodes[idx++]) : undefined
+    // skip else keyword
+    idx++
+    const elseBlock = nodes.at(idx) ? buildBlock(nodes[idx++]) : undefined
     return { kind: 'if-expr', parseNode: node, condition, thenBlock, elseBlock }
+}
+
+export interface IfLetExpr extends AstNode<'if-let-expr'>, Partial<Typed> {
+    pattern: Pattern
+    expr: Expr
+    thenBlock: Block
+    elseBlock?: Block
+}
+
+export const buildIfLetExpr = (node: ParseNode): IfLetExpr => {
+    const nodes = filterNonAstNodes(node)
+    let idx = 0
+    // skip if and let keywords
+    idx++
+    idx++
+    const pattern = buildPattern(nodes[idx++])
+    const expr = buildExpr(nodes[idx++])
+    const thenBlock = buildBlock(nodes[idx++])
+    // skip else keyword
+    idx++
+    const elseBlock = nodes.at(idx) ? buildBlock(nodes[idx++]) : undefined
+    return { kind: 'if-let-expr', parseNode: node, pattern, expr, thenBlock, elseBlock }
 }
 
 export interface WhileExpr extends AstNode<'while-expr'>, Partial<Typed> {

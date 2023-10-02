@@ -48,6 +48,9 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
         case 'if-expr':
             checkIfExpr(operand, ctx)
             break
+        case 'if-let-expr':
+            // TODO
+            break
         case 'while-expr':
             // TODO
             break

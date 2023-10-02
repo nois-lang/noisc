@@ -56,7 +56,9 @@ export const parseOperand = (parser: Parser): void => {
     const dynamicTokens: TokenKind[] = ['string', 'char', 'int', 'float']
 
     const mark = parser.open()
-    if (parser.at('if-keyword')) {
+    if (parser.at('if-keyword') && parser.nth(1) === 'let-keyword') {
+        parseIfLetExpr(parser)
+    } else if (parser.at('if-keyword')) {
         parseIfExpr(parser)
     } else if (parser.at('while-keyword')) {
         parseWhileExpr(parser)
@@ -111,6 +113,23 @@ export const parseIfExpr = (parser: Parser): void => {
         parseBlock(parser)
     }
     parser.close(mark, 'if-expr')
+}
+
+/**
+ * if-let-expr ::= IF-KEYWORD LET-KEYWORD pattern EQUALS expr block (ELSE-KEYWORD block)?
+ */
+export const parseIfLetExpr = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('if-keyword')
+    parser.expect('let-keyword')
+    parsePattern(parser)
+    parser.expect('equals')
+    parseExpr(parser)
+    parseBlock(parser)
+    if (parser.consume('else-keyword')) {
+        parseBlock(parser)
+    }
+    parser.close(mark, 'if-let-expr')
 }
 
 /**

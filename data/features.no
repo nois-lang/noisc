@@ -33,7 +33,7 @@ trait Area {
 impl Area for Shape {
     fn area(self): Num {
         match self {
-            Shape::Rect(width, height) { width * height },
+            Shape::Rectangle(width, height) { width * height },
             Shape::Circle(radius) { math::pi * radius ^ 2 }
         }
     }
@@ -119,12 +119,11 @@ fn main() {
         _ { "whatever"},
     }
 
-    // TODO: if match
-    // if let Option { value } = Some(42) {
-    //     println("value is {}", value)
-    // } else {
-    //     println("no value")
-    // }
+    if let Option(value) = Some(42) {
+        println("value is {}", value)
+    } else {
+        println("no value")
+    }
 
     // closure
     let square: |Num|: Num = |a: Num|: Num { a^2 }
