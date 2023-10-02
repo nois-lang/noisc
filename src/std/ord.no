@@ -1,1 +1,18 @@
-trait Ord<Self: op::Eq> {}
+type Ordering {
+    Less,
+    Equal,
+    Greater
+}
+
+trait Ord<Self: op::Eq> {
+    fn cmp(self, other: Self): Ordering
+
+    fn ge(self, other: Self): Ordering
+
+    fn le(self, other: Self): Ordering
+
+    fn gt(self, other: Self): Ordering
+
+    fn lt(self, other: Self): Ordering
+}
+

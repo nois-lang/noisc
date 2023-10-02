@@ -29,7 +29,7 @@ import { MatchExpr, PatternExpr } from "../ast/match"
 import { Context } from "../scope"
 import { idToVid, vidToString } from "../scope/util"
 import { TypeConDef, resolveVid } from "../scope/vid"
-import { assert, unreachable } from "../util/todo"
+import { assert, todo, unreachable } from "../util/todo"
 import { semanticError } from "./error"
 
 export interface MatchTree {
@@ -137,6 +137,8 @@ const matchPattern = (pattern: PatternExpr, tree: MatchTree, ctx: Context): bool
                 }
                 return matchPattern(f.pattern.expr, fTree!, ctx)
             })
+        case 'operand-expr':
+            return todo(`pattern \`${pattern.kind}\``)
         default:
             return unreachable(pattern.kind)
     }

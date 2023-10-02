@@ -26,6 +26,10 @@ trait Exp {
     fn exp(self, other: Self): Self
 }
 
+trait Mod {
+    fn mod(self, other: Self): Self
+}
+
 trait And {
     fn and(self, other: Self): Self
 }
@@ -36,4 +40,6 @@ trait Or {
 
 trait Eq {
     fn eq(self, other: Self): Bool
+
+    fn ne(self): Bool
 }
