@@ -2,7 +2,7 @@ import { checkBlock, checkCallArgs, checkIdentifier, checkParam, checkType } fro
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { MatchExpr } from '../ast/match'
 import { CallOp, ConOp } from '../ast/op'
-import { ClosureExpr, IfExpr, ListExpr, Operand } from '../ast/operand'
+import { ClosureExpr, IfExpr, IfLetExpr, ListExpr, Operand } from '../ast/operand'
 import { Context, instanceScope } from '../scope'
 import { bool } from '../scope/std'
 import { getImplTargetType } from '../scope/trait'
@@ -49,7 +49,7 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
             checkIfExpr(operand, ctx)
             break
         case 'if-let-expr':
-            // TODO
+            checkIfLetExpr(operand, ctx)
             break
         case 'while-expr':
             // TODO
@@ -202,6 +202,36 @@ if branches have incompatible types:
 
 
     ifExpr.type = ifExpr.thenBlock.type
+}
+
+export const checkIfLetExpr = (ifLetExpr: IfLetExpr, ctx: Context): void => {
+    const module = ctx.moduleStack.at(-1)!
+    module.scopeStack.push({ kind: 'block', definitions: new Map() })
+
+    checkExpr(ifLetExpr.expr, ctx)
+    assert(!!ifLetExpr.expr.type)
+    // pattern definitions should only be available in `then` block
+    checkPattern(ifLetExpr.pattern, ifLetExpr.expr.type!, ctx)
+
+    checkBlock(ifLetExpr.thenBlock, ctx)
+    assert(!!ifLetExpr.thenBlock.type)
+
+    module.scopeStack.pop()
+
+    if (ifLetExpr.elseBlock) {
+        checkBlock(ifLetExpr.elseBlock, ctx)
+        assert(!!ifLetExpr.elseBlock.type)
+        const thenType = ifLetExpr.thenBlock.type!
+        const elseType = ifLetExpr.elseBlock.type!
+        if (!isAssignable(elseType, thenType, ctx)) {
+            // TODO: type errors with description
+            ctx.errors.push(typeError(ifLetExpr, elseType, thenType, ctx))
+        }
+        // TODO: combine type
+        ifLetExpr.type = thenType
+    }
+    // TODO: throw error if result of partial if let expr (no else block) is used
+    ifLetExpr.type = unknownType
 }
 
 export const checkMatchExpr = (matchExpr: MatchExpr, ctx: Context): void => {
