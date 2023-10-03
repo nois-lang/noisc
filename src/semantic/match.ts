@@ -1,9 +1,11 @@
 import { ConPattern, Pattern } from "../ast/match"
 import { Name } from "../ast/operand"
 import { Context, defKey } from "../scope"
-import { idToVid, vidToString } from "../scope/util"
+import { idToVid, vidFromScope, vidFromString, vidToString } from "../scope/util"
 import { NameDef, resolveVid } from "../scope/vid"
-import { VidType, VirtualType, typeToVirtual, virtualTypeToString } from "../typecheck"
+import { VidType, VirtualType, genericToVirtual, typeToVirtual, virtualTypeToString } from "../typecheck"
+import { resolveGenericsOverStructure, resolveType } from "../typecheck/generic"
+import { todo } from "../util/todo"
 import { notFoundError, semanticError } from "./error"
 
 export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: Context): void => {
@@ -59,11 +61,12 @@ const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Contex
         return undefined
     }
 
+    const typeDefVid = vidFromScope(ref.vid)
     if (ref.def.typeDef.name.value !== expectedType.identifier.names.at(-1)!) {
         ctx.errors.push(semanticError(
             ctx,
             pattern.identifier,
-            `cannot destructure type \`${virtualTypeToString(expectedType)}\` into \`${ref.def.typeDef.name.value}\``
+            `cannot destructure type \`${virtualTypeToString(expectedType)}\` into \`${vidToString(typeDefVid)}\``
         ))
         return undefined
     }
@@ -71,7 +74,13 @@ const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Contex
     for (const fp of pattern.fieldPatterns) {
         const field = ref.def.typeCon.fieldDefs.find(fd => fd.name.value === fp.name.value)
         if (!field) return undefined
-        field.name.type = typeToVirtual(field.fieldType, ctx)
+
+        const conGenericMap = resolveGenericsOverStructure(
+            expectedType,
+            { kind: 'vid-type', identifier: typeDefVid, typeArgs: ref.def.typeDef.generics.map(g => genericToVirtual(g, ctx)) }
+        )
+        field.name.type = resolveType(typeToVirtual(field.fieldType, ctx), [conGenericMap], field, ctx)
+
         if (fp.pattern) {
             checkPattern(fp.pattern, field.name.type, ctx)
         } else {

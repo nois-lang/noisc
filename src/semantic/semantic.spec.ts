@@ -313,6 +313,34 @@ fn main() {
         })
     })
 
+    describe('if let expr', () => {
+        it('simple', () => {
+            const code = (arg: string) => `\
+fn main() {
+    if let Option::Some(value) = ${arg} {
+        value()
+    } else {
+        value()
+    }
+}`
+            let ctx = check(code('Option::Some(value: 4)'))
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: non-callable operand of type `std::int::Int`',
+                'identifier `value` not found',
+                'type error: non-callable operand of type `?`',
+            ])
+
+            ctx = check(code('4'))
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'cannot destructure type `std::int::Int` into `std::option::Option`',
+                'identifier `value` not found',
+                "type error: non-callable operand of type `?`",
+                "identifier `value` not found",
+                'type error: non-callable operand of type `?`',
+            ])
+        })
+    })
+
     describe('match expr', () => {
         it('non-exhaustive', () => {
             const code = `\
