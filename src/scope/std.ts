@@ -1,4 +1,5 @@
-import { VirtualType } from '../typecheck'
+import { VidType } from '../typecheck'
+import { unknownType } from '../typecheck/type'
 import { vidFromString } from './util'
 import { VirtualIdentifier } from './vid'
 
@@ -27,4 +28,6 @@ export const defaultImportedVids: VirtualIdentifier[] = [
     'std::into::Into'
 ].map(s => vidFromString(s))
 
-export const bool: VirtualType = { kind: 'vid-type', identifier: { names: ['std', 'bool', 'Bool'] }, typeArgs: [] }
+export const bool: VidType = { kind: 'vid-type', identifier: vidFromString('std::bool::Bool'), typeArgs: [] }
+export const iter: VidType = { kind: 'vid-type', identifier: vidFromString('std::iter::Iter'), typeArgs: [unknownType] }
+export const iterable: VidType = { kind: 'vid-type', identifier: vidFromString('std::iter::Iterable'), typeArgs: [unknownType] }

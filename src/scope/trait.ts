@@ -102,15 +102,14 @@ const getImplRel = (impl: TraitDef | ImplDef, ctx: Context): ImplRelation | unde
 }
 
 /**
- * Find all supertypes (types/traits implemented by specified type), ignoring current scope
+ * Find all impl relations to supertypes (types/traits implemented by specified type), ignoring current scope
  */
-export const findSupertypes = (typeVid: VirtualIdentifier, ctx: Context): VirtualIdentifierMatch<TraitDef | TypeDef>[] => {
+export const findSuperRels = (typeVid: VirtualIdentifier, ctx: Context): ImplRelation[] => {
     const ref = resolveVid(typeVid, ctx)
     if (!ref) return []
 
     const supertypes = ctx.impls
         .filter(i => i.forType.kind === 'vid-type' && vidToString(i.forType.identifier) === vidToString(typeVid))
-        .map(i => i.typeDef)
 
     return supertypes
 }

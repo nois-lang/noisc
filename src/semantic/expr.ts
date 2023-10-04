@@ -2,9 +2,9 @@ import { checkBlock, checkCallArgs, checkIdentifier, checkParam, checkType } fro
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { MatchExpr } from '../ast/match'
 import { CallOp, ConOp } from '../ast/op'
-import { ClosureExpr, IfExpr, IfLetExpr, ListExpr, Operand } from '../ast/operand'
+import { ClosureExpr, ForExpr, IfExpr, IfLetExpr, ListExpr, Operand, WhileExpr } from '../ast/operand'
 import { Context, instanceScope } from '../scope'
-import { bool } from '../scope/std'
+import { bool, iter, iterable } from '../scope/std'
 import { getImplTargetType } from '../scope/trait'
 import { idToVid, vidFromString, vidToString } from '../scope/util'
 import { MethodDef, resolveVid } from '../scope/vid'
@@ -52,10 +52,10 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
             checkIfLetExpr(operand, ctx)
             break
         case 'while-expr':
-            // TODO
+            checkWhileExpr(operand, ctx)
             break
         case 'for-expr':
-            // TODO
+            checkForExpr(operand, ctx)
             break
         case 'match-expr':
             checkMatchExpr(operand, ctx)
@@ -178,7 +178,7 @@ export const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
 export const checkIfExpr = (ifExpr: IfExpr, ctx: Context): void => {
     checkExpr(ifExpr.condition, ctx)
     const condType = ifExpr.condition.type ?? unknownType
-    if (condType.kind !== 'vid-type' || !isAssignable(condType, bool, ctx)) {
+    if (!isAssignable(condType, bool, ctx)) {
         ctx.errors.push(typeError(ifExpr.condition, condType, bool, ctx))
     }
     checkBlock(ifExpr.thenBlock, ctx)
@@ -232,6 +232,50 @@ export const checkIfLetExpr = (ifLetExpr: IfLetExpr, ctx: Context): void => {
     }
     // TODO: throw error if result of partial if let expr (no else block) is used
     ifLetExpr.type = unknownType
+}
+
+export const checkWhileExpr = (whileExpr: WhileExpr, ctx: Context): void => {
+    checkExpr(whileExpr.condition, ctx)
+    const condType = whileExpr.condition.type
+    assert(!!condType)
+    if (!isAssignable(condType!, bool, ctx)) {
+        ctx.errors.push(typeError(whileExpr.condition, condType!, bool, ctx))
+    }
+
+    checkBlock(whileExpr.block, ctx)
+    assert(!!whileExpr.block.type)
+
+    whileExpr.type = {
+        kind: 'vid-type',
+        identifier: iter.identifier,
+        typeArgs: [whileExpr.block.type!]
+    }
+}
+
+export const checkForExpr = (forExpr: ForExpr, ctx: Context): void => {
+    const module = ctx.moduleStack.at(-1)!
+    module.scopeStack.push({ kind: 'block', definitions: new Map() })
+
+    checkExpr(forExpr.expr, ctx)
+    assert(!!forExpr.expr.type)
+    if (![iter, iterable].some(t => isAssignable(forExpr.expr.type!, t, ctx))) {
+        ctx.errors.push(semanticError(ctx, forExpr.expr, `type ${virtualTypeToString(forExpr.expr.type!)} is not iterable`))
+    }
+
+    // TODO: need function to extract trait from concrete type in order to resolve generic, 
+    // e.g. extractTrait(`Iterable`, `List<Int>`) -> Iterable<Int>
+    checkPattern(forExpr.pattern, unknownType, ctx)
+
+    checkBlock(forExpr.block, ctx)
+    assert(!!forExpr.block.type)
+
+    forExpr.type = {
+        kind: 'vid-type',
+        identifier: iter.identifier,
+        typeArgs: [forExpr.block.type!]
+    }
+
+    module.scopeStack.pop()
 }
 
 export const checkMatchExpr = (matchExpr: MatchExpr, ctx: Context): void => {

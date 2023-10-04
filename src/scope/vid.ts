@@ -7,7 +7,7 @@ import { checkTopLevelDefiniton } from '../semantic'
 import { selfType } from '../typecheck/type'
 import { Context, Scope, instanceScope } from './index'
 import { defaultImportedVids } from './std'
-import { findSupertypes } from './trait'
+import { findSuperRels } from './trait'
 import { concatVid, vidToString } from './util'
 
 export interface VirtualIdentifier {
@@ -179,11 +179,11 @@ const resolveScopeVid = (
                 if (traitDef && checkSuper) {
                     // lookup supertypes' traits/impls that might contain that function
                     const fullTypeVid = { names: [...(moduleVid?.names ?? []), traitName] }
-                    const superDefs = findSupertypes(fullTypeVid, ctx)
-                    for (let superDef of superDefs) {
+                    const superRels = findSuperRels(fullTypeVid, ctx)
+                    for (let superRel of superRels) {
                         // don't check itself
-                        if (vidToString(fullTypeVid) === vidToString(superDef.vid)) continue
-                        const fullMethodVid = { names: [...superDef.vid.names, fnName] }
+                        if (vidToString(fullTypeVid) === vidToString(superRel.typeDef.vid)) continue
+                        const fullMethodVid = { names: [...superRel.typeDef.vid.names, fnName] }
                         const methodRef = resolveVid(fullMethodVid, ctx, ['method-def'])
                         if (methodRef && methodRef.def.kind === 'method-def') {
                             return methodRef

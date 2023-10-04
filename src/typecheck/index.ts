@@ -1,6 +1,6 @@
 import { Generic, Type } from '../ast/type'
 import { Context } from '../scope'
-import { findSupertypes } from '../scope/trait'
+import { findSuperRels as findSuperRels } from '../scope/trait'
 import { idToVid, vidToString } from '../scope/util'
 import { VirtualIdentifier, resolveVid } from '../scope/vid'
 import { notFoundError, semanticError } from '../semantic/error'
@@ -146,8 +146,13 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
             }
             return true
         }
-        const superRefs = findSupertypes(t.identifier, ctx)
-        return superRefs.some(ref => vidToString(ref.vid) === vidToString(target.identifier))
+        const superRels = findSuperRels(t.identifier, ctx)
+        return superRels.some(rel => {
+            // don't check itself
+            if (vidToString(t.identifier) === vidToString(rel.typeDef.vid)) return false
+            const forType: VirtualType = { kind: 'vid-type', identifier: rel.typeDef.vid, typeArgs: [] }
+            return isAssignable(forType, target, ctx)
+        })
     }
     if (t.kind === 'fn-type' && target.kind === 'fn-type') {
         for (let i = 0; i < target.paramTypes.length; i++) {
