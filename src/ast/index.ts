@@ -28,6 +28,7 @@ export type AstNodeKind
     | 'field-def'
     | 'type-con'
     | 'return-stmt'
+    | 'break-stmt'
     | 'operand-expr'
     | 'unary-expr'
     | 'binary-expr'

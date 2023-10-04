@@ -25,6 +25,7 @@ export const treeKinds = <const>[
     'type-con-list',
     'type-con',
     'return-stmt',
+    'break-stmt',
     'expr',
     'sub-expr',
     'operand',

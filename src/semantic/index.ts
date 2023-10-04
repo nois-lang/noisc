@@ -172,6 +172,9 @@ const checkStatement = (statement: Statement, ctx: Context): void => {
         case 'return-stmt':
             checkReturnStmt(statement, ctx)
             break
+        case 'break-stmt':
+            // TODO
+            break
     }
 }
 

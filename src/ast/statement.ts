@@ -9,7 +9,7 @@ import { Identifier, Name, buildIdentifier, buildName } from './operand'
 import { Generic, Type, buildGeneric, buildType } from './type'
 import { TypeDef, buildTypeDef } from './type-def'
 
-export type Statement = VarDef | FnDef | TraitDef | ImplDef | TypeDef | ReturnStmt | Expr
+export type Statement = VarDef | FnDef | TraitDef | ImplDef | TypeDef | ReturnStmt | BreakStmt | Expr
 
 export const buildStatement = (node: ParseNode): Statement => {
     const n = filterNonAstNodes(node)[0]
@@ -26,6 +26,8 @@ export const buildStatement = (node: ParseNode): Statement => {
             return buildTypeDef(n)
         case 'return-stmt':
             return buildReturnStmt(n)
+        case 'break-stmt':
+            return buildBreakStmt(n)
         case 'expr':
             return buildExpr(n)
     }
@@ -137,6 +139,12 @@ export const buildReturnStmt = (node: ParseNode): ReturnStmt => {
     const nodes = filterNonAstNodes(node)
     const returnExpr = nodes.at(0)?.kind === 'expr' ? buildExpr(nodes[0]) : undefined
     return { kind: 'return-stmt', parseNode: node, returnExpr }
+}
+
+export interface BreakStmt extends AstNode<'break-stmt'> {}
+
+export const buildBreakStmt = (node: ParseNode): BreakStmt => {
+    return { kind: 'break-stmt', parseNode: node }
 }
 
 export interface Block extends AstNode<'block'>, Partial<Typed> {

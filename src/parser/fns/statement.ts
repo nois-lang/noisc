@@ -7,7 +7,7 @@ import { parseTypeAnnot, parseTypeBounds } from './type'
 import { parseTypeDef } from './type-def'
 
 /**
- * statement ::= var-def | fn-def | kind-def | impl-def | type-def | return-stmt | expr
+ * statement ::= var-def | fn-def | kind-def | impl-def | type-def | return-stmt | break-stmt | expr
  */
 export const parseStatement = (parser: Parser): void => {
     const mark = parser.open()
@@ -24,6 +24,8 @@ export const parseStatement = (parser: Parser): void => {
         parseTypeDef(parser)
     } else if (parser.at('return-keyword')) {
         parseReturnStmt(parser)
+    } else if (parser.at('break-keyword')) {
+        parseBreakStmt(parser)
     } else if (parser.atAny(exprFirstTokens)) {
         parseExpr(parser)
     } else {
@@ -235,6 +237,15 @@ export const parseReturnStmt = (parser: Parser): void => {
         parseExpr(parser)
     }
     parser.close(mark, 'return-stmt')
+}
+
+/**
+ * break-stmt ::= BREAK-KEYWORD
+ */
+export const parseBreakStmt = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('break-keyword')
+    parser.close(mark, 'break-stmt')
 }
 
 /**
