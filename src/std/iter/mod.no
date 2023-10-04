@@ -1,3 +1,7 @@
+trait Iterable<T> {
+    fn iter(self): Iter<T>
+}
+
 trait Iter<T> {
     fn next(self): Option<T>
 }

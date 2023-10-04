@@ -1,12 +1,8 @@
-use std::iter::Iter
+use std::iter::{ Iter, Iterable }
 
 type List<T>
 
 impl <T> List<T> {
-    fn iter(self): ListIter<T> {
-        ListIter::ListIter(list: self, index: 0)
-    }
-
     fn at(self, index: Int): Option<T> {
         listAt(self, index)
     }
@@ -16,20 +12,9 @@ impl <T> List<T> {
     }
 }
 
-type ListIter<T>(
-    list: List<T>,
-    index: Int,
-)
-
-impl <T> Iter<T> for ListIter<T> {
-    fn next(self): Option<T> {
-        match self.list.at(self.index) {
-            Option::Some(value) {
-                self.index = self.index + 1
-                Option::Some(value)
-            },
-            _ { Option::None() }
-        }
+impl <T> Iterable<T> for List<T> {
+    fn iter(self): ListIter<T> {
+        ListIter::ListIter(list: self, index: 0)
     }
 }
 
@@ -37,7 +22,7 @@ impl <T> Into<List<T>> for Iter<T> {
     fn into(self): List<T> {
         let list = []
         // TODO: replace with while let
-        while True {
+        while true {
             match self.next() {
                 Option::Some(value) {
                     list.add(value)
@@ -60,9 +45,26 @@ impl Into<String> for List<String> {
     }
 }
 
-impl <T: Display> io::Display for List<T> {
+impl <T: io::Display> io::Display for List<T> {
     fn fmt(self): String {
         self.iter().map(io::Display::fmt).intersperse(", ").into<String>()
+    }
+}
+
+type ListIter<T>(
+    list: List<T>,
+    index: Int,
+)
+
+impl <T> Iter<T> for ListIter<T> {
+    fn next(self): Option<T> {
+        match self.list.at(self.index) {
+            Option::Some(value) {
+                self.index = self.index + 1
+                Option::Some(value)
+            },
+            _ { Option::None() }
+        }
     }
 }
 
