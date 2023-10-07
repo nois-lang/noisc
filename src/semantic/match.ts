@@ -1,11 +1,10 @@
 import { ConPattern, Pattern } from "../ast/match"
 import { Name } from "../ast/operand"
 import { Context, defKey } from "../scope"
-import { idToVid, vidFromScope, vidFromString, vidToString } from "../scope/util"
+import { idToVid, vidFromScope, vidToString } from "../scope/util"
 import { NameDef, resolveVid } from "../scope/vid"
 import { VidType, VirtualType, genericToVirtual, typeToVirtual, virtualTypeToString } from "../typecheck"
 import { resolveGenericsOverStructure, resolveType } from "../typecheck/generic"
-import { todo } from "../util/todo"
 import { notFoundError, semanticError } from "./error"
 
 export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: Context): void => {
@@ -35,12 +34,10 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
             }
 
             const defs = checkConPattern(expr, expectedType, ctx)
-            if (defs) {
-                defs.forEach(p => {
-                    const nameDef: NameDef = { kind: 'name-def', name: p }
-                    scope.definitions.set(defKey(nameDef), nameDef)
-                })
-            }
+            defs.forEach(p => {
+                const nameDef: NameDef = { kind: 'name-def', name: p }
+                scope.definitions.set(defKey(nameDef), nameDef)
+            })
             break
     }
 
@@ -51,14 +48,17 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
     }
 }
 
-const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Context): Name[] | undefined => {
+/**
+ * @returns a list of definied names within con pattern (recursive included)
+ */
+const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Context): Name[] => {
     const defs: Name[] = []
     const conVid = idToVid(pattern.identifier)
     const ref = resolveVid(conVid, ctx, ['type-con'])
 
     if (!ref || ref.def.kind !== 'type-con') {
         ctx.errors.push(notFoundError(ctx, pattern, vidToString(conVid), 'type constructor'))
-        return undefined
+        return []
     }
 
     const typeDefVid = vidFromScope(ref.vid)
@@ -68,12 +68,15 @@ const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Contex
             pattern.identifier,
             `cannot destructure type \`${virtualTypeToString(expectedType)}\` into \`${vidToString(typeDefVid)}\``
         ))
-        return undefined
+        return []
     }
 
     for (const fp of pattern.fieldPatterns) {
         const field = ref.def.typeCon.fieldDefs.find(fd => fd.name.value === fp.name.value)
-        if (!field) return undefined
+        if (!field) {
+            ctx.errors.push(notFoundError(ctx, fp, fp.name.value, 'field'))
+            return []
+        }
 
         const conGenericMap = resolveGenericsOverStructure(
             expectedType,
@@ -87,8 +90,6 @@ const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Contex
             defs.push(field.name)
         }
     }
-
-    // TODO: check pattern exhaustion, meaning that every field is included in the pattern, or `..` is used otherwise
 
     return defs
 }

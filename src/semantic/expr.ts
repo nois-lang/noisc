@@ -279,6 +279,8 @@ export const checkForExpr = (forExpr: ForExpr, ctx: Context): void => {
 }
 
 export const checkMatchExpr = (matchExpr: MatchExpr, ctx: Context): void => {
+    const errors = ctx.errors.length
+
     checkExpr(matchExpr.expr, ctx)
     matchExpr.clauses.forEach(clause => {
         checkPattern(clause.pattern, matchExpr.expr.type ?? unknownType, ctx)
@@ -291,7 +293,11 @@ export const checkMatchExpr = (matchExpr: MatchExpr, ctx: Context): void => {
         }
         checkBlock(clause.block, ctx)
     })
-    checkExhaustion(matchExpr, ctx)
+    // exhaustion assumes that every pattern is semantically correct, so run it only when no errors were found in the
+    // matchExpr
+    if (errors === ctx.errors.length) {
+        checkExhaustion(matchExpr, ctx)
+    }
 }
 
 /**

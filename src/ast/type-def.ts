@@ -21,6 +21,10 @@ export const buildTypeDef = (node: ParseNode): TypeDef => {
     if (nodes.at(idx)?.kind === 'type-con-list') {
         variants = filterNonAstNodes(nodes[idx++]).map(buildTypeCon)
     } else if (nodes.at(idx)?.kind === 'type-con-params') {
+        // when type con parameters are specified, create a single variant with the same name as the type, so
+        // Foo         -> no variants
+        // Foo()       -> variant Foo::Foo()
+        // Foo(x: Int) -> variant Foo::Foo(x: Int)
         const fieldDefs = filterNonAstNodes(nodes[idx]).map(buildFieldDef)
         variants = [{ kind: 'type-con', parseNode: nodes[idx++], name, fieldDefs }]
     }
