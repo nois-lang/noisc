@@ -1,10 +1,10 @@
 import { Parser } from '../parser'
 import { nameLikeTokens, paramFirstTokens } from './index'
-import { parseTypeAnnot } from './type'
 import { parseGenerics } from './statement'
+import { parseTypeAnnot } from './type'
 
 /**
- * type-def ::= TYPE-KEYWORD NAME generics? (type-con-list | type-con-params)?
+ * type-def ::= TYPE-KEYWORD NAME generics? (variant-list | variant-params)?
  */
 export const parseTypeDef = (parser: Parser): void => {
     const mark = parser.open()
@@ -22,7 +22,7 @@ export const parseTypeDef = (parser: Parser): void => {
 }
 
 /**
- * type-con-params ::= O-PAREN (field-def (COMMA field-def)*)? COMMA? C-PAREN
+ * variant-params ::= O-PAREN (field-def (COMMA field-def)*)? COMMA? C-PAREN
  */
 export const parseTypeConParams = (parser: Parser): void => {
     const mark = parser.open()
@@ -34,7 +34,7 @@ export const parseTypeConParams = (parser: Parser): void => {
         }
     }
     parser.expect('c-paren')
-    parser.close(mark, 'type-con-params')
+    parser.close(mark, 'variant-params')
 }
 
 /**
@@ -48,7 +48,7 @@ export const parseFieldDef = (parser: Parser): void => {
 }
 
 /**
- * type-con-list ::= O-BRACE (type-con (COMMA type-con)* COMMA?)? C-BRACE
+ * variant-list ::= O-BRACE (variant (COMMA variant)* COMMA?)? C-BRACE
  */
 export const parseTypeConList = (parser: Parser): void => {
     const mark = parser.open()
@@ -60,11 +60,11 @@ export const parseTypeConList = (parser: Parser): void => {
         }
     }
     parser.expect('c-brace')
-    parser.close(mark, 'type-con-list')
+    parser.close(mark, 'variant-list')
 }
 
 /**
- * type-con ::= NAME type-con-params?
+ * variant ::= NAME variant-params?
  */
 export const parseTypeCon = (parser: Parser): void => {
     const mark = parser.open()
@@ -72,6 +72,6 @@ export const parseTypeCon = (parser: Parser): void => {
     if (parser.at('o-paren')) {
         parseTypeConParams(parser)
     }
-    parser.close(mark, 'type-con')
+    parser.close(mark, 'variant')
 }
 

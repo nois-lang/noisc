@@ -1,13 +1,13 @@
-import { buildName, Name } from './operand'
 import { ParseNode } from '../parser'
-import { AstNode, filterNonAstNodes } from './index'
-import { buildGeneric, buildType, Generic, Type } from './type'
 import { Checked, Typed } from '../typecheck'
+import { AstNode, filterNonAstNodes } from './index'
+import { buildName, Name } from './operand'
+import { buildGeneric, buildType, Generic, Type } from './type'
 
 export interface TypeDef extends AstNode<'type-def'>, Partial<Checked> {
     name: Name
     generics: Generic[]
-    variants: TypeCon[]
+    variants: Variant[]
 }
 
 export const buildTypeDef = (node: ParseNode): TypeDef => {
@@ -17,30 +17,30 @@ export const buildTypeDef = (node: ParseNode): TypeDef => {
     idx++
     const name = buildName(nodes[idx++])
     const generics = nodes.at(idx)?.kind === 'generics' ? filterNonAstNodes(nodes[idx++]).map(buildGeneric) : []
-    let variants: TypeCon[] = []
-    if (nodes.at(idx)?.kind === 'type-con-list') {
+    let variants: Variant[] = []
+    if (nodes.at(idx)?.kind === 'variant-list') {
         variants = filterNonAstNodes(nodes[idx++]).map(buildTypeCon)
-    } else if (nodes.at(idx)?.kind === 'type-con-params') {
-        // when type con parameters are specified, create a single variant with the same name as the type, so
+    } else if (nodes.at(idx)?.kind === 'variant-params') {
+        // when variant parameters are specified, create a single variant with the same name as the type, so
         // Foo         -> no variants
         // Foo()       -> variant Foo::Foo()
         // Foo(x: Int) -> variant Foo::Foo(x: Int)
         const fieldDefs = filterNonAstNodes(nodes[idx]).map(buildFieldDef)
-        variants = [{ kind: 'type-con', parseNode: nodes[idx++], name, fieldDefs }]
+        variants = [{ kind: 'variant', parseNode: nodes[idx++], name, fieldDefs }]
     }
     return { kind: 'type-def', parseNode: node, name, generics, variants }
 }
 
-export interface TypeCon extends AstNode<'type-con'>, Partial<Typed> {
+export interface Variant extends AstNode<'variant'>, Partial<Typed> {
     name: Name
     fieldDefs: FieldDef[]
 }
 
-export const buildTypeCon = (node: ParseNode): TypeCon => {
+export const buildTypeCon = (node: ParseNode): Variant => {
     const nodes = filterNonAstNodes(node)
     const name = buildName(nodes[0])
     const fieldDefs = nodes.at(1) ? filterNonAstNodes(nodes[1]).map(buildFieldDef) : []
-    return { kind: 'type-con', parseNode: node, name, fieldDefs }
+    return { kind: 'variant', parseNode: node, name, fieldDefs }
 }
 
 export interface FieldDef extends AstNode<'field-def'> {

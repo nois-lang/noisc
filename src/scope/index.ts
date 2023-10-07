@@ -78,8 +78,8 @@ export const defKey = (def: Definition): string => {
             return 'fn-def' + def.fn.name.value
         case 'impl-def':
             return def.kind + def.identifier.name.value
-        case 'type-con':
-            return def.kind + def.typeCon.name.value
+        case 'variant':
+            return def.kind + def.variant.name.value
     }
 }
 

@@ -39,11 +39,11 @@ describe('parser', () => {
                             { name: 'Option' },
                             { generics: [{ 'o-angle': '<' }, { generic: [{ name: 'T' }] }, { 'c-angle': '>' }] },
                             {
-                                'type-con-list': [
+                                'variant-list': [
                                     { 'o-brace': '{' },
                                     {
-                                        'type-con': [{ name: 'Some' }, {
-                                            'type-con-params': [{ 'o-paren': '(' }, {
+                                        'variant': [{ name: 'Some' }, {
+                                            'variant-params': [{ 'o-paren': '(' }, {
                                                 'field-def': [{ name: 'value' }, {
                                                     'type-annot': [{ colon: ':' }, {
                                                         type: [{
@@ -57,7 +57,7 @@ describe('parser', () => {
                                         }]
                                     },
                                     { comma: ',' },
-                                    { 'type-con': [{ name: 'None' }] },
+                                    { 'variant': [{ name: 'None' }] },
                                     { 'c-brace': '}' }
                                 ]
                             }]

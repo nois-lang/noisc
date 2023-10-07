@@ -2,7 +2,7 @@ import { Module } from '../ast'
 import { Name } from '../ast/operand'
 import { FnDef, ImplDef, Statement, TraitDef } from '../ast/statement'
 import { Generic } from '../ast/type'
-import { TypeCon, TypeDef } from '../ast/type-def'
+import { TypeDef, Variant } from '../ast/type-def'
 import { checkTopLevelDefiniton } from '../semantic'
 import { selfType } from '../typecheck/type'
 import { Context, Scope, instanceScope } from './index'
@@ -19,7 +19,7 @@ export const defKinds = <const>[
     'name',
     'name-def',
     'self',
-    'type-con',
+    'variant',
     'fn-def',
     'generic',
     'type-def',
@@ -30,7 +30,7 @@ export const defKinds = <const>[
 
 export type DefinitionKind = typeof defKinds[number]
 
-export type Definition = Module | NameDef | FnDef | TraitDef | ImplDef | TypeDef | TypeConDef | Generic | SelfDef | MethodDef
+export type Definition = Module | NameDef | FnDef | TraitDef | ImplDef | TypeDef | VariantDef | Generic | SelfDef | MethodDef
 
 export interface NameDef {
     kind: 'name-def'
@@ -42,9 +42,9 @@ export interface SelfDef {
     kind: 'self'
 }
 
-export interface TypeConDef {
-    kind: 'type-con',
-    typeCon: TypeCon,
+export interface VariantDef {
+    kind: 'variant',
+    variant: Variant,
     typeDef: TypeDef
 }
 
@@ -66,7 +66,7 @@ export interface VirtualIdentifierMatch<D = Definition> {
  *
  * Vid could be:
  *  - Definition ref, e.g. Foo
- *  - TypeCon or TraitFn ref, e.g. Option::Some or Option::map
+ *  - variant or TraitFn ref, e.g. Option::Some or Option::map
  *  - Mix of above with partial or full qualification, e,g. std::option::Option::Some or option::Option::Some
  *  - Module ref, e.g. std::string
  *  - `Self`
@@ -75,7 +75,7 @@ export const resolveVid = (
     vid: VirtualIdentifier,
     ctx: Context,
     // exclude impl-def since it cannot be requested by vid
-    ofKind: DefinitionKind[] = ['module', 'name', 'name-def', 'self', 'type-con', 'fn-def', 'generic', 'type-def', 'trait-def', 'method-def']
+    ofKind: DefinitionKind[] = ['module', 'name', 'name-def', 'self', 'variant', 'fn-def', 'generic', 'type-def', 'trait-def', 'method-def']
 ): VirtualIdentifierMatch | undefined => {
     const module = ctx.moduleStack.at(-1)!
     let ref: VirtualIdentifierMatch | undefined
@@ -149,16 +149,16 @@ const resolveScopeVid = (
             }
         }
         if (vid.names.length === 2) {
-            // resolve type con
-            if (k === 'type-con') {
-                const [typeDefName, typeConName] = vid.names
+            // resolve variant
+            if (k === 'variant') {
+                const [typeDefName, variantName] = vid.names
                 // match type def by first vid name
                 const typeDef = scope.definitions.get('type-def' + typeDefName)
                 if (typeDef && typeDef.kind === 'type-def') {
-                    // if matched, try to find type con with matching name
-                    const typeCon = typeDef.variants.find(v => v.name.value === typeConName)
-                    if (typeCon && typeCon.kind === 'type-con') {
-                        return { vid, def: { kind: 'type-con', typeDef, typeCon } }
+                    // if matched, try to find variant with matching name
+                    const variant = typeDef.variants.find(v => v.name.value === variantName)
+                    if (variant) {
+                        return { vid, def: { kind: 'variant', typeDef, variant } }
                     }
                 }
             }
@@ -226,7 +226,7 @@ export const resolveMatchedVid = (
         }
     }
 
-    // if vid is typeCon or traitFn, e.g. std::option::Option::Some
+    // if vid is a variant or a traitFn, e.g. std::option::Option::Some
     module = pkg.modules.find(m => vidToString(m.identifier) === vidToString({ names: vid.names.slice(0, -2) }))
     if (module) {
         const moduleLocalVid = { names: vid.names.slice(-2) }

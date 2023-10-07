@@ -334,8 +334,8 @@ export const checkClosureExpr = (closureExpr: ClosureExpr, ctx: Context): void =
 }
 
 /**
- * TODO: call parameterless typeCon, e.g. Option::None()
- * TODO: better error when type-con is called as a function, e.g. Option::Some(4)
+ * TODO: call parameterless variant, e.g. Option::None()
+ * TODO: better error when variant is called as a function, e.g. Option::Some(4)
  */
 export const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const callOp = <CallOp>unaryExpr.unaryOp
@@ -382,36 +382,36 @@ export const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         ctx.errors.push(notFoundError(ctx, operand, vidToString(vid)))
         return
     }
-    if (ref.def.kind !== 'type-con') {
+    if (ref.def.kind !== 'variant') {
         ctx.errors.push(semanticError(
             ctx,
             operand,
-            `type error: ${virtualTypeToString(operand.type!)} is not a variant type constructor`
+            `type error: ${virtualTypeToString(operand.type!)} is not a variant`
         ))
         return
     }
     conOp.fields.map(f => checkExpr(f.expr, ctx))
-    const typeCon = ref.def.typeCon
-    const typeConType = <VirtualFnType>typeCon.type!
+    const variant = ref.def.variant
+    const variantType = <VirtualFnType>variant.type!
     // TODO: figure out typeArgs parameter here
     // TODO: fields might be specified out of order, match conOp.fields by name 
     const genericMap = resolveFnGenerics(
-        typeConType,
+        variantType,
         conOp.fields.map(f => f.expr.type!),
         operand.typeArgs.map(t => typeToVirtual(t, ctx))
     )
-    typeConType.generics.forEach(g => {
+    variantType.generics.forEach(g => {
         if (!genericMap.get(g.name)) {
             // TODO: find actual con op argument that's causing this
             ctx.errors.push(semanticError(ctx, conOp, `unresolved type parameter ${g.name}`))
         }
     })
-    if (typeConType.paramTypes.length !== conOp.fields.length) {
-        ctx.errors.push(semanticError(ctx, conOp, `expected ${typeConType.paramTypes.length} arguments, got ${conOp.fields.length}`))
+    if (variantType.paramTypes.length !== conOp.fields.length) {
+        ctx.errors.push(semanticError(ctx, conOp, `expected ${variantType.paramTypes.length} arguments, got ${conOp.fields.length}`))
         return
     }
-    typeConType.paramTypes
-        .map(pt => resolveType(pt, [genericMap], typeCon, ctx))
+    variantType.paramTypes
+        .map(pt => resolveType(pt, [genericMap], variant, ctx))
         .forEach((paramType, i) => {
             // TODO: fields might be specified out of order, match conOp.fields by name 
             const field = conOp.fields[i]
@@ -422,8 +422,8 @@ export const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         })
     unaryExpr.type = {
         kind: 'vid-type',
-        identifier: (<VidType>typeConType.returnType).identifier,
-        typeArgs: typeConType.generics.map(g => resolveType(g, [genericMap], unaryExpr, ctx))
+        identifier: (<VidType>variantType.returnType).identifier,
+        typeArgs: variantType.generics.map(g => resolveType(g, [genericMap], unaryExpr, ctx))
     }
 }
 

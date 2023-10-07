@@ -54,10 +54,10 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
 const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Context): Name[] => {
     const defs: Name[] = []
     const conVid = idToVid(pattern.identifier)
-    const ref = resolveVid(conVid, ctx, ['type-con'])
+    const ref = resolveVid(conVid, ctx, ['variant'])
 
-    if (!ref || ref.def.kind !== 'type-con') {
-        ctx.errors.push(notFoundError(ctx, pattern, vidToString(conVid), 'type constructor'))
+    if (!ref || ref.def.kind !== 'variant') {
+        ctx.errors.push(notFoundError(ctx, pattern, vidToString(conVid), 'variant'))
         return []
     }
 
@@ -72,7 +72,7 @@ const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Contex
     }
 
     for (const fp of pattern.fieldPatterns) {
-        const field = ref.def.typeCon.fieldDefs.find(fd => fd.name.value === fp.name.value)
+        const field = ref.def.variant.fieldDefs.find(fd => fd.name.value === fp.name.value)
         if (!field) {
             ctx.errors.push(notFoundError(ctx, fp, fp.name.value, 'field'))
             return []

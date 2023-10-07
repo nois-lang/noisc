@@ -28,15 +28,15 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
                       ;
     impl-for          ::= FOR-KEYWORD identifier
                       ;
-  type-def            ::= TYPE-KEYWORD NAME generics? (type-con-list | type-con-params)?
+  type-def            ::= TYPE-KEYWORD NAME generics? (variant-list | variant-params)?
                       ;
-    type-con-params   ::= O-PAREN (field-def (COMMA field-def)*)? COMMA? C-PAREN
+    variant-params    ::= O-PAREN (field-def (COMMA field-def)*)? COMMA? C-PAREN
                       ;
       field-def       ::= NAME type-annot
                       ;
-    type-con-list     ::= O-BRACE (type-con (COMMA type-con)* COMMA?)? C-BRACE
+    variant-list      ::= O-BRACE (variant (COMMA variant)* COMMA?)? C-BRACE
                       ;
-      type-con        ::= NAME type-con-params?
+      variant         ::= NAME variant-params?
                       ;
   return-stmt         ::= RETURN-KEYWORD expr?
                       ;

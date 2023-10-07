@@ -26,7 +26,7 @@ export type AstNodeKind
     | 'impl-def'
     | 'type-def'
     | 'field-def'
-    | 'type-con'
+    | 'variant'
     | 'return-stmt'
     | 'break-stmt'
     | 'operand-expr'

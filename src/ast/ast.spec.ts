@@ -28,7 +28,7 @@ describe('ast', () => {
                         generics: [{ kind: 'generic', name: { kind: 'name', value: 'T' }, bounds: [] }],
                         variants:
                             [{
-                                kind: 'type-con',
+                                kind: 'variant',
                                 name: { kind: 'name', value: 'Some' },
                                 fieldDefs:
                                     [{
@@ -42,7 +42,7 @@ describe('ast', () => {
                                         }
                                     }]
                             },
-                            { kind: 'type-con', name: { kind: 'name', value: 'None' }, fieldDefs: [] }]
+                            { kind: 'variant', name: { kind: 'name', value: 'None' }, fieldDefs: [] }]
                     }]
             })
         })

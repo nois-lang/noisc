@@ -2,7 +2,7 @@ import { AstNode, Module, Param } from '../ast'
 import { Identifier } from '../ast/operand'
 import { Block, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '../ast/statement'
 import { Generic, Type } from '../ast/type'
-import { TypeCon, TypeDef } from '../ast/type-def'
+import { TypeDef, Variant } from '../ast/type-def'
 import { Context, DefinitionMap, InstanceScope, TypeDefScope, defKey, fnScope, instanceScope } from '../scope'
 import { getImplTargetType, traitDefToVirtualType } from '../scope/trait'
 import { idToVid, vidToString } from '../scope/util'
@@ -87,7 +87,7 @@ export const checkTopLevelDefiniton = (module: Module, definition: Definition, c
     module.scopeStack = [module.topScope!]
 
     switch (definition.kind) {
-        case 'type-con':
+        case 'variant':
             checkTypeDef(definition.typeDef, ctx)
             break
         case 'method-def':
@@ -330,18 +330,18 @@ export const checkTypeDef = (typeDef: TypeDef, ctx: Context) => {
         definitions: new Map(typeDef.generics.map(g => [defKey(g), g]))
     })
 
-    typeDef.variants.forEach(v => checkTypeCon(v, ctx))
-    // TODO: check duplicate type cons
+    typeDef.variants.forEach(v => checkVariant(v, ctx))
+    // TODO: check duplicate variants
 
     module.scopeStack.pop()
 }
 
-const checkTypeCon = (typeCon: TypeCon, ctx: Context) => {
-    if (typeCon.type) return
+const checkVariant = (variant: Variant, ctx: Context) => {
+    if (variant.type) return
 
     const module = ctx.moduleStack.at(-1)!
     const typeDefScope = <TypeDefScope>module.scopeStack.at(-1)!
-    typeCon.fieldDefs.forEach(fieldDef => {
+    variant.fieldDefs.forEach(fieldDef => {
         checkType(fieldDef.fieldType, ctx)
         // TODO: check duplicate field defs
     })
@@ -351,16 +351,16 @@ const checkTypeCon = (typeCon: TypeCon, ctx: Context) => {
         .map(g => genericToVirtual(g, ctx))
 
     // names used in fieldDef, needed to match what typeDef generics are being used
-    const names = typeCon.fieldDefs.flatMap(f => typeNames(f.fieldType))
-    // unused generics needs to be replaced with `?` because some type cons ignore type def generics,
+    const names = variant.fieldDefs.flatMap(f => typeNames(f.fieldType))
+    // unused generics needs to be replaced with `?` because some variants ignore type def generics,
     // e.g. `Option::None()` should have type of `||: Option<?>`
     const typeArgs = generics.map(g => names.includes(g.name) ? g : unknownType)
 
-    // TODO: introduce a new type kind 'type-con', that, unlike fn type, will also record field names
+    // TODO: introduce a new type kind 'variant', that, unlike fn type, will also record field names
     // it should be assignable to fn type if argument position matches
-    typeCon.type = {
+    variant.type = {
         kind: 'fn-type',
-        paramTypes: typeCon.fieldDefs.map(f => typeToVirtual(f.fieldType, ctx)),
+        paramTypes: variant.fieldDefs.map(f => typeToVirtual(f.fieldType, ctx)),
         returnType: { kind: 'vid-type', identifier: typeDefScope.vid, typeArgs },
         generics
     }
@@ -458,8 +458,8 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
                     ctx
                 )
                 break
-            case 'type-con':
-                identifier.type = ref.def.typeCon.type
+            case 'variant':
+                identifier.type = ref.def.variant.type
                 break
             case 'fn-def':
                 identifier.type = ref.def.type
