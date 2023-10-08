@@ -1,8 +1,8 @@
-import { associativityMap, BinaryOp, buildBinaryOp, buildUnaryOp, precedenceMap, UnaryOp } from './op'
-import { AstNode, filterNonAstNodes } from './index'
-import { buildOperand, Operand } from './operand'
 import { ParseNode } from '../parser'
-import { Typed } from '../typecheck'
+import { Typed } from '../semantic'
+import { AstNode, filterNonAstNodes } from './index'
+import { associativityMap, BinaryOp, buildBinaryOp, buildUnaryOp, precedenceMap, UnaryOp } from './op'
+import { buildOperand, Operand } from './operand'
 
 export type Expr = OperandExpr | UnaryExpr | BinaryExpr
 

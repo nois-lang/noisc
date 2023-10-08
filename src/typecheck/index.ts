@@ -1,19 +1,11 @@
 import { Generic, Type } from '../ast/type'
 import { Context } from '../scope'
-import { findSuperRels as findSuperRels } from '../scope/trait'
+import { findSuperRels } from '../scope/trait'
 import { idToVid, vidToString } from '../scope/util'
 import { VirtualIdentifier, resolveVid } from '../scope/vid'
 import { notFoundError, semanticError } from '../semantic/error'
 import { todo } from '../util/todo'
 import { selfType, unknownType } from './type'
-
-export interface Typed {
-    type: VirtualType
-}
-
-export interface Checked {
-    checked: boolean
-}
 
 export type VirtualType = VidType | VirtualFnType | VirtualGeneric | UnknownType
 

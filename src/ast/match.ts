@@ -1,7 +1,7 @@
 import { ParseToken } from '../lexer/lexer'
 import { ParseNode } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
-import { Typed } from '../typecheck'
+import { Typed } from '../semantic'
 import { buildExpr, buildOperandExpr, Expr, UnaryExpr } from './expr'
 import { AstNode, filterNonAstNodes, } from './index'
 import { buildUnaryOp } from './op'

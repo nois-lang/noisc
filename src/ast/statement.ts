@@ -1,7 +1,7 @@
 import { ParseToken } from '../lexer/lexer'
 import { ParseNode } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
-import { Checked, Typed } from '../typecheck'
+import { Checked, Typed } from '../semantic'
 import { Expr, buildExpr } from './expr'
 import { AstNode, Param, buildParam, filterNonAstNodes } from './index'
 import { Pattern, buildPattern } from './match'
@@ -141,7 +141,7 @@ export const buildReturnStmt = (node: ParseNode): ReturnStmt => {
     return { kind: 'return-stmt', parseNode: node, returnExpr }
 }
 
-export interface BreakStmt extends AstNode<'break-stmt'> {}
+export interface BreakStmt extends AstNode<'break-stmt'> { }
 
 export const buildBreakStmt = (node: ParseNode): BreakStmt => {
     return { kind: 'break-stmt', parseNode: node }

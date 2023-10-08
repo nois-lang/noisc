@@ -1,8 +1,8 @@
 import { ParseNode } from '../parser'
-import { Checked, Typed } from '../typecheck'
+import { Checked, Typed } from '../semantic'
 import { AstNode, filterNonAstNodes } from './index'
-import { buildName, Name } from './operand'
-import { buildGeneric, buildType, Generic, Type } from './type'
+import { Name, buildName } from './operand'
+import { Generic, Type, buildGeneric, buildType } from './type'
 
 export interface TypeDef extends AstNode<'type-def'>, Partial<Checked> {
     name: Name

@@ -138,7 +138,6 @@ export const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
         return
     }
     if (binaryExpr.binaryOp.kind === 'assign-op') {
-        // TODO
         return
     }
     checkOperand(binaryExpr.lOperand, ctx)

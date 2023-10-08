@@ -1,12 +1,12 @@
 import { ParseToken } from '../lexer/lexer'
 import { ParseNode, ParseTree } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
-import { Typed } from '../typecheck'
-import { buildExpr, Expr } from './expr'
-import { AstNode, buildParam, filterNonAstNodes, Param } from './index'
-import { buildMatchExpr, buildPattern, MatchExpr, Pattern } from './match'
+import { Typed } from '../semantic'
+import { Expr, buildExpr } from './expr'
+import { AstNode, Param, buildParam, filterNonAstNodes } from './index'
+import { MatchExpr, Pattern, buildMatchExpr, buildPattern } from './match'
 import { Block, buildBlock } from './statement'
-import { buildType, Type } from './type'
+import { Type, buildType } from './type'
 
 export type Operand
     = IfExpr

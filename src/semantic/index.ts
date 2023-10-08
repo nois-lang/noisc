@@ -8,7 +8,6 @@ import { getImplTargetType, traitDefToVirtualType } from '../scope/trait'
 import { idToVid, vidToString } from '../scope/util'
 import { Definition, NameDef, resolveVid } from '../scope/vid'
 import {
-    Typed,
     VirtualType,
     genericToVirtual,
     isAssignable,
@@ -22,6 +21,18 @@ import { checkExpr } from './expr'
 import { checkPattern } from './match'
 import { typeNames } from './type-def'
 import { useExprToVids } from './use-expr'
+
+export interface Checked {
+    checked: boolean
+}
+
+export interface Typed {
+    type: VirtualType
+}
+
+export interface Assignable {
+    assignable: boolean
+}
 
 export const prepareModule = (module: Module): void => {
     const defMap: DefinitionMap = new Map()
