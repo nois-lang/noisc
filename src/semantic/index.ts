@@ -30,10 +30,6 @@ export interface Typed {
     type: VirtualType
 }
 
-export interface Assignable {
-    assignable: boolean
-}
-
 export const prepareModule = (module: Module): void => {
     const defMap: DefinitionMap = new Map()
     module.block.statements.map(s => {

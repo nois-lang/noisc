@@ -16,7 +16,7 @@ import {
     virtualTypeToString
 } from '../typecheck'
 import { instanceGenericMap, resolveFnGenerics, resolveGenericsOverStructure, resolveType } from '../typecheck/generic'
-import { unknownType } from '../typecheck/type'
+import { unitType, unknownType } from '../typecheck/type'
 import { assert, todo } from '../util/todo'
 import { notFoundError, semanticError, typeError } from './error'
 import { checkExhaustion } from './exhaust'
@@ -138,6 +138,7 @@ export const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
         return
     }
     if (binaryExpr.binaryOp.kind === 'assign-op') {
+        checkAssignExpr(binaryExpr, ctx)
         return
     }
     checkOperand(binaryExpr.lOperand, ctx)
@@ -396,7 +397,7 @@ export const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     // TODO: fields might be specified out of order, match conOp.fields by name 
     const genericMap = resolveFnGenerics(
         variantType,
-        conOp.fields.map(f => f.expr.type!),
+        conOp.fields.map(f => f.expr.type ?? unknownType),
         operand.typeArgs.map(t => typeToVirtual(t, ctx))
     )
     variantType.generics.forEach(g => {
@@ -414,7 +415,7 @@ export const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         .forEach((paramType, i) => {
             // TODO: fields might be specified out of order, match conOp.fields by name 
             const field = conOp.fields[i]
-            const argType = resolveType(field.expr.type!, [genericMap], field, ctx)
+            const argType = resolveType(field.expr.type ?? unknownType, [genericMap], field, ctx)
             if (!isAssignable(argType, paramType, ctx)) {
                 ctx.errors.push(typeError(field, argType, paramType, ctx))
             }
@@ -431,8 +432,19 @@ export const checkListExpr = (listExpr: ListExpr, ctx: Context): void => {
     listExpr.type = {
         kind: 'vid-type',
         identifier: vidFromString('std::list::List'),
-        // TODO: calculate common type across items
+        // TODO: combine items types
         typeArgs: [listExpr.exprs.at(0)?.type ?? unknownType]
     }
 }
 
+export const checkAssignExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
+    binaryExpr.type = unitType
+    checkOperand(binaryExpr.lOperand, ctx)
+    checkOperand(binaryExpr.rOperand, ctx)
+    // TODO: check assignability
+    const assigneeType = binaryExpr.lOperand.type ?? unknownType
+    const valueType = binaryExpr.rOperand.type ?? unknownType
+    if (!isAssignable(valueType, assigneeType, ctx)) {
+        ctx.errors.push(typeError(binaryExpr, valueType, assigneeType, ctx))
+    }
+}

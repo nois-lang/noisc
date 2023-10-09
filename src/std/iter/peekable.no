@@ -17,7 +17,7 @@ impl <T> Iter<T> for PeekableIter<T> {
         match self.peeked {
             Option::Some(value) { value },
             Option::None() {
-                self.peeked = self.iter.next()
+                self.peeked = Option::Some(value: self.iter.next())
                 self.peeked
             },
         }
