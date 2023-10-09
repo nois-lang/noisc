@@ -9,7 +9,6 @@ import { getImplTargetType } from '../scope/trait'
 import { idToVid, vidFromString, vidToString } from '../scope/util'
 import { MethodDef, resolveVid } from '../scope/vid'
 import {
-    VidType,
     VirtualFnType,
     isAssignable,
     typeToVirtual,
@@ -395,13 +394,16 @@ export const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const variantType = <VirtualFnType>variant.type!
     // TODO: figure out typeArgs parameter here
     // TODO: fields might be specified out of order, match conOp.fields by name 
-    const genericMap = resolveFnGenerics(
+    const conOpMap = resolveFnGenerics(
         variantType,
         conOp.fields.map(f => f.expr.type ?? unknownType),
         operand.typeArgs.map(t => typeToVirtual(t, ctx))
     )
+    const instScope = instanceScope(ctx)
+    const instanceMap = instScope ? instanceGenericMap(instScope, ctx) : new Map()
+    const genericMaps = [conOpMap, instanceMap]
     variantType.generics.forEach(g => {
-        if (!genericMap.get(g.name)) {
+        if (!conOpMap.get(g.name)) {
             // TODO: find actual con op argument that's causing this
             ctx.errors.push(semanticError(ctx, conOp, `unresolved type parameter ${g.name}`))
         }
@@ -411,20 +413,16 @@ export const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         return
     }
     variantType.paramTypes
-        .map(pt => resolveType(pt, [genericMap], variant, ctx))
+        .map(pt => resolveType(pt, genericMaps, variant, ctx))
         .forEach((paramType, i) => {
             // TODO: fields might be specified out of order, match conOp.fields by name 
             const field = conOp.fields[i]
-            const argType = resolveType(field.expr.type ?? unknownType, [genericMap], field, ctx)
+            const argType = resolveType(field.expr.type ?? unknownType, genericMaps, field, ctx)
             if (!isAssignable(argType, paramType, ctx)) {
                 ctx.errors.push(typeError(field, argType, paramType, ctx))
             }
         })
-    unaryExpr.type = {
-        kind: 'vid-type',
-        identifier: (<VidType>variantType.returnType).identifier,
-        typeArgs: variantType.generics.map(g => resolveType(g, [genericMap], unaryExpr, ctx))
-    }
+    unaryExpr.type = resolveType(variantType.returnType, genericMaps, unaryExpr, ctx)
 }
 
 export const checkListExpr = (listExpr: ListExpr, ctx: Context): void => {
