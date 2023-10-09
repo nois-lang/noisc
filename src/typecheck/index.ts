@@ -122,8 +122,11 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
         return true
     }
 
-    if (t.kind === 'generic' && target.kind === 'generic') {
-        return t.name === target.name
+    if (target.kind === 'generic') {
+        if (t.kind === 'generic') {
+            return t.name === target.name
+        }
+        return target.bounds.every(b => isAssignable(t, b, ctx)) 
     }
 
     if (t.kind === 'vid-type' && target.kind === 'vid-type') {

@@ -1,4 +1,5 @@
 import { dirname, join } from 'path'
+import { fileURLToPath } from 'url'
 import { defaultConfig } from '../config'
 import { Package } from '../package'
 import { buildModule, buildPackage } from '../package/build'
@@ -6,7 +7,6 @@ import { Context, pathToVid } from '../scope'
 import { buildImplRelations } from '../scope/trait'
 import { Source } from '../source'
 import { checkModule, prepareModule } from './index'
-import { fileURLToPath } from 'url'
 
 describe('semantic', () => {
 
@@ -100,7 +100,7 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual([])
 
             ctx = check(code('"foo"'))
-            expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected test::Foo<std::int::Int>\n            got      test::Foo<std::string::String>'])
+            expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected std::int::Int\n            got      std::string::String'])
         })
 
         it('fn generics', () => {

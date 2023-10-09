@@ -1,7 +1,7 @@
 import { AstNode } from '../ast'
 import { Context, InstanceScope } from '../scope'
 import { merge } from '../util/map'
-import { VirtualFnType, VirtualType, genericToVirtual, virtualTypeToString } from './index'
+import { VirtualFnType, VirtualType, genericToVirtual } from './index'
 import { selfType } from './type'
 
 export const resolveFnGenerics = (
@@ -98,15 +98,13 @@ export const resolveType = (
             }
         case 'generic':
             // try to resolve generic with maps, in case of no matches keep as-is, it might get resolved later
-            const vt = virtualTypeToString(virtualType)
-            let resolved: VirtualType = virtualType
             for (const map of genericMaps) {
-                const res = map.get(vt)
+                const res = map.get(virtualType.name)
                 if (res) {
-                    resolved = res
+                    return res
                 }
             }
-            return resolved
+            return virtualType
         case 'fn-type':
             return {
                 kind: 'fn-type',
