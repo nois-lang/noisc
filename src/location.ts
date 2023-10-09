@@ -7,7 +7,7 @@ export interface LocationRange {
 }
 
 export interface Location {
-    line: number,
+    line: number
     column: number
 }
 

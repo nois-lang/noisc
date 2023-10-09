@@ -43,14 +43,14 @@ export interface SelfDef {
 }
 
 export interface VariantDef {
-    kind: 'variant',
-    variant: Variant,
+    kind: 'variant'
+    variant: Variant
     typeDef: TypeDef
 }
 
 export interface MethodDef {
-    kind: 'method-def',
-    fn: FnDef,
+    kind: 'method-def'
+    fn: FnDef
     trait: ImplDef | TraitDef
 }
 

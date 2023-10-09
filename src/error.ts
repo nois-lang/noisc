@@ -5,8 +5,8 @@ import { Parser } from './parser/parser'
 import { Source } from './source'
 
 export interface SyntaxError {
-    expected: TokenKind[],
-    got: ParseToken,
+    expected: TokenKind[]
+    got: ParseToken
     message?: string
 }
 

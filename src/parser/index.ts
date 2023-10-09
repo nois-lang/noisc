@@ -90,7 +90,7 @@ export type TreeKind = typeof treeKinds[number]
 export type NodeKind = TokenKind | TreeKind
 
 export interface ParseTree {
-    kind: TreeKind,
+    kind: TreeKind
     nodes: ParseNode[]
 }
 

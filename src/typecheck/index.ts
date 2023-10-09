@@ -27,7 +27,7 @@ export interface UnknownType {
 }
 
 export interface VirtualGeneric {
-    kind: 'generic',
+    kind: 'generic'
     name: string
     bounds: VirtualType[]
 }

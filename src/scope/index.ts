@@ -36,28 +36,28 @@ export type DefinitionMap = Map<string, Definition>
 
 // TODO: refactor TraitScope and ImplScope into a single InstanceScope
 export interface InstanceScope {
-    kind: 'instance',
+    kind: 'instance'
     definitions: DefinitionMap
-    selfType: VirtualType,
-    def: TraitDef | ImplDef,
+    selfType: VirtualType
+    def: TraitDef | ImplDef
 }
 
 export interface TypeDefScope {
-    kind: 'type',
+    kind: 'type'
     definitions: DefinitionMap
-    def: TypeDef,
+    def: TypeDef
     vid: VirtualIdentifier
 }
 
 export interface FnDefScope {
-    kind: 'fn',
+    kind: 'fn'
     definitions: DefinitionMap
-    def: FnDef | ClosureExpr,
+    def: FnDef | ClosureExpr
     returnStatements: ReturnStmt[]
 }
 
 export interface CommonScope {
-    kind: 'module' | 'block',
+    kind: 'module' | 'block'
     definitions: DefinitionMap
 }
 

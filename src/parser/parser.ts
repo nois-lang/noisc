@@ -5,7 +5,7 @@ import { ParseTree, TreeKind } from './index'
 export type ParseEvent = OpenEvent | { type: 'close' } | { type: 'advance' }
 
 export interface OpenEvent {
-    type: 'open',
+    type: 'open'
     kind: TreeKind
 }
 
