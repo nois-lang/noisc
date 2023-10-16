@@ -3,8 +3,7 @@ import { basename, dirname, join, resolve } from 'path'
 import * as process from 'process'
 import { fileURLToPath } from 'url'
 import { fromCmdFlags } from './config'
-import { prettyError, prettySourceMessage, prettyWarning } from './error'
-import { indexToLocation } from './location'
+import { colorError, prettySourceMessage, colorWarning } from './error'
 import { Package } from './package'
 import { buildModule, buildPackage } from './package/build'
 import { getLocationRange } from './parser'
@@ -89,8 +88,8 @@ if (ctx.config.libCheck) {
 if (ctx.errors.length > 0) {
     for (const error of ctx.errors) {
         console.error(prettySourceMessage(
-            prettyError(error.message),
-            indexToLocation(getLocationRange(error.node.parseNode).start, error.module.source)!,
+            colorError(error.message),
+            getLocationRange(error.node.parseNode),
             error.module.source
         ))
     }
@@ -99,8 +98,8 @@ if (ctx.errors.length > 0) {
 
 for (const warning of ctx.warnings) {
     console.error(prettySourceMessage(
-        prettyWarning(warning.message),
-        indexToLocation(getLocationRange(warning.node.parseNode).start, warning.module.source)!,
+        colorWarning(warning.message),
+        getLocationRange(warning.node.parseNode),
         warning.module.source
     ))
 }

@@ -28,10 +28,15 @@ export const indexToLocation = (index: number, source: Source): Location | undef
     return undefined
 }
 
-export const prettyLineAt = (start: Location, source: Source): string => {
-    if (!start) return '<outside of a file>'
-    const highlight = ' '.repeat(6 + start.column) + '^'
-    return [prettyLine(start.line, source), highlight].join('\n')
+export const prettyLineAt = (range: LocationRange, source: Source): string => {
+    const start = indexToLocation(range.start, source)
+    const end = indexToLocation(range.end, source)
+    if (!start || !end) return '<outside of a file>'
+    const pad = '| '.padStart(6)
+    const line = prettyLine(start.line, source)
+    const highlightLen = start.line === end.line ? range.end - range.start + 1 : line.length - start.column
+    const highlight = pad + ' '.repeat(start.column) + '^'.repeat(highlightLen)
+    return [pad, line, highlight].join('\n')
 }
 
 export const prettyLine = (lineIndex: number, source: Source): string => {

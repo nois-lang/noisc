@@ -23,7 +23,7 @@ trait IntersperseAdapter<Self: Iter<T>, T> {
 }
 
 impl <T> IntersperseAdapter<T> for Iter<T> {
-    fn intersperse<U>(self, separator: T): IntersperseIter<T> {
+    fn intersperse(self, separator: T): IntersperseIter<T> {
         IntersperseIter::IntersperseIter(iter: self, separator: separator, needsSeparator: false)
     }
 }

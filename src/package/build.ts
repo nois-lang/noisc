@@ -2,7 +2,6 @@ import { relative } from 'path'
 import { buildModuleAst, Module } from '../ast'
 import { prettyLexerError, prettySourceMessage, prettySyntaxError } from '../error'
 import { erroneousTokenKinds, tokenize } from '../lexer/lexer'
-import { indexToLocation } from '../location'
 import { parseModule } from '../parser/fns'
 import { Parser } from '../parser/parser'
 import { pathToVid } from '../scope'
@@ -25,7 +24,7 @@ export const buildModule = (source: Source, vid: VirtualIdentifier): Module | un
     if (errorTokens.length > 0) {
         for (const t of errorTokens) {
             console.error(
-                prettySourceMessage(prettyLexerError(t), indexToLocation(t.location.start, source)!, source)
+                prettySourceMessage(prettyLexerError(t), t.location, source)
             )
         }
         return undefined
@@ -38,7 +37,7 @@ export const buildModule = (source: Source, vid: VirtualIdentifier): Module | un
     if (parser.errors.length > 0) {
         for (const error of parser.errors) {
             console.error(
-                prettySourceMessage(prettySyntaxError(error), indexToLocation(error.got.location.start, source)!, source)
+                prettySourceMessage(prettySyntaxError(error), error.got.location, source)
             )
         }
         return undefined
