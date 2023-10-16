@@ -182,8 +182,8 @@ const resolveScopeVid = (
                     const superRels = findSuperRels(fullTypeVid, ctx)
                     for (let superRel of superRels) {
                         // don't check itself
-                        if (vidToString(fullTypeVid) === vidToString(superRel.typeDef.vid)) continue
-                        const fullMethodVid = { names: [...superRel.typeDef.vid.names, fnName] }
+                        if (vidToString(fullTypeVid) === vidToString(superRel.implDef.vid)) continue
+                        const fullMethodVid = { names: [...superRel.implDef.vid.names, fnName] }
                         const methodRef = resolveVid(fullMethodVid, ctx, ['method-def'])
                         if (methodRef && methodRef.def.kind === 'method-def') {
                             return methodRef

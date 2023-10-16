@@ -144,8 +144,8 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
         const superRels = findSuperRels(t.identifier, ctx)
         return superRels.some(rel => {
             // don't check itself
-            if (vidToString(t.identifier) === vidToString(rel.typeDef.vid)) return false
-            const forType: VirtualType = { kind: 'vid-type', identifier: rel.typeDef.vid, typeArgs: [] }
+            if (vidToString(t.identifier) === vidToString(rel.implDef.vid)) return false
+            const forType: VirtualType = { kind: 'vid-type', identifier: rel.implDef.vid, typeArgs: [] }
             return isAssignable(forType, target, ctx)
         })
     }

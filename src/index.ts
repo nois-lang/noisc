@@ -9,7 +9,7 @@ import { Package } from './package'
 import { buildModule, buildPackage } from './package/build'
 import { getLocationRange } from './parser'
 import { Context, pathToVid } from './scope'
-import { buildImplRelations } from './scope/trait'
+import { buildInstanceRelations } from './scope/trait'
 import { checkModule, prepareModule } from './semantic'
 import { Source } from './source'
 
@@ -78,7 +78,7 @@ ctx.packages.forEach(p => {
     })
 })
 // TODO: all impls should probably be checked, either when method is resolved, or just with checkTopLevelDefinition
-ctx.impls = buildImplRelations(ctx)
+ctx.impls = buildInstanceRelations(ctx)
 ctx.check = true
 if (ctx.config.libCheck) {
     ctx.packages.flatMap(p => p.modules).forEach(m => { checkModule(m, ctx) })

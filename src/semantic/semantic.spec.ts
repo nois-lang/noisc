@@ -4,7 +4,7 @@ import { defaultConfig } from '../config'
 import { Package } from '../package'
 import { buildModule, buildPackage } from '../package/build'
 import { Context, pathToVid } from '../scope'
-import { buildImplRelations } from '../scope/trait'
+import { buildInstanceRelations } from '../scope/trait'
 import { Source } from '../source'
 import { checkModule, prepareModule } from './index'
 
@@ -39,7 +39,7 @@ describe('semantic', () => {
                 prepareModule(m)
             })
         })
-        ctx.impls = buildImplRelations(ctx)
+        ctx.impls = buildInstanceRelations(ctx)
         ctx.check = true
         if (checkStd) {
             ctx.packages.flatMap(p => p.modules).forEach(m => { checkModule(m, ctx) })

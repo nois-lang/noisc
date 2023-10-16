@@ -3,7 +3,7 @@ import { BinaryExpr, OperandExpr } from '../ast/expr'
 import { CallOp } from '../ast/op'
 import { Identifier, Operand } from '../ast/operand'
 import { Context } from '../scope'
-import { getImplTargetType } from '../scope/trait'
+import { getInstanceForType } from '../scope/trait'
 import { vidToString } from '../scope/util'
 import { resolveVid } from '../scope/vid'
 import { VirtualFnType, VirtualType, genericToVirtual, typeToVirtual, virtualTypeToString } from '../typecheck'
@@ -100,8 +100,8 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
     }
 
     const instanceType = lOperand.type!
-    const implTargetType = getImplTargetType(ref.def.trait, ctx)
-    const implGenericMap = resolveGenericsOverStructure(instanceType, implTargetType)
+    const implForType = getInstanceForType(ref.def.trait, ctx)
+    const implGenericMap = resolveGenericsOverStructure(instanceType, implForType)
     const fnGenericMap = resolveFnGenerics(
         fnType,
         [lOperand.type, ...callOp.args.map(a => a.type!)],

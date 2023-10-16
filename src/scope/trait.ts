@@ -9,7 +9,10 @@ import { Context } from './index'
 import { concatVid, idToVid, vidFromString, vidToString } from './util'
 import { VirtualIdentifier, VirtualIdentifierMatch, resolveVid } from './vid'
 
-export interface ImplRelation {
+/**
+ * Description of type/trait/impl relations
+ */
+export interface InstanceRelation {
     /**
      * Module impl defined in
      */
@@ -19,24 +22,24 @@ export interface ImplRelation {
      */
     implType: VirtualType
     /**
-     * Implemented target type
+     * For type
      */
     forType: VirtualType
     /**
      * Implemented type def
      */
-    typeDef: VirtualIdentifierMatch<TypeDef | TraitDef>
+    implDef: VirtualIdentifierMatch<TypeDef | TraitDef>
     /**
-     * Implemented target type def
+     * For type def
      */
     forDef: VirtualIdentifierMatch<TypeDef | TraitDef>
     /**
-     * Implementation def
+     * Instance def
      */
-    implDef: TraitDef | ImplDef
+    instanceDef: TraitDef | ImplDef
 }
 
-export const buildImplRelations = (ctx: Context): ImplRelation[] => {
+export const buildInstanceRelations = (ctx: Context): InstanceRelation[] => {
     const impls = ctx.packages
         .flatMap(p => p.modules)
         .flatMap(m =>
@@ -51,24 +54,27 @@ export const buildImplRelations = (ctx: Context): ImplRelation[] => {
     })
 }
 
-const getImplRel = (impl: TraitDef | ImplDef, ctx: Context): ImplRelation | undefined => {
+/**
+ * Construct instance relation from instance definition
+ */
+const getImplRel = (impl: TraitDef | ImplDef, ctx: Context): InstanceRelation | undefined => {
     const module = ctx.moduleStack.at(-1)!
     if (impl.kind === 'trait-def') {
-        const implType: VirtualType = {
+        const traitType: VirtualType = {
             kind: 'vid-type',
             identifier: { names: [...module.identifier.names, impl.name.value] },
             typeArgs: impl.generics.map(g => genericToVirtual(g, ctx))
         }
-        const ref = resolveVid(implType.identifier, ctx, ['trait-def'])
+        const ref = resolveVid(traitType.identifier, ctx, ['trait-def'])
         assert(!!ref, 'traitDef did not find itself by name')
         const traitRef = <VirtualIdentifierMatch<TraitDef>>ref!
         return {
             module,
-            implType,
-            forType: implType,
-            typeDef: traitRef,
+            implType: traitType,
+            forType: traitType,
+            implDef: traitRef,
             forDef: traitRef,
-            implDef: impl,
+            instanceDef: impl,
         }
     } else {
         const implVid = idToVid(impl.identifier)
@@ -92,54 +98,58 @@ const getImplRel = (impl: TraitDef | ImplDef, ctx: Context): ImplRelation | unde
         const implType = typeToVirtual(impl.identifier, ctx)
         return {
             module,
-            implType,
+            implType: implType,
             forType: impl.forTrait ? typeToVirtual(impl.forTrait, ctx) : implType,
-            typeDef: <VirtualIdentifierMatch<TypeDef | TraitDef>>ref,
+            implDef: <VirtualIdentifierMatch<TypeDef | TraitDef>>ref,
             forDef: forDef,
-            implDef: impl,
+            instanceDef: impl,
         }
     }
 }
 
 /**
- * Find all impl relations to supertypes (types/traits implemented by specified type), ignoring current scope
+ * Find all instance relations to supertypes (types/traits implemented by specified type), ignoring current scope
  */
-export const findSuperRels = (typeVid: VirtualIdentifier, ctx: Context): ImplRelation[] => {
+export const findSuperRels = (typeVid: VirtualIdentifier, ctx: Context): InstanceRelation[] => {
     const ref = resolveVid(typeVid, ctx)
     if (!ref) return []
 
+    const vid = vidToString(typeVid)
     const supertypes = ctx.impls
-        .filter(i => i.forType.kind === 'vid-type' && vidToString(i.forType.identifier) === vidToString(typeVid))
+        .filter(i =>
+            i.forType.kind === 'vid-type' &&
+            vidToString(i.forType.identifier) === vid &&
+            // avoid infinite recursion by looking up for the same type
+            vidToString(i.implDef.vid) !== vid
+        )
+        .flatMap(r => [r, ...findSuperRels(r.implDef.vid, ctx)])
 
     return supertypes
 }
 
-export const findTypeImpls = (typeVid: VirtualIdentifier, ctx: Context): ImplRelation[] => {
+/**
+ * Find all impls by specified type vid
+ */
+export const findTypeImpls = (typeVid: VirtualIdentifier, ctx: Context): InstanceRelation[] => {
     const vid = vidToString(typeVid)
-    return ctx.impls.filter(i => vidToString(i.typeDef.vid) === vid)
+    return ctx.impls.filter(i => vidToString(i.implDef.vid) === vid)
 }
-
-export const findImpls = (module: Module): (TraitDef | ImplDef)[] =>
-    module.block.statements.flatMap(s => (s.kind === 'trait-def' || s.kind === 'impl-def') ? s : [])
 
 /**
- * Get type impl is attached to:
- * trait A      -> A
- * impl A       -> A
- * impl A for B -> B
+ * Find all instance defs in module
  */
-export const getImplTargetVid = (implDef: TraitDef | ImplDef): VirtualIdentifier => {
-    if (implDef.kind === 'trait-def') {
-        return vidFromString(implDef.name.value)
-    }
-    return idToVid(implDef.forTrait ? implDef.forTrait : implDef.identifier)
-}
+export const findInstanceDefs = (module: Module): (TraitDef | ImplDef)[] =>
+    module.block.statements.flatMap(s => (s.kind === 'trait-def' || s.kind === 'impl-def') ? s : [])
 
-export const getImplTargetType = (implDef: TraitDef | ImplDef, ctx: Context): VirtualType => {
-    const implRel = ctx.impls.find(i => i.implDef === implDef)
+export const getInstanceForType = (implDef: TraitDef | ImplDef, ctx: Context): VirtualType => {
+    const implRel = ctx.impls.find(i => i.instanceDef === implDef)
     return implRel?.forType ?? unknownType
 }
 
+/**
+ * Convert instance def into virtual type.
+ * Must be defined in a module that is currently at the top of module stack
+ */
 export const traitDefToVirtualType = (traitDef: TraitDef | ImplDef, ctx: Context): VirtualType => {
     const module = ctx.moduleStack.at(-1)!
     const name = traitDef.kind === 'trait-def' ? traitDef.name.value : traitDef.identifier.name.value

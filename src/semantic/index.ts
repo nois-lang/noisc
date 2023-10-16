@@ -4,7 +4,7 @@ import { Block, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '
 import { Generic, Type } from '../ast/type'
 import { TypeDef, Variant } from '../ast/type-def'
 import { Context, DefinitionMap, InstanceScope, TypeDefScope, defKey, fnScope, instanceScope } from '../scope'
-import { getImplTargetType, traitDefToVirtualType } from '../scope/trait'
+import { getInstanceForType, traitDefToVirtualType } from '../scope/trait'
 import { idToVid, vidToString } from '../scope/util'
 import { Definition, NameDef, resolveVid } from '../scope/vid'
 import {
@@ -309,7 +309,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
         def: implDef,
         definitions: new Map(implDef.generics.map(g => [defKey(g), g]))
     })
-    const selfType = getImplTargetType(implDef, ctx);
+    const selfType = getInstanceForType(implDef, ctx);
     // must be set afterwards since impl generics cannot be resolved
     (<InstanceScope>module.scopeStack.at(-1)!).selfType = selfType
 

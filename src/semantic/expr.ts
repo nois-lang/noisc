@@ -5,7 +5,7 @@ import { CallOp, ConOp } from '../ast/op'
 import { ClosureExpr, ForExpr, IfExpr, IfLetExpr, ListExpr, Operand, WhileExpr } from '../ast/operand'
 import { Context, instanceScope } from '../scope'
 import { bool, iter, iterable } from '../scope/std'
-import { getImplTargetType } from '../scope/trait'
+import { getInstanceForType } from '../scope/trait'
 import { idToVid, vidFromString, vidToString } from '../scope/util'
 import { MethodDef, resolveVid } from '../scope/vid'
 import {
@@ -152,7 +152,7 @@ export const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     assert(!!methodRef.fn.type, 'untyped impl fn')
     assert(methodRef.fn.type!.kind === 'fn-type', 'impl fn type in not fn')
 
-    const implTargetType = getImplTargetType(methodRef.trait, ctx)
+    const implTargetType = getInstanceForType(methodRef.trait, ctx)
     // TODO: lOperand acts as a type args provider for generics. Improve it
     const implGenericMap = resolveGenericsOverStructure(binaryExpr.lOperand.type!, implTargetType)
     const fnType = <VirtualFnType>methodRef.fn.type
