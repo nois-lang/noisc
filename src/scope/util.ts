@@ -5,6 +5,8 @@ export const vidFromString = (str: string): VirtualIdentifier => ({ names: str.s
 
 export const vidToString = (vid: VirtualIdentifier): string => vid.names.join('::')
 
+export const vidEq = (a: VirtualIdentifier, b: VirtualIdentifier): boolean => vidToString(a) === vidToString(b)
+
 export const vidScopeToString = (vid: VirtualIdentifier) => vidToString(vidFromScope(vid))
 
 export const vidFromScope = (vid: VirtualIdentifier): VirtualIdentifier => ({ names: vid.names.slice(0, -1) })

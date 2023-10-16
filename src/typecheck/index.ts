@@ -1,7 +1,7 @@
 import { Generic, Type } from '../ast/type'
 import { Context } from '../scope'
 import { findSuperRels } from '../scope/trait'
-import { idToVid, vidToString } from '../scope/util'
+import { idToVid, vidEq, vidToString } from '../scope/util'
 import { VirtualIdentifier, resolveVid } from '../scope/vid'
 import { notFoundError, semanticError } from '../semantic/error'
 import { todo } from '../util/todo'
@@ -126,11 +126,11 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
         if (t.kind === 'generic') {
             return t.name === target.name
         }
-        return target.bounds.every(b => isAssignable(t, b, ctx)) 
+        return target.bounds.every(b => isAssignable(t, b, ctx))
     }
 
     if (t.kind === 'vid-type' && target.kind === 'vid-type') {
-        if (vidToString(t.identifier) === vidToString(target.identifier)) {
+        if (vidEq(t.identifier, target.identifier)) {
             for (let i = 0; i < t.typeArgs.length; i++) {
                 const tArg = t.typeArgs[i]
                 const targetArg = target.typeArgs.at(i)
@@ -144,7 +144,7 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
         const superRels = findSuperRels(t.identifier, ctx)
         return superRels.some(rel => {
             // don't check itself
-            if (vidToString(t.identifier) === vidToString(rel.implDef.vid)) return false
+            if (vidEq(t.identifier, rel.implDef.vid)) return false
             const forType: VirtualType = { kind: 'vid-type', identifier: rel.implDef.vid, typeArgs: [] }
             return isAssignable(forType, target, ctx)
         })

@@ -8,7 +8,7 @@ import { selfType } from '../typecheck/type'
 import { Context, Scope, instanceScope } from './index'
 import { defaultImportedVids } from './std'
 import { findSuperRels } from './trait'
-import { concatVid, vidToString } from './util'
+import { concatVid, vidEq, vidToString } from './util'
 
 export interface VirtualIdentifier {
     names: string[]
@@ -182,7 +182,7 @@ const resolveScopeVid = (
                     const superRels = findSuperRels(fullTypeVid, ctx)
                     for (let superRel of superRels) {
                         // don't check itself
-                        if (vidToString(fullTypeVid) === vidToString(superRel.implDef.vid)) continue
+                        if (vidEq(fullTypeVid, superRel.implDef.vid)) continue
                         const fullMethodVid = { names: [...superRel.implDef.vid.names, fnName] }
                         const methodRef = resolveVid(fullMethodVid, ctx, ['method-def'])
                         if (methodRef && methodRef.def.kind === 'method-def') {
@@ -210,13 +210,13 @@ export const resolveMatchedVid = (
     if (!pkg) return undefined
 
     // if vid is module, e.g. std::option
-    module = pkg.modules.find(m => vidToString(m.identifier) === vidToString(vid))
+    module = pkg.modules.find(m => vidEq(m.identifier, vid))
     if (module) {
         return { vid, def: module }
     }
 
     // if vid is varDef, typeDef, trait or impl, e.g. std::option::Option
-    module = pkg.modules.find(m => vidToString(m.identifier) === vidToString({ names: vid.names.slice(0, -1) }))
+    module = pkg.modules.find(m => vidEq(m.identifier, { names: vid.names.slice(0, -1) }))
     if (module) {
         const moduleLocalVid = { names: vid.names.slice(-1) }
         const ref = resolveScopeVid(moduleLocalVid, module.topScope!, ctx, ofKind, module.identifier)
@@ -227,7 +227,7 @@ export const resolveMatchedVid = (
     }
 
     // if vid is a variant or a traitFn, e.g. std::option::Option::Some
-    module = pkg.modules.find(m => vidToString(m.identifier) === vidToString({ names: vid.names.slice(0, -2) }))
+    module = pkg.modules.find(m => vidEq(m.identifier, { names: vid.names.slice(0, -2) }))
     if (module) {
         const moduleLocalVid = { names: vid.names.slice(-2) }
         const ref = resolveScopeVid(moduleLocalVid, module.topScope!, ctx, ofKind, module.identifier)

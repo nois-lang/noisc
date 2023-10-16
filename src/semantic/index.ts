@@ -5,7 +5,7 @@ import { Generic, Type } from '../ast/type'
 import { TypeDef, Variant } from '../ast/type-def'
 import { Context, DefinitionMap, InstanceScope, TypeDefScope, defKey, fnScope, instanceScope } from '../scope'
 import { getInstanceForType, traitDefToVirtualType } from '../scope/trait'
-import { idToVid, vidToString } from '../scope/util'
+import { idToVid, vidEq, vidToString } from '../scope/util'
 import { Definition, NameDef, resolveVid } from '../scope/vid'
 import {
     VirtualType,
@@ -69,7 +69,7 @@ export const prepareModule = (module: Module): void => {
 
 export const checkModule = (module: Module, ctx: Context): void => {
     assert(!!module.topScope, 'module top scope is not set')
-    if (ctx.moduleStack.find(m => vidToString(m.identifier) === vidToString(module.identifier))) {
+    if (ctx.moduleStack.find(m => vidEq(m.identifier, module.identifier))) {
         const vid = vidToString(module.identifier)
         const stackVids = ctx.moduleStack.map(m => vidToString(m.identifier))
         const refChain = [...stackVids.slice(stackVids.indexOf(vid)), vid].join(' -> ')
@@ -314,9 +314,9 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
     (<InstanceScope>module.scopeStack.at(-1)!).selfType = selfType
 
     if (implDef.forTrait) {
-        checkIdentifier(implDef.forTrait, ctx)
+        checkType(implDef.forTrait, ctx)
     }
-    checkIdentifier(implDef.identifier, ctx)
+    checkType(implDef.identifier, ctx)
 
     checkBlock(implDef.block, ctx)
 
