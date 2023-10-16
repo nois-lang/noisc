@@ -1,6 +1,6 @@
 import { Generic, Type } from '../ast/type'
 import { Context } from '../scope'
-import { findSuperRels } from '../scope/trait'
+import { findSuperRelChains, getConcreteTrait } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
 import { VirtualIdentifier, resolveVid } from '../scope/vid'
 import { notFoundError, semanticError } from '../semantic/error'
@@ -66,6 +66,7 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
             const ref = resolveVid(vid, ctx)
             if (!ref) {
                 // it can be a generic, because not all scopes are available
+                // TODO: reproduce
                 if (type.typeArgs.length === 0) {
                     return {
                         kind: 'generic',
@@ -130,23 +131,24 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
     }
 
     if (t.kind === 'vid-type' && target.kind === 'vid-type') {
-        if (vidEq(t.identifier, target.identifier)) {
+        if (vidEq(t.identifier, target.identifier) && t.typeArgs.length === target.typeArgs.length) {
             for (let i = 0; i < t.typeArgs.length; i++) {
                 const tArg = t.typeArgs[i]
-                const targetArg = target.typeArgs.at(i)
-                if (!targetArg) return false
+                const targetArg = target.typeArgs[i]
                 if (!isAssignable(tArg, targetArg, ctx)) {
                     return false
                 }
             }
             return true
         }
-        const superRels = findSuperRels(t.identifier, ctx)
-        return superRels.some(rel => {
-            // don't check itself
-            if (vidEq(t.identifier, rel.implDef.vid)) return false
-            const forType: VirtualType = { kind: 'vid-type', identifier: rel.implDef.vid, typeArgs: [] }
-            return isAssignable(forType, target, ctx)
+        const superRelChains = findSuperRelChains(t.identifier, ctx)
+        return superRelChains.some(chain => {
+            if (vidEq(chain.at(-1)!.implDef.vid, target.identifier)) {
+                const supertype = extractConcreteSupertype(t, target.identifier, ctx)
+                if (!supertype) return false
+                return isAssignable(supertype, target, ctx)
+            }
+            return false
         })
     }
     if (t.kind === 'fn-type' && target.kind === 'fn-type') {
@@ -163,3 +165,25 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
     return false
 }
 
+/**
+ * Extract concrete type of a supertype.
+ * Example: `extractConcreteSupertype(List<Int>, Iterable) -> Iterable<List>`
+ * TODO: what if multiple concrete types possible?
+ */
+export const extractConcreteSupertype = (type: VirtualType, superVid: VirtualIdentifier, ctx: Context): VirtualType | undefined => {
+    if (type.kind !== 'vid-type') return undefined
+
+    const chain = findSuperRelChains(type.identifier, ctx)
+        .filter(c => {
+            const implType = <VidType>c.at(-1)!.implType
+            return vidEq(implType.identifier, superVid)
+        })
+        .at(0)
+    if (!chain) return undefined
+
+    let t: VirtualType = type
+    for (const ir of chain) {
+        t = getConcreteTrait(t, ir, ctx)
+    }
+    return t
+}

@@ -3,6 +3,7 @@ import { ImplDef, TraitDef } from '../ast/statement'
 import { TypeDef } from '../ast/type-def'
 import { notFoundError } from '../semantic/error'
 import { VirtualType, genericToVirtual, typeToVirtual } from '../typecheck'
+import { resolveGenericsOverStructure, resolveType } from '../typecheck/generic'
 import { unknownType } from '../typecheck/type'
 import { assert } from '../util/todo'
 import { Context } from './index'
@@ -108,23 +109,33 @@ const getImplRel = (impl: TraitDef | ImplDef, ctx: Context): InstanceRelation | 
 }
 
 /**
- * Find all instance relations to supertypes (types/traits implemented by specified type), ignoring current scope
+ * Find all instance relation chains to supertypes (types/traits implemented by specified type), ignoring current scope
+ * Chains take a format [type, ..., super]
+ * Every chain corresponds to a single supertype
+ * For all, chain.length >= 2
  */
-export const findSuperRels = (typeVid: VirtualIdentifier, ctx: Context): InstanceRelation[] => {
+export const findSuperRelChains = (
+    typeVid: VirtualIdentifier,
+    ctx: Context,
+    chain: InstanceRelation[] = []
+): InstanceRelation[][] => {
     const ref = resolveVid(typeVid, ctx)
     if (!ref) return []
 
     const vid = vidToString(typeVid)
-    const supertypes = ctx.impls
-        .filter(i =>
-            i.forType.kind === 'vid-type' &&
-            vidToString(i.forType.identifier) === vid &&
+    const chains = ctx.impls
+        .filter(r =>
+            r.forType.kind === 'vid-type' &&
+            vidToString(r.forType.identifier) === vid &&
             // avoid infinite recursion by looking up for the same type
-            vidToString(i.implDef.vid) !== vid
+            vidToString(r.implDef.vid) !== vid
         )
-        .flatMap(r => [r, ...findSuperRels(r.implDef.vid, ctx)])
+        .flatMap(r => {
+            const newChain = [...chain, r]
+            return [newChain, ...findSuperRelChains(r.implDef.vid, ctx, newChain)]
+        })
 
-    return supertypes
+    return chains
 }
 
 /**
@@ -158,4 +169,13 @@ export const traitDefToVirtualType = (traitDef: TraitDef | ImplDef, ctx: Context
         identifier: concatVid(module.identifier, vidFromString(name)),
         typeArgs: traitDef.generics.map(g => genericToVirtual(g, ctx))
     }
+}
+
+/**
+ * Find concrete type of implType by mapping generics
+ * Example: `getConcreteTrait(List<Int>, impl <T> Iterable<T> for List<T>) -> Iterable<Int>`
+ */
+export const getConcreteTrait = (type: VirtualType, rel: InstanceRelation, ctx: Context): VirtualType => {
+    const genericMap = resolveGenericsOverStructure(type, rel.forType)
+    return resolveType(rel.implType, [genericMap], rel.implDef.def, ctx)
 }

@@ -9,7 +9,9 @@ import { getInstanceForType } from '../scope/trait'
 import { idToVid, vidFromString, vidToString } from '../scope/util'
 import { MethodDef, resolveVid } from '../scope/vid'
 import {
+    VidType,
     VirtualFnType,
+    extractConcreteSupertype,
     isAssignable,
     typeToVirtual,
     virtualTypeToString
@@ -261,9 +263,15 @@ export const checkForExpr = (forExpr: ForExpr, ctx: Context): void => {
         ctx.errors.push(semanticError(ctx, forExpr.expr, `type ${virtualTypeToString(forExpr.expr.type!)} is not iterable`))
     }
 
-    // TODO: need function to extract trait from concrete type in order to resolve generic, 
-    // e.g. extractTrait(`Iterable`, `List<Int>`) -> Iterable<Int>
-    checkPattern(forExpr.pattern, unknownType, ctx)
+    const iterableType = [iter, iterable]
+        .map(t => extractConcreteSupertype(forExpr.expr.type!, t.identifier, ctx))
+        .filter(t => !!t)
+        .at(0)
+    assert(!!iterableType, 'unresolved iterable type')
+    assert(iterableType!.kind === 'vid-type', `iterable type is ${iterableType!.kind}`)
+    const itemType = (<VidType>iterableType).typeArgs.at(0)
+    assert(!!itemType, 'unresolved item type')
+    checkPattern(forExpr.pattern, itemType!, ctx)
 
     checkBlock(forExpr.block, ctx)
     assert(!!forExpr.block.type)

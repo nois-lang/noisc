@@ -7,7 +7,7 @@ import { checkTopLevelDefiniton } from '../semantic'
 import { selfType } from '../typecheck/type'
 import { Context, Scope, instanceScope } from './index'
 import { defaultImportedVids } from './std'
-import { findSuperRels } from './trait'
+import { findSuperRelChains } from './trait'
 import { concatVid, vidEq, vidToString } from './util'
 
 export interface VirtualIdentifier {
@@ -179,7 +179,7 @@ const resolveScopeVid = (
                 if (traitDef && checkSuper) {
                     // lookup supertypes' traits/impls that might contain that function
                     const fullTypeVid = { names: [...(moduleVid?.names ?? []), traitName] }
-                    const superRels = findSuperRels(fullTypeVid, ctx)
+                    const superRels = findSuperRelChains(fullTypeVid, ctx).map(c => c.at(-1)!)
                     for (let superRel of superRels) {
                         // don't check itself
                         if (vidEq(fullTypeVid, superRel.implDef.vid)) continue
