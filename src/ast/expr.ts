@@ -1,8 +1,8 @@
 import { ParseNode } from '../parser'
 import { Typed } from '../semantic'
 import { AstNode, filterNonAstNodes } from './index'
-import { associativityMap, BinaryOp, buildBinaryOp, buildUnaryOp, precedenceMap, UnaryOp } from './op'
-import { buildOperand, Operand } from './operand'
+import { BinaryOp, UnaryOp, associativityMap, buildBinaryOp, buildUnaryOp, precedenceMap } from './op'
+import { Operand, buildOperand } from './operand'
 
 export type Expr = OperandExpr | UnaryExpr | BinaryExpr
 
@@ -81,7 +81,9 @@ export const buildBinaryExpr = (node: ParseNode): Expr => {
                     const lExp = exprStack.pop()!
                     exprStack.push({
                         kind: 'binary-expr',
-                        parseNode: lExp.parseNode,
+                        // it has to be manually constructed since parse tree is always left associative, but actual
+                        // binary exprs aren't
+                        parseNode: { kind: 'expr', nodes: [lExp.parseNode, o2.parseNode, rExp.parseNode] },
                         binaryOp: o2,
                         lOperand: lExp,
                         rOperand: rExp
