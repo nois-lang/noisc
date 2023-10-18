@@ -116,9 +116,10 @@ export const constTokenKindMap: Map<TokenKind, string> = new Map([
 ])
 
 const floatRegex = /^((\d+(\.\d*)?e[+-]?\d+)|(\d+\.\d*)|(\d*\.\d+))/
-const singleCharRegex = /(([^\\\n\r])|(\\[btnvfr\\'"])|(\\u{[0-9a-fA-F]{1,4}}))/
-const charRegex = new RegExp(`^'((\\')|` + singleCharRegex.source + `)'`)
-const stringRegex = new RegExp(`^"((\\")|` + singleCharRegex.source + `)*"`)
+const escapeCharReg = /(\\[btnvfr\\'"])/
+const unicodeCharReg = /(\\u{[0-9a-fA-F]{1,4}})/
+const charRegex = new RegExp('^\'(' + ['(\\\\\')', /[^\\\n\r']/.source, escapeCharReg.source, unicodeCharReg.source].join('|') + ')\'')
+const stringRegex = new RegExp('^"(' + ['(\\\\")', /[^\\\n\r"]/.source, escapeCharReg.source, unicodeCharReg.source].join('|') + ')*"')
 
 /**
  * Independent tokens are automatically advanced by parser by default
