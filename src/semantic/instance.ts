@@ -8,7 +8,7 @@ import { vidToString } from '../scope/util'
 import { resolveVid } from '../scope/vid'
 import { VirtualFnType, VirtualType, genericToVirtual, typeToVirtual, virtualTypeToString } from '../typecheck'
 import { resolveFnGenerics, resolveGenericsOverStructure, resolveType } from '../typecheck/generic'
-import { unknownType } from '../typecheck/type'
+import { selfType, unknownType } from '../typecheck/type'
 import { allEqual } from '../util/array'
 import { notFoundError, semanticError } from './error'
 import { checkOperand } from './expr'
@@ -102,6 +102,10 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
     const instanceType = lOperand.type!
     const implForType = getInstanceForType(ref.def.trait, ctx)
     const implGenericMap = resolveGenericsOverStructure(instanceType, implForType)
+    // if Self type param is explicit, `resolveGenericsOverStructure` treats it as regular generic and interrupts
+    // further mapping in `fnGenericMap`, thus should be removed
+    implGenericMap.delete(selfType.name)
+
     const fnGenericMap = resolveFnGenerics(
         fnType,
         [lOperand.type, ...callOp.args.map(a => a.type!)],

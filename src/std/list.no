@@ -47,8 +47,8 @@ impl Into<String> for List<String> {
 
 impl <T: io::Display> io::Display for List<T> {
     fn fmt(self): String {
-        // TODO: check generic bounds
-        // self.iter().map(io::Display::fmt).intersperse(", ").into<String>()
+        // TODO: only match impls with assignable type params (Into<String> is not checked)
+        let a = self.iter().map(io::Display::fmt).intersperse(", ").into<String>()
     }
 }
 
