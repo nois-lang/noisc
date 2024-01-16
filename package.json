@@ -4,7 +4,7 @@
     "description": "Statically typed programming language for the web",
     "scripts": {
         "start": "ts-node src/index.ts",
-        "build": "tsc && bun build-std-index.ts && cp -r src/std dist && cp package.json dist",
+        "build": "tsc && bun --target=node build-std-index.ts && cp -r src/std dist && cp package.json dist",
         "test": "jest --watchAll",
         "ci": "jest --ci",
         "bun:run": "bun run src/index.ts",
