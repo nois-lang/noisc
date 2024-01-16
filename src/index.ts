@@ -3,9 +3,10 @@ import { basename, dirname, join, resolve } from 'path'
 import * as process from 'process'
 import { fileURLToPath } from 'url'
 import { fromCmdFlags } from './config'
-import { colorError, prettySourceMessage, colorWarning } from './error'
+import { colorError, colorWarning, prettySourceMessage } from './error'
 import { Package } from './package'
-import { buildModule, buildPackage } from './package/build'
+import { buildModule } from './package/build'
+import { buildPackage } from './package/io'
 import { getLocationRange } from './parser'
 import { Context, pathToVid } from './scope'
 import { buildInstanceRelations } from './scope/trait'
@@ -80,11 +81,7 @@ ctx.packages.forEach(p => {
 ctx.impls = buildInstanceRelations(ctx)
 ctx.check = true
 if (ctx.config.libCheck) {
-    ctx.packages
-        .flatMap(p => p.modules)
-        .forEach(m => {
-            checkModule(m, ctx)
-        })
+    ctx.packages.flatMap(p => p.modules).forEach(m => checkModule(m, ctx))
 } else {
     checkModule(moduleAst, ctx)
 }

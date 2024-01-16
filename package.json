@@ -4,17 +4,13 @@
     "description": "Statically typed programming language for the web",
     "scripts": {
         "start": "ts-node src/index.ts",
-        "build": "tsc && npm run build:std",
-        "build:std": "bun build-std-index.ts && cp -r src/std dist/",
-        "build:lib": "tsc -p tsconfig.lib.json && npm run build:std",
+        "build": "tsc && bun build-std-index.ts && cp -r src/std dist && cp package.json dist",
         "test": "jest --watchAll",
         "ci": "jest --ci",
         "bun:run": "bun run src/index.ts",
         "bun:build": "bun build --target=node --outdir=dist src/index.ts && npm run build:std",
-        "bun:build:lib": "bun build --outdir=dist src/lib.ts && npm run build:std",
         "bun:ci": "bun test",
-        "clean": "rm -r dist",
-        "postinstall": "npm run build:lib"
+        "clean": "rm -r dist"
     },
     "type": "module",
     "main": "dist/index.js",
