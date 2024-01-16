@@ -9,7 +9,6 @@ import { Source } from '../source'
 import { checkModule, prepareModule } from './index'
 
 describe('semantic', () => {
-
     const check = (code: string, checkStd: boolean = false): Context => {
         const source: Source = { code, filepath: 'test.no' }
 
@@ -42,7 +41,11 @@ describe('semantic', () => {
         ctx.impls = buildInstanceRelations(ctx)
         ctx.check = true
         if (checkStd) {
-            ctx.packages.flatMap(p => p.modules).forEach(m => { checkModule(m, ctx) })
+            ctx.packages
+                .flatMap(p => p.modules)
+                .forEach(m => {
+                    checkModule(m, ctx)
+                })
         } else {
             checkModule(moduleAst, ctx)
         }
@@ -73,7 +76,9 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual([])
 
             ctx = check(code('String'))
-            expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected test::Foo<std::string::String>\n            got      test::Foo<std::int::Int>'])
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: expected test::Foo<std::string::String>\n            got      test::Foo<std::int::Int>'
+            ])
         })
     })
 
@@ -100,7 +105,9 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual([])
 
             ctx = check(code('"foo"'))
-            expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected std::int::Int\n            got      std::string::String'])
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: expected std::int::Int\n            got      std::string::String'
+            ])
         })
 
         it('fn generics', () => {
@@ -117,7 +124,9 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual([])
 
             ctx = check(code('"foo"'))
-            expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected std::int::Int\n            got      std::string::String'])
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: expected std::int::Int\n            got      std::string::String'
+            ])
         })
 
         it('instance and fn generics', () => {
@@ -142,7 +151,9 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual([])
 
             ctx = check(code('"foo"'))
-            expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected test::Foo<std::int::Int>\n            got      test::Foo<std::string::String>'])
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: expected test::Foo<std::int::Int>\n            got      test::Foo<std::string::String>'
+            ])
         })
 
         it('self operand', () => {
@@ -166,7 +177,9 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual([])
 
             ctx = check(code('Int'))
-            expect(ctx.errors.map(e => e.message)).toEqual(['type error: expected std::int::Int\n            got      test::Foo'])
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: expected std::int::Int\n            got      test::Foo'
+            ])
         })
 
         it('instance fns should not be available within itself', () => {
@@ -236,7 +249,7 @@ fn bar(Foo::Foo(a, b): Foo) {
             let ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual([
                 'type error: non-callable operand of type `std::int::Int`',
-                'type error: non-callable operand of type `std::int::Int`',
+                'type error: non-callable operand of type `std::int::Int`'
             ])
         })
 
@@ -257,7 +270,7 @@ fn bar(Foo::Foo(a: namedA, b: namedB): Foo) {
                 'identifier `b` not found',
                 'type error: non-callable operand of type `?`',
                 'type error: non-callable operand of type `std::int::Int`',
-                'type error: non-callable operand of type `std::int::Int`',
+                'type error: non-callable operand of type `std::int::Int`'
             ])
         })
 
@@ -275,7 +288,7 @@ fn bar(Foo::Foo(b: Bar::Bar(a)): Foo) {
             expect(ctx.errors.map(e => e.message)).toEqual([
                 'identifier `b` not found',
                 'type error: non-callable operand of type `?`',
-                'type error: non-callable operand of type `std::int::Int`',
+                'type error: non-callable operand of type `std::int::Int`'
             ])
         })
 
@@ -287,9 +300,7 @@ fn bar(foo @ Foo::Foo(a): Foo) {
     foo()
 }`
             let ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual([
-                'type error: non-callable operand of type `test::Foo`',
-            ])
+            expect(ctx.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `test::Foo`'])
         })
     })
 
@@ -301,14 +312,12 @@ fn main() {
     a()
 }`
             let ctx = check(code('5'))
-            expect(ctx.errors.map(e => e.message)).toEqual([
-                'type error: non-callable operand of type `std::int::Int`',
-            ])
+            expect(ctx.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `std::int::Int`'])
 
             ctx = check(code('"foo"'))
             expect(ctx.errors.map(e => e.message)).toEqual([
                 'if branches have incompatible types:\n    then: `std::int::Int`\n    else: `std::string::String`',
-                'type error: non-callable operand of type `?`',
+                'type error: non-callable operand of type `?`'
             ])
         })
     })
@@ -327,16 +336,16 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual([
                 'type error: non-callable operand of type `std::int::Int`',
                 'identifier `value` not found',
-                'type error: non-callable operand of type `?`',
+                'type error: non-callable operand of type `?`'
             ])
 
             ctx = check(code('4'))
             expect(ctx.errors.map(e => e.message)).toEqual([
                 'cannot destructure type `std::int::Int` into `std::option::Option`',
                 'identifier `value` not found',
-                "type error: non-callable operand of type `?`",
-                "identifier `value` not found",
                 'type error: non-callable operand of type `?`',
+                'identifier `value` not found',
+                'type error: non-callable operand of type `?`'
             ])
         })
     })
@@ -358,9 +367,7 @@ fn main() {
     }
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual([
-                'non-exhaustive match expression',
-            ])
+            expect(ctx.errors.map(e => e.message)).toEqual(['non-exhaustive match expression'])
         })
 
         it('unreachable pattern', () => {
@@ -382,9 +389,7 @@ fn main() {
             const ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual([])
 
-            expect(ctx.warnings.map(e => e.message)).toEqual([
-                'unreachable pattern',
-            ])
+            expect(ctx.warnings.map(e => e.message)).toEqual(['unreachable pattern'])
         })
     })
 })

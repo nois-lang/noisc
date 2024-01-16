@@ -3,7 +3,7 @@ import { ParseNode } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
 import { Typed } from '../semantic'
 import { buildExpr, buildOperandExpr, Expr, UnaryExpr } from './expr'
-import { AstNode, filterNonAstNodes, } from './index'
+import { AstNode, filterNonAstNodes } from './index'
 import { buildUnaryOp } from './op'
 import { buildFloatLiteral, buildIdentifier, buildIntLiteral, buildName, Identifier, Name, Operand } from './operand'
 import { Block, buildBlock } from './statement'
@@ -37,7 +37,6 @@ export const buildMatchClause = (node: ParseNode): MatchClause => {
     const block = buildBlock(nodes[idx++])
     return { kind: 'match-clause', parseNode: node, pattern, guard, block }
 }
-
 
 export interface Pattern extends AstNode<'pattern'> {
     name?: Name
@@ -97,8 +96,7 @@ export const buildFieldPattern = (node: ParseNode): FieldPattern => {
     return { kind: 'field-pattern', parseNode: node, name, pattern }
 }
 
-export interface Hole extends AstNode<'hole'>, Partial<Typed> {
-}
+export interface Hole extends AstNode<'hole'>, Partial<Typed> {}
 
 export const buildHole = (node: ParseNode): Hole => {
     return { kind: 'hole', parseNode: node }

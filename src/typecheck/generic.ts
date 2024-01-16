@@ -7,7 +7,7 @@ import { selfType } from './type'
 export const resolveFnGenerics = (
     fnType: VirtualFnType,
     argTypes: VirtualType[],
-    typeArgs: VirtualType[] = [],
+    typeArgs: VirtualType[] = []
 ): Map<string, VirtualType> => {
     if (typeArgs.length > 0) {
         return new Map<string, VirtualType>(fnType.generics.map((g, i) => [g.name, typeArgs[i]]))
@@ -27,7 +27,7 @@ export const resolveFnGenerics = (
  * Recursively walk over zipped pair (arg, param) and resolve generic virtual types.
  * In case when both arg and param are fns, walk over [...paramTypes, returnType] and do the same.
  *
- * Examples: 
+ * Examples:
  *   - `resolveGenerics(Foo<A, Bar<B>>, Foo<Int, Bar<Char>>)` will produce map [A -> Int, B -> Char]
  *   - `resolveGenerics(T, Foo<Int>)`                         will produce map [T -> Foo<Int>]
  */

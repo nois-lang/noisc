@@ -115,4 +115,3 @@ export const fnScope = (ctx: Context): FnDefScope | undefined => {
     }
     return undefined
 }
-

@@ -104,7 +104,9 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
         case 'identifier':
             checkIdentifier(operand, ctx)
             if (!operand.type) {
-                ctx.errors.push(semanticError(ctx, operand, `unknown type of identifier \`${vidToString(idToVid(operand))}\``))
+                ctx.errors.push(
+                    semanticError(ctx, operand, `unknown type of identifier \`${vidToString(idToVid(operand))}\``)
+                )
             }
             break
     }
@@ -161,17 +163,14 @@ export const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     const fnGenericMap = resolveFnGenerics(
         fnType,
         [binaryExpr.lOperand.type ?? unknownType, binaryExpr.rOperand.type ?? unknownType],
-        [],
+        []
     )
     // TODO: this whole logic with generic resoluion should be unified across
     // checkBinaryExpr, checkCallExpr, checkMethodCallExpr, etc.
     const genericMaps = [implGenericMap, fnGenericMap]
-    const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(
-        pt,
-        genericMaps,
-        [binaryExpr.lOperand, binaryExpr.rOperand].at(i) ?? binaryExpr,
-        ctx
-    ))
+    const paramTypes = fnType.paramTypes.map((pt, i) =>
+        resolveType(pt, genericMaps, [binaryExpr.lOperand, binaryExpr.rOperand].at(i) ?? binaryExpr, ctx)
+    )
     checkCallArgs(binaryExpr, [binaryExpr.lOperand, binaryExpr.rOperand], paramTypes, ctx)
     binaryExpr.type = resolveType(fnType.returnType, genericMaps, binaryExpr, ctx)
 }
@@ -190,17 +189,21 @@ export const checkIfExpr = (ifExpr: IfExpr, ctx: Context): void => {
         const thenType = virtualTypeToString(ifExpr.thenBlock.type ?? unknownType)
         const elseType = virtualTypeToString(ifExpr.elseBlock.type ?? unknownType)
         if (thenType !== elseType) {
-            ctx.errors.push(semanticError(ctx, ifExpr, `\
+            ctx.errors.push(
+                semanticError(
+                    ctx,
+                    ifExpr,
+                    `\
 if branches have incompatible types:
     then: \`${thenType}\`
-    else: \`${elseType}\``))
-
+    else: \`${elseType}\``
+                )
+            )
 
             ifExpr.type = unknownType
             return
         }
     }
-
 
     ifExpr.type = ifExpr.thenBlock.type
 }
@@ -260,7 +263,9 @@ export const checkForExpr = (forExpr: ForExpr, ctx: Context): void => {
     checkExpr(forExpr.expr, ctx)
     assert(!!forExpr.expr.type)
     if (![iter, iterable].some(t => isAssignable(forExpr.expr.type!, t, ctx))) {
-        ctx.errors.push(semanticError(ctx, forExpr.expr, `type ${virtualTypeToString(forExpr.expr.type!)} is not iterable`))
+        ctx.errors.push(
+            semanticError(ctx, forExpr.expr, `type ${virtualTypeToString(forExpr.expr.type!)} is not iterable`)
+        )
     }
 
     const iterableType = [iter, iterable]
@@ -315,10 +320,10 @@ export const checkClosureExpr = (closureExpr: ClosureExpr, ctx: Context): void =
         // one approach is to assign every untyped parameter a generic that will be resolved once closure is called
         // with args, e.g. `|a, b| { a + b }` will have type <A, B>|a: A, b: B|: ?
         // no idea what to do with the return type though
-        todo("infer closure param types")
+        todo('infer closure param types')
     }
     if (!closureExpr.returnType) {
-        todo("infer closure return type")
+        todo('infer closure return type')
     }
 
     const module = ctx.moduleStack.at(-1)!
@@ -358,18 +363,17 @@ export const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     callOp.args.forEach(a => checkOperand(a, ctx))
 
     const fnType = <VirtualFnType>operand.type
-    const typeArgs = operand.kind === 'identifier'
-        ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx))
-        : []
+    const typeArgs = operand.kind === 'identifier' ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
     const instScope = instanceScope(ctx)
     const instanceMap = instScope ? instanceGenericMap(instScope, ctx) : new Map()
-    const fnGenericMap = resolveFnGenerics(fnType, callOp.args.map(a => a.type!), typeArgs)
-    const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(
-        pt,
-        [instanceMap, fnGenericMap],
-        callOp.args.at(i) ?? unaryExpr,
-        ctx
-    ))
+    const fnGenericMap = resolveFnGenerics(
+        fnType,
+        callOp.args.map(a => a.type!),
+        typeArgs
+    )
+    const paramTypes = fnType.paramTypes.map((pt, i) =>
+        resolveType(pt, [instanceMap, fnGenericMap], callOp.args.at(i) ?? unaryExpr, ctx)
+    )
     checkCallArgs(callOp, callOp.args, paramTypes, ctx)
 
     unaryExpr.type = resolveType(fnType.returnType, [instanceMap, fnGenericMap], unaryExpr, ctx)
@@ -390,18 +394,16 @@ export const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         return
     }
     if (ref.def.kind !== 'variant') {
-        ctx.errors.push(semanticError(
-            ctx,
-            operand,
-            `type error: ${virtualTypeToString(operand.type!)} is not a variant`
-        ))
+        ctx.errors.push(
+            semanticError(ctx, operand, `type error: ${virtualTypeToString(operand.type!)} is not a variant`)
+        )
         return
     }
     conOp.fields.map(f => checkExpr(f.expr, ctx))
     const variant = ref.def.variant
     const variantType = <VirtualFnType>variant.type!
     // TODO: figure out typeArgs parameter here
-    // TODO: fields might be specified out of order, match conOp.fields by name 
+    // TODO: fields might be specified out of order, match conOp.fields by name
     const conOpMap = resolveFnGenerics(
         variantType,
         conOp.fields.map(f => f.expr.type ?? unknownType),
@@ -417,13 +419,15 @@ export const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         }
     })
     if (variantType.paramTypes.length !== conOp.fields.length) {
-        ctx.errors.push(semanticError(ctx, conOp, `expected ${variantType.paramTypes.length} arguments, got ${conOp.fields.length}`))
+        ctx.errors.push(
+            semanticError(ctx, conOp, `expected ${variantType.paramTypes.length} arguments, got ${conOp.fields.length}`)
+        )
         return
     }
     variantType.paramTypes
         .map(pt => resolveType(pt, genericMaps, variant, ctx))
         .forEach((paramType, i) => {
-            // TODO: fields might be specified out of order, match conOp.fields by name 
+            // TODO: fields might be specified out of order, match conOp.fields by name
             const field = conOp.fields[i]
             const argType = resolveType(field.expr.type ?? unknownType, genericMaps, field, ctx)
             if (!isAssignable(argType, paramType, ctx)) {

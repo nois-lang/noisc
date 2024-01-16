@@ -7,12 +7,7 @@ import { Context, DefinitionMap, InstanceScope, TypeDefScope, defKey, fnScope, i
 import { getInstanceForType, traitDefToVirtualType } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
 import { Definition, NameDef, resolveVid } from '../scope/vid'
-import {
-    VirtualType,
-    genericToVirtual,
-    isAssignable,
-    typeToVirtual
-} from '../typecheck'
+import { VirtualType, genericToVirtual, isAssignable, typeToVirtual } from '../typecheck'
 import { instanceGenericMap, resolveType } from '../typecheck/generic'
 import { selfType, unitType, unknownType } from '../typecheck/type'
 import { assert, todo } from '../util/todo'
@@ -261,7 +256,9 @@ export const checkParam = (param: Param, index: number, ctx: Context): void => {
         case 'operand-expr':
         case 'unary-expr':
         case 'binary-expr':
-            ctx.errors.push(semanticError(ctx, param.pattern, `\`${param.pattern.kind}\` can only be used in match expressions`))
+            ctx.errors.push(
+                semanticError(ctx, param.pattern, `\`${param.pattern.kind}\` can only be used in match expressions`)
+            )
             break
         default:
             checkPattern(param.pattern, param.type, ctx)
@@ -283,9 +280,9 @@ const checkTraitDef = (traitDef: TraitDef, ctx: Context) => {
         def: traitDef,
         definitions: new Map(traitDef.generics.map(g => [defKey(g), g]))
     })
-    const selfType = traitDefToVirtualType(traitDef, ctx);
+    const selfType = traitDefToVirtualType(traitDef, ctx)
     // must be set afterwards since impl generics cannot be resolved
-    (<InstanceScope>module.scopeStack.at(-1)!).selfType = selfType
+    ;(<InstanceScope>module.scopeStack.at(-1)!).selfType = selfType
 
     checkBlock(traitDef.block, ctx)
 
@@ -309,9 +306,9 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
         def: implDef,
         definitions: new Map(implDef.generics.map(g => [defKey(g), g]))
     })
-    const selfType = getInstanceForType(implDef, ctx);
+    const selfType = getInstanceForType(implDef, ctx)
     // must be set afterwards since impl generics cannot be resolved
-    (<InstanceScope>module.scopeStack.at(-1)!).selfType = selfType
+    ;(<InstanceScope>module.scopeStack.at(-1)!).selfType = selfType
 
     if (implDef.forTrait) {
         checkType(implDef.forTrait, ctx)
@@ -353,15 +350,13 @@ const checkVariant = (variant: Variant, ctx: Context) => {
         // TODO: check duplicate field defs
     })
 
-    const generics = [...typeDefScope.definitions.values()]
-        .map(d => <Generic>d)
-        .map(g => genericToVirtual(g, ctx))
+    const generics = [...typeDefScope.definitions.values()].map(d => <Generic>d).map(g => genericToVirtual(g, ctx))
 
     // names used in fieldDef, needed to match what typeDef generics are being used
     const names = variant.fieldDefs.flatMap(f => typeNames(f.fieldType))
     // unused generics needs to be replaced with `?` because some variants ignore type def generics,
     // e.g. `Option::None()` should have type of `||: Option<?>`
-    const typeArgs = generics.map(g => names.includes(g.name) ? g : unknownType)
+    const typeArgs = generics.map(g => (names.includes(g.name) ? g : unknownType))
 
     // TODO: introduce a new type kind 'variant', that, unlike fn type, will also record field names
     // it should be assignable to fn type if argument position matches
@@ -459,11 +454,7 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
                 // must be set afterwards since impl generics cannot be resolved
                 instScope.selfType = traitDefToVirtualType(ref.def.trait, ctx)
 
-                identifier.type = resolveType(ref.def.fn.type!,
-                    [instanceGenericMap(instScope, ctx)],
-                    identifier,
-                    ctx
-                )
+                identifier.type = resolveType(ref.def.fn.type!, [instanceGenericMap(instScope, ctx)], identifier, ctx)
                 break
             case 'variant':
                 identifier.type = ref.def.variant.type
@@ -530,4 +521,3 @@ export const checkCallArgs = (
         }
     }
 }
-

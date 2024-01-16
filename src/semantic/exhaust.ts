@@ -20,17 +20,17 @@
  * 4: Expr{Add(l                             , r ), Const(v )} // note that every path is already covered
  *
  * - clause must exhaust previously unmatched paths or introduce new paths
- * - if clause does not affect match tree, it cannot be matched. Should be a warning 
+ * - if clause does not affect match tree, it cannot be matched. Should be a warning
  * - if there are unexplored paths after the last clause, there is a value that will never match. Should be an error
  * - guarded clause does not exhaust any path, since condition is statically undecidable
  */
 
-import { MatchExpr, PatternExpr } from "../ast/match"
-import { Context } from "../scope"
-import { idToVid, vidToString } from "../scope/util"
-import { VariantDef, resolveVid } from "../scope/vid"
-import { assert, todo, unreachable } from "../util/todo"
-import { semanticError } from "./error"
+import { MatchExpr, PatternExpr } from '../ast/match'
+import { Context } from '../scope'
+import { idToVid, vidToString } from '../scope/util'
+import { VariantDef, resolveVid } from '../scope/vid'
+import { assert, todo, unreachable } from '../util/todo'
+import { semanticError } from './error'
 
 export interface MatchTree {
     node: MatchNode
@@ -51,7 +51,6 @@ export interface MatchVariant {
 export interface Exhaustive {
     kind: 'exhaustive'
 }
-
 
 export interface Unmatched {
     kind: 'unmatched'
@@ -122,7 +121,7 @@ const matchPattern = (pattern: PatternExpr, tree: MatchTree, ctx: Context): bool
             }
             // if pattern has no fields, exhaust every field of that variant
             if (pattern.fieldPatterns.length === 0) {
-                fields.forEach(f => f.node = { kind: 'exhaustive' })
+                fields.forEach(f => (f.node = { kind: 'exhaustive' }))
                 return true
             }
             // if this variant has unmatched fields, recursively match every pattern field

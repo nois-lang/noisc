@@ -83,9 +83,9 @@ export const treeKinds = <const>[
     'con-pattern-params',
     'field-pattern',
     'hole',
-    'wildcard',
+    'wildcard'
 ]
-export type TreeKind = typeof treeKinds[number]
+export type TreeKind = (typeof treeKinds)[number]
 
 export type NodeKind = TokenKind | TreeKind
 

@@ -44,7 +44,8 @@ export const buildInstanceRelations = (ctx: Context): InstanceRelation[] => {
     const impls = ctx.packages
         .flatMap(p => p.modules)
         .flatMap(m =>
-            m.block.statements.filter(s => s.kind === 'trait-def' || s.kind === 'impl-def')
+            m.block.statements
+                .filter(s => s.kind === 'trait-def' || s.kind === 'impl-def')
                 .map(impl => <const>[m, <ImplDef | TraitDef>impl])
         )
     return impls.flatMap(([module, impl]) => {
@@ -75,7 +76,7 @@ const getImplRel = (impl: TraitDef | ImplDef, ctx: Context): InstanceRelation | 
             forType: traitType,
             implDef: traitRef,
             forDef: traitRef,
-            instanceDef: impl,
+            instanceDef: impl
         }
     } else {
         const implVid = idToVid(impl.identifier)
@@ -103,7 +104,7 @@ const getImplRel = (impl: TraitDef | ImplDef, ctx: Context): InstanceRelation | 
             forType: impl.forTrait ? typeToVirtual(impl.forTrait, ctx) : implType,
             implDef: <VirtualIdentifierMatch<TypeDef | TraitDef>>ref,
             forDef: forDef,
-            instanceDef: impl,
+            instanceDef: impl
         }
     }
 }
@@ -124,11 +125,12 @@ export const findSuperRelChains = (
 
     const vid = vidToString(typeVid)
     const chains = ctx.impls
-        .filter(r =>
-            r.forType.kind === 'vid-type' &&
-            vidToString(r.forType.identifier) === vid &&
-            // avoid infinite recursion by looking up for the same type
-            vidToString(r.implDef.vid) !== vid
+        .filter(
+            r =>
+                r.forType.kind === 'vid-type' &&
+                vidToString(r.forType.identifier) === vid &&
+                // avoid infinite recursion by looking up for the same type
+                vidToString(r.implDef.vid) !== vid
         )
         .flatMap(r => {
             const newChain = [...chain, r]
@@ -150,7 +152,7 @@ export const findTypeImpls = (typeVid: VirtualIdentifier, ctx: Context): Instanc
  * Find all instance defs in module
  */
 export const findInstanceDefs = (module: Module): (TraitDef | ImplDef)[] =>
-    module.block.statements.flatMap(s => (s.kind === 'trait-def' || s.kind === 'impl-def') ? s : [])
+    module.block.statements.flatMap(s => (s.kind === 'trait-def' || s.kind === 'impl-def' ? s : []))
 
 export const getInstanceForType = (implDef: TraitDef | ImplDef, ctx: Context): VirtualType => {
     const implRel = ctx.impls.find(i => i.instanceDef === implDef)

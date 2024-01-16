@@ -15,4 +15,3 @@ const listFiles = (dir: string): string[] => {
         return statSync(fPath).isDirectory() ? listFiles(fPath) : [fPath]
     })
 }
-

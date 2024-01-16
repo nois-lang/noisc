@@ -14,7 +14,7 @@ export const buildOperandExpr = (node: ParseNode): OperandExpr => {
     return {
         kind: 'operand-expr',
         parseNode: node,
-        operand: buildOperand(node),
+        operand: buildOperand(node)
     }
 }
 

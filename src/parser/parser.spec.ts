@@ -4,7 +4,6 @@ import { compactParseNode } from './index'
 import { Parser } from './parser'
 
 describe('parser', () => {
-
     const parse = (code: string) => {
         const p = new Parser(tokenize(code))
         parseModule(p)
@@ -17,14 +16,15 @@ describe('parser', () => {
             const { tree, errors } = parse('type Unit')
             expect(errors.length).toEqual(0)
             expect(tree).toEqual({
-                "module": [{
-                    "statement": [{
-                        "type-def": [
-                            { "type-keyword": "type" },
-                            { "name": "Unit" }
-                        ],
-                    }],
-                }],
+                module: [
+                    {
+                        statement: [
+                            {
+                                'type-def': [{ 'type-keyword': 'type' }, { name: 'Unit' }]
+                            }
+                        ]
+                    }
+                ]
             })
         })
 
@@ -32,37 +32,63 @@ describe('parser', () => {
             const { tree, errors } = parse('type Option<T> { Some(value: T), None }')
             expect(errors.length).toEqual(0)
             expect(tree).toEqual({
-                module: [{
-                    statement: [{
-                        'type-def': [
-                            { 'type-keyword': 'type' },
-                            { name: 'Option' },
-                            { generics: [{ 'o-angle': '<' }, { generic: [{ name: 'T' }] }, { 'c-angle': '>' }] },
+                module: [
+                    {
+                        statement: [
                             {
-                                'variant-list': [
-                                    { 'o-brace': '{' },
+                                'type-def': [
+                                    { 'type-keyword': 'type' },
+                                    { name: 'Option' },
                                     {
-                                        'variant': [{ name: 'Some' }, {
-                                            'variant-params': [{ 'o-paren': '(' }, {
-                                                'field-def': [{ name: 'value' }, {
-                                                    'type-annot': [{ colon: ':' }, {
-                                                        type: [{
-                                                            'type-bounds': [{
-                                                                identifier: [{ name: 'T' }]
-                                                            }]
-                                                        }]
-                                                    }]
-                                                }]
-                                            }, { 'c-paren': ')' }]
-                                        }]
+                                        generics: [{ 'o-angle': '<' }, { generic: [{ name: 'T' }] }, { 'c-angle': '>' }]
                                     },
-                                    { comma: ',' },
-                                    { 'variant': [{ name: 'None' }] },
-                                    { 'c-brace': '}' }
+                                    {
+                                        'variant-list': [
+                                            { 'o-brace': '{' },
+                                            {
+                                                variant: [
+                                                    { name: 'Some' },
+                                                    {
+                                                        'variant-params': [
+                                                            { 'o-paren': '(' },
+                                                            {
+                                                                'field-def': [
+                                                                    { name: 'value' },
+                                                                    {
+                                                                        'type-annot': [
+                                                                            { colon: ':' },
+                                                                            {
+                                                                                type: [
+                                                                                    {
+                                                                                        'type-bounds': [
+                                                                                            {
+                                                                                                identifier: [
+                                                                                                    { name: 'T' }
+                                                                                                ]
+                                                                                            }
+                                                                                        ]
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            },
+                                                            { 'c-paren': ')' }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            { comma: ',' },
+                                            { variant: [{ name: 'None' }] },
+                                            { 'c-brace': '}' }
+                                        ]
+                                    }
                                 ]
-                            }]
-                    }]
-                }]
+                            }
+                        ]
+                    }
+                ]
             })
         })
     })
@@ -72,16 +98,20 @@ describe('parser', () => {
             const { tree, errors } = parse('fn main() {}')
             expect(errors.length).toEqual(0)
             expect(tree).toEqual({
-                'module': [{
-                    'statement': [{
-                        'fn-def': [
-                            { 'fn-keyword': 'fn' },
-                            { 'name': 'main' },
-                            { 'params': [{ 'o-paren': '(' }, { 'c-paren': ')' }] },
-                            { 'block': [{ 'o-brace': '{' }, { 'c-brace': '}' }] }
+                module: [
+                    {
+                        statement: [
+                            {
+                                'fn-def': [
+                                    { 'fn-keyword': 'fn' },
+                                    { name: 'main' },
+                                    { params: [{ 'o-paren': '(' }, { 'c-paren': ')' }] },
+                                    { block: [{ 'o-brace': '{' }, { 'c-brace': '}' }] }
+                                ]
+                            }
                         ]
-                    }]
-                }]
+                    }
+                ]
             })
         })
 
@@ -89,16 +119,20 @@ describe('parser', () => {
             const { tree, errors } = parse('fn type() {}')
             expect(errors.length).toEqual(0)
             expect(tree).toEqual({
-                'module': [{
-                    'statement': [{
-                        'fn-def': [
-                            { 'fn-keyword': 'fn' },
-                            { 'type-keyword': 'type' },
-                            { 'params': [{ 'o-paren': '(' }, { 'c-paren': ')' }] },
-                            { 'block': [{ 'o-brace': '{' }, { 'c-brace': '}' }] }
+                module: [
+                    {
+                        statement: [
+                            {
+                                'fn-def': [
+                                    { 'fn-keyword': 'fn' },
+                                    { 'type-keyword': 'type' },
+                                    { params: [{ 'o-paren': '(' }, { 'c-paren': ')' }] },
+                                    { block: [{ 'o-brace': '{' }, { 'c-brace': '}' }] }
+                                ]
+                            }
                         ]
-                    }]
-                }]
+                    }
+                ]
             })
         })
     })
@@ -108,9 +142,9 @@ describe('parser', () => {
             const { errors } = parse('let = 4')
             expect(errors.length).toEqual(2)
             expect(errors[0]).toEqual({
-                'expected': [],
-                'got': { 'kind': 'equals', 'location': { 'end': 4, 'start': 4 }, 'value': '=' },
-                'message': 'expected pattern'
+                expected: [],
+                got: { kind: 'equals', location: { end: 4, start: 4 }, value: '=' },
+                message: 'expected pattern'
             })
         })
     })
@@ -120,41 +154,92 @@ describe('parser', () => {
             const { tree, errors } = parse('a(B::b(4))')
             expect(errors.length).toEqual(0)
             expect(tree).toEqual({
-                'module': [{
-                    'statement': [{
-                        'expr': [{
-                            'sub-expr': [
-                                { 'operand': [{ 'identifier': [{ 'name': 'a' }] }] },
-                                {
-                                    'postfix-op': [{
-                                        'call-op': [{
-                                            'args': [
-                                                { 'o-paren': '(' },
-                                                {
-                                                    'expr': [{
-                                                        'sub-expr': [{
-                                                            'operand': [{ 'identifier': [{ 'name': 'B' }, { 'colon': ':' }, { 'colon': ':' }, { 'name': 'b' }] }]
-                                                        },
-                                                        {
-                                                            'postfix-op': [{
-                                                                'call-op': [{
-                                                                    'args': [
-                                                                        { 'o-paren': '(' },
-                                                                        { 'expr': [{ 'sub-expr': [{ 'operand': [{ 'int': '4' }] }] }] },
-                                                                        { 'c-paren': ')' }
-                                                                    ]
-                                                                }]
-                                                            }]
-                                                        }]
-                                                    }]
-                                                }, { 'c-paren': ')' }]
-                                        }]
-                                    }]
-                                }
-                            ]
-                        }]
-                    }]
-                }]
+                module: [
+                    {
+                        statement: [
+                            {
+                                expr: [
+                                    {
+                                        'sub-expr': [
+                                            { operand: [{ identifier: [{ name: 'a' }] }] },
+                                            {
+                                                'postfix-op': [
+                                                    {
+                                                        'call-op': [
+                                                            {
+                                                                args: [
+                                                                    { 'o-paren': '(' },
+                                                                    {
+                                                                        expr: [
+                                                                            {
+                                                                                'sub-expr': [
+                                                                                    {
+                                                                                        operand: [
+                                                                                            {
+                                                                                                identifier: [
+                                                                                                    { name: 'B' },
+                                                                                                    { colon: ':' },
+                                                                                                    { colon: ':' },
+                                                                                                    { name: 'b' }
+                                                                                                ]
+                                                                                            }
+                                                                                        ]
+                                                                                    },
+                                                                                    {
+                                                                                        'postfix-op': [
+                                                                                            {
+                                                                                                'call-op': [
+                                                                                                    {
+                                                                                                        args: [
+                                                                                                            {
+                                                                                                                'o-paren':
+                                                                                                                    '('
+                                                                                                            },
+                                                                                                            {
+                                                                                                                expr: [
+                                                                                                                    {
+                                                                                                                        'sub-expr':
+                                                                                                                            [
+                                                                                                                                {
+                                                                                                                                    operand:
+                                                                                                                                        [
+                                                                                                                                            {
+                                                                                                                                                int: '4'
+                                                                                                                                            }
+                                                                                                                                        ]
+                                                                                                                                }
+                                                                                                                            ]
+                                                                                                                    }
+                                                                                                                ]
+                                                                                                            },
+                                                                                                            {
+                                                                                                                'c-paren':
+                                                                                                                    ')'
+                                                                                                            }
+                                                                                                        ]
+                                                                                                    }
+                                                                                                ]
+                                                                                            }
+                                                                                        ]
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    { 'c-paren': ')' }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
             })
         })
     })
@@ -164,35 +249,101 @@ describe('parser', () => {
             const { tree, errors } = parse('if a { b } else { c }')
             expect(errors.length).toEqual(0)
             expect(tree).toEqual({
-                'module': [{
-                    'statement': [{
-                        'expr': [{
-                            'sub-expr': [{
-                                'operand': [{
-                                    'if-expr': [
-                                        { 'if-keyword': 'if' },
-                                        { 'expr': [{ 'sub-expr': [{ 'operand': [{ 'identifier': [{ 'name': 'a' }] }] }] }] },
-                                        {
-                                            'block': [
-                                                { 'o-brace': '{' },
-                                                { 'statement': [{ 'expr': [{ 'sub-expr': [{ 'operand': [{ 'identifier': [{ 'name': 'b' }] }] }] }] }] },
-                                                { 'c-brace': '}' }
-                                            ]
-                                        },
-                                        { 'else-keyword': 'else' },
-                                        {
-                                            'block': [
-                                                { 'o-brace': '{' },
-                                                { 'statement': [{ 'expr': [{ 'sub-expr': [{ 'operand': [{ 'identifier': [{ 'name': 'c' }] }] }] }] }] },
-                                                { 'c-brace': '}' }
-                                            ]
-                                        }
-                                    ]
-                                }]
-                            }]
-                        }]
-                    }]
-                }]
+                module: [
+                    {
+                        statement: [
+                            {
+                                expr: [
+                                    {
+                                        'sub-expr': [
+                                            {
+                                                operand: [
+                                                    {
+                                                        'if-expr': [
+                                                            { 'if-keyword': 'if' },
+                                                            {
+                                                                expr: [
+                                                                    {
+                                                                        'sub-expr': [
+                                                                            {
+                                                                                operand: [
+                                                                                    { identifier: [{ name: 'a' }] }
+                                                                                ]
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                block: [
+                                                                    { 'o-brace': '{' },
+                                                                    {
+                                                                        statement: [
+                                                                            {
+                                                                                expr: [
+                                                                                    {
+                                                                                        'sub-expr': [
+                                                                                            {
+                                                                                                operand: [
+                                                                                                    {
+                                                                                                        identifier: [
+                                                                                                            {
+                                                                                                                name: 'b'
+                                                                                                            }
+                                                                                                        ]
+                                                                                                    }
+                                                                                                ]
+                                                                                            }
+                                                                                        ]
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    { 'c-brace': '}' }
+                                                                ]
+                                                            },
+                                                            { 'else-keyword': 'else' },
+                                                            {
+                                                                block: [
+                                                                    { 'o-brace': '{' },
+                                                                    {
+                                                                        statement: [
+                                                                            {
+                                                                                expr: [
+                                                                                    {
+                                                                                        'sub-expr': [
+                                                                                            {
+                                                                                                operand: [
+                                                                                                    {
+                                                                                                        identifier: [
+                                                                                                            {
+                                                                                                                name: 'c'
+                                                                                                            }
+                                                                                                        ]
+                                                                                                    }
+                                                                                                ]
+                                                                                            }
+                                                                                        ]
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    { 'c-brace': '}' }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
             })
         })
 
@@ -200,9 +351,9 @@ describe('parser', () => {
             const { errors } = parse('if a { b) }')
             expect(errors.length).toEqual(1)
             expect(errors[0]).toEqual({
-                'expected': [],
-                'got': { 'kind': 'c-paren', 'location': { 'end': 8, 'start': 8 }, 'value': ')' },
-                'message': 'expected statement'
+                expected: [],
+                got: { kind: 'c-paren', location: { end: 8, start: 8 }, value: ')' },
+                message: 'expected statement'
             })
         })
 
@@ -210,11 +361,10 @@ describe('parser', () => {
             const { errors } = parse('if a { b } else { c } else { d }')
             expect(errors.length).toEqual(2)
             expect(errors[0]).toEqual({
-                'expected': [],
-                'got': { 'kind': 'o-brace', 'location': { 'end': 27, 'start': 27 }, 'value': '{' },
-                'message': 'expected statement'
+                expected: [],
+                got: { kind: 'o-brace', location: { end: 27, start: 27 }, value: '{' },
+                message: 'expected statement'
             })
         })
     })
-
 })

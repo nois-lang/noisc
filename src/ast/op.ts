@@ -18,8 +18,8 @@ export const buildUnaryOp = (node: ParseNode): UnaryOp => {
     return { kind: <any>n.kind, parseNode: node }
 }
 
-export type BinaryOp
-    = AddOp
+export type BinaryOp =
+    | AddOp
     | SubOp
     | MultOp
     | DivOp
@@ -54,7 +54,7 @@ export const associativityMap: Map<AstNodeKind, Associativity> = new Map([
     ['lt-op', 'none'],
     ['and-op', 'left'],
     ['or-op', 'left'],
-    ['assign-op', 'none'],
+    ['assign-op', 'none']
 ])
 
 export const precedenceMap: Map<AstNodeKind, number> = new Map([
@@ -73,14 +73,30 @@ export const precedenceMap: Map<AstNodeKind, number> = new Map([
     ['lt-op', 4],
     ['and-op', 3],
     ['or-op', 2],
-    ['assign-op', 1],
+    ['assign-op', 1]
 ])
 
 export const buildBinaryOp = (node: ParseNode): BinaryOp => {
-    if (![
-        'add-op', 'sub-op', 'mult-op', 'div-op', 'exp-op', 'mod-op', 'access-op', 'eq-op', 'ne-op', 'ge-op', 'le-op',
-        'gt-op', 'lt-op', 'and-op', 'or-op', 'assign-op'
-    ].includes(node.kind)) {
+    if (
+        ![
+            'add-op',
+            'sub-op',
+            'mult-op',
+            'div-op',
+            'exp-op',
+            'mod-op',
+            'access-op',
+            'eq-op',
+            'ne-op',
+            'ge-op',
+            'le-op',
+            'gt-op',
+            'lt-op',
+            'and-op',
+            'or-op',
+            'assign-op'
+        ].includes(node.kind)
+    ) {
         throw Error(`expected binary-op, got ${node.kind}`)
     }
     return { kind: <any>node.kind, parseNode: node }

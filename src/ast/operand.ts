@@ -8,8 +8,8 @@ import { MatchExpr, Pattern, buildMatchExpr, buildPattern } from './match'
 import { Block, buildBlock } from './statement'
 import { Type, buildType } from './type'
 
-export type Operand
-    = IfExpr
+export type Operand =
+    | IfExpr
     | IfLetExpr
     | WhileExpr
     | ForExpr
@@ -140,7 +140,9 @@ export interface ClosureExpr extends AstNode<'closure-expr'>, Partial<Typed> {
 export const buildClosureExpr = (node: ParseNode): ClosureExpr => {
     const nodes = filterNonAstNodes(node)
     let idx = 0
-    const params = filterNonAstNodes(nodes[idx++]).filter(n => n.kind === 'param').map(n => buildParam(n))
+    const params = filterNonAstNodes(nodes[idx++])
+        .filter(n => n.kind === 'param')
+        .map(n => buildParam(n))
     const returnType = nodes.at(idx)?.kind === 'type-annot' ? buildType(nodes[idx++]) : undefined
     const block = buildBlock(nodes[idx++])
     return { kind: 'closure-expr', parseNode: node, params, block, returnType }
@@ -152,9 +154,7 @@ export interface ListExpr extends AstNode<'list-expr'>, Partial<Typed> {
 
 export const buildListExpr = (node: ParseNode): ListExpr => {
     const nodes = filterNonAstNodes(node)
-    const exprs = nodes.length > 0
-        ? nodes.filter(n => n.kind === 'expr').map(n => buildExpr(n))
-        : []
+    const exprs = nodes.length > 0 ? nodes.filter(n => n.kind === 'expr').map(n => buildExpr(n)) : []
     return { kind: 'list-expr', parseNode: node, exprs }
 }
 

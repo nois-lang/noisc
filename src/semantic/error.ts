@@ -8,8 +8,11 @@ export interface SemanticError {
     message: string
 }
 
-export const semanticError = (ctx: Context, node: AstNode<any>, message: string): SemanticError =>
-    ({ module: ctx.moduleStack.at(-1)!, node, message })
+export const semanticError = (ctx: Context, node: AstNode<any>, message: string): SemanticError => ({
+    module: ctx.moduleStack.at(-1)!,
+    node,
+    message
+})
 
 export const notFoundError = (ctx: Context, node: AstNode<any>, id: string, name: string = node.kind): SemanticError =>
     semanticError(ctx, node, `${name} \`${id}\` not found`)
@@ -17,7 +20,12 @@ export const notFoundError = (ctx: Context, node: AstNode<any>, id: string, name
 export const notImplementedError = (ctx: Context, node: AstNode<any>, message?: string): SemanticError =>
     semanticError(ctx, node, 'not implemented:' + (message ? ' ' + message : ''))
 
-export const typeError = (node: AstNode<any>, actual: VirtualType, expected: VirtualType, ctx: Context): SemanticError => {
+export const typeError = (
+    node: AstNode<any>,
+    actual: VirtualType,
+    expected: VirtualType,
+    ctx: Context
+): SemanticError => {
     const message = `\
 type error: expected ${virtualTypeToString(expected)}
             got      ${virtualTypeToString(actual)}`

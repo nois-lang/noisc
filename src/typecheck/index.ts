@@ -160,7 +160,6 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
             }
         }
         return isAssignable(target.returnType, t.returnType, ctx)
-
     }
     return false
 }
@@ -170,7 +169,11 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
  * Example: `extractConcreteSupertype(List<Int>, Iterable) -> Iterable<List>`
  * TODO: what if multiple concrete types possible?
  */
-export const extractConcreteSupertype = (type: VirtualType, superVid: VirtualIdentifier, ctx: Context): VirtualType | undefined => {
+export const extractConcreteSupertype = (
+    type: VirtualType,
+    superVid: VirtualIdentifier,
+    ctx: Context
+): VirtualType | undefined => {
     if (type.kind !== 'vid-type') return undefined
 
     const chain = findSuperRelChains(type.identifier, ctx)

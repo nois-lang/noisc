@@ -47,7 +47,7 @@ if (!moduleAst) {
 
 const pkg: Package = {
     path: source.filepath,
-    name: moduleAst?.identifier.names.at(-1)!,
+    name: moduleAst.identifier.names.at(-1)!,
     modules: [moduleAst]
 }
 
@@ -80,26 +80,30 @@ ctx.packages.forEach(p => {
 ctx.impls = buildInstanceRelations(ctx)
 ctx.check = true
 if (ctx.config.libCheck) {
-    ctx.packages.flatMap(p => p.modules).forEach(m => { checkModule(m, ctx) })
+    ctx.packages
+        .flatMap(p => p.modules)
+        .forEach(m => {
+            checkModule(m, ctx)
+        })
 } else {
     checkModule(moduleAst, ctx)
 }
 
 if (ctx.errors.length > 0) {
     for (const error of ctx.errors) {
-        console.error(prettySourceMessage(
-            colorError(error.message),
-            getLocationRange(error.node.parseNode),
-            error.module.source
-        ))
+        console.error(
+            prettySourceMessage(colorError(error.message), getLocationRange(error.node.parseNode), error.module.source)
+        )
     }
     process.exit(1)
 }
 
 for (const warning of ctx.warnings) {
-    console.error(prettySourceMessage(
-        colorWarning(warning.message),
-        getLocationRange(warning.node.parseNode),
-        warning.module.source
-    ))
+    console.error(
+        prettySourceMessage(
+            colorWarning(warning.message),
+            getLocationRange(warning.node.parseNode),
+            warning.module.source
+        )
+    )
 }

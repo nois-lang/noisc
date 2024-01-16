@@ -1,4 +1,4 @@
-import { Type } from "../ast/type";
+import { Type } from '../ast/type'
 
 export const typeNames = (type: Type): string[] => {
     switch (type.kind) {

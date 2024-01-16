@@ -62,7 +62,7 @@ export const lexerTokenKinds = <const>[
     ...lexerSpecialKinds
 ]
 
-export type TokenKind = typeof lexerTokenKinds[number]
+export type TokenKind = (typeof lexerTokenKinds)[number]
 
 export const erroneousTokenKinds: TokenKind[] = ['unknown', 'unterminated-char', 'unterminated-string']
 
@@ -112,14 +112,18 @@ export const constTokenKindMap: Map<TokenKind, string> = new Map([
     ['comma', ','],
     ['equals', '='],
     ['underscore', '_'],
-    ['at', '@'],
+    ['at', '@']
 ])
 
 const floatRegex = /^((\d+(\.\d*)?e[+-]?\d+)|(\d+\.\d*)|(\d*\.\d+))/
 const escapeCharReg = /(\\[btnvfr\\'"])/
 const unicodeCharReg = /(\\u{[0-9a-fA-F]{1,4}})/
-const charRegex = new RegExp('^\'(' + ['(\\\\\')', /[^\\\n\r']/.source, escapeCharReg.source, unicodeCharReg.source].join('|') + ')\'')
-const stringRegex = new RegExp('^"(' + ['(\\\\")', /[^\\\n\r"]/.source, escapeCharReg.source, unicodeCharReg.source].join('|') + ')*"')
+const charRegex = new RegExp(
+    "^'(" + ["(\\\\')", /[^\\\n\r']/.source, escapeCharReg.source, unicodeCharReg.source].join('|') + ")'"
+)
+const stringRegex = new RegExp(
+    '^"(' + ['(\\\\")', /[^\\\n\r"]/.source, escapeCharReg.source, unicodeCharReg.source].join('|') + ')*"'
+)
 
 /**
  * Independent tokens are automatically advanced by parser by default
@@ -152,8 +156,16 @@ export const tokenize = (code: String): ParseToken[] => {
             continue
         }
 
-        const fns = [parseFloat, parseInt, parseComment, parseNewline, parseConstToken, parseName,
-            parseCharLiteral, parseStringLiteral]
+        const fns = [
+            parseFloat,
+            parseInt,
+            parseComment,
+            parseNewline,
+            parseConstToken,
+            parseName,
+            parseCharLiteral,
+            parseStringLiteral
+        ]
 
         let parsed = false
         for (const f of fns) {
@@ -338,18 +350,11 @@ const parseUnterminatedString = (chars: string[], tokens: ParseToken[], pos: { p
     return
 }
 
-const createToken = (
-    name: TokenKind,
-    value: string, pos: { pos: number },
-    start: number = pos.pos
-): ParseToken => {
+const createToken = (name: TokenKind, value: string, pos: { pos: number }, start: number = pos.pos): ParseToken => {
     return { kind: name, value, location: { start, end: pos.pos - 1 } }
 }
 
 const isAlpha = (char: string): boolean =>
-    (char >= 'A' && char <= 'Z') ||
-    (char >= 'a' && char <= 'z') ||
-    (char >= 'a' && char <= 'z') ||
-    char === '_'
+    (char >= 'A' && char <= 'Z') || (char >= 'a' && char <= 'z') || (char >= 'a' && char <= 'z') || char === '_'
 
-const isNumeric = (char: string): boolean => (char >= '0' && char <= '9')
+const isNumeric = (char: string): boolean => char >= '0' && char <= '9'

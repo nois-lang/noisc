@@ -1,7 +1,6 @@
 import { tokenize } from './lexer'
 
 describe('lexer', () => {
-
     it('tokenize basic', () => {
         const code = `\
 let main = (): Unit {
@@ -81,10 +80,11 @@ let main = (): Unit {
 
         it('escape', () => {
             expect(tokenize(`'\\n''\\r''\\\\'`)).toEqual([
-                { kind: 'char', location: { end: 3, start: 0 }, value: '\'\\n\'' },
-                { kind: 'char', location: { end: 7, start: 4 }, value: '\'\\r\'' },
-                { kind: 'char', location: { end: 11, start: 8 }, value: '\'\\\\\'' },
-                { kind: 'eof', location: { end: 12, start: 12 }, value: '' }])
+                { kind: 'char', location: { end: 3, start: 0 }, value: "'\\n'" },
+                { kind: 'char', location: { end: 7, start: 4 }, value: "'\\r'" },
+                { kind: 'char', location: { end: 11, start: 8 }, value: "'\\\\'" },
+                { kind: 'eof', location: { end: 12, start: 12 }, value: '' }
+            ])
         })
 
         it('escape char', () => {
@@ -115,11 +115,9 @@ let main = (): Unit {
                 { kind: 'eof', value: '', location: { start: 2, end: 2 } }
             ])
         })
-
     })
 
     describe('tokenize string', () => {
-
         it('empty', () => {
             expect(tokenize(`""`)).toEqual([
                 { kind: 'string', value: `""`, location: { start: 0, end: 1 } },
@@ -169,7 +167,6 @@ let main = (): Unit {
                 { kind: 'eof', value: '', location: { start: 15, end: 15 } }
             ])
         })
-
     })
 
     it('tokenize expression', () => {
@@ -216,11 +213,10 @@ let main = (): Unit {
 
     it('tokenize comment', () => {
         expect(tokenize(`//this is 4\n4`)).toEqual([
-            { 'kind': 'comment', 'location': { 'end': 10, 'start': 0 }, 'value': '//this is 4' },
-            { 'kind': 'newline', 'location': { 'end': 11, 'start': 11 }, 'value': '\n' },
-            { 'kind': 'int', 'location': { 'end': 12, 'start': 12 }, 'value': '4' },
-            { 'kind': 'eof', 'location': { 'end': 13, 'start': 13 }, 'value': '' }
+            { kind: 'comment', location: { end: 10, start: 0 }, value: '//this is 4' },
+            { kind: 'newline', location: { end: 11, start: 11 }, value: '\n' },
+            { kind: 'int', location: { end: 12, start: 12 }, value: '4' },
+            { kind: 'eof', location: { end: 13, start: 13 }, value: '' }
         ])
     })
-
 })

@@ -117,10 +117,12 @@ export const parseSpreadOp = (parser: Parser): void => {
  */
 export const parsePostfixOp = (parser: Parser): void => {
     const mark = parser.open()
-    if (parser.at('o-paren') &&
+    if (
+        parser.at('o-paren') &&
         nameLikeTokens.includes(parser.nth(1)) &&
         parser.nth(2) === 'colon' &&
-        parser.nth(3) !== 'colon') {
+        parser.nth(3) !== 'colon'
+    ) {
         parseConOp(parser)
     } else if (parser.at('o-paren')) {
         parseCallOp(parser)
@@ -142,4 +144,3 @@ export const parseCallOp = (parser: Parser): void => {
     }
     parser.close(mark, 'call-op')
 }
-

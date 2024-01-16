@@ -19,5 +19,5 @@ export const operatorImplMap: Map<AstNodeKind, VirtualIdentifier> = new Map([
     ['gt-op', vidFromString('std::ord::Ord::gt')],
     ['lt-op', vidFromString('std::ord::Ord::lt')],
     ['and-op', vidFromString('std::op::And::and')],
-    ['or-op', vidFromString('std::op::Or::or')],
+    ['or-op', vidFromString('std::op::Or::or')]
 ])

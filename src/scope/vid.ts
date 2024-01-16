@@ -28,9 +28,19 @@ export const defKinds = <const>[
     'impl-def'
 ]
 
-export type DefinitionKind = typeof defKinds[number]
+export type DefinitionKind = (typeof defKinds)[number]
 
-export type Definition = Module | NameDef | FnDef | TraitDef | ImplDef | TypeDef | VariantDef | Generic | SelfDef | MethodDef
+export type Definition =
+    | Module
+    | NameDef
+    | FnDef
+    | TraitDef
+    | ImplDef
+    | TypeDef
+    | VariantDef
+    | Generic
+    | SelfDef
+    | MethodDef
 
 export interface NameDef {
     kind: 'name-def'
@@ -75,7 +85,18 @@ export const resolveVid = (
     vid: VirtualIdentifier,
     ctx: Context,
     // exclude impl-def since it cannot be requested by vid
-    ofKind: DefinitionKind[] = ['module', 'name', 'name-def', 'self', 'variant', 'fn-def', 'generic', 'type-def', 'trait-def', 'method-def']
+    ofKind: DefinitionKind[] = [
+        'module',
+        'name',
+        'name-def',
+        'self',
+        'variant',
+        'fn-def',
+        'generic',
+        'type-def',
+        'trait-def',
+        'method-def'
+    ]
 ): VirtualIdentifierMatch | undefined => {
     const module = ctx.moduleStack.at(-1)!
     let ref: VirtualIdentifierMatch | undefined
@@ -166,9 +187,10 @@ const resolveScopeVid = (
             if (k === 'method-def') {
                 const [traitName, fnName] = vid.names
                 // match trait/impl def by first vid name
-                const traitDef = scope.definitions.get('trait-def' + traitName)
-                    ?? scope.definitions.get('impl-def' + traitName)
-                    ?? scope.definitions.get('type-def' + traitName)
+                const traitDef =
+                    scope.definitions.get('trait-def' + traitName) ??
+                    scope.definitions.get('impl-def' + traitName) ??
+                    scope.definitions.get('type-def' + traitName)
                 if (traitDef && (traitDef.kind === 'trait-def' || traitDef.kind === 'impl-def')) {
                     // if matched, try to find fn with matching name in specified trait
                     const fn = traitDef.block.statements.find(s => s.kind === 'fn-def' && s.name.value === fnName)
@@ -239,4 +261,3 @@ export const resolveMatchedVid = (
 
     return undefined
 }
-

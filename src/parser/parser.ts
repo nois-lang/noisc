@@ -13,14 +13,13 @@ export interface OpenEvent {
  * @see https://matklad.github.io/2023/05/21/resilient-ll-parsing-tutorial.html
  */
 export class Parser {
-
     constructor(
         public tokens: ParseToken[],
         public pos: number = 0,
         public events: ParseEvent[] = [],
         public errors: SyntaxError[] = [],
         public fuel: number = 256
-    ) { }
+    ) {}
 
     open(): number {
         const mark = this.events.length

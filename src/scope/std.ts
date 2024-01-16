@@ -30,4 +30,8 @@ export const defaultImportedVids: VirtualIdentifier[] = [
 
 export const bool: VidType = { kind: 'vid-type', identifier: vidFromString('std::bool::Bool'), typeArgs: [] }
 export const iter: VidType = { kind: 'vid-type', identifier: vidFromString('std::iter::Iter'), typeArgs: [unknownType] }
-export const iterable: VidType = { kind: 'vid-type', identifier: vidFromString('std::iter::Iterable'), typeArgs: [unknownType] }
+export const iterable: VidType = {
+    kind: 'vid-type',
+    identifier: vidFromString('std::iter::Iterable'),
+    typeArgs: [unknownType]
+}

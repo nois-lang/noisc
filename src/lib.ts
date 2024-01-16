@@ -7,4 +7,3 @@ export { Context, pathToVid } from './scope'
 export { findInstanceDefs } from './scope/trait'
 export { checkModule, prepareModule } from './semantic'
 export { Source } from './source'
-

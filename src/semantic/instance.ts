@@ -28,7 +28,7 @@ export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
 
 const checkFieldAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): VirtualType | undefined => {
     const lOp = binaryExpr.lOperand
-    const rOp = (<Identifier>(<OperandExpr>binaryExpr.rOperand).operand)
+    const rOp = <Identifier>(<OperandExpr>binaryExpr.rOperand).operand
     checkOperand(lOp, ctx)
     // TODO: make sure no type args specified; check other identifier uses also
     if (rOp.scope.length > 0) {
@@ -36,7 +36,9 @@ const checkFieldAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): VirtualType
         return
     }
     if (!(lOp.type?.kind === 'vid-type')) {
-        ctx.errors.push(semanticError(ctx, rOp, `expected variant type, got \`${virtualTypeToString(lOp.type ?? unknownType)}\``))
+        ctx.errors.push(
+            semanticError(ctx, rOp, `expected variant type, got \`${virtualTypeToString(lOp.type ?? unknownType)}\``)
+        )
         return
     }
     const typeVid = lOp.type.identifier
@@ -48,8 +50,16 @@ const checkFieldAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): VirtualType
     const typeDef = typeRef.def
     const fieldName = rOp.name.value
     // check that every type variant has such field
-    if (!(typeDef.variants.length > 0 && typeDef.variants.every(v => v.fieldDefs.find(f => f.name.value === fieldName)))) {
-        ctx.errors.push(semanticError(ctx, rOp, `field \`${fieldName}\` is not defined in all variants of type \`${vidToString(typeRef.vid)}\``))
+    if (
+        !(typeDef.variants.length > 0 && typeDef.variants.every(v => v.fieldDefs.find(f => f.name.value === fieldName)))
+    ) {
+        ctx.errors.push(
+            semanticError(
+                ctx,
+                rOp,
+                `field \`${fieldName}\` is not defined in all variants of type \`${vidToString(typeRef.vid)}\``
+            )
+        )
         return
     }
     // if field is defined in multiple variants, make sure their type is equal
@@ -60,21 +70,39 @@ const checkFieldAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): VirtualType
         .map(t => typeToVirtual(t, ctx))
     // TODO: probably there is a better way to compare type equality
     if (!allEqual(typeCandidates.map(virtualTypeToString))) {
-        ctx.errors.push(semanticError(ctx, rOp, `field \`${fieldName}\` of \`${vidToString(typeRef.vid)}\` variants must be of the same type to be accessed`))
+        ctx.errors.push(
+            semanticError(
+                ctx,
+                rOp,
+                `field \`${fieldName}\` of \`${vidToString(typeRef.vid)}\` variants must be of the same type to be accessed`
+            )
+        )
         return
     }
     const fieldType = typeCandidates[0]
-    const conGenericMap = resolveGenericsOverStructure(
-        lOp.type,
-        { kind: 'vid-type', identifier: typeRef.vid, typeArgs: typeRef.def.generics.map(g => genericToVirtual(g, ctx)) }
-    )
+    const conGenericMap = resolveGenericsOverStructure(lOp.type, {
+        kind: 'vid-type',
+        identifier: typeRef.vid,
+        typeArgs: typeRef.def.generics.map(g => genericToVirtual(g, ctx))
+    })
     return resolveType(fieldType, [conGenericMap], rOp, ctx)
 }
 
-const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallOp, ctx: Context): VirtualType | undefined => {
+const checkMethodCallExpr = (
+    lOperand: Operand,
+    rOperand: Operand,
+    callOp: CallOp,
+    ctx: Context
+): VirtualType | undefined => {
     checkOperand(lOperand, ctx)
     if (lOperand.type?.kind !== 'vid-type') {
-        ctx.errors.push(semanticError(ctx, rOperand, `expected instance type, got \`${virtualTypeToString(lOperand.type ?? unknownType)}\``))
+        ctx.errors.push(
+            semanticError(
+                ctx,
+                rOperand,
+                `expected instance type, got \`${virtualTypeToString(lOperand.type ?? unknownType)}\``
+            )
+        )
         return undefined
     }
     if (rOperand.kind !== 'identifier' || rOperand.scope.length !== 0) {
@@ -95,7 +123,9 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
 
     // TODO: custom check for static methods
     if (fnType.paramTypes.length !== callOp.args.length + 1) {
-        ctx.errors.push(semanticError(ctx, callOp, `expected ${fnType.paramTypes.length} arguments, got ${callOp.args.length}`))
+        ctx.errors.push(
+            semanticError(ctx, callOp, `expected ${fnType.paramTypes.length} arguments, got ${callOp.args.length}`)
+        )
         return
     }
 
@@ -109,15 +139,10 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: CallO
     const fnGenericMap = resolveFnGenerics(
         fnType,
         [lOperand.type, ...callOp.args.map(a => a.type!)],
-        lOperand.kind === 'identifier' ? lOperand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : [],
+        lOperand.kind === 'identifier' ? lOperand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
     )
     const genericMaps = [implGenericMap, fnGenericMap]
-    const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(
-        pt,
-        genericMaps,
-        callOp.args.at(i) ?? callOp,
-        ctx
-    ))
+    const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(pt, genericMaps, callOp.args.at(i) ?? callOp, ctx))
     checkCallArgs(callOp, [lOperand, ...callOp.args], paramTypes, ctx)
 
     return resolveType(fnType.returnType, genericMaps, rOperand, ctx)

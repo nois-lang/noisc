@@ -260,4 +260,3 @@ export const parseBlock = (parser: Parser): void => {
     parser.expect('c-brace')
     parser.close(mark, 'block')
 }
-

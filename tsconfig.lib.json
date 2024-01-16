@@ -1,9 +1,4 @@
 {
-  "extends": "./tsconfig.json",
-  "exclude": [
-    "src/**/*.spec.ts",
-    "src/index.ts",
-    "src/package/build.ts",
-    "src/package/io.ts"
-  ]
+    "extends": "./tsconfig.json",
+    "exclude": ["src/**/*.spec.ts", "src/index.ts", "src/package/build.ts", "src/package/io.ts"]
 }

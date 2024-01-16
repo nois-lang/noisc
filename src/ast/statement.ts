@@ -54,7 +54,7 @@ export const buildUseExpr = (node: ParseNode): UseExpr => {
     return { kind: 'use-expr', parseNode: node, scope: names.slice(0, -1), expr: names.at(-1)! }
 }
 
-export interface Wildcard extends AstNode<'wildcard'> { }
+export interface Wildcard extends AstNode<'wildcard'> {}
 
 export interface VarDef extends AstNode<'var-def'>, Partial<Checked> {
     pattern: Pattern
@@ -126,7 +126,8 @@ export const buildImplDef = (node: ParseNode): ImplDef => {
     idx++
     const generics = nodes.at(idx)?.kind === 'generics' ? filterNonAstNodes(nodes[idx++]).map(buildGeneric) : []
     const identifier = buildIdentifier(nodes[idx++])
-    const forTrait = nodes.at(idx)?.kind === 'impl-for' ? buildIdentifier(filterNonAstNodes(nodes[idx++])[1]) : undefined
+    const forTrait =
+        nodes.at(idx)?.kind === 'impl-for' ? buildIdentifier(filterNonAstNodes(nodes[idx++])[1]) : undefined
     const block = buildBlock(nodes[idx++])
     return { kind: 'impl-def', parseNode: node, identifier, generics, forTrait, block }
 }
@@ -141,7 +142,7 @@ export const buildReturnStmt = (node: ParseNode): ReturnStmt => {
     return { kind: 'return-stmt', parseNode: node, returnExpr }
 }
 
-export interface BreakStmt extends AstNode<'break-stmt'> { }
+export interface BreakStmt extends AstNode<'break-stmt'> {}
 
 export const buildBreakStmt = (node: ParseNode): BreakStmt => {
     return { kind: 'break-stmt', parseNode: node }

@@ -16,8 +16,8 @@ export interface AstNode<T extends AstNodeKind> {
     parseNode: ParseNode
 }
 
-export type AstNodeKind
-    = 'module'
+export type AstNodeKind =
+    | 'module'
     | 'use-expr'
     | 'wildcard'
     | 'var-def'
@@ -56,13 +56,11 @@ export type AstNodeKind
     | 'char-literal'
     | 'int-literal'
     | 'float-literal'
-
     | 'neg-op'
     | 'not-op'
     | 'spread-op'
     | 'call-op'
     | 'con-op'
-
     | 'add-op'
     | 'sub-op'
     | 'mult-op'
@@ -89,7 +87,7 @@ export const compactAstNode = (node: AstNode<any>): any => {
     if (typeof node !== 'object') return node
     return Object.fromEntries(
         Object.entries(node)
-            .filter(([p,]) => p !== 'parseNode')
+            .filter(([p]) => p !== 'parseNode')
             .map(([p, v]) => {
                 if (Array.isArray(v)) {
                     return [p, v.map(compactAstNode)]
@@ -115,16 +113,20 @@ export interface Module extends AstNode<'module'> {
      */
     references?: VirtualIdentifier[]
     /**
-    * Persistent top level scope.
-    * Different from scopeStack[0] because it is always available
-    * If module is accessed during its check, use scopeStack.at(0) instead
-    */
+     * Persistent top level scope.
+     * Different from scopeStack[0] because it is always available
+     * If module is accessed during its check, use scopeStack.at(0) instead
+     */
     topScope?: Scope
 }
 
 export const buildModuleAst = (node: ParseNode, id: VirtualIdentifier, source: Source): Module => {
-    const useExprs = filterNonAstNodes(node).filter(n => n.kind === 'use-stmt').map(buildUseExpr)
-    const statements = filterNonAstNodes(node).filter(n => n.kind === 'statement').map(buildStatement)
+    const useExprs = filterNonAstNodes(node)
+        .filter(n => n.kind === 'use-stmt')
+        .map(buildUseExpr)
+    const statements = filterNonAstNodes(node)
+        .filter(n => n.kind === 'statement')
+        .map(buildStatement)
     const block: Block = { kind: 'block', parseNode: node, statements }
     return {
         kind: 'module',
@@ -146,7 +148,7 @@ export const buildParam = (node: ParseNode): Param => {
     const nodes = filterNonAstNodes(node)
     const pattern = buildPattern(nodes[0])
     const typeNode = nodes.at(1)
-    return { kind: 'param', parseNode: node, pattern, paramType: typeNode ? buildType(typeNode) : undefined, }
+    return { kind: 'param', parseNode: node, pattern, paramType: typeNode ? buildType(typeNode) : undefined }
 }
 
 export interface FieldInit extends AstNode<'field-init'> {
@@ -160,4 +162,3 @@ export const buildFieldInit = (node: ParseNode): FieldInit => {
     const expr = buildExpr(nodes[1])
     return { kind: 'field-init', parseNode: node, name, expr }
 }
-

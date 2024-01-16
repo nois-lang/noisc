@@ -8,4 +8,3 @@
 function addFloat(a, b) {
     return a.value + b.value
 }
-

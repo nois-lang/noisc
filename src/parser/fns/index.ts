@@ -13,15 +13,48 @@ export const nameLikeTokens: TokenKind[] = ['name', ...lexerKeywordKinds]
 
 export const prefixOpFirstTokens: TokenKind[] = ['excl', 'minus', 'period']
 export const postfixOpFirstTokens: TokenKind[] = ['o-paren']
-export const infixOpFirstTokens: TokenKind[] = ['ampersand', 'asterisk', 'c-angle', 'caret', 'equals', 'excl', 'minus',
-    'o-angle', 'percent', 'period', 'pipe', 'plus', 'slash']
-export const exprFirstTokens: TokenKind[] = ['char', ...nameLikeTokens, 'if-keyword', 'while-keyword', 'for-keyword',
-    'match-keyword', 'int', 'float', 'o-paren', 'string', 'o-bracket', 'pipe', ...prefixOpFirstTokens]
+export const infixOpFirstTokens: TokenKind[] = [
+    'ampersand',
+    'asterisk',
+    'c-angle',
+    'caret',
+    'equals',
+    'excl',
+    'minus',
+    'o-angle',
+    'percent',
+    'period',
+    'pipe',
+    'plus',
+    'slash'
+]
+export const exprFirstTokens: TokenKind[] = [
+    'char',
+    ...nameLikeTokens,
+    'if-keyword',
+    'while-keyword',
+    'for-keyword',
+    'match-keyword',
+    'int',
+    'float',
+    'o-paren',
+    'string',
+    'o-bracket',
+    'pipe',
+    ...prefixOpFirstTokens
+]
 export const paramFirstTokens: TokenKind[] = [...nameLikeTokens, 'underscore']
 export const useExprFirstTokens: TokenKind[] = [...nameLikeTokens, 'asterisk', 'o-brace']
 export const fieldPatternFirstTokens: TokenKind[] = [...nameLikeTokens, 'period']
-export const patternFollowTokens: TokenKind[] = ['c-paren', 'colon', 'comma', 'equals', 'if-keyword',
-    'in-keyword', 'pipe']
+export const patternFollowTokens: TokenKind[] = [
+    'c-paren',
+    'colon',
+    'comma',
+    'equals',
+    'if-keyword',
+    'in-keyword',
+    'pipe'
+]
 
 /**
  * module ::= use-stmt* statement*

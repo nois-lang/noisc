@@ -74,4 +74,3 @@ export const parseTypeCon = (parser: Parser): void => {
     }
     parser.close(mark, 'variant')
 }
-

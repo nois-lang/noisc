@@ -1,11 +1,11 @@
-import { ConPattern, Pattern } from "../ast/match"
-import { Name } from "../ast/operand"
-import { Context, defKey } from "../scope"
-import { idToVid, vidFromScope, vidToString } from "../scope/util"
-import { NameDef, resolveVid } from "../scope/vid"
-import { VidType, VirtualType, genericToVirtual, typeToVirtual, virtualTypeToString } from "../typecheck"
-import { resolveGenericsOverStructure, resolveType } from "../typecheck/generic"
-import { notFoundError, semanticError } from "./error"
+import { ConPattern, Pattern } from '../ast/match'
+import { Name } from '../ast/operand'
+import { Context, defKey } from '../scope'
+import { idToVid, vidFromScope, vidToString } from '../scope/util'
+import { NameDef, resolveVid } from '../scope/vid'
+import { VidType, VirtualType, genericToVirtual, typeToVirtual, virtualTypeToString } from '../typecheck'
+import { resolveGenericsOverStructure, resolveType } from '../typecheck/generic'
+import { notFoundError, semanticError } from './error'
 
 export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: Context): void => {
     const module = ctx.moduleStack.at(-1)!
@@ -29,7 +29,9 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
             break
         case 'con-pattern':
             if (expectedType.kind !== 'vid-type') {
-                ctx.errors.push(semanticError(ctx, pattern, `cannot destructure type \`${virtualTypeToString(expectedType)}\``))
+                ctx.errors.push(
+                    semanticError(ctx, pattern, `cannot destructure type \`${virtualTypeToString(expectedType)}\``)
+                )
                 return
             }
 
@@ -63,11 +65,13 @@ const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Contex
 
     const typeDefVid = vidFromScope(ref.vid)
     if (ref.def.typeDef.name.value !== expectedType.identifier.names.at(-1)!) {
-        ctx.errors.push(semanticError(
-            ctx,
-            pattern.identifier,
-            `cannot destructure type \`${virtualTypeToString(expectedType)}\` into \`${vidToString(typeDefVid)}\``
-        ))
+        ctx.errors.push(
+            semanticError(
+                ctx,
+                pattern.identifier,
+                `cannot destructure type \`${virtualTypeToString(expectedType)}\` into \`${vidToString(typeDefVid)}\``
+            )
+        )
         return []
     }
 
@@ -78,10 +82,11 @@ const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Contex
             return []
         }
 
-        const conGenericMap = resolveGenericsOverStructure(
-            expectedType,
-            { kind: 'vid-type', identifier: typeDefVid, typeArgs: ref.def.typeDef.generics.map(g => genericToVirtual(g, ctx)) }
-        )
+        const conGenericMap = resolveGenericsOverStructure(expectedType, {
+            kind: 'vid-type',
+            identifier: typeDefVid,
+            typeArgs: ref.def.typeDef.generics.map(g => genericToVirtual(g, ctx))
+        })
         field.name.type = resolveType(typeToVirtual(field.fieldType, ctx), [conGenericMap], field, ctx)
 
         if (fp.pattern) {
@@ -93,4 +98,3 @@ const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Contex
 
     return defs
 }
-

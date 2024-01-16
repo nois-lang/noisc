@@ -23,9 +23,7 @@ export const buildModule = (source: Source, vid: VirtualIdentifier): Module | un
     const errorTokens = tokens.filter(t => erroneousTokenKinds.includes(t.kind))
     if (errorTokens.length > 0) {
         for (const t of errorTokens) {
-            console.error(
-                prettySourceMessage(prettyLexerError(t), t.location, source)
-            )
+            console.error(prettySourceMessage(prettyLexerError(t), t.location, source))
         }
         return undefined
     }
@@ -36,9 +34,7 @@ export const buildModule = (source: Source, vid: VirtualIdentifier): Module | un
 
     if (parser.errors.length > 0) {
         for (const error of parser.errors) {
-            console.error(
-                prettySourceMessage(prettySyntaxError(error), error.got.location, source)
-            )
+            console.error(prettySourceMessage(prettySyntaxError(error), error.got.location, source))
         }
         return undefined
     }

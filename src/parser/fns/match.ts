@@ -150,4 +150,3 @@ export const parseHole = (parser: Parser): void => {
     parser.expect('underscore')
     parser.close(mark, 'hole')
 }
-
