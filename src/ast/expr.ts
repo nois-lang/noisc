@@ -81,8 +81,6 @@ export const buildBinaryExpr = (node: ParseNode): Expr => {
                     const lExp = exprStack.pop()!
                     exprStack.push({
                         kind: 'binary-expr',
-                        // it has to be manually constructed since parse tree is always left associative, but actual
-                        // binary exprs aren't
                         parseNode: { kind: 'expr', nodes: [lExp.parseNode, o2.parseNode, rExp.parseNode] },
                         binaryOp: o2,
                         lOperand: lExp,
@@ -105,7 +103,7 @@ export const buildBinaryExpr = (node: ParseNode): Expr => {
         const lExp = exprStack.pop()!
         exprStack.push({
             kind: 'binary-expr',
-            parseNode: lExp.parseNode,
+            parseNode: { kind: 'expr', nodes: [lExp.parseNode, op.parseNode, rExp.parseNode] },
             binaryOp: op,
             lOperand: lExp,
             rOperand: rExp
