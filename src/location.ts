@@ -14,10 +14,7 @@ export interface Location {
 export const indexToLocation = (index: number, source: Source): Location | undefined => {
     let line = 0
     let column = 0
-    for (let i = 0; i <= index; i++) {
-        if (i === index) {
-            return { line, column }
-        }
+    for (let i = 0; i < index; i++) {
         if (isNewline(source.code[i])) {
             line++
             column = 0
@@ -25,7 +22,7 @@ export const indexToLocation = (index: number, source: Source): Location | undef
             column++
         }
     }
-    return undefined
+    return { line, column }
 }
 
 export const prettyLineAt = (range: LocationRange, source: Source): string => {
@@ -37,7 +34,11 @@ export const prettyLineAt = (range: LocationRange, source: Source): string => {
     const sourceLine = source.code.split('\n')[start.line]
     const line = linePad + sourceLine
     // TODO: multiline highlight
-    const highlightLen = (start.line === end.line ? end.column : sourceLine.length) - start.column
+    // why special logic is needed when token is near EOL?
+    const highlightLen =
+        end.column === sourceLine.length
+            ? sourceLine.length - start.column
+            : (start.line === end.line ? end.column : sourceLine.length) + 1 - start.column
     const highlight = pad + ' '.repeat(start.column) + '^'.repeat(highlightLen)
     return [pad, line, highlight].join('\n')
 }
