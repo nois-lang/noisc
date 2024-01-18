@@ -1,24 +1,24 @@
 trait Area {
-    fn area(self): Num
+    fn area(self): Float
 }
 
 type Shape {
-    Rect(width: Num, height: Num),
-    Circle(radius: Num),
+    Rect(width: Float, height: Float),
+    Circle(radius: Float),
 }
 
 impl Area for Shape {
-    fn area(self): Num {
+    fn area(self): Float {
         match self {
             Shape::Rect(width, height) { width * height },
-            Shape::Circle(radius) { math::pi * radius ^ 2 }
+            Shape::Circle(radius) { math::pi * radius ^ 2. }
         }
     }
 }
 
 fn main() {
     let shapes: List<Shape> = [
-        Shape::Rect(width: 4, height: 2),
+        Shape::Rect(width: 4., height: 2.),
         Shape::Circle(radius: 12.34),
     ]
     println(shapes.iter().map(Area::area).into<List>())
