@@ -8,7 +8,6 @@ function negInt(a) {
 
 /**
  * @param {Int} a
- * @param {Int} b
  * @returns {Int}
  */
 function absInt(a) {
@@ -60,3 +59,10 @@ function expInt(a, b) {
     return a.value ** b.value
 }
 
+/**
+ * @param {Int} a
+ * @returns {String}
+ */
+function fmtInt(a) {
+    return a.value.toString()
+}

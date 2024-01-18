@@ -30,6 +30,12 @@ impl Num for Float {
     }
 }
 
+impl io::Display for Float {
+    fn fmt(self): String {
+        fmtFloat(self)
+    }
+}
+
 fn negFloat(a: Float): Float
 
 fn absFloat(a: Float): Float
@@ -45,4 +51,6 @@ fn multFloat(a: Float, b: Float): Float
 fn divFloat(a: Float, b: Float): Float
 
 fn expFloat(a: Float, b: Float): Float
+
+fn fmtFloat(a: Float): String
 
