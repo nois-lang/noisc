@@ -38,7 +38,7 @@ export const prettyLineAt = (range: LocationRange, source: Source): string => {
     const highlightLen =
         end.column === sourceLine.length
             ? sourceLine.length - start.column
-            : (start.line === end.line ? end.column : sourceLine.length) + 1 - start.column
+            : (start.line === end.line ? end.column + 1 : sourceLine.length) - start.column
     const highlight = pad + ' '.repeat(start.column) + '^'.repeat(highlightLen)
     return [pad, line, highlight].join('\n')
 }
