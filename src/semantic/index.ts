@@ -310,10 +310,42 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
     // must be set afterwards since impl generics cannot be resolved
     ;(<InstanceScope>module.scopeStack.at(-1)!).selfType = selfType
 
+    checkType(implDef.identifier, ctx)
     if (implDef.forTrait) {
         checkType(implDef.forTrait, ctx)
+
+        // presence of for trait means that implDef.identifier is an implemented trait
+        const vid = idToVid(implDef.identifier)
+        const ref = resolveVid(vid, ctx)
+        if (ref) {
+            if (ref.def.kind === 'trait-def') {
+                const requiredImplMethods = ref.def.block.statements
+                    .filter(s => s.kind === 'fn-def')
+                    .map(s => <FnDef>s)
+                    .filter(f => !f.block)
+                const implMethods = implDef.block.statements.filter(s => s.kind === 'fn-def').map(s => <FnDef>s)
+                for (let m of requiredImplMethods) {
+                    const mName = m.name.value
+                    if (!implMethods.find(im => im.name.value === mName)) {
+                        ctx.errors.push(
+                            semanticError(
+                                ctx,
+                                implDef.forTrait,
+                                `missing method implementation \`${vidToString(ref.vid)}::${mName}\``
+                            )
+                        )
+                    }
+                }
+            } else {
+                ctx.errors.push(semanticError(ctx, implDef.forTrait, `expected \`trait-def\`, got \`${ref.def.kind}\``))
+            }
+        } else {
+            ctx.errors.push(notFoundError(ctx, implDef.forTrait, vidToString(vid)))
+        }
+
+        // TODO: check bounded traits are implemented by type,
+        // e.g. `impl Ord for Foo` equires `impl Eq for Foo` since `trait Ord<Self: Eq>`
     }
-    checkType(implDef.identifier, ctx)
 
     checkBlock(implDef.block, ctx)
 
