@@ -1,11 +1,10 @@
 type Float
 
-impl Num for Float {}
-
-impl op::Add for Float {
+impl Num for Float {
     fn add(self, other: Self): Self {
         addFloat(self, other)
     }
 }
+
 
 fn addFloat(a: Float, b: Float): Float

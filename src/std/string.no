@@ -1,7 +1,7 @@
 type String
 
-impl op::Add for String {
-    fn add(self, other: Self): Self {
+impl String {
+    fn concat(self, other: Self): Self {
         concatString(self, other)
     }
 }

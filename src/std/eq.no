@@ -1,0 +1,5 @@
+trait Eq {
+    fn eq(self, other: Self): Bool
+
+    fn ne(self): Bool
+}

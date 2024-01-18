@@ -1,1 +1,9 @@
-trait Num<Self: op::Add + op::Sub + op::Mult + op::Div + op::Exp + op::Mod + op::Eq + op::Cmp> {}
+trait Num {
+    fn neg(self): Self
+    fn add(self, other: Self): Self
+    fn sub(self, other: Self): Self
+    fn mult(self, other: Self): Self
+    fn div(self, other: Self): Self
+    fn exp(self, other: Self): Self
+    fn abs(self): Self
+}

@@ -1,5 +1,3 @@
-// noinspection JSValidateJSDoc
-
 /**
  * @param {String} a
  * @param {String} b

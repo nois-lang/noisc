@@ -1,5 +1,3 @@
-// noinspection JSValidateJSDoc
-
 /**
  * @param {Float} a
  * @param {Float} b

@@ -3,21 +3,21 @@ import { vidFromString } from '../scope/util'
 import { VirtualIdentifier } from '../scope/vid'
 
 export const operatorImplMap: Map<AstNodeKind, VirtualIdentifier> = new Map([
-    ['neg-op', vidFromString('std::op::Neg::Neg')],
-    ['not-op', vidFromString('std::op::Not::Not')],
+    ['neg-op', vidFromString('std::num::Num::neg')],
+    ['not-op', vidFromString('std::bool::Bool::not')],
 
-    ['add-op', vidFromString('std::op::Add::add')],
-    ['sub-op', vidFromString('std::op::Sub::sub')],
-    ['mult-op', vidFromString('std::op::Mult::mult')],
-    ['div-op', vidFromString('std::op::Div::div')],
-    ['exp-op', vidFromString('std::op::Exp::exp')],
-    ['mod-op', vidFromString('std::op::Mod::mod')],
-    ['eq-op', vidFromString('std::op::Eq::eq')],
-    ['ne-op', vidFromString('std::op::Eq::ne')],
+    ['add-op', vidFromString('std::num::Num::add')],
+    ['sub-op', vidFromString('std::num::Num::sub')],
+    ['mult-op', vidFromString('std::num::Num::mult')],
+    ['div-op', vidFromString('std::num::Num::div')],
+    ['exp-op', vidFromString('std::num::Num::exp')],
+    ['eq-op', vidFromString('std::eq::Eq::eq')],
+    ['ne-op', vidFromString('std::eq::Eq::ne')],
     ['ge-op', vidFromString('std::ord::Ord::ge')],
     ['le-op', vidFromString('std::ord::Ord::le')],
     ['gt-op', vidFromString('std::ord::Ord::gt')],
     ['lt-op', vidFromString('std::ord::Ord::lt')],
-    ['and-op', vidFromString('std::op::And::and')],
-    ['or-op', vidFromString('std::op::Or::or')]
+    ['and-op', vidFromString('std::bool::Bool::and')],
+    ['or-op', vidFromString('std::bool::Bool::or')],
+    ['mod-op', vidFromString('std::int::Int::mod')]
 ])

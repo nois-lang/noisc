@@ -1,5 +1,3 @@
-// noinspection JSValidateJSDoc
-
 /**
  * @param {String} str
  * @returns {Unit}

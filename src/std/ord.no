@@ -4,7 +4,7 @@ type Ordering {
     Greater
 }
 
-trait Ord<Self: op::Eq> {
+trait Ord<Self: eq::Eq> {
     fn cmp(self, other: Self): Ordering
 
     fn ge(self, other: Self): Ordering

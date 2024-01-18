@@ -1,10 +1,12 @@
 type Int
 
-impl Num for Int {}
-
-impl op::Add for Int {
+impl Num for Int {
     fn add(self, other: Self): Self {
         addInt(self, other)
+    }
+
+    fn mod(self, other: Self): Self {
+        todo("mod")
     }
 }
 
