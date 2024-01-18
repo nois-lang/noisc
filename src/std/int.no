@@ -1,8 +1,32 @@
 type Int
 
 impl Num for Int {
+    fn neg(self): Self {
+        negInt(self)
+    }
+
+    fn abs(self): Self {
+        absInt(self)
+    }
+
     fn add(self, other: Self): Self {
         addInt(self, other)
+    }
+
+    fn sub(self, other: Self): Self {
+        subInt(self, other)
+    }
+
+    fn mult(self, other: Self): Self {
+        multInt(self, other)
+    }
+
+    fn div(self, other: Self): Self {
+        divInt(self, other)
+    }
+
+    fn exp(self, other: Self): Self {
+        expInt(self, other)
     }
 
     fn mod(self, other: Self): Self {
@@ -10,4 +34,19 @@ impl Num for Int {
     }
 }
 
+fn negInt(a: Int): Int
+
+fn absInt(a: Int): Int
+
 fn addInt(a: Int, b: Int): Int
+
+fn addInt(a: Int, b: Int): Int
+
+fn subInt(a: Int, b: Int): Int
+
+fn multInt(a: Int, b: Int): Int
+
+fn divInt(a: Int, b: Int): Int
+
+fn expInt(a: Int, b: Int): Int
+

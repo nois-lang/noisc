@@ -1,10 +1,48 @@
 type Float
 
 impl Num for Float {
+    fn neg(self): Self {
+        negFloat(self)
+    }
+
+    fn abs(self): Self {
+        absFloat(self)
+    }
+
     fn add(self, other: Self): Self {
         addFloat(self, other)
     }
+
+    fn sub(self, other: Self): Self {
+        subFloat(self, other)
+    }
+
+    fn mult(self, other: Self): Self {
+        multFloat(self, other)
+    }
+
+    fn div(self, other: Self): Self {
+        divFloat(self, other)
+    }
+
+    fn exp(self, other: Self): Self {
+        expFloat(self, other)
+    }
 }
 
+fn negFloat(a: Float): Float
+
+fn absFloat(a: Float): Float
 
 fn addFloat(a: Float, b: Float): Float
+
+fn addFloat(a: Float, b: Float): Float
+
+fn subFloat(a: Float, b: Float): Float
+
+fn multFloat(a: Float, b: Float): Float
+
+fn divFloat(a: Float, b: Float): Float
+
+fn expFloat(a: Float, b: Float): Float
+
