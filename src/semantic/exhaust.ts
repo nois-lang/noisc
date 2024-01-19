@@ -125,17 +125,20 @@ const matchPattern = (pattern: PatternExpr, tree: MatchTree, ctx: Context): bool
                 return true
             }
             // if this variant has unmatched fields, recursively match every pattern field
-            return pattern.fieldPatterns.some(f => {
+            let matched = false
+            for (const f of pattern.fieldPatterns) {
                 const fName = f.name.value
                 const fTree = (<MatchVariant>variantTree!.node).fields.get(fName)
                 assert(!!fTree, `unknown field \`${fName}\``)
                 if (!f.pattern) {
                     // no pattern is analogous to `_`
                     fTree!.node = { kind: 'exhaustive' }
-                    return true
+                    matched = true
+                } else {
+                    matched = matchPattern(f.pattern.expr, fTree!, ctx)
                 }
-                return matchPattern(f.pattern.expr, fTree!, ctx)
-            })
+            }
+            return matched
         case 'operand-expr':
             return todo(`pattern \`${pattern.kind}\``)
         default:
