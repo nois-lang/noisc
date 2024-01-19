@@ -12,26 +12,26 @@
 
 ```rust
 trait Area {
-    fn area(self): Num
+    fn area(self): Float
 }
 
 type Shape {
-    Rect(width: Num, height: Num),
-    Circle(radius: Num),
+    Rect(width: Float, height: Float),
+    Circle(radius: Float),
 }
 
 impl Area for Shape {
-    fn area(self): Num {
+    fn area(self): Float {
         match self {
             Shape::Rect(width, height) { width * height },
-            Shape::Circle(radius) { math::pi * radius ^ 2 }
+            Shape::Circle(radius) { math::pi * radius ^ 2. }
         }
     }
 }
 
 fn main() {
     let shapes: List<Shape> = [
-        Shape::Rect(width: 4, height: 2),
+        Shape::Rect(width: 4., height: 2.),
         Shape::Circle(radius: 12.34),
     ]
     println(shapes.iter().map(Area::area).into<List>())
@@ -49,13 +49,13 @@ fn main() {
 
 ## Roadmap
 
-| Feature                    | Milestone | Status |
-| -------------------------- | --------- | ------ |
-| Lexer                      | 0.1.0     | ✅     |
-| Parser                     | 0.1.0     | ✅     |
-| Semantic checker           | 0.1.0     | 🚧     |
-| Type checker               | 0.1.0     | 🚧     |
-| Code generator (JS target) | 0.1.0     | ❌     |
+| Feature                     | Milestone | Status |
+| --------------------------- | --------- | ------ |
+| Lexing                      | 0.1.0     | ✅     |
+| Parsing                     | 0.1.0     | ✅     |
+| Semantic checking           | 0.1.0     | 🚧     |
+| Type checking               | 0.1.0     | 🚧     |
+| Code generation (JS target) | 0.1.0     | ❌     |
 
 > - ✅ Implemented
 > - 🚧 In progress
