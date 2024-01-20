@@ -1,3 +1,4 @@
+import { ClosureExpr } from '../ast/operand'
 import { Generic, Type } from '../ast/type'
 import { Context } from '../scope'
 import { findSuperRelChains, getConcreteTrait } from '../scope/trait'
@@ -7,7 +8,7 @@ import { notFoundError, semanticError } from '../semantic/error'
 import { todo } from '../util/todo'
 import { selfType, unknownType } from './type'
 
-export type VirtualType = VidType | VirtualFnType | VirtualGeneric | UnknownType
+export type VirtualType = VidType | VirtualFnType | VirtualGeneric | UnknownType | MalleableType
 
 export interface VidType {
     kind: 'vid-type'
@@ -24,6 +25,15 @@ export interface VirtualFnType {
 
 export interface UnknownType {
     kind: 'unknown-type'
+}
+
+/**
+ * Type that is defined by its first usage.
+ * Closures are initially defined with this type
+ */
+export interface MalleableType {
+    kind: 'malleable-type'
+    closure: ClosureExpr
 }
 
 export interface VirtualGeneric {
@@ -55,6 +65,7 @@ export const virtualTypeToString = (vt: VirtualType): string => {
         case 'generic':
             return vt.name
         case 'unknown-type':
+        case 'malleable-type':
             return '?'
     }
 }

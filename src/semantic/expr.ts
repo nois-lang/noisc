@@ -1,8 +1,10 @@
 import { checkBlock, checkCallArgs, checkIdentifier, checkParam, checkType } from '.'
+import { AstNode } from '../ast'
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { MatchExpr } from '../ast/match'
 import { CallOp, ConOp } from '../ast/op'
 import { ClosureExpr, ForExpr, IfExpr, IfLetExpr, ListExpr, Operand, WhileExpr } from '../ast/operand'
+import { compactParseNode, getLocationRange } from '../parser'
 import { Context, instanceScope } from '../scope'
 import { bool, iter, iterable } from '../scope/std'
 import { getInstanceForType } from '../scope/trait'
@@ -18,7 +20,7 @@ import {
 } from '../typecheck'
 import { instanceGenericMap, resolveFnGenerics, resolveGenericsOverStructure, resolveType } from '../typecheck/generic'
 import { unitType, unknownType } from '../typecheck/type'
-import { assert, todo } from '../util/todo'
+import { assert } from '../util/todo'
 import { notFoundError, semanticError, typeError } from './error'
 import { checkExhaustion } from './exhaust'
 import { checkAccessExpr } from './instance'
@@ -313,34 +315,65 @@ export const checkMatchExpr = (matchExpr: MatchExpr, ctx: Context): void => {
 }
 
 /**
- * TODO: provide expected type hint, e.g. varDef type or param type where closure is passed as arg
+ * TODO: better error reporting when inferredType is provided
+ * TODO: closure generics
  */
-export const checkClosureExpr = (closureExpr: ClosureExpr, ctx: Context): void => {
-    if (closureExpr.params.some(p => !p.paramType)) {
-        // one approach is to assign every untyped parameter a generic that will be resolved once closure is called
-        // with args, e.g. `|a, b| { a + b }` will have type <A, B>|a: A, b: B|: ?
-        // no idea what to do with the return type though
-        todo('infer closure param types')
-    }
-    if (!closureExpr.returnType) {
-        todo('infer closure return type')
+export const checkClosureExpr = (
+    closureExpr: ClosureExpr,
+    ctx: Context,
+    caller?: AstNode<any>,
+    inferredType?: VirtualFnType
+): void => {
+    if (closureExpr.type && closureExpr.type.kind !== 'malleable-type') return
+
+    if (!inferredType && (!closureExpr.returnType || closureExpr.params.some(p => !!p.paramType))) {
+        // untyped closures concrete type is defined by its first usage
+        // malleable type is an indicator that concrete type is yet to be defined
+        closureExpr.type = { kind: 'malleable-type', closure: closureExpr }
+        // since param/return types are unknown, no reason to perform semantic checking yet
+        // TODO: semantic checking if closure is never called (if type is still malleable by the end of scope)
+        return
     }
 
     const module = ctx.moduleStack.at(-1)!
-    // TODO: closure generics
     module.scopeStack.push({ kind: 'fn', definitions: new Map(), def: closureExpr, returnStatements: [] })
 
-    closureExpr.params.forEach((p, i) => checkParam(p, i, ctx))
-    checkType(closureExpr.returnType!, ctx)
+    if (caller && inferredType) {
+        if (closureExpr.params.length > inferredType.paramTypes.length) {
+            ctx.errors.push(
+                semanticError(
+                    ctx,
+                    caller,
+                    `expected ${closureExpr.params.length} arguments, got ${inferredType.paramTypes.length}`
+                )
+            )
+            return
+        }
+        for (let i = 0; i < closureExpr.params.length; i++) {
+            const param = closureExpr.params[i]
+            param.type = inferredType.paramTypes[i]
+            checkPattern(param.pattern, param.type, ctx)
+        }
+        closureExpr.type = {
+            kind: 'fn-type',
+            paramTypes: closureExpr.params.map(p => p.type!),
+            returnType: inferredType.returnType,
+            generics: []
+        }
+    } else {
+        closureExpr.params.forEach((p, i) => checkParam(p, i, ctx))
+        checkType(closureExpr.returnType!, ctx)
+        closureExpr.type = {
+            kind: 'fn-type',
+            paramTypes: closureExpr.params.map(p => typeToVirtual(p.paramType!, ctx)),
+            returnType: typeToVirtual(closureExpr.returnType!, ctx),
+            generics: []
+        }
+    }
+
     checkBlock(closureExpr.block, ctx)
     // TODO: typecheck block -> return type
-
-    closureExpr.type = {
-        kind: 'fn-type',
-        paramTypes: closureExpr.params.map(p => typeToVirtual(p.paramType!, ctx)),
-        returnType: typeToVirtual(closureExpr.returnType!, ctx),
-        generics: []
-    }
+    // TODO: set return type if inferred is unknown
 
     module.scopeStack.pop()
 }
@@ -355,12 +388,25 @@ export const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
 
     checkOperand(operand, ctx)
 
+    callOp.args.forEach(a => checkOperand(a, ctx))
+
+    if (operand.type?.kind === 'malleable-type') {
+        const closureType: VirtualFnType = {
+            kind: 'fn-type',
+            generics: [],
+            paramTypes: callOp.args.map(arg => arg.type ?? unknownType),
+            returnType: unknownType
+        }
+        const closure = operand.type.closure
+        checkClosureExpr(closure, ctx, operand, closureType)
+        operand.type = closure.type
+    }
+
     if (operand.type?.kind !== 'fn-type') {
         const message = `type error: non-callable operand of type \`${virtualTypeToString(operand.type!)}\``
         ctx.errors.push(semanticError(ctx, operand, message))
         return
     }
-    callOp.args.forEach(a => checkOperand(a, ctx))
 
     const fnType = <VirtualFnType>operand.type
     const typeArgs = operand.kind === 'identifier' ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []

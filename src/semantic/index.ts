@@ -1,5 +1,5 @@
 import { AstNode, Module, Param } from '../ast'
-import { Identifier } from '../ast/operand'
+import { ClosureExpr, Identifier } from '../ast/operand'
 import { Block, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '../ast/statement'
 import { Generic, Type } from '../ast/type'
 import { TypeDef, Variant } from '../ast/type-def'
@@ -7,12 +7,12 @@ import { Context, DefinitionMap, InstanceScope, TypeDefScope, defKey, fnScope, i
 import { getInstanceForType, traitDefToVirtualType } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
 import { Definition, NameDef, resolveVid } from '../scope/vid'
-import { VirtualType, genericToVirtual, isAssignable, typeToVirtual } from '../typecheck'
+import { VirtualType, genericToVirtual, isAssignable, typeToVirtual, virtualTypeToString } from '../typecheck'
 import { instanceGenericMap, resolveType } from '../typecheck/generic'
 import { selfType, unitType, unknownType } from '../typecheck/type'
 import { assert, todo } from '../util/todo'
 import { notFoundError, semanticError, typeError } from './error'
-import { checkExpr } from './expr'
+import { checkClosureExpr, checkExpr } from './expr'
 import { checkPattern } from './match'
 import { typeNames } from './type-def'
 import { useExprToVids } from './use-expr'
@@ -546,6 +546,10 @@ export const checkCallArgs = (
     for (let i = 0; i < paramTypes.length; i++) {
         const paramType = paramTypes[i]
         const arg = args[i]
+        if (arg.type?.kind === 'malleable-type' && paramType.kind === 'fn-type') {
+            checkClosureExpr(arg.type.closure, ctx, node, paramType)
+            arg.type = arg.type.closure.type
+        }
         const argType = arg.type || unknownType
 
         if (!isAssignable(argType, paramType, ctx)) {
