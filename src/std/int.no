@@ -1,5 +1,11 @@
 type Int
 
+impl Int {
+    fn mod(self, other: Self): Self {
+        todo("mod")
+    }
+}
+
 impl Num for Int {
     fn neg(self): Self {
         negInt(self)
@@ -27,10 +33,6 @@ impl Num for Int {
 
     fn exp(self, other: Self): Self {
         expInt(self, other)
-    }
-
-    fn mod(self, other: Self): Self {
-        todo("mod")
     }
 }
 
