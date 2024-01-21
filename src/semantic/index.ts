@@ -501,6 +501,9 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
             case 'module':
                 break
         }
+
+        // TODO: check that type args match type params
+        identifier.typeArgs.forEach(typeArg => checkType(typeArg, ctx))
     } else {
         ctx.errors.push(notFoundError(ctx, identifier, vidToString(vid)))
         identifier.type = unknownType
@@ -520,7 +523,7 @@ export const checkType = (type: Type, ctx: Context) => {
                 ctx.errors.push(semanticError(ctx, type.name, `expected type, got \`${ref.def.kind}\``))
                 return
             }
-            // TODO: check that type args match to generics of typeDef
+            // TODO: check that type args match typeDef's type params
             type.typeArgs.forEach(tp => checkType(tp, ctx))
             return
         case 'type-bounds':

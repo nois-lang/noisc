@@ -112,6 +112,7 @@ const checkMethodCallExpr = (
         ctx.errors.push(semanticError(ctx, rOperand, `expected method name, got \`${rOperand.kind}\``))
         return undefined
     }
+    // TODO: check type args and use those if type param cannot be resolved by parameters
     const methodName = rOperand.name.value
     const traitFnVid = { names: [...lOperand.type.identifier.names, methodName] }
     const ref = resolveVid(traitFnVid, ctx, ['method-def'])
@@ -146,5 +147,4 @@ const checkMethodCallExpr = (
     const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(pt, genericMaps, callOp.args.at(i) ?? callOp, ctx))
     checkCallArgs(callOp, [lOperand, ...callOp.args], paramTypes, ctx)
 
-    return resolveType(fnType.returnType, genericMaps, rOperand, ctx)
-}
+    return resolveType(fnType.returnType, genericMaps, rOperand, ctx)}
