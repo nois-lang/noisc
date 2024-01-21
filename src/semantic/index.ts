@@ -519,12 +519,31 @@ export const checkType = (type: Type, ctx: Context) => {
                 ctx.errors.push(notFoundError(ctx, type, vidToString(vid)))
                 return
             }
-            if (!['type-def', 'trait-def', 'generic', 'self'].includes(ref.def.kind)) {
+            const k = ref.def.kind
+            if (!['type-def', 'trait-def', 'generic', 'self'].includes(k)) {
                 ctx.errors.push(semanticError(ctx, type.name, `expected type, got \`${ref.def.kind}\``))
                 return
             }
-            // TODO: check that type args match typeDef's type params
-            type.typeArgs.forEach(tp => checkType(tp, ctx))
+            if (type.typeArgs.length > 0 && (k === 'generic' || k === 'self')) {
+                ctx.errors.push(semanticError(ctx, type.name, `\`${ref.def.kind}\` does not accept type arguments`))
+                return
+            }
+            if (k === 'type-def' || k === 'trait-def') {
+                const typeParams = ref.def.generics.filter(g => g.name.value !== selfType.name)
+                if (type.typeArgs.length !== typeParams.length) {
+                    ctx.errors.push(
+                        semanticError(
+                            ctx,
+                            type,
+                            `expected ${typeParams.length} type arguments, got ${type.typeArgs.length}`
+                        )
+                    )
+                    return
+                }
+                type.typeArgs.forEach(tp => {
+                    checkType(tp, ctx)
+                })
+            }
             return
         case 'type-bounds':
             // TODO

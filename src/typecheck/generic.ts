@@ -4,6 +4,9 @@ import { merge } from '../util/map'
 import { VirtualFnType, VirtualType, genericToVirtual, virtualTypeToString } from './index'
 import { selfType } from './type'
 
+/**
+ * TODO: accept type hint to infer hole types
+ */
 export const resolveFnGenerics = (
     fnType: VirtualFnType,
     argTypes: VirtualType[],

@@ -1,4 +1,4 @@
-import { checkCallArgs } from '.'
+import { checkCallArgs, checkType } from '.'
 import { BinaryExpr, OperandExpr } from '../ast/expr'
 import { CallOp } from '../ast/op'
 import { Identifier, Operand } from '../ast/operand'
@@ -112,8 +112,8 @@ const checkMethodCallExpr = (
         ctx.errors.push(semanticError(ctx, rOperand, `expected method name, got \`${rOperand.kind}\``))
         return undefined
     }
-    // TODO: check type args and use those if type param cannot be resolved by parameters
     const methodName = rOperand.name.value
+    const typeArgs = rOperand.typeArgs
     const traitFnVid = { names: [...lOperand.type.identifier.names, methodName] }
     const ref = resolveVid(traitFnVid, ctx, ['method-def'])
     if (!ref || ref.def.kind !== 'method-def') {
@@ -133,6 +133,9 @@ const checkMethodCallExpr = (
         return
     }
 
+    // TODO: check required type args (that cannot be inferred via `resolveFnGenerics`)
+    typeArgs.forEach(typeArg => checkType(typeArg, ctx))
+
     const instanceType = lOperand.type!
     const implForType = getInstanceForType(ref.def.trait, ctx)
 
@@ -141,10 +144,11 @@ const checkMethodCallExpr = (
     // further mapping in `fnGenericMap`, thus should be removed
     implGenericMap.delete(selfType.name)
 
-    const typeArgs = rOperand.kind === 'identifier' ? rOperand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
-    const fnGenericMap = resolveFnGenerics(fnType, [lOperand.type, ...callOp.args.map(a => a.type!)], typeArgs)
+    const virtTypeArgs = typeArgs.map(tp => typeToVirtual(tp, ctx))
+    const fnGenericMap = resolveFnGenerics(fnType, [lOperand.type, ...callOp.args.map(a => a.type!)], virtTypeArgs)
     const genericMaps = [implGenericMap, fnGenericMap]
     const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(pt, genericMaps, callOp.args.at(i) ?? callOp, ctx))
     checkCallArgs(callOp, [lOperand, ...callOp.args], paramTypes, ctx)
 
-    return resolveType(fnType.returnType, genericMaps, rOperand, ctx)}
+    return resolveType(fnType.returnType, genericMaps, rOperand, ctx)
+}

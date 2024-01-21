@@ -12,10 +12,10 @@ impl <T, U> Iter<U> for MapIter<T, U> {
 }
 
 trait MapAdapter<Self: Iter<T>, T> {
-    fn map<U>(self, f: |T|: U): MapIter<T>
+    fn map<U>(self, f: |T|: U): MapIter<T, U>
 }
 
-impl <T> MapAdapter for Iter<T> {
+impl <T> MapAdapter<T> for Iter<T> {
     fn map<U>(self, f: |T|: U): MapIter<T, U> {
         MapIter::MapIter(iter: self, f: f)
     }
