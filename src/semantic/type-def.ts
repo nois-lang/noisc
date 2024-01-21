@@ -15,5 +15,8 @@ export const typeNames = (type: Type): string[] => {
         case 'type-bounds': {
             return type.bounds.flatMap(typeNames)
         }
+        case 'hole': {
+            return []
+        }
     }
 }
