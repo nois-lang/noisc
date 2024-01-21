@@ -173,7 +173,7 @@ export const parseGenerics = (parser: Parser): void => {
     parser.close(mark, 'generics')
 }
 /**
- * generic ::= NAME (COLON type)?
+ * generic ::= NAME (COLON type-bounds)?
  */
 export const parseGeneric = (parser: Parser): void => {
     const mark = parser.open()
