@@ -34,7 +34,7 @@ fn main() {
         Shape::Rect(width: 4., height: 2.),
         Shape::Circle(radius: 12.34),
     ]
-    println(shapes.iter().map(Area::area).into<List>())
+    println(shapes.iter().map(Area::area).collect<List>())
 }
 ```
 

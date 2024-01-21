@@ -1,4 +1,4 @@
-use std::iter::{ Iter, Iterable }
+use std::iter::{ Iter, Iterable, Collector }
 
 type List<T>
 
@@ -18,37 +18,37 @@ impl <T> Iterable<T> for List<T> {
     }
 }
 
-impl <T> Into<List<T>> for Iter<T> {
-    fn into(self): List<T> {
+impl <T> Collector<T> for List<T> {
+    fn fromIter(iter: Iter<T>): Self {
         let list = []
         // TODO: replace with while let
         while true {
-            match self.next() {
+            match iter.next() {
                 Option::Some(value) {
                     list.add(value)
                 },
-                Option::None() { break },
+                    Option::None() { break },
             }
         }
         list
     }
 }
 
-impl Into<String> for List<String> {
-    fn into(self): String {
-        let string = ""
+impl io::Display for List<String> {
+    fn fmt(self): String {
+        let string = "["
         for s in self {
             // TODO: impl addMut() 
-            string = string + s
+            string = string.concat(s)
         }
-        string
+        string.concat("]")
     }
 }
 
 impl <T: io::Display> io::Display for List<T> {
     fn fmt(self): String {
-        // TODO: only match impls with assignable type params (Into<String> is not checked)
-        let a = self.iter().map(io::Display::fmt).intersperse(", ").into<String>()
+        // TODO: better generic resolution
+        // self.iter().map(io::Display::fmt).collect<List>().fmt()
     }
 }
 

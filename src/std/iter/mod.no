@@ -4,4 +4,12 @@ trait Iterable<T> {
 
 trait Iter<T> {
     fn next(self): Option<T>
+
+    fn collect<C: Collector<T>>(self): C {
+        // C::fromIter(self)
+    }
+}
+
+trait Collector<T> {
+    fn fromIter<I: Iter<T>>(iter: I): Self
 }
