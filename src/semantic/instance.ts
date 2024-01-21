@@ -135,18 +135,13 @@ const checkMethodCallExpr = (
     const instanceType = lOperand.type!
     const implForType = getInstanceForType(ref.def.trait, ctx)
 
-    // TODO: find matching impl
-
     const implGenericMap = resolveGenericsOverStructure(instanceType, implForType)
     // if Self type param is explicit, `resolveGenericsOverStructure` treats it as regular generic and interrupts
     // further mapping in `fnGenericMap`, thus should be removed
     implGenericMap.delete(selfType.name)
 
-    const fnGenericMap = resolveFnGenerics(
-        fnType,
-        [lOperand.type, ...callOp.args.map(a => a.type!)],
-        lOperand.kind === 'identifier' ? lOperand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
-    )
+    const typeArgs = rOperand.kind === 'identifier' ? rOperand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
+    const fnGenericMap = resolveFnGenerics(fnType, [lOperand.type, ...callOp.args.map(a => a.type!)], typeArgs)
     const genericMaps = [implGenericMap, fnGenericMap]
     const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(pt, genericMaps, callOp.args.at(i) ?? callOp, ctx))
     checkCallArgs(callOp, [lOperand, ...callOp.args], paramTypes, ctx)

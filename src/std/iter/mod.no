@@ -6,7 +6,7 @@ trait Iter<T> {
     fn next(self): Option<T>
 
     fn collect<C: Collector<T>>(self): C {
-        // C::fromIter(self)
+        C::fromIter(self)
     }
 }
 
