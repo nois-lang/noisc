@@ -99,7 +99,7 @@ identifier            ::= (NAME COLON COLON)* NAME type-args?
                       ;
   type-args           ::= O-ANGLE (type (COMMA type)* COMMA?)? C-ANGLE
                       ;
-type                  ::= type-bounds | fn-type
+type                  ::= type-bounds | fn-type | hole
                       ;
   type-bounds         ::= identifier (PLUS identifier)*
                       ;

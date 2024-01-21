@@ -2,6 +2,7 @@ import { nameLikeTokens } from '.'
 import { syntaxError } from '../../error'
 import { Parser } from '../parser'
 import { parseIdentifier } from './expr'
+import { parseHole } from './match'
 
 /**
  * type-annot ::= COLON type
@@ -14,7 +15,7 @@ export const parseTypeAnnot = (parser: Parser): void => {
 }
 
 /**
- * type ::= type-bounds | fn-type
+ * type ::= type-bounds | fn-type | hole
  */
 export const parseType = (parser: Parser): void => {
     const mark = parser.open()
@@ -22,6 +23,8 @@ export const parseType = (parser: Parser): void => {
         parseTypeBounds(parser)
     } else if (parser.at('pipe')) {
         parseFnType(parser)
+    } else if (parser.at('underscore')) {
+        parseHole(parser)
     } else {
         parser.advanceWithError(syntaxError(parser, 'expected type'))
     }

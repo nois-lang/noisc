@@ -6,9 +6,9 @@ import { idToVid, vidEq, vidToString } from '../scope/util'
 import { VirtualIdentifier, resolveVid } from '../scope/vid'
 import { notFoundError, semanticError } from '../semantic/error'
 import { todo } from '../util/todo'
-import { selfType, unknownType } from './type'
+import { holeType, selfType, unknownType } from './type'
 
-export type VirtualType = VidType | VirtualFnType | VirtualGeneric | UnknownType | MalleableType
+export type VirtualType = VidType | VirtualFnType | VirtualGeneric | UnknownType | MalleableType | HoleType
 
 export interface VidType {
     kind: 'vid-type'
@@ -34,6 +34,10 @@ export interface UnknownType {
 export interface MalleableType {
     kind: 'malleable-type'
     closure: ClosureExpr
+}
+
+export interface HoleType {
+    kind: 'hole-type'
 }
 
 export interface VirtualGeneric {
@@ -64,6 +68,8 @@ export const virtualTypeToString = (vt: VirtualType): string => {
         }
         case 'generic':
             return vt.name
+        case 'hole-type':
+            return '_'
         case 'unknown-type':
         case 'malleable-type':
             return '?'
@@ -110,6 +116,8 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
                 paramTypes: type.paramTypes.map(pt => typeToVirtual(pt, ctx)),
                 returnType: typeToVirtual(type.returnType, ctx)
             }
+        case 'hole':
+            return holeType
         case 'type-bounds':
             return todo('type-bounds')
     }

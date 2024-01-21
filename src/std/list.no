@@ -47,7 +47,7 @@ impl io::Display for List<String> {
 
 impl <T: io::Display> io::Display for List<T> {
     fn fmt(self): String {
-        self.iter().map(io::Display::fmt).collect<List>().fmt()
+        self.iter().map(io::Display::fmt).collect<List<String>>().fmt()
     }
 }
 

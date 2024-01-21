@@ -1,21 +1,23 @@
 import { buildIdentifier, buildName, Identifier, Name } from './operand'
 import { ParseNode } from '../parser'
 import { AstNode, filterNonAstNodes } from './index'
+import { buildHole, Hole } from './match'
 
-export type Type = Identifier | TypeBounds | FnType
+export type Type = Identifier | TypeBounds | FnType | Hole
 
 export const buildType = (node: ParseNode): Type => {
     const n = filterNonAstNodes(node)[0]
     if (node.kind === 'type-annot') {
         return buildType(n)
-    }
-    if (n.kind === 'type-bounds') {
+    } else if (n.kind === 'type-bounds') {
         const typeBounds = buildTypeBounds(n)
         if (typeBounds.bounds.length === 1) {
             return typeBounds.bounds[0]
         } else {
             return typeBounds
         }
+    } else if (n.kind === 'hole') {
+        return buildHole(n)
     } else {
         return buildFnType(n)
     }
