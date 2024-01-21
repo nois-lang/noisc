@@ -28,7 +28,7 @@ export interface UnknownType {
 }
 
 /**
- * Type that is defined by its first usage.
+ * Type that is resolved to its first usage.
  * Closures are initially defined with this type
  */
 export interface MalleableType {

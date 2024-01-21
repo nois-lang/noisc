@@ -8,7 +8,7 @@ import { selfType } from '../typecheck/type'
 import { Context, Scope, instanceScope } from './index'
 import { defaultImportedVids } from './std'
 import { findSuperRelChains } from './trait'
-import { concatVid, vidEq, vidToString } from './util'
+import { concatVid, idToVid, vidEq, vidToString } from './util'
 
 export interface VirtualIdentifier {
     names: string[]
@@ -79,6 +79,7 @@ export interface VirtualIdentifierMatch<D = Definition> {
  *  - variant or TraitFn ref, e.g. Option::Some or Option::map
  *  - Mix of above with partial or full qualification, e,g. std::option::Option::Some or option::Option::Some
  *  - Module ref, e.g. std::string
+ *  - generic ref, e.g. C::fromIter, where C is bounded generic in scope
  *  - `Self`
  */
 export const resolveVid = (
@@ -192,10 +193,14 @@ const resolveScopeVid = (
                     scope.definitions.get('impl-def' + traitName) ??
                     scope.definitions.get('type-def' + traitName)
                 if (traitDef && (traitDef.kind === 'trait-def' || traitDef.kind === 'impl-def')) {
-                    // if matched, try to find fn with matching name in specified trait
-                    const fn = traitDef.block.statements.find(s => s.kind === 'fn-def' && s.name.value === fnName)
-                    if (fn && fn.kind === 'fn-def') {
-                        return { vid, def: { kind: 'method-def', fn, trait: traitDef } }
+                    const module = resolveVid(moduleVid, ctx, ['module'])
+                    if (module && module.def.kind === 'module') {
+                        checkTopLevelDefiniton(module.def, traitDef, ctx)
+                        // if matched, try to find fn with matching name in specified trait
+                        const fn = traitDef.block.statements.find(s => s.kind === 'fn-def' && s.name.value === fnName)
+                        if (fn && fn.kind === 'fn-def') {
+                            return { vid, def: { kind: 'method-def', fn, trait: traitDef } }
+                        }
                     }
                 }
                 if (traitDef && checkSuper) {
@@ -209,6 +214,20 @@ const resolveScopeVid = (
                         const methodRef = resolveVid(fullMethodVid, ctx, ['method-def'])
                         if (methodRef && methodRef.def.kind === 'method-def') {
                             return methodRef
+                        }
+                    }
+                }
+                // resolve generic refd fn
+                const [genericName] = vid.names
+                const genericDef = scope.definitions.get('generic' + genericName)
+                if (genericDef && genericDef.kind === 'generic') {
+                    // try to match every bound until first match
+                    for (const bound of genericDef.bounds) {
+                        const boundVid = idToVid(bound)
+                        const fnVid: VirtualIdentifier = { names: [...boundVid.names, fnName] }
+                        const boundRef = resolveVid(fnVid, ctx, ['method-def'])
+                        if (boundRef) {
+                            return boundRef
                         }
                     }
                 }

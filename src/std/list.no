@@ -27,7 +27,7 @@ impl <T> Collector<T> for List<T> {
                 Option::Some(value) {
                     list.add(value)
                 },
-                    Option::None() { break },
+                Option::None() { break },
             }
         }
         list

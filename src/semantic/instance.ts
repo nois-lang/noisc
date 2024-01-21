@@ -13,6 +13,9 @@ import { allEqual } from '../util/array'
 import { notFoundError, semanticError } from './error'
 import { checkOperand } from './expr'
 
+/**
+ * TODO: differentiate call of a fn type field
+ */
 export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     const rOp = binaryExpr.rOperand
     if (rOp.kind === 'operand-expr' && rOp.operand.kind === 'identifier') {
@@ -131,6 +134,9 @@ const checkMethodCallExpr = (
 
     const instanceType = lOperand.type!
     const implForType = getInstanceForType(ref.def.trait, ctx)
+
+    // TODO: find matching impl
+
     const implGenericMap = resolveGenericsOverStructure(instanceType, implForType)
     // if Self type param is explicit, `resolveGenericsOverStructure` treats it as regular generic and interrupts
     // further mapping in `fnGenericMap`, thus should be removed
