@@ -1,29 +1,28 @@
 import { AstNode } from '../ast'
 import { Context, InstanceScope } from '../scope'
 import { merge } from '../util/map'
+import { assert } from '../util/todo'
 import { VirtualFnType, VirtualType, genericToVirtual, virtualTypeToString } from './index'
 import { selfType } from './type'
 
-/**
- * TODO: accept type hint to infer hole types
- */
-export const resolveFnGenerics = (
-    fnType: VirtualFnType,
-    argTypes: VirtualType[],
-    typeArgs: VirtualType[] = []
-): Map<string, VirtualType> => {
-    if (typeArgs.length > 0) {
-        return new Map<string, VirtualType>(fnType.generics.map((g, i) => [g.name, typeArgs[i]]))
-    }
+export const makeFnGenericMap = (fnType: VirtualFnType, argTypes: VirtualType[]): Map<string, VirtualType> => {
+    assert(argTypes.length <= fnType.paramTypes.length, 'fn args > params')
     return argTypes
         .map((argType, i) => {
-            const param = fnType.paramTypes.at(i)
-            if (!param) {
-                throw Error('fn args >= params')
-            }
-            return resolveGenericsOverStructure(argType, param)
+            const param = fnType.paramTypes[i]
+            return makeGenericMapOverStructure(argType, param)
         })
-        .reduce((acc, m) => merge(acc, m, (p, _) => p), new Map<string, VirtualType>())
+        .reduce((acc, m) => merge(acc, m, (p, _) => p), new Map())
+}
+
+export const makeFnTypeArgGenericMap = (fnType: VirtualFnType, typeArgs: VirtualType[]): Map<string, VirtualType> => {
+    assert(typeArgs.length <= fnType.generics.length, 'type args > type params')
+    return typeArgs
+        .map((arg, i) => {
+            const param = fnType.generics[i]
+            return makeGenericMapOverStructure(arg, param)
+        })
+        .reduce((acc, m) => merge(acc, m, (p, _) => p), new Map())
 }
 
 /**
@@ -31,12 +30,19 @@ export const resolveFnGenerics = (
  * In case when both arg and param are fns, walk over [...paramTypes, returnType] and do the same.
  *
  * Examples:
- *   - `resolveGenerics(Foo<A, Bar<B>>, Foo<Int, Bar<Char>>)` will produce map [A -> Int, B -> Char]
- *   - `resolveGenerics(T, Foo<Int>)`                         will produce map [T -> Foo<Int>]
+ *   - `makeGenericMapOverStructure(Foo<A, Bar<B>>, Foo<Int, Bar<Char>>)` will produce map [A -> Int, B -> Char]
+ *   - `makeGenericMapOverStructure(T, Foo<Int>)`                         will produce map [T -> Foo<Int>]
  */
-export const resolveGenericsOverStructure = (arg: VirtualType, param: VirtualType): Map<string, VirtualType> => {
+export const makeGenericMapOverStructure = (arg: VirtualType, param: VirtualType): Map<string, VirtualType> => {
     const map = new Map()
     if (param.kind === 'generic') {
+        for (const bound of param.bounds) {
+            const resolved = resolveHoleTypesOverStructure(arg, bound)
+            if (resolved) {
+                arg = resolved
+                break
+            }
+        }
         map.set(param.name, arg)
         return map
     }
@@ -48,9 +54,9 @@ export const resolveGenericsOverStructure = (arg: VirtualType, param: VirtualTyp
             const paramType = param.paramTypes[i]
             const argType = arg.paramTypes.at(i)
             if (!argType) break
-            resolveGenericsOverStructure(argType, paramType).forEach((v, k) => map.set(k, v))
+            makeGenericMapOverStructure(argType, paramType).forEach((v, k) => map.set(k, v))
         }
-        resolveGenericsOverStructure(arg.returnType, param.returnType).forEach((v, k) => map.set(k, v))
+        makeGenericMapOverStructure(arg.returnType, param.returnType).forEach((v, k) => map.set(k, v))
     } else {
         const paramTypeArgs = getTypeParams(param)
         const argTypeArgs = getTypeParams(arg)
@@ -58,11 +64,50 @@ export const resolveGenericsOverStructure = (arg: VirtualType, param: VirtualTyp
             const implTypeArg = paramTypeArgs[i]
             const argTypeArg = argTypeArgs.at(i)
             if (argTypeArg) {
-                resolveGenericsOverStructure(argTypeArg, implTypeArg).forEach((v, k) => map.set(k, v))
+                makeGenericMapOverStructure(argTypeArg, implTypeArg).forEach((v, k) => map.set(k, v))
             }
         }
     }
     return map
+}
+
+export const resolveHoleTypesOverStructure = (arg: VirtualType, param: VirtualType): VirtualType | undefined => {
+    if (arg.kind === 'hole-type') {
+        return param
+    }
+
+    if (param.kind === 'generic') return
+    if (arg.kind === 'unknown-type' || param.kind === 'unknown-type') return
+
+    if (arg.kind === 'fn-type' && param.kind === 'fn-type') {
+        for (let i = 0; i < param.paramTypes.length; i++) {
+            const paramType = param.paramTypes[i]
+            const argType = arg.paramTypes.at(i)
+            if (!argType) break
+            const resolved = resolveHoleTypesOverStructure(argType, paramType)
+            if (resolved) {
+                arg.paramTypes[i] = resolved
+            }
+        }
+        const resolved = resolveHoleTypesOverStructure(arg.returnType, param.returnType)
+        if (resolved) {
+            arg.returnType = resolved
+        }
+    } else {
+        const paramTypeArgs = getTypeParams(param)
+        const argTypeArgs = getTypeParams(arg)
+        for (let i = 0; i < paramTypeArgs.length; i++) {
+            const implTypeArg = paramTypeArgs[i]
+            const argTypeArg = argTypeArgs.at(i)
+            if (argTypeArg) {
+                const resolved = resolveHoleTypesOverStructure(argTypeArg, implTypeArg)
+                if (resolved) {
+                    argTypeArgs[i] = resolved
+                }
+            }
+        }
+    }
+    return undefined
 }
 
 export const getTypeParams = (virtualType: VirtualType): VirtualType[] => {
@@ -94,12 +139,12 @@ export const resolveType = (
 ): VirtualType => {
     let resolvedType = virtualType
     for (const map of genericMaps) {
-        switch (virtualType.kind) {
+        switch (resolvedType.kind) {
             case 'vid-type':
                 return {
                     kind: 'vid-type',
-                    identifier: virtualType.identifier,
-                    typeArgs: virtualType.typeArgs.map(g => resolveType(g, genericMaps, node, ctx))
+                    identifier: resolvedType.identifier,
+                    typeArgs: resolvedType.typeArgs.map(g => resolveType(g, genericMaps, node, ctx))
                 }
             case 'generic':
                 const res = map.get(virtualTypeToString(resolvedType))
@@ -110,13 +155,15 @@ export const resolveType = (
             case 'fn-type':
                 return {
                     kind: 'fn-type',
-                    paramTypes: virtualType.paramTypes.map(pt => resolveType(pt, genericMaps, node, ctx)),
-                    returnType: resolveType(virtualType.returnType, genericMaps, node, ctx),
-                    generics: virtualType.generics
+                    paramTypes: resolvedType.paramTypes.map(pt => resolveType(pt, genericMaps, node, ctx)),
+                    returnType: resolveType(resolvedType.returnType, genericMaps, node, ctx),
+                    generics: resolvedType.generics
                 }
+            case 'hole-type':
             case 'unknown-type':
-                return virtualType
+                return resolvedType
         }
     }
     return resolvedType
 }
+

@@ -4,7 +4,6 @@ import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { MatchExpr } from '../ast/match'
 import { CallOp, ConOp } from '../ast/op'
 import { ClosureExpr, ForExpr, IfExpr, IfLetExpr, ListExpr, Operand, WhileExpr } from '../ast/operand'
-import { compactParseNode, getLocationRange } from '../parser'
 import { Context, instanceScope } from '../scope'
 import { bool, iter, iterable } from '../scope/std'
 import { getInstanceForType } from '../scope/trait'
@@ -18,7 +17,7 @@ import {
     typeToVirtual,
     virtualTypeToString
 } from '../typecheck'
-import { instanceGenericMap, resolveFnGenerics, resolveGenericsOverStructure, resolveType } from '../typecheck/generic'
+import { instanceGenericMap, makeFnGenericMap, makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { unitType, unknownType } from '../typecheck/type'
 import { assert } from '../util/todo'
 import { notFoundError, semanticError, typeError } from './error'
@@ -160,13 +159,12 @@ export const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
 
     const implTargetType = getInstanceForType(methodRef.trait, ctx)
     // TODO: lOperand acts as a type args provider for generics. Improve it
-    const implGenericMap = resolveGenericsOverStructure(binaryExpr.lOperand.type!, implTargetType)
+    const implGenericMap = makeGenericMapOverStructure(binaryExpr.lOperand.type!, implTargetType)
     const fnType = <VirtualFnType>methodRef.fn.type
-    const fnGenericMap = resolveFnGenerics(
-        fnType,
-        [binaryExpr.lOperand.type ?? unknownType, binaryExpr.rOperand.type ?? unknownType],
-        []
-    )
+    const fnGenericMap = makeFnGenericMap(fnType, [
+        binaryExpr.lOperand.type ?? unknownType,
+        binaryExpr.rOperand.type ?? unknownType
+    ])
     // TODO: this whole logic with generic resoluion should be unified across
     // checkBinaryExpr, checkCallExpr, checkMethodCallExpr, etc.
     const genericMaps = [implGenericMap, fnGenericMap]
@@ -412,10 +410,10 @@ export const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const typeArgs = operand.kind === 'identifier' ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
     const instScope = instanceScope(ctx)
     const instanceMap = instScope ? instanceGenericMap(instScope, ctx) : new Map()
-    const fnGenericMap = resolveFnGenerics(
+    // TODO: type arg generic map
+    const fnGenericMap = makeFnGenericMap(
         fnType,
-        callOp.args.map(a => a.type!),
-        typeArgs
+        callOp.args.map(a => a.type!)
     )
     const paramTypes = fnType.paramTypes.map((pt, i) =>
         resolveType(pt, [instanceMap, fnGenericMap], callOp.args.at(i) ?? unaryExpr, ctx)
@@ -448,12 +446,11 @@ export const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     conOp.fields.map(f => checkExpr(f.expr, ctx))
     const variant = ref.def.variant
     const variantType = <VirtualFnType>variant.type!
-    // TODO: figure out typeArgs parameter here
+    // TODO: type args map
     // TODO: fields might be specified out of order, match conOp.fields by name
-    const conOpMap = resolveFnGenerics(
+    const conOpMap = makeFnGenericMap(
         variantType,
-        conOp.fields.map(f => f.expr.type ?? unknownType),
-        operand.typeArgs.map(t => typeToVirtual(t, ctx))
+        conOp.fields.map(f => f.expr.type ?? unknownType)
     )
     const instScope = instanceScope(ctx)
     const instanceMap = instScope ? instanceGenericMap(instScope, ctx) : new Map()

@@ -4,7 +4,7 @@ import { Context, defKey } from '../scope'
 import { idToVid, vidFromScope, vidToString } from '../scope/util'
 import { NameDef, resolveVid } from '../scope/vid'
 import { VidType, VirtualType, genericToVirtual, typeToVirtual, virtualTypeToString } from '../typecheck'
-import { resolveGenericsOverStructure, resolveType } from '../typecheck/generic'
+import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { notFoundError, semanticError } from './error'
 
 export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: Context): void => {
@@ -82,7 +82,7 @@ const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Contex
             return []
         }
 
-        const conGenericMap = resolveGenericsOverStructure(expectedType, {
+        const conGenericMap = makeGenericMapOverStructure(expectedType, {
             kind: 'vid-type',
             identifier: typeDefVid,
             typeArgs: ref.def.typeDef.generics.map(g => genericToVirtual(g, ctx))

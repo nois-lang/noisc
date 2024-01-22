@@ -5,9 +5,15 @@ import { Identifier, Operand } from '../ast/operand'
 import { Context } from '../scope'
 import { getInstanceForType } from '../scope/trait'
 import { vidToString } from '../scope/util'
-import { resolveVid } from '../scope/vid'
+import { MethodDef, resolveVid } from '../scope/vid'
 import { VirtualFnType, VirtualType, genericToVirtual, typeToVirtual, virtualTypeToString } from '../typecheck'
-import { resolveFnGenerics, resolveGenericsOverStructure, resolveType } from '../typecheck/generic'
+import {
+    makeFnGenericMap,
+    makeFnTypeArgGenericMap,
+    makeGenericMapOverStructure,
+    resolveType,
+    resolveTypeComposite
+} from '../typecheck/generic'
 import { selfType, unknownType } from '../typecheck/type'
 import { allEqual } from '../util/array'
 import { notFoundError, semanticError } from './error'
@@ -83,7 +89,7 @@ const checkFieldAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): VirtualType
         return
     }
     const fieldType = typeCandidates[0]
-    const conGenericMap = resolveGenericsOverStructure(lOp.type, {
+    const conGenericMap = makeGenericMapOverStructure(lOp.type, {
         kind: 'vid-type',
         identifier: typeRef.vid,
         typeArgs: typeRef.def.generics.map(g => genericToVirtual(g, ctx))
@@ -113,7 +119,6 @@ const checkMethodCallExpr = (
         return undefined
     }
     const methodName = rOperand.name.value
-    const typeArgs = rOperand.typeArgs
     const traitFnVid = { names: [...lOperand.type.identifier.names, methodName] }
     const ref = resolveVid(traitFnVid, ctx, ['method-def'])
     if (!ref || ref.def.kind !== 'method-def') {
@@ -134,21 +139,34 @@ const checkMethodCallExpr = (
     }
 
     // TODO: check required type args (that cannot be inferred via `resolveFnGenerics`)
-    typeArgs.forEach(typeArg => checkType(typeArg, ctx))
+    rOperand.typeArgs.forEach(typeArg => checkType(typeArg, ctx))
 
-    const instanceType = lOperand.type!
-    const implForType = getInstanceForType(ref.def.trait, ctx)
+    const genericMaps = makeMethodGenericMaps(lOperand, rOperand, ref.def, callOp, ctx)
+    const paramTypes = fnType.paramTypes.map((pt, i) =>
+        resolveType(pt, genericMaps, callOp.args.at(i) ?? callOp, ctx)
+    )
+    checkCallArgs(callOp, [lOperand, ...callOp.args], paramTypes, ctx)
 
-    const implGenericMap = resolveGenericsOverStructure(instanceType, implForType)
+    return resolveType(fnType.returnType, genericMaps, rOperand, ctx)
+}
+
+const makeMethodGenericMaps = (
+    lOperand: Operand,
+    rOperand: Identifier,
+    methodDef: MethodDef,
+    callOp: CallOp,
+    ctx: Context
+): Map<string, VirtualType>[] => {
+    const implForType = getInstanceForType(methodDef.trait, ctx)
+    const implGenericMap = makeGenericMapOverStructure(lOperand.type!, implForType)
     // if Self type param is explicit, `resolveGenericsOverStructure` treats it as regular generic and interrupts
     // further mapping in `fnGenericMap`, thus should be removed
     implGenericMap.delete(selfType.name)
 
-    const virtTypeArgs = typeArgs.map(tp => typeToVirtual(tp, ctx))
-    const fnGenericMap = resolveFnGenerics(fnType, [lOperand.type, ...callOp.args.map(a => a.type!)], virtTypeArgs)
-    const genericMaps = [implGenericMap, fnGenericMap]
-    const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(pt, genericMaps, callOp.args.at(i) ?? callOp, ctx))
-    checkCallArgs(callOp, [lOperand, ...callOp.args], paramTypes, ctx)
+    const fnType = <VirtualFnType>methodDef.fn.type
+    const typeArgs = rOperand.typeArgs.map(tp => typeToVirtual(tp, ctx))
+    const fnTypeArgGenericMap = makeFnTypeArgGenericMap(fnType, typeArgs)
+    const fnGenericMap = makeFnGenericMap(fnType, [lOperand.type!, ...callOp.args.map(a => a.type!)])
 
-    return resolveType(fnType.returnType, genericMaps, rOperand, ctx)
+    return [implGenericMap, fnTypeArgGenericMap, fnGenericMap]
 }

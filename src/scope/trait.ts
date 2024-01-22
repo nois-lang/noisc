@@ -3,7 +3,7 @@ import { ImplDef, TraitDef } from '../ast/statement'
 import { TypeDef } from '../ast/type-def'
 import { notFoundError } from '../semantic/error'
 import { VirtualType, genericToVirtual, typeToVirtual } from '../typecheck'
-import { resolveGenericsOverStructure, resolveType } from '../typecheck/generic'
+import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { unknownType } from '../typecheck/type'
 import { assert } from '../util/todo'
 import { Context } from './index'
@@ -178,6 +178,6 @@ export const traitDefToVirtualType = (traitDef: TraitDef | ImplDef, ctx: Context
  * Example: `getConcreteTrait(List<Int>, impl <T> Iterable<T> for List<T>) -> Iterable<Int>`
  */
 export const getConcreteTrait = (type: VirtualType, rel: InstanceRelation, ctx: Context): VirtualType => {
-    const genericMap = resolveGenericsOverStructure(type, rel.forType)
+    const genericMap = makeGenericMapOverStructure(type, rel.forType)
     return resolveType(rel.implType, [genericMap], rel.implDef.def, ctx)
 }
