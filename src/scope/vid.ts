@@ -5,6 +5,7 @@ import { Generic } from '../ast/type'
 import { TypeDef, Variant } from '../ast/type-def'
 import { checkTopLevelDefiniton } from '../semantic'
 import { selfType } from '../typecheck/type'
+import { unreachable } from '../util/todo'
 import { Context, Scope, instanceScope } from './index'
 import { defaultImportedVids } from './std'
 import { findSuperRelChains } from './trait'
@@ -66,6 +67,7 @@ export interface MethodDef {
 
 export interface VirtualIdentifierMatch<D = Definition> {
     vid: VirtualIdentifier
+    moduleVid: VirtualIdentifier
     def: D
 }
 
@@ -103,7 +105,7 @@ export const resolveVid = (
     let ref: VirtualIdentifierMatch | undefined
 
     if (vidToString(vid) === selfType.name && instanceScope(ctx)) {
-        return { vid, def: { kind: 'self' } }
+        return { vid, moduleVid: module.identifier, def: { kind: 'self' } }
     }
 
     // walk through scopes inside out
@@ -117,6 +119,7 @@ export const resolveVid = (
                 }
                 return {
                     vid: concatVid(module.identifier, ref.vid),
+                    moduleVid: module.identifier,
                     def: ref.def
                 }
             }
@@ -132,6 +135,7 @@ export const resolveVid = (
         }
         return {
             vid: concatVid(module.identifier, ref.vid),
+            moduleVid: module.identifier,
             def: ref.def
         }
     }
@@ -167,7 +171,7 @@ const resolveScopeVid = (
             const name = vid.names[0]
             const def = scope.definitions.get(k + name)
             if (def) {
-                return { vid, def }
+                return { vid, moduleVid, def }
             }
         }
         if (vid.names.length === 2) {
@@ -180,7 +184,7 @@ const resolveScopeVid = (
                     // if matched, try to find variant with matching name
                     const variant = typeDef.variants.find(v => v.name.value === variantName)
                     if (variant) {
-                        return { vid, def: { kind: 'variant', typeDef, variant } }
+                        return { vid, moduleVid, def: { kind: 'variant', typeDef, variant } }
                     }
                 }
             }
@@ -199,7 +203,7 @@ const resolveScopeVid = (
                         // if matched, try to find fn with matching name in specified trait
                         const fn = traitDef.block.statements.find(s => s.kind === 'fn-def' && s.name.value === fnName)
                         if (fn && fn.kind === 'fn-def') {
-                            return { vid, def: { kind: 'method-def', fn, trait: traitDef } }
+                            return { vid, moduleVid: module.vid, def: { kind: 'method-def', fn, trait: traitDef } }
                         }
                     }
                 }
@@ -213,6 +217,9 @@ const resolveScopeVid = (
                         const fullMethodVid = { names: [...superRel.implDef.vid.names, fnName] }
                         const methodRef = resolveVid(fullMethodVid, ctx, ['method-def'])
                         if (methodRef && methodRef.def.kind === 'method-def') {
+                            const module = resolveVid(methodRef.moduleVid, ctx, ['module'])
+                            if (!module || module.def.kind !== 'module') return unreachable()
+                            checkTopLevelDefiniton(module.def, methodRef.def, ctx)
                             return methodRef
                         }
                     }
@@ -227,6 +234,9 @@ const resolveScopeVid = (
                         const fnVid: VirtualIdentifier = { names: [...boundVid.names, fnName] }
                         const boundRef = resolveVid(fnVid, ctx, ['method-def'])
                         if (boundRef) {
+                            const module = resolveVid(moduleVid, ctx, ['module'])
+                            if (!module || module.def.kind !== 'module') return unreachable()
+                            checkTopLevelDefiniton(module.def, boundRef.def, ctx)
                             return boundRef
                         }
                     }
@@ -253,7 +263,7 @@ export const resolveMatchedVid = (
     // if vid is module, e.g. std::option
     module = pkg.modules.find(m => vidEq(m.identifier, vid))
     if (module) {
-        return { vid, def: module }
+        return { vid, moduleVid: module.identifier, def: module }
     }
 
     // if vid is varDef, typeDef, trait or impl, e.g. std::option::Option
@@ -262,8 +272,10 @@ export const resolveMatchedVid = (
         const moduleLocalVid = { names: vid.names.slice(-1) }
         const ref = resolveScopeVid(moduleLocalVid, module.topScope!, ctx, ofKind, module.identifier)
         if (ref) {
-            checkTopLevelDefiniton(module, ref.def, ctx)
-            return { vid, def: ref.def }
+            const defModule = resolveVid(ref.moduleVid, ctx, ['module'])
+            if (!defModule || defModule.def.kind !== 'module') return unreachable()
+            checkTopLevelDefiniton(defModule.def, ref.def, ctx)
+            return { vid, moduleVid: module.identifier, def: ref.def }
         }
     }
 
@@ -273,8 +285,7 @@ export const resolveMatchedVid = (
         const moduleLocalVid = { names: vid.names.slice(-2) }
         const ref = resolveScopeVid(moduleLocalVid, module.topScope!, ctx, ofKind, module.identifier)
         if (ref) {
-            checkTopLevelDefiniton(module, ref.def, ctx)
-            return { vid, def: ref.def }
+            return { vid, moduleVid: module.identifier, def: ref.def }
         }
     }
 
