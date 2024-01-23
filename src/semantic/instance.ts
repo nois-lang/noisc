@@ -11,8 +11,7 @@ import {
     makeFnGenericMap,
     makeFnTypeArgGenericMap,
     makeGenericMapOverStructure,
-    resolveType,
-    resolveTypeComposite
+    resolveType
 } from '../typecheck/generic'
 import { selfType, unknownType } from '../typecheck/type'
 import { allEqual } from '../util/array'
@@ -142,9 +141,7 @@ const checkMethodCallExpr = (
     rOperand.typeArgs.forEach(typeArg => checkType(typeArg, ctx))
 
     const genericMaps = makeMethodGenericMaps(lOperand, rOperand, ref.def, callOp, ctx)
-    const paramTypes = fnType.paramTypes.map((pt, i) =>
-        resolveType(pt, genericMaps, callOp.args.at(i) ?? callOp, ctx)
-    )
+    const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(pt, genericMaps, callOp.args.at(i) ?? callOp, ctx))
     checkCallArgs(callOp, [lOperand, ...callOp.args], paramTypes, ctx)
 
     return resolveType(fnType.returnType, genericMaps, rOperand, ctx)

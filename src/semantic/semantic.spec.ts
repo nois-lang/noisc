@@ -210,6 +210,21 @@ fn main() {
             ctx = check(code('Foo::'))
             expect(ctx.errors.map(e => e.message)).toEqual([])
         })
+
+        it('clashing generic name', () => {
+            const code = (arg: string): string => `\
+fn foo<T>(): ${arg} {
+    let a: Option<Option<T>> = Option::None()
+    a.take()
+}`
+            let ctx = check(code('Unit'))
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: expected std::unit::Unit\n            got      std::option::Option<std::option::Option<T>>'
+            ])
+
+            ctx = check(code('Option<T>'))
+            expect(ctx.errors.map(e => e.message)).toEqual([])
+        })
     })
 
     describe('statement order', () => {

@@ -1,7 +1,8 @@
 import { AstNode } from '../ast'
 import { Context, InstanceScope } from '../scope'
+import { fold } from '../util/array'
 import { merge } from '../util/map'
-import { assert } from '../util/todo'
+import { assert, unreachable } from '../util/todo'
 import { VirtualFnType, VirtualType, genericToVirtual, virtualTypeToString } from './index'
 import { selfType } from './type'
 
@@ -137,33 +138,38 @@ export const resolveType = (
     node: AstNode<any>,
     ctx: Context
 ): VirtualType => {
-    let resolvedType = virtualType
-    for (const map of genericMaps) {
-        switch (resolvedType.kind) {
-            case 'vid-type':
-                return {
-                    kind: 'vid-type',
-                    identifier: resolvedType.identifier,
-                    typeArgs: resolvedType.typeArgs.map(g => resolveType(g, genericMaps, node, ctx))
-                }
-            case 'generic':
-                const res = map.get(virtualTypeToString(resolvedType))
-                if (res) {
-                    resolvedType = res
-                }
-                break
-            case 'fn-type':
-                return {
-                    kind: 'fn-type',
-                    paramTypes: resolvedType.paramTypes.map(pt => resolveType(pt, genericMaps, node, ctx)),
-                    returnType: resolveType(resolvedType.returnType, genericMaps, node, ctx),
-                    generics: resolvedType.generics
-                }
-            case 'hole-type':
-            case 'unknown-type':
-                return resolvedType
-        }
-    }
-    return resolvedType
+    return fold(genericMaps, (t, map) => resolveGenericMap(t, map, node, ctx), virtualType)
 }
 
+const resolveGenericMap = (
+    virtualType: VirtualType,
+    genericMap: Map<string, VirtualType>,
+    node: AstNode<any>,
+    ctx: Context
+): VirtualType => {
+    switch (virtualType.kind) {
+        case 'vid-type':
+            return {
+                kind: 'vid-type',
+                identifier: virtualType.identifier,
+                typeArgs: virtualType.typeArgs.map(g => resolveGenericMap(g, genericMap, node, ctx))
+            }
+        case 'generic':
+            const res = genericMap.get(virtualTypeToString(virtualType))
+            if (res) {
+                return res
+            }
+            return virtualType
+        case 'fn-type':
+            return {
+                kind: 'fn-type',
+                paramTypes: virtualType.paramTypes.map(pt => resolveGenericMap(pt, genericMap, node, ctx)),
+                returnType: resolveGenericMap(virtualType.returnType, genericMap, node, ctx),
+                generics: virtualType.generics
+            }
+        case 'hole-type':
+        case 'unknown-type':
+            return virtualType
+    }
+    return unreachable()
+}

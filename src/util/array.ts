@@ -15,3 +15,11 @@ export const allEqual = <T>(arr: T[], cmp: (a: T, b: T) => boolean = (a, b) => a
     }
     return true
 }
+
+export const fold = <T, A>(arr: T[], fn: (acc: A, v: T) => A, initial: A): A => {
+    let acc = initial
+    for (const e of arr) {
+        acc = fn(acc, e)
+    }
+    return acc
+}
