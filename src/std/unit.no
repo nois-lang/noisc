@@ -1,1 +1,5 @@
 type Unit
+
+let unit: Unit = makeUnit()
+
+fn makeUnit()

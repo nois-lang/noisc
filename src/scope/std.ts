@@ -5,16 +5,27 @@ import { VirtualIdentifier } from './vid'
 
 export const defaultImportedVids: VirtualIdentifier[] = [
     'std::unit::Unit',
+    'std::unit::unit',
+
     'std::never::Never',
+
     'std::num::Num',
+
     'std::float::Float',
+
     'std::int::Int',
+
     'std::string::String',
+
     'std::char::Char',
+
     'std::bool::Bool',
     'std::bool::true',
     'std::bool::false',
+
     'std::list::List',
+
+    'std::never::Never',
 
     'std::panic::todo',
     'std::panic::never',
