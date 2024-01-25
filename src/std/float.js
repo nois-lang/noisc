@@ -66,4 +66,3 @@ function expFloat(a, b) {
 function fmtFloat(a) {
     return a.value.toString()
 }
-

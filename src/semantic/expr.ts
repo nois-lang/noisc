@@ -160,28 +160,23 @@ export const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     const opImplFnVid = operatorImplMap.get(binaryExpr.binaryOp.kind)
     assert(!!opImplFnVid, `operator ${binaryExpr.binaryOp.kind} without impl function`)
 
-    // TODO: make sure method is callable on the lOperand type, e.g. !5 -> Not::not(5) should fail
     const methodRef = <MethodDef>resolveVid(opImplFnVid!, ctx, ['method-def'])?.def
     assert(!!methodRef, `impl fn \`${vidToString(opImplFnVid!)}\` not found`)
     assert(!!methodRef.fn.type, 'untyped impl fn')
     assert(methodRef.fn.type!.kind === 'fn-type', 'impl fn type in not fn')
 
     const implTargetType = getInstanceForType(methodRef.trait, ctx)
-    // TODO: lOperand acts as a type args provider for generics. Improve it
-    const implGenericMap = makeGenericMapOverStructure(binaryExpr.lOperand.type!, implTargetType)
     const fnType = <VirtualFnType>methodRef.fn.type
-    const fnGenericMap = makeFnGenericMap(fnType, [
-        binaryExpr.lOperand.type ?? unknownType,
-        binaryExpr.rOperand.type ?? unknownType
-    ])
-    // TODO: this whole logic with generic resoluion should be unified across
-    // checkBinaryExpr, checkCallExpr, checkMethodCallExpr, etc.
-    const genericMaps = [implGenericMap, fnGenericMap]
-    const paramTypes = fnType.paramTypes.map((pt, i) =>
-        resolveType(pt, genericMaps, [binaryExpr.lOperand, binaryExpr.rOperand].at(i) ?? binaryExpr, ctx)
-    )
-    checkCallArgs(binaryExpr, [binaryExpr.lOperand, binaryExpr.rOperand], paramTypes, ctx)
-    binaryExpr.type = resolveType(fnType.returnType, genericMaps, binaryExpr, ctx)
+    if (isAssignable(binaryExpr.lOperand.type!, implTargetType, ctx)) {
+        const genericMaps = makeBinaryExprGenericMaps(binaryExpr, fnType, implTargetType)
+        const args = [binaryExpr.lOperand, binaryExpr.rOperand]
+        const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(pt, genericMaps, args.at(i) ?? binaryExpr, ctx))
+        checkCallArgs(binaryExpr, args, paramTypes, ctx)
+        binaryExpr.type = resolveType(fnType.returnType, genericMaps, binaryExpr, ctx)
+    } else {
+        ctx.errors.push(typeError(binaryExpr, binaryExpr.lOperand.type!, implTargetType, ctx))
+        binaryExpr.type = unknownType
+    }
 }
 
 export const checkIfExpr = (ifExpr: IfExpr, ctx: Context): void => {
@@ -518,4 +513,15 @@ export const checkAssignExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     if (!isAssignable(valueType, assigneeType, ctx)) {
         ctx.errors.push(typeError(binaryExpr, valueType, assigneeType, ctx))
     }
+}
+
+const makeBinaryExprGenericMaps = (
+    binaryExpr: BinaryExpr,
+    fnType: VirtualFnType,
+    implTargetType: VirtualType
+): Map<string, VirtualType>[] => {
+    // TODO: lOperand acts as a type args provider for generics, improve it
+    const implGenericMap = makeGenericMapOverStructure(binaryExpr.lOperand.type!, implTargetType)
+    const fnGenericMap = makeFnGenericMap(fnType, [binaryExpr.lOperand.type!, binaryExpr.rOperand.type!])
+    return [implGenericMap, fnGenericMap]
 }
