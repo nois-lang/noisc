@@ -103,7 +103,7 @@ type                  ::= type-bounds | fn-type | hole
                       ;
   type-bounds         ::= identifier (PLUS identifier)*
                       ;
-  fn-type             ::= fn-type-params type-annot
+  fn-type             ::= generics? fn-type-params type-annot
                       ;
     fn-type-params    ::= PIPE (type (COMMA type)* COMMA?)? PIPE
                       ;

@@ -1,7 +1,7 @@
-import { buildIdentifier, buildName, Identifier, Name } from './operand'
 import { ParseNode } from '../parser'
 import { AstNode, filterNonAstNodes } from './index'
 import { buildHole, Hole } from './match'
+import { buildIdentifier, buildName, Identifier, Name } from './operand'
 
 export type Type = Identifier | TypeBounds | FnType | Hole
 
@@ -53,8 +53,9 @@ export interface FnType extends AstNode<'fn-type'> {
 
 export const buildFnType = (node: ParseNode): FnType => {
     const nodes = filterNonAstNodes(node)
-    const paramTypes = filterNonAstNodes(nodes[0]).map(buildType)
-    const returnType = buildType(filterNonAstNodes(nodes[1])[0])
-    // TODO figure out fn-type syntax for generics
-    return { kind: 'fn-type', parseNode: node, generics: [], paramTypes, returnType }
+    let i = 0
+    const generics = nodes[i].kind === 'generics' ? filterNonAstNodes(nodes[i++]).map(buildGeneric) : []
+    const paramTypes = filterNonAstNodes(nodes[i++]).map(buildType)
+    const returnType = buildType(filterNonAstNodes(nodes[i++])[0])
+    return { kind: 'fn-type', parseNode: node, generics, paramTypes, returnType }
 }

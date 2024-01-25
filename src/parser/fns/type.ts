@@ -3,6 +3,7 @@ import { syntaxError } from '../../error'
 import { Parser } from '../parser'
 import { parseIdentifier } from './expr'
 import { parseHole } from './match'
+import { parseGenerics } from './statement'
 
 /**
  * type-annot ::= COLON type
@@ -21,7 +22,7 @@ export const parseType = (parser: Parser): void => {
     const mark = parser.open()
     if (parser.atAny(nameLikeTokens)) {
         parseTypeBounds(parser)
-    } else if (parser.at('pipe')) {
+    } else if (parser.atAny(['pipe', 'o-angle'])) {
         parseFnType(parser)
     } else if (parser.at('underscore')) {
         parseHole(parser)
@@ -45,10 +46,13 @@ export const parseTypeBounds = (parser: Parser): void => {
 }
 
 /**
- * fn-type ::= fn-type-params type-annot
+ * fn-type ::= generics? fn-type-params type-annot
  */
 export const parseFnType = (parser: Parser): void => {
     const mark = parser.open()
+    if (parser.at('o-angle')) {
+        parseGenerics(parser)
+    }
     parseFnTypeParams(parser)
     parseTypeAnnot(parser)
     parser.close(mark, 'fn-type')
