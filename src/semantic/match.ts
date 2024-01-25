@@ -3,7 +3,7 @@ import { Name } from '../ast/operand'
 import { Context, defKey } from '../scope'
 import { idToVid, vidFromScope, vidToString } from '../scope/util'
 import { NameDef, resolveVid } from '../scope/vid'
-import { VidType, VirtualType, genericToVirtual, typeToVirtual, virtualTypeToString } from '../typecheck'
+import { VidType, VirtualType, genericToVirtual, virtualTypeToString } from '../typecheck'
 import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { notFoundError, semanticError } from './error'
 
@@ -87,7 +87,7 @@ const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Contex
             identifier: typeDefVid,
             typeArgs: ref.def.typeDef.generics.map(g => genericToVirtual(g, ctx))
         })
-        field.name.type = resolveType(typeToVirtual(field.fieldType, ctx), [conGenericMap], field, ctx)
+        field.name.type = resolveType(field.type!, [conGenericMap], field, ctx)
 
         if (fp.pattern) {
             checkPattern(fp.pattern, field.name.type, ctx)

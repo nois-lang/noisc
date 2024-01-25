@@ -8,14 +8,11 @@ export interface SemanticError {
     message: string
 }
 
-export const semanticError = (ctx: Context, node: AstNode<any>, message: string): SemanticError => {
-    // console.trace(message)
-    return {
-        module: ctx.moduleStack.at(-1)!,
-        node,
-        message
-    }
-}
+export const semanticError = (ctx: Context, node: AstNode<any>, message: string): SemanticError => ({
+    module: ctx.moduleStack.at(-1)!,
+    node,
+    message
+})
 
 export const notFoundError = (ctx: Context, node: AstNode<any>, id: string, name: string = node.kind): SemanticError =>
     semanticError(ctx, node, `${name} \`${id}\` not found`)

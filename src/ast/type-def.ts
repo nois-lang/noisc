@@ -43,7 +43,7 @@ export const buildTypeCon = (node: ParseNode): Variant => {
     return { kind: 'variant', parseNode: node, name, fieldDefs }
 }
 
-export interface FieldDef extends AstNode<'field-def'> {
+export interface FieldDef extends AstNode<'field-def'>, Partial<Typed> {
     name: Name
     fieldType: Type
 }

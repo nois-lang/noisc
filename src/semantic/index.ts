@@ -379,6 +379,7 @@ const checkVariant = (variant: Variant, ctx: Context) => {
     const typeDefScope = <TypeDefScope>module.scopeStack.at(-1)!
     variant.fieldDefs.forEach(fieldDef => {
         checkType(fieldDef.fieldType, ctx)
+        fieldDef.type = typeToVirtual(fieldDef.fieldType, ctx)
         // TODO: check duplicate field defs
     })
 

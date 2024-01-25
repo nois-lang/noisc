@@ -57,7 +57,7 @@ export interface FnDefScope {
 }
 
 export interface CommonScope {
-    kind: 'module' | 'block'
+    kind: 'module' | 'block' | 'impl' | 'trait'
     definitions: DefinitionMap
 }
 

@@ -6,7 +6,7 @@ import { VirtualType, genericToVirtual, typeToVirtual } from '../typecheck'
 import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { unknownType } from '../typecheck/type'
 import { assert } from '../util/todo'
-import { Context } from './index'
+import { Context, defKey } from './index'
 import { concatVid, idToVid, vidFromString, vidToString } from './util'
 import { VirtualIdentifier, VirtualIdentifierMatch, resolveVid } from './vid'
 
@@ -59,53 +59,63 @@ export const buildInstanceRelations = (ctx: Context): InstanceRelation[] => {
 /**
  * Construct instance relation from instance definition
  */
-const getImplRel = (impl: TraitDef | ImplDef, ctx: Context): InstanceRelation | undefined => {
+const getImplRel = (instance: TraitDef | ImplDef, ctx: Context): InstanceRelation | undefined => {
     const module = ctx.moduleStack.at(-1)!
-    if (impl.kind === 'trait-def') {
+    if (instance.kind === 'trait-def') {
+        module.scopeStack.push({ kind: 'impl', definitions: new Map(instance.generics.map(g => [defKey(g), g])) })
+
         const traitType: VirtualType = {
             kind: 'vid-type',
-            identifier: { names: [...module.identifier.names, impl.name.value] },
-            typeArgs: impl.generics.map(g => genericToVirtual(g, ctx))
+            identifier: { names: [...module.identifier.names, instance.name.value] },
+            typeArgs: instance.generics.map(g => genericToVirtual(g, ctx))
         }
         const ref = resolveVid(traitType.identifier, ctx, ['trait-def'])
         assert(!!ref, 'traitDef did not find itself by name')
         const traitRef = <VirtualIdentifierMatch<TraitDef>>ref!
-        return {
+        const implRel = {
             module,
             implType: traitType,
             forType: traitType,
             implDef: traitRef,
             forDef: traitRef,
-            instanceDef: impl
+            instanceDef: instance
         }
+
+        module.scopeStack.pop()
+        return implRel
     } else {
-        const implVid = idToVid(impl.identifier)
+        module.scopeStack.push({ kind: 'impl', definitions: new Map(instance.generics.map(g => [defKey(g), g])) })
+
+        const implVid = idToVid(instance.identifier)
         const ref = resolveVid(implVid, ctx, ['trait-def', 'type-def'])
         if (!ref || (ref.def.kind !== 'trait-def' && ref.def.kind !== 'type-def')) {
-            ctx.errors.push(notFoundError(ctx, impl.identifier, vidToString(implVid)))
+            ctx.errors.push(notFoundError(ctx, instance.identifier, vidToString(implVid)))
             return undefined
         }
         const implRef = <VirtualIdentifierMatch<TypeDef | TraitDef>>ref
 
         let forDef: VirtualIdentifierMatch<TypeDef | TraitDef> = implRef
-        if (impl.forTrait) {
-            const ref = resolveVid(idToVid(impl.forTrait), ctx, ['type-def', 'trait-def'])
+        if (instance.forTrait) {
+            const ref = resolveVid(idToVid(instance.forTrait), ctx, ['type-def', 'trait-def'])
             if (!ref || (ref.def.kind !== 'type-def' && ref.def.kind !== 'trait-def')) {
-                ctx.errors.push(notFoundError(ctx, impl.identifier, vidToString(implVid), 'trait'))
+                ctx.errors.push(notFoundError(ctx, instance.identifier, vidToString(implVid), 'trait'))
                 return undefined
             }
             forDef = <VirtualIdentifierMatch<TypeDef | TraitDef>>ref
         }
 
-        const implType = typeToVirtual(impl.identifier, ctx)
-        return {
+        const implType = typeToVirtual(instance.identifier, ctx)
+        const implRel = {
             module,
             implType: implType,
-            forType: impl.forTrait ? typeToVirtual(impl.forTrait, ctx) : implType,
+            forType: instance.forTrait ? typeToVirtual(instance.forTrait, ctx) : implType,
             implDef: <VirtualIdentifierMatch<TypeDef | TraitDef>>ref,
             forDef: forDef,
-            instanceDef: impl
+            instanceDef: instance
         }
+
+        module.scopeStack.pop()
+        return implRel
     }
 }
 
