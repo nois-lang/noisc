@@ -1,0 +1,19 @@
+type Result<T, E> {
+    Ok(value: T),
+    Error(error: E)
+}
+
+impl <T, E> Result<T, E> {
+    fn isOk(self): Bool {
+        match self {
+            Result::Ok() { true },
+            _ { false }
+        }
+    }
+    fn isError(self): Bool {
+        match self {
+            Result::Error() { true },
+            _ { false }
+        }
+    }
+}

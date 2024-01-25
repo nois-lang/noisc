@@ -35,7 +35,11 @@ export const defaultImportedVids: VirtualIdentifier[] = [
 
     'std::io',
     'std::io::println',
+
     'std::option::Option',
+
+    'std::result::Result',
+
     'std::into::Into'
 ].map(s => vidFromString(s))
 
