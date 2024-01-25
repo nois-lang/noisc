@@ -13,6 +13,7 @@ import {
     VidType,
     VirtualFnType,
     VirtualType,
+    combine,
     extractConcreteSupertype,
     isAssignable,
     typeToVirtual,
@@ -192,18 +193,18 @@ export const checkIfExpr = (ifExpr: IfExpr, ctx: Context): void => {
     if (ifExpr.elseBlock) {
         checkBlock(ifExpr.elseBlock, ctx)
 
-        // TODO: combine types
-        const thenType = virtualTypeToString(ifExpr.thenBlock.type ?? unknownType)
-        const elseType = virtualTypeToString(ifExpr.elseBlock.type ?? unknownType)
-        if (thenType !== elseType) {
+        const thenType = ifExpr.thenBlock.type!
+        const elseType = ifExpr.elseBlock.type!
+        const combined = combine(thenType, elseType, ctx)
+        if (!combined) {
             ctx.errors.push(
                 semanticError(
                     ctx,
                     ifExpr,
                     `\
 if branches have incompatible types:
-    then: \`${thenType}\`
-    else: \`${elseType}\``
+    then: \`${virtualTypeToString(thenType)}\`
+    else: \`${virtualTypeToString(elseType)}\``
                 )
             )
 

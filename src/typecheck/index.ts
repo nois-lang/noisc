@@ -180,6 +180,19 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
 }
 
 /**
+ * TODO: better combine logic
+ */
+export const combine = (a: VirtualType, b: VirtualType, ctx: Context): VirtualType | undefined => {
+    if (isAssignable(a, b, ctx)) {
+        return a
+    }
+    if (isAssignable(b, a, ctx)) {
+        return b
+    }
+    return undefined
+}
+
+/**
  * Extract concrete type of a supertype.
  * Example: `extractConcreteSupertype(List<Int>, Iterable) -> Iterable<List>`
  * TODO: what if multiple concrete types possible?
