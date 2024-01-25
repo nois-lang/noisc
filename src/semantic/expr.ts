@@ -24,6 +24,7 @@ import {
     makeFnGenericMap,
     makeFnTypeArgGenericMap,
     makeGenericMapOverStructure,
+    replaceGenericsWithHoles,
     resolveType
 } from '../typecheck/generic'
 import { unitType, unknownType } from '../typecheck/type'
@@ -421,7 +422,7 @@ export const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     )
     checkCallArgs(callOp, callOp.args, paramTypes, ctx)
 
-    unaryExpr.type = resolveType(fnType.returnType, genericMaps, unaryExpr, ctx)
+    unaryExpr.type = replaceGenericsWithHoles(resolveType(fnType.returnType, genericMaps, unaryExpr, ctx))
 }
 
 const makeFnGenericMaps = (

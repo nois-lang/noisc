@@ -4,7 +4,7 @@ import { fold } from '../util/array'
 import { merge } from '../util/map'
 import { assert, unreachable } from '../util/todo'
 import { VirtualFnType, VirtualType, genericToVirtual, virtualTypeToString } from './index'
-import { selfType } from './type'
+import { holeType, selfType } from './type'
 
 export const makeFnGenericMap = (fnType: VirtualFnType, argTypes: VirtualType[]): Map<string, VirtualType> => {
     assert(argTypes.length <= fnType.paramTypes.length, 'fn args > params')
@@ -109,6 +109,30 @@ export const resolveHoleTypesOverStructure = (arg: VirtualType, param: VirtualTy
         }
     }
     return undefined
+}
+
+export const replaceGenericsWithHoles = (type: VirtualType): VirtualType => {
+    switch (type.kind) {
+        case 'generic':
+            return holeType
+        case 'vid-type':
+            return {
+                kind: 'vid-type',
+                identifier: type.identifier,
+                typeArgs: type.typeArgs.map(replaceGenericsWithHoles)
+            }
+        case 'fn-type':
+            return {
+                kind: 'fn-type',
+                generics: type.generics,
+                paramTypes: type.paramTypes.map(replaceGenericsWithHoles),
+                returnType: replaceGenericsWithHoles(type.returnType)
+            }
+        case 'unknown-type':
+        case 'malleable-type':
+        case 'hole-type':
+            return type
+    }
 }
 
 export const getTypeParams = (virtualType: VirtualType): VirtualType[] => {
