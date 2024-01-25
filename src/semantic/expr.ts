@@ -224,8 +224,6 @@ export const checkIfLetExpr = (ifLetExpr: IfLetExpr, ctx: Context): void => {
     checkBlock(ifLetExpr.thenBlock, ctx)
     assert(!!ifLetExpr.thenBlock.type)
 
-    module.scopeStack.pop()
-
     if (ifLetExpr.elseBlock) {
         checkBlock(ifLetExpr.elseBlock, ctx)
         assert(!!ifLetExpr.elseBlock.type)
@@ -238,8 +236,11 @@ export const checkIfLetExpr = (ifLetExpr: IfLetExpr, ctx: Context): void => {
         // TODO: combine type
         ifLetExpr.type = thenType
     }
+
     // TODO: throw error if result of partial if let expr (no else block) is used
     ifLetExpr.type = unknownType
+
+    module.scopeStack.pop()
 }
 
 export const checkWhileExpr = (whileExpr: WhileExpr, ctx: Context): void => {

@@ -367,8 +367,7 @@ fn main() {
             let ctx = check(code('Option::Some(value: 4)'))
             expect(ctx.errors.map(e => e.message)).toEqual([
                 'type error: non-callable operand of type `std::int::Int`',
-                'identifier `value` not found',
-                'type error: non-callable operand of type `?`'
+                'type error: non-callable operand of type `std::int::Int`'
             ])
 
             ctx = check(code('4'))
