@@ -12,12 +12,19 @@ import { MethodDef, resolveVid } from '../scope/vid'
 import {
     VidType,
     VirtualFnType,
+    VirtualType,
     extractConcreteSupertype,
     isAssignable,
     typeToVirtual,
     virtualTypeToString
 } from '../typecheck'
-import { instanceGenericMap, makeFnGenericMap, makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
+import {
+    instanceGenericMap,
+    makeFnGenericMap,
+    makeFnTypeArgGenericMap,
+    makeGenericMapOverStructure,
+    resolveType
+} from '../typecheck/generic'
 import { unitType, unknownType } from '../typecheck/type'
 import { assert } from '../util/todo'
 import { notFoundError, semanticError, typeError } from './error'
@@ -407,20 +414,30 @@ export const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     }
 
     const fnType = <VirtualFnType>operand.type
-    const typeArgs = operand.kind === 'identifier' ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
-    const instScope = instanceScope(ctx)
-    const instanceMap = instScope ? instanceGenericMap(instScope, ctx) : new Map()
-    // TODO: type arg generic map
-    const fnGenericMap = makeFnGenericMap(
-        fnType,
-        callOp.args.map(a => a.type!)
-    )
+    const genericMaps = makeFnGenericMaps(operand, fnType, callOp, ctx)
     const paramTypes = fnType.paramTypes.map((pt, i) =>
-        resolveType(pt, [instanceMap, fnGenericMap], callOp.args.at(i) ?? unaryExpr, ctx)
+        resolveType(pt, genericMaps, callOp.args.at(i) ?? unaryExpr, ctx)
     )
     checkCallArgs(callOp, callOp.args, paramTypes, ctx)
 
-    unaryExpr.type = resolveType(fnType.returnType, [instanceMap, fnGenericMap], unaryExpr, ctx)
+    unaryExpr.type = resolveType(fnType.returnType, genericMaps, unaryExpr, ctx)
+}
+
+const makeFnGenericMaps = (
+    operand: Operand,
+    fnType: VirtualFnType,
+    callOp: CallOp,
+    ctx: Context
+): Map<string, VirtualType>[] => {
+    const typeArgs = operand.kind === 'identifier' ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
+    const fnTypeArgMap = makeFnTypeArgGenericMap(fnType, typeArgs)
+    const instScope = instanceScope(ctx)
+    const instanceMap = instScope ? instanceGenericMap(instScope, ctx) : new Map()
+    const fnMap = makeFnGenericMap(
+        fnType,
+        callOp.args.map(a => a.type!)
+    )
+    return [instanceMap, fnTypeArgMap, fnMap]
 }
 
 export const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
@@ -494,9 +511,8 @@ export const checkAssignExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     binaryExpr.type = unitType
     checkOperand(binaryExpr.lOperand, ctx)
     checkOperand(binaryExpr.rOperand, ctx)
-    // TODO: check assignability
-    const assigneeType = binaryExpr.lOperand.type ?? unknownType
-    const valueType = binaryExpr.rOperand.type ?? unknownType
+    const assigneeType = binaryExpr.lOperand.type!
+    const valueType = binaryExpr.rOperand.type!
     if (!isAssignable(valueType, assigneeType, ctx)) {
         ctx.errors.push(typeError(binaryExpr, valueType, assigneeType, ctx))
     }
