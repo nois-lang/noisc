@@ -225,6 +225,22 @@ fn foo<T>(): ${arg} {
             ctx = check(code('Option<T>'))
             expect(ctx.errors.map(e => e.message)).toEqual([])
         })
+
+        it('replace unresolved generics with hole type', () => {
+            const code = `\
+fn none<T>(): Option<T> {
+    Option::None()
+}
+
+fn main() {
+    let a = none()
+    a()
+}`
+            let ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: non-callable operand of type `std::option::Option<_>`'
+            ])
+        })
     })
 
     describe('statement order', () => {
