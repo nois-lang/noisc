@@ -19,7 +19,6 @@ export interface AstNode<T extends AstNodeKind> {
 export type AstNodeKind =
     | 'module'
     | 'use-expr'
-    | 'wildcard'
     | 'var-def'
     | 'fn-def'
     | 'trait-def'

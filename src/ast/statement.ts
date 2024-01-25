@@ -36,25 +36,19 @@ export const buildStatement = (node: ParseNode): Statement => {
 
 export interface UseExpr extends AstNode<'use-expr'> {
     scope: Name[]
-    expr: UseExpr[] | Name | Wildcard
+    expr: UseExpr[] | Name
 }
 
 export const buildUseExpr = (node: ParseNode): UseExpr => {
     const nodes = filterNonAstNodes(node.kind === 'use-stmt' ? filterNonAstNodes(node)[1] : node)
     const names = nodes.filter(n => nameLikeTokens.includes((<ParseToken>n).kind)).map(buildName)
     const lastNode = nodes.at(-1)!
-    if (lastNode.kind === 'wildcard') {
-        const scope = names
-        return { kind: 'use-expr', parseNode: node, scope, expr: { kind: 'wildcard', parseNode: lastNode } }
-    }
     if (lastNode.kind === 'use-list') {
         const scope = names
         return { kind: 'use-expr', parseNode: node, scope, expr: filterNonAstNodes(lastNode).map(buildUseExpr) }
     }
     return { kind: 'use-expr', parseNode: node, scope: names.slice(0, -1), expr: names.at(-1)! }
 }
-
-export interface Wildcard extends AstNode<'wildcard'> {}
 
 export interface VarDef extends AstNode<'var-def'>, Partial<Checked> {
     pattern: Pattern

@@ -46,7 +46,7 @@ export const parseUseStmt = (parser: Parser): void => {
 }
 
 /**
- * use-expr ::= (NAME COLON COLON)* (use-list | NAME | ASTERISK)
+ * use-expr ::= (NAME COLON COLON)* (use-list | NAME)
  */
 export const parseUseExpr = (parser: Parser): void => {
     const mark = parser.open()
@@ -59,8 +59,6 @@ export const parseUseExpr = (parser: Parser): void => {
         parseUseList(parser)
     } else if (parser.atAny(nameLikeTokens)) {
         parser.expectAny(nameLikeTokens)
-    } else if (parser.at('asterisk')) {
-        parseWildcard(parser)
     } else {
         parser.advanceWithError(syntaxError(parser, 'expected use-expr'))
     }
@@ -96,15 +94,6 @@ export const parseVarDef = (parser: Parser): void => {
     parser.expect('equals')
     parseExpr(parser)
     parser.close(mark, 'var-def')
-}
-
-/**
- * wildcard ::= ASTERISK
- */
-export const parseWildcard = (parser: Parser): void => {
-    const mark = parser.open()
-    parser.expect('asterisk')
-    parser.close(mark, 'wildcard')
 }
 
 /**

@@ -82,8 +82,7 @@ export const treeKinds = <const>[
     'con-pattern',
     'con-pattern-params',
     'field-pattern',
-    'hole',
-    'wildcard'
+    'hole'
 ]
 export type TreeKind = (typeof treeKinds)[number]
 

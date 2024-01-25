@@ -145,7 +145,6 @@ export const resolveVid = (
     if (ref) return ref
 
     // check if vid is partially qualified with use exprs
-    // TODO: figure out wildcard use exprs
     const matchedUseExpr = [...module.references!, ...defaultImportedVids].find(r => r.names.at(-1)! === vid.names[0])
     if (matchedUseExpr) {
         const qualifiedVid = { names: [...matchedUseExpr.names.slice(0, -1), ...vid.names] }

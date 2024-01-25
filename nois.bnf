@@ -4,9 +4,7 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
                       ;
   use-stmt            ::= USE-KEYWORD use-expr
                       ;
-    use-expr          ::= (NAME COLON COLON)* (use-list | wildcard | NAME)
-                      ;
-      wildcard        ::= ASTERISK
+    use-expr          ::= (NAME COLON COLON)* (use-list | NAME)
                       ;
     use-list          ::= O-BRACE (use-expr (COMMA use-expr)*)? COMMA? C-BRACE
                       ;

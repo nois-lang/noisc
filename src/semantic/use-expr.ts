@@ -15,8 +15,5 @@ const useExprToVid = (useExpr: UseExpr): VirtualIdentifier => {
     if (Array.isArray(useExpr.expr)) {
         throw Error(`non-terminal use-expr`)
     }
-    if (useExpr.expr.kind === 'wildcard') {
-        return { names: useExpr.scope.map(n => n.value) }
-    }
     return { names: [...useExpr.scope.map(n => n.value), useExpr.expr.value] }
 }

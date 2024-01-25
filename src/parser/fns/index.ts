@@ -45,7 +45,7 @@ export const exprFirstTokens: TokenKind[] = [
     ...prefixOpFirstTokens
 ]
 export const paramFirstTokens: TokenKind[] = [...nameLikeTokens, 'underscore']
-export const useExprFirstTokens: TokenKind[] = [...nameLikeTokens, 'asterisk', 'o-brace']
+export const useExprFirstTokens: TokenKind[] = [...nameLikeTokens, 'o-brace']
 export const fieldPatternFirstTokens: TokenKind[] = [...nameLikeTokens, 'period']
 export const patternFollowTokens: TokenKind[] = [
     'c-paren',
