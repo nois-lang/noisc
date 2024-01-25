@@ -4,5 +4,5 @@
  * @returns {String}
  */
 function concatString(a, b) {
-    return a.value + b.value
+    return String(a.value + b.value)
 }

@@ -1,5 +1,4 @@
-type Unit
+type Unit()
 
-let unit: Unit = makeUnit()
+let unit = Unit::Unit()
 
-fn makeUnit()

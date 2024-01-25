@@ -1,9 +1,17 @@
 /**
+ * @param {number} a
+ * @returns {Int}
+ */
+function Int(a) {
+    return { $noisType: 'std::int::Int', value: a }
+}
+
+/**
  * @param {Int} a
  * @returns {Int}
  */
 function negInt(a) {
-    return -a.value
+    return Int(-a.value)
 }
 
 /**
@@ -11,7 +19,7 @@ function negInt(a) {
  * @returns {Int}
  */
 function absInt(a) {
-    return Math.abs(a.value)
+    return Int(Math.abs(a.value))
 }
 
 /**
@@ -20,7 +28,7 @@ function absInt(a) {
  * @returns {Int}
  */
 function addInt(a, b) {
-    return a.value + b.value
+    return Int(a.value + b.value)
 }
 
 /**
@@ -29,7 +37,7 @@ function addInt(a, b) {
  * @returns {Int}
  */
 function subInt(a, b) {
-    return a.value - b.value
+    return Int(a.value - b.value)
 }
 
 /**
@@ -38,7 +46,7 @@ function subInt(a, b) {
  * @returns {Int}
  */
 function multInt(a, b) {
-    return a.value * b.value
+    return Int(a.value * b.value)
 }
 
 /**
@@ -47,7 +55,7 @@ function multInt(a, b) {
  * @returns {Int}
  */
 function divInt(a, b) {
-    return a.value / b.value
+    return Int(a.value / b.value)
 }
 
 /**
@@ -56,7 +64,7 @@ function divInt(a, b) {
  * @returns {Int}
  */
 function expInt(a, b) {
-    return a.value ** b.value
+    return Int(a.value ** b.value)
 }
 
 /**
@@ -64,5 +72,5 @@ function expInt(a, b) {
  * @returns {String}
  */
 function fmtInt(a) {
-    return a.value.toString()
+    return Int(a.value.toString())
 }
