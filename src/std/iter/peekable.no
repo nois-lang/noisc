@@ -8,18 +8,18 @@ type PeekableIter<T>(
 impl <T> Iter<T> for PeekableIter<T> {
     fn next(self): Option<T> {
         match self.peeked.take() {
-            Option::Some(value) { value },
-            Option::None() { self.iter.next() },
+            Option::Some(value) { value }
+            Option::None() { self.iter.next() }
         }
     }
 
     fn peek(self): Option<T> {
         match self.peeked {
-            Option::Some(value) { value },
+            Option::Some(value) { value }
             Option::None() {
                 self.peeked = Option::Some(value: self.iter.next())
                 self.peeked
-            },
+            }
         }
     }
 }

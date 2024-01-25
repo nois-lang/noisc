@@ -119,7 +119,17 @@ export const checkBlock = (block: Block, ctx: Context): void => {
     module.scopeStack.push({ kind: 'block', definitions: new Map() })
 
     // TODO: check for unreachable statements after return statement or fns returning `Never`
-    block.statements.forEach(s => checkStatement(s, ctx))
+    // TODO: check less trivial cases when if expr returns in every branch
+    let unreachable = false
+    for (const s of block.statements) {
+        checkStatement(s, ctx)
+        if (unreachable) {
+            ctx.errors.push(semanticError(ctx, s, `unreachable statement`))
+        }
+        if (s.kind === 'return-stmt') {
+            unreachable = true
+        }
+    }
 
     // TODO: find return statements and combine type
     const lastStatement = <Partial<Typed> | undefined>block.statements.at(-1)

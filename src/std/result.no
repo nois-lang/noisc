@@ -6,13 +6,13 @@ type Result<T, E> {
 impl <T, E> Result<T, E> {
     fn isOk(self): Bool {
         match self {
-            Result::Ok() { true },
+            Result::Ok() { true }
             _ { false }
         }
     }
     fn isError(self): Bool {
         match self {
-            Result::Error() { true },
+            Result::Error() { true }
             _ { false }
         }
     }

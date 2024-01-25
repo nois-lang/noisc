@@ -24,10 +24,8 @@ impl <T> Collector<T> for List<T> {
         // TODO: replace with while let
         while true {
             match iter.next() {
-                Option::Some(value) {
-                    list.add(value)
-                },
-                Option::None() { break },
+                Option::Some(value) { list.add(value) }
+                Option::None() { break }
             }
         }
         list
@@ -62,7 +60,7 @@ impl <T> Iter<T> for ListIter<T> {
             Option::Some(value) {
                 self.index = self.index + 1
                 Option::Some(value)
-            },
+            }
             _ { Option::None() }
         }
     }

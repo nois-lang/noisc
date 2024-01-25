@@ -33,7 +33,7 @@ trait Area {
 impl Area for Shape {
     fn area(self): Num {
         match self {
-            Shape::Rectangle(width, height) { width * height },
+            Shape::Rectangle(width, height) { width * height }
             Shape::Circle(radius) { math::pi * radius ^ 2 }
         }
     }
@@ -104,19 +104,19 @@ fn main() {
 
     // match
     let b = match 4 {
-        1 { "one" },
+        1 { "one" }
         n if n % 2 == 0 {
             if (n > 5) { "good" } else { "not good" }
-        },
-        _ { "whatever" },
+        }
+        _ { "whatever" }
     }
 
     // match type
     let b = match vec {
-        Vec2::Vec2(x: 1, y: 1) { "one" },
-        Vec2::Vec2(x: 1) { "x one whatever" },
-        Vec2::Vec2(x) if x != 4 { format("x is {} not 4", x) },
-        _ { "whatever"},
+        Vec2::Vec2(x: 1, y: 1) { "one" }
+        Vec2::Vec2(x: 1) { "x one whatever" }
+        Vec2::Vec2(x) if x != 4 { format("x is {} not 4", x) }
+        _ { "whatever"}
     }
 
     // if let

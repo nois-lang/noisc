@@ -17,16 +17,13 @@ export const parseMatchExpr = (parser: Parser): void => {
 }
 
 /**
- * match-clauses ::= O-BRACE (match-clause (COMMA match-clause)*)? COMMA? C-BRACE
+ * match-clauses ::= O-BRACE match-clause* C-BRACE
  */
 export const parseMatchClauses = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('o-brace')
     while (!parser.at('c-brace') && !parser.eof()) {
         parseMatchClause(parser)
-        if (!parser.at('c-brace')) {
-            parser.expect('comma')
-        }
     }
     parser.expect('c-brace')
     parser.close(mark, 'match-clauses')

@@ -393,8 +393,8 @@ type Expr {
 fn main() {
     let expr = Expr::Const(v: 4)
     match expr {
-        Expr::Add(l: Expr::Add()) {},
-        Expr::Const() {},
+        Expr::Add(l: Expr::Add()) {}
+        Expr::Const() {}
     }
 }`
             const ctx = check(code)
@@ -412,9 +412,9 @@ type Expr {
 fn main() {
     let expr = Expr::Const(v: 4)
     match expr {
-        Expr::Add() {},
-        Expr::Const() {},
-        _ {},
+        Expr::Add() {}
+        Expr::Const() {}
+        _ {}
     }
 }`
             const ctx = check(code)
