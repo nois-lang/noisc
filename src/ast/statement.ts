@@ -2,6 +2,7 @@ import { ParseToken } from '../lexer/lexer'
 import { ParseNode } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
 import { Checked, Typed } from '../semantic'
+import { assert } from '../util/todo'
 import { Expr, buildExpr } from './expr'
 import { AstNode, Param, buildParam, filterNonAstNodes } from './index'
 import { Pattern, buildPattern } from './match'
@@ -132,7 +133,8 @@ export interface ReturnStmt extends AstNode<'return-stmt'>, Partial<Typed> {
 
 export const buildReturnStmt = (node: ParseNode): ReturnStmt => {
     const nodes = filterNonAstNodes(node)
-    const returnExpr = buildExpr(nodes[0])
+    assert(nodes[0].kind === 'return-keyword')
+    const returnExpr = buildExpr(nodes[1])
     return { kind: 'return-stmt', parseNode: node, returnExpr }
 }
 
