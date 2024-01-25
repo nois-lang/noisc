@@ -7,9 +7,9 @@ import { Context, DefinitionMap, InstanceScope, TypeDefScope, defKey, fnScope, i
 import { getInstanceForType, traitDefToVirtualType } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
 import { Definition, NameDef, resolveVid } from '../scope/vid'
-import { VirtualType, genericToVirtual, isAssignable, typeToVirtual } from '../typecheck'
+import { VirtualType, genericToVirtual, isAssignable, typeToVirtual, virtualTypeToString } from '../typecheck'
 import { instanceGenericMap, resolveType } from '../typecheck/generic'
-import { selfType, unitType, unknownType } from '../typecheck/type'
+import { holeType, selfType, unitType, unknownType } from '../typecheck/type'
 import { assert, todo } from '../util/todo'
 import { notFoundError, semanticError, typeError } from './error'
 import { checkClosureExpr, checkExpr } from './expr'
@@ -386,9 +386,9 @@ const checkVariant = (variant: Variant, ctx: Context) => {
 
     // names used in fieldDef, needed to match what typeDef generics are being used
     const names = variant.fieldDefs.flatMap(f => typeNames(f.fieldType))
-    // unused generics needs to be replaced with `?` because some variants ignore type def generics,
-    // e.g. `Option::None()` should have type of `||: Option<?>`
-    const typeArgs = generics.map(g => (names.includes(g.name) ? g : unknownType))
+    // unused generics needs to be replaced with `_` because some variants ignore type def generics,
+    // e.g. `Option::None()` should have type of `||: Option<_>`
+    const typeArgs = generics.map(g => (names.includes(g.name) ? g : holeType))
 
     // TODO: introduce a new type kind 'variant', that, unlike fn type, will also record field names
     // it should be assignable to fn type if argument position matches
@@ -418,7 +418,7 @@ const checkVarDef = (varDef: VarDef, ctx: Context): void => {
         const instScope = instanceScope(ctx)
         varType = resolveType(
             typeToVirtual(varDef.varType, ctx),
-            [instScope ? instanceGenericMap(instScope, ctx) : new Map()],
+            instScope ? [instanceGenericMap(instScope, ctx)] : [],
             varDef,
             ctx
         )
@@ -427,8 +427,8 @@ const checkVarDef = (varDef: VarDef, ctx: Context): void => {
     checkExpr(varDef.expr, ctx)
 
     if (varType) {
-        const exprType = varDef.expr.type ?? unknownType
-        if (!isAssignable(exprType, varType ?? unknownType, ctx)) {
+        const exprType = varDef.expr.type!
+        if (!isAssignable(exprType, varType, ctx)) {
             ctx.errors.push(typeError(varDef, exprType, varType, ctx))
         }
     } else {
