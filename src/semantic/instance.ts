@@ -82,7 +82,9 @@ const checkFieldAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): VirtualType
             semanticError(
                 ctx,
                 rOp,
-                `field \`${fieldName}\` of \`${vidToString(typeRef.vid)}\` variants must be of the same type to be accessed`
+                `field \`${fieldName}\` of \`${vidToString(
+                    typeRef.vid
+                )}\` variants must be of the same type to be accessed`
             )
         )
         return

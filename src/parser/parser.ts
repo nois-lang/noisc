@@ -1,5 +1,5 @@
 import { SyntaxError } from '../error'
-import { independentTokenKinds, ParseToken, TokenKind } from '../lexer/lexer'
+import { ParseToken, TokenKind, independentTokenKinds } from '../lexer/lexer'
 import { ParseTree, TreeKind } from './index'
 
 export type ParseEvent = OpenEvent | { type: 'close' } | { type: 'advance' }

@@ -1,7 +1,7 @@
 import { ParseNode } from '../parser'
 import { AstNode, filterNonAstNodes } from './index'
-import { buildHole, Hole } from './match'
-import { buildIdentifier, buildName, Identifier, Name } from './operand'
+import { Hole, buildHole } from './match'
+import { Identifier, Name, buildIdentifier, buildName } from './operand'
 
 export type Type = Identifier | TypeBounds | FnType | Hole
 

@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'fs'
 import { basename, dirname, join, resolve } from 'path'
-import * as process from 'process'
 import { fileURLToPath } from 'url'
+import * as process from 'process'
 import { fromCmdFlags } from './config'
 import { colorError, colorWarning, prettySourceMessage } from './error'
 import { Package } from './package'

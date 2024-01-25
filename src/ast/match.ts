@@ -2,10 +2,10 @@ import { ParseToken } from '../lexer/lexer'
 import { ParseNode } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
 import { Typed } from '../semantic'
-import { buildExpr, buildOperandExpr, Expr, UnaryExpr } from './expr'
+import { Expr, UnaryExpr, buildExpr, buildOperandExpr } from './expr'
 import { AstNode, filterNonAstNodes } from './index'
 import { buildUnaryOp } from './op'
-import { buildFloatLiteral, buildIdentifier, buildIntLiteral, buildName, Identifier, Name, Operand } from './operand'
+import { Identifier, Name, Operand, buildFloatLiteral, buildIdentifier, buildIntLiteral, buildName } from './operand'
 import { Block, buildBlock } from './statement'
 
 export interface MatchExpr extends AstNode<'match-expr'>, Partial<Typed> {

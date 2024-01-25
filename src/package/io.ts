@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from 'fs'
+import { readFileSync, readdirSync, statSync } from 'fs'
 import { extname, join, relative } from 'path'
 import { Module } from '../ast'
 import { pathToVid } from '../scope'

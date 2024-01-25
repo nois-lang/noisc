@@ -1,4 +1,4 @@
-import { buildModuleAst, Module } from '../ast'
+import { Module, buildModuleAst } from '../ast'
 import { prettyLexerError, prettySourceMessage, prettySyntaxError } from '../error'
 import { erroneousTokenKinds, tokenize } from '../lexer/lexer'
 import { parseModule } from '../parser/fns'
