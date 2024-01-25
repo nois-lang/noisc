@@ -446,10 +446,8 @@ export const checkReturnStmt = (returnStmt: ReturnStmt, ctx: Context) => {
         ctx.errors.push(semanticError(ctx, returnStmt, `\`${returnStmt.kind}\` outside of function scope`))
     }
 
-    if (returnStmt.returnExpr) {
-        checkExpr(returnStmt.returnExpr, ctx)
-    }
-    returnStmt.type = returnStmt.returnExpr?.type ?? unitType
+    checkExpr(returnStmt.returnExpr, ctx)
+    returnStmt.type = returnStmt.returnExpr.type
 
     scope?.returnStatements.push(returnStmt)
 }

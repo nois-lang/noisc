@@ -127,12 +127,12 @@ export const buildImplDef = (node: ParseNode): ImplDef => {
 }
 
 export interface ReturnStmt extends AstNode<'return-stmt'>, Partial<Typed> {
-    returnExpr?: Expr
+    returnExpr: Expr
 }
 
 export const buildReturnStmt = (node: ParseNode): ReturnStmt => {
     const nodes = filterNonAstNodes(node)
-    const returnExpr = nodes.at(0)?.kind === 'expr' ? buildExpr(nodes[0]) : undefined
+    const returnExpr = buildExpr(nodes[0])
     return { kind: 'return-stmt', parseNode: node, returnExpr }
 }
 

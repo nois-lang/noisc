@@ -216,15 +216,12 @@ export const parseImplFor = (parser: Parser): void => {
 }
 
 /**
- * return-stmt ::= RETURN-KEYWORD expr?
+ * return-stmt ::= RETURN-KEYWORD expr
  */
 export const parseReturnStmt = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('return-keyword')
-    // TODO: improve with newline
-    if (!parser.at('c-brace')) {
-        parseExpr(parser)
-    }
+    parseExpr(parser)
     parser.close(mark, 'return-stmt')
 }
 

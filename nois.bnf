@@ -36,7 +36,7 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
                       ;
       variant         ::= NAME variant-params?
                       ;
-  return-stmt         ::= RETURN-KEYWORD expr?
+  return-stmt         ::= RETURN-KEYWORD expr
                       ;
   break-stmt          ::= BREAK-KEYWORD
                       ;
