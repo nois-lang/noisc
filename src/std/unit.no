@@ -1,4 +1,4 @@
 type Unit()
 
-let unit = Unit::Unit()
+let unit: Unit = Unit::Unit()
 
