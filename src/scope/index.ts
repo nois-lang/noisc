@@ -24,7 +24,7 @@ export interface Context {
     check: boolean
 }
 
-export type Scope = InstanceScope | TypeDefScope | FnDefScope | CommonScope
+export type Scope = InstanceScope | TypeDefScope | FnDefScope | BlockScope | CommonScope
 
 /**
  * Map id has to be composite, since different defs might have the same vid, e.g.
@@ -56,8 +56,14 @@ export interface FnDefScope {
     returnStatements: ReturnStmt[]
 }
 
+export interface BlockScope {
+    kind: 'block'
+    definitions: DefinitionMap
+    allBranchesReturned: boolean
+}
+
 export interface CommonScope {
-    kind: 'module' | 'block' | 'impl' | 'trait'
+    kind: 'module' | 'impl' | 'trait'
     definitions: DefinitionMap
 }
 

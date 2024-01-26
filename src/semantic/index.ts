@@ -3,13 +3,22 @@ import { Identifier } from '../ast/operand'
 import { Block, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '../ast/statement'
 import { Generic, Type } from '../ast/type'
 import { TypeDef, Variant } from '../ast/type-def'
-import { Context, DefinitionMap, InstanceScope, TypeDefScope, defKey, fnScope, instanceScope } from '../scope'
+import {
+    BlockScope,
+    Context,
+    DefinitionMap,
+    InstanceScope,
+    TypeDefScope,
+    defKey,
+    fnScope,
+    instanceScope
+} from '../scope'
 import { getInstanceForType, traitDefToVirtualType } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
 import { Definition, NameDef, resolveVid } from '../scope/vid'
 import { VirtualType, genericToVirtual, isAssignable, typeToVirtual } from '../typecheck'
 import { instanceGenericMap, resolveType } from '../typecheck/generic'
-import { holeType, selfType, unitType, unknownType } from '../typecheck/type'
+import { holeType, neverType, selfType, unitType, unknownType } from '../typecheck/type'
 import { assert, todo } from '../util/todo'
 import { notFoundError, semanticError, typeError } from './error'
 import { checkClosureExpr, checkExpr } from './expr'
@@ -114,28 +123,36 @@ export const checkTopLevelDefiniton = (module: Module, definition: Definition, c
     ctx.moduleStack.pop()
 }
 
-export const checkBlock = (block: Block, ctx: Context): void => {
+export const checkBlock = (block: Block, ctx: Context): boolean => {
     const module = ctx.moduleStack.at(-1)!
-    module.scopeStack.push({ kind: 'block', definitions: new Map() })
+    const scope: BlockScope = { kind: 'block', definitions: new Map(), allBranchesReturned: false }
+    module.scopeStack.push(scope)
 
     // TODO: check for unreachable statements after return statement or fns returning `Never`
     // TODO: check less trivial cases when if expr returns in every branch
-    let unreachable = false
     for (const s of block.statements) {
-        checkStatement(s, ctx)
-        if (unreachable) {
-            ctx.errors.push(semanticError(ctx, s, `unreachable statement`))
+        if (scope.allBranchesReturned) {
+            ctx.warnings.push(semanticError(ctx, s, `unreachable statement`))
         }
-        if (s.kind === 'return-stmt') {
-            unreachable = true
+
+        checkStatement(s, ctx)
+
+        if (
+            s.kind === 'return-stmt' ||
+            ('type' in s && s.type?.kind === 'vid-type' && vidEq(s.type.identifier, neverType.identifier))
+        ) {
+            scope.allBranchesReturned = true
         }
     }
 
-    // TODO: find return statements and combine type
+    // TODO: combine return statement types
+    // TODO: type of a ABR (all branches returned) block should be Never
     const lastStatement = <Partial<Typed> | undefined>block.statements.at(-1)
     block.type = lastStatement?.type ?? unknownType
 
     module.scopeStack.pop()
+
+    return scope.allBranchesReturned
 }
 
 const checkStatement = (statement: Statement, ctx: Context): void => {

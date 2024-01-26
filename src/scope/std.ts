@@ -28,7 +28,7 @@ export const defaultImportedVids: VirtualIdentifier[] = [
     'std::never::Never',
 
     'std::panic::todo',
-    'std::panic::never',
+    'std::panic::panic',
 
     'std::math',
     'std::op',

@@ -180,19 +180,29 @@ export const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
 }
 
 export const checkIfExpr = (ifExpr: IfExpr, ctx: Context): void => {
+    const module = ctx.moduleStack.at(-1)!
+    const scope = module.scopeStack.at(-1)!
+
     checkExpr(ifExpr.condition, ctx)
     const condType = ifExpr.condition.type ?? unknownType
     if (!isAssignable(condType, bool, ctx)) {
         ctx.errors.push(typeError(ifExpr.condition, condType, bool, ctx))
     }
-    checkBlock(ifExpr.thenBlock, ctx)
+    const thenAbr = checkBlock(ifExpr.thenBlock, ctx)
     if (ifExpr.elseBlock) {
-        checkBlock(ifExpr.elseBlock, ctx)
+        const elseAbr = checkBlock(ifExpr.elseBlock, ctx)
 
+        if (scope.kind === 'block' && thenAbr && elseAbr) {
+            scope.allBranchesReturned = true
+        }
+
+        // TODO: ignore types if result of `if-expr` is not used
         const thenType = ifExpr.thenBlock.type!
         const elseType = ifExpr.elseBlock.type!
         const combined = combine(thenType, elseType, ctx)
-        if (!combined) {
+        if (combined) {
+            ifExpr.type = combined
+        } else {
             ctx.errors.push(
                 semanticError(
                     ctx,
@@ -205,45 +215,64 @@ if branches have incompatible types:
             )
 
             ifExpr.type = unknownType
-            return
         }
+    } else {
+        // TODO: throw error if result of partial if expr (no else block) is used
+        ifExpr.type = unknownType
     }
-
-    ifExpr.type = ifExpr.thenBlock.type
 }
 
 export const checkIfLetExpr = (ifLetExpr: IfLetExpr, ctx: Context): void => {
     const module = ctx.moduleStack.at(-1)!
-    module.scopeStack.push({ kind: 'block', definitions: new Map() })
+    const scope = module.scopeStack.at(-1)!
+    module.scopeStack.push({ kind: 'block', definitions: new Map(), allBranchesReturned: false })
 
     checkExpr(ifLetExpr.expr, ctx)
     assert(!!ifLetExpr.expr.type)
     // pattern definitions should only be available in `then` block
     checkPattern(ifLetExpr.pattern, ifLetExpr.expr.type!, ctx)
 
-    checkBlock(ifLetExpr.thenBlock, ctx)
-    assert(!!ifLetExpr.thenBlock.type)
+    const thenAbr = checkBlock(ifLetExpr.thenBlock, ctx)
 
     if (ifLetExpr.elseBlock) {
-        checkBlock(ifLetExpr.elseBlock, ctx)
-        assert(!!ifLetExpr.elseBlock.type)
+        const elseAbr = checkBlock(ifLetExpr.elseBlock, ctx)
+
+        if (scope.kind === 'block' && thenAbr && elseAbr) {
+            scope.allBranchesReturned = true
+        }
+
+        // TODO: ignore types if result of `if-expr` is not used
         const thenType = ifLetExpr.thenBlock.type!
         const elseType = ifLetExpr.elseBlock.type!
-        if (!isAssignable(elseType, thenType, ctx)) {
-            // TODO: type errors with description
-            ctx.errors.push(typeError(ifLetExpr, elseType, thenType, ctx))
-        }
-        // TODO: combine type
-        ifLetExpr.type = thenType
-    }
+        const combined = combine(thenType, elseType, ctx)
+        if (combined) {
+            ifLetExpr.type = combined
+        } else {
+            ctx.errors.push(
+                semanticError(
+                    ctx,
+                    ifLetExpr,
+                    `\
+if branches have incompatible types:
+    then: \`${virtualTypeToString(thenType)}\`
+    else: \`${virtualTypeToString(elseType)}\``
+                )
+            )
 
-    // TODO: throw error if result of partial if let expr (no else block) is used
-    ifLetExpr.type = unknownType
+            ifLetExpr.type = unknownType
+        }
+    } else {
+        // TODO: throw error if result of partial if expr (no else block) is used
+        ifLetExpr.type = unknownType
+    }
 
     module.scopeStack.pop()
 }
 
 export const checkWhileExpr = (whileExpr: WhileExpr, ctx: Context): void => {
+    const module = ctx.moduleStack.at(-1)!
+    const scope = module.scopeStack.at(-1)!
+
     checkExpr(whileExpr.condition, ctx)
     const condType = whileExpr.condition.type
     assert(!!condType)
@@ -251,8 +280,12 @@ export const checkWhileExpr = (whileExpr: WhileExpr, ctx: Context): void => {
         ctx.errors.push(typeError(whileExpr.condition, condType!, bool, ctx))
     }
 
-    checkBlock(whileExpr.block, ctx)
+    const abr = checkBlock(whileExpr.block, ctx)
     assert(!!whileExpr.block.type)
+
+    if (scope.kind === 'block' && abr) {
+        scope.allBranchesReturned = true
+    }
 
     whileExpr.type = {
         kind: 'vid-type',
@@ -263,7 +296,8 @@ export const checkWhileExpr = (whileExpr: WhileExpr, ctx: Context): void => {
 
 export const checkForExpr = (forExpr: ForExpr, ctx: Context): void => {
     const module = ctx.moduleStack.at(-1)!
-    module.scopeStack.push({ kind: 'block', definitions: new Map() })
+    const scope = module.scopeStack.at(-1)!
+    module.scopeStack.push({ kind: 'block', definitions: new Map(), allBranchesReturned: false })
 
     checkExpr(forExpr.expr, ctx)
     assert(!!forExpr.expr.type)
@@ -283,8 +317,12 @@ export const checkForExpr = (forExpr: ForExpr, ctx: Context): void => {
     assert(!!itemType, 'unresolved item type')
     checkPattern(forExpr.pattern, itemType!, ctx)
 
-    checkBlock(forExpr.block, ctx)
+    const abr = checkBlock(forExpr.block, ctx)
     assert(!!forExpr.block.type)
+
+    if (scope.kind === 'block' && abr) {
+        scope.allBranchesReturned = true
+    }
 
     forExpr.type = {
         kind: 'vid-type',
@@ -296,9 +334,12 @@ export const checkForExpr = (forExpr: ForExpr, ctx: Context): void => {
 }
 
 export const checkMatchExpr = (matchExpr: MatchExpr, ctx: Context): void => {
+    const module = ctx.moduleStack.at(-1)!
+    const scope = module.scopeStack.at(-1)!
     const errors = ctx.errors.length
 
     checkExpr(matchExpr.expr, ctx)
+    let abr = true
     matchExpr.clauses.forEach(clause => {
         checkPattern(clause.pattern, matchExpr.expr.type ?? unknownType, ctx)
         if (clause.guard) {
@@ -308,8 +349,16 @@ export const checkMatchExpr = (matchExpr: MatchExpr, ctx: Context): void => {
                 ctx.errors.push(typeError(clause.guard, guardType, bool, ctx))
             }
         }
-        checkBlock(clause.block, ctx)
+        const clauseAbr = checkBlock(clause.block, ctx)
+        if (!clauseAbr) {
+            abr = false
+        }
     })
+
+    if (scope.kind === 'block' && abr) {
+        scope.allBranchesReturned = true
+    }
+
     // exhaustion assumes that every pattern is semantically correct, so run it only when no errors were found in the
     // matchExpr
     if (errors === ctx.errors.length) {

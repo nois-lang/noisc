@@ -11,3 +11,9 @@ export const unitType: VidType = {
     identifier: { names: ['std', 'unit', 'Unit'] },
     typeArgs: []
 }
+
+export const neverType: VidType = {
+    kind: 'vid-type',
+    identifier: { names: ['std', 'never', 'Never'] },
+    typeArgs: []
+}
