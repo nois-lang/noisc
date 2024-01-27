@@ -398,8 +398,9 @@ export const checkClosureExpr = (
     }
 
     checkBlock(closureExpr.block, ctx)
-    // TODO: typecheck block -> return type
-    // TODO: set return type if inferred is unknown
+    if (closureExpr.type.returnType.kind === 'unknown-type') {
+        closureExpr.type.returnType = closureExpr.block.type!
+    }
 
     module.scopeStack.pop()
 }
