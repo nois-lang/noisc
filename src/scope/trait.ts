@@ -4,7 +4,6 @@ import { TypeDef } from '../ast/type-def'
 import { notFoundError } from '../semantic/error'
 import { VirtualType, genericToVirtual, typeToVirtual } from '../typecheck'
 import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
-import { unknownType } from '../typecheck/type'
 import { assert } from '../util/todo'
 import { Context, defKey } from './index'
 import { concatVid, idToVid, vidFromString, vidToString } from './util'
@@ -61,61 +60,62 @@ export const buildInstanceRelations = (ctx: Context): InstanceRelation[] => {
  */
 const getImplRel = (instance: TraitDef | ImplDef, ctx: Context): InstanceRelation | undefined => {
     const module = ctx.moduleStack.at(-1)!
-    if (instance.kind === 'trait-def') {
-        module.scopeStack.push({ kind: 'impl', definitions: new Map(instance.generics.map(g => [defKey(g), g])) })
+    module.scopeStack.push({ kind: 'impl', definitions: new Map(instance.generics.map(g => [defKey(g), g])) })
 
-        const traitType: VirtualType = {
-            kind: 'vid-type',
-            identifier: { names: [...module.identifier.names, instance.name.value] },
-            typeArgs: instance.generics.map(g => genericToVirtual(g, ctx))
-        }
-        const ref = resolveVid(traitType.identifier, ctx, ['trait-def'])
-        assert(!!ref, 'traitDef did not find itself by name')
-        const traitRef = <VirtualIdentifierMatch<TraitDef>>ref!
-        const implRel = {
-            module,
-            implType: traitType,
-            forType: traitType,
-            implDef: traitRef,
-            forDef: traitRef,
-            instanceDef: instance
-        }
+    const implRel =
+        instance.kind === 'trait-def' ? getTraitImplRel(instance, module, ctx) : getImplImplRel(instance, module, ctx)
 
-        module.scopeStack.pop()
-        return implRel
-    } else {
-        module.scopeStack.push({ kind: 'impl', definitions: new Map(instance.generics.map(g => [defKey(g), g])) })
+    module.scopeStack.pop()
 
-        const implVid = idToVid(instance.identifier)
-        const ref = resolveVid(implVid, ctx, ['trait-def', 'type-def'])
-        if (!ref || (ref.def.kind !== 'trait-def' && ref.def.kind !== 'type-def')) {
-            ctx.errors.push(notFoundError(ctx, instance.identifier, vidToString(implVid)))
+    return implRel
+}
+
+const getTraitImplRel = (instance: TraitDef, module: Module, ctx: Context): InstanceRelation | undefined => {
+    const traitType: VirtualType = {
+        kind: 'vid-type',
+        identifier: { names: [...module.identifier.names, instance.name.value] },
+        typeArgs: instance.generics.map(g => genericToVirtual(g, ctx))
+    }
+    const ref = resolveVid(traitType.identifier, ctx, ['trait-def'])
+    assert(!!ref, 'traitDef did not find itself by name')
+    const traitRef = <VirtualIdentifierMatch<TraitDef>>ref!
+    return {
+        module,
+        implType: traitType,
+        forType: traitType,
+        implDef: traitRef,
+        forDef: traitRef,
+        instanceDef: instance
+    }
+}
+
+const getImplImplRel = (instance: ImplDef, module: Module, ctx: Context): InstanceRelation | undefined => {
+    const implVid = idToVid(instance.identifier)
+    const ref = resolveVid(implVid, ctx, ['trait-def', 'type-def'])
+    if (!ref || (ref.def.kind !== 'trait-def' && ref.def.kind !== 'type-def')) {
+        ctx.errors.push(notFoundError(ctx, instance.identifier, vidToString(implVid)))
+        return undefined
+    }
+    const implRef = <VirtualIdentifierMatch<TypeDef | TraitDef>>ref
+
+    let forDef: VirtualIdentifierMatch<TypeDef | TraitDef> = implRef
+    if (instance.forTrait) {
+        const ref = resolveVid(idToVid(instance.forTrait), ctx, ['type-def', 'trait-def'])
+        if (!ref || (ref.def.kind !== 'type-def' && ref.def.kind !== 'trait-def')) {
+            ctx.errors.push(notFoundError(ctx, instance.identifier, vidToString(implVid), 'trait'))
             return undefined
         }
-        const implRef = <VirtualIdentifierMatch<TypeDef | TraitDef>>ref
+        forDef = <VirtualIdentifierMatch<TypeDef | TraitDef>>ref
+    }
 
-        let forDef: VirtualIdentifierMatch<TypeDef | TraitDef> = implRef
-        if (instance.forTrait) {
-            const ref = resolveVid(idToVid(instance.forTrait), ctx, ['type-def', 'trait-def'])
-            if (!ref || (ref.def.kind !== 'type-def' && ref.def.kind !== 'trait-def')) {
-                ctx.errors.push(notFoundError(ctx, instance.identifier, vidToString(implVid), 'trait'))
-                return undefined
-            }
-            forDef = <VirtualIdentifierMatch<TypeDef | TraitDef>>ref
-        }
-
-        const implType = typeToVirtual(instance.identifier, ctx)
-        const implRel = {
-            module,
-            implType: implType,
-            forType: instance.forTrait ? typeToVirtual(instance.forTrait, ctx) : implType,
-            implDef: <VirtualIdentifierMatch<TypeDef | TraitDef>>ref,
-            forDef: forDef,
-            instanceDef: instance
-        }
-
-        module.scopeStack.pop()
-        return implRel
+    const implType = typeToVirtual(instance.identifier, ctx)
+    return {
+        module,
+        implType: implType,
+        forType: instance.forTrait ? typeToVirtual(instance.forTrait, ctx) : implType,
+        implDef: <VirtualIdentifierMatch<TypeDef | TraitDef>>ref,
+        forDef: forDef,
+        instanceDef: instance
     }
 }
 
@@ -150,23 +150,10 @@ export const findSuperRelChains = (
     return chains
 }
 
-/**
- * Find all impls by specified type vid
- */
-export const findTypeImpls = (typeVid: VirtualIdentifier, ctx: Context): InstanceRelation[] => {
-    const vid = vidToString(typeVid)
-    return ctx.impls.filter(i => vidToString(i.implDef.vid) === vid)
-}
-
-/**
- * Find all instance defs in module
- */
-export const findInstanceDefs = (module: Module): (TraitDef | ImplDef)[] =>
-    module.block.statements.flatMap(s => (s.kind === 'trait-def' || s.kind === 'impl-def' ? s : []))
-
 export const getInstanceForType = (implDef: TraitDef | ImplDef, ctx: Context): VirtualType => {
     const implRel = ctx.impls.find(i => i.instanceDef === implDef)
-    return implRel?.forType ?? unknownType
+    assert(!!implRel)
+    return implRel!.forType
 }
 
 /**
