@@ -188,7 +188,7 @@ fn main() {
             const ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual([
                 'identifier `foo` not found',
-                'type error: non-callable operand of type `?`'
+                'unknown type'
             ])
         })
 
@@ -204,7 +204,7 @@ fn main() {
             let ctx = check(code(''))
             expect(ctx.errors.map(e => e.message)).toEqual([
                 'identifier `foo` not found',
-                'type error: non-callable operand of type `?`'
+                'unknown type'
             ])
 
             ctx = check(code('Foo::'))
@@ -300,9 +300,9 @@ fn bar(Foo::Foo(a: namedA, b: namedB): Foo) {
             let ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual([
                 'identifier `a` not found',
-                'type error: non-callable operand of type `?`',
+                'unknown type',
                 'identifier `b` not found',
-                'type error: non-callable operand of type `?`',
+                'unknown type',
                 'type error: non-callable operand of type `std::int::Int`',
                 'type error: non-callable operand of type `std::int::Int`'
             ])
@@ -321,7 +321,7 @@ fn bar(Foo::Foo(b: Bar::Bar(a)): Foo) {
             let ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual([
                 'identifier `b` not found',
-                'type error: non-callable operand of type `?`',
+                'unknown type',
                 'type error: non-callable operand of type `std::int::Int`'
             ])
         })
@@ -362,7 +362,7 @@ fn main() {
             ctx = check(code('"foo"'))
             expect(ctx.errors.map(e => e.message)).toEqual([
                 'if branches have incompatible types:\n    then: `std::int::Int`\n    else: `std::string::String`',
-                'type error: non-callable operand of type `?`'
+                'unknown type'
             ])
         })
     })
@@ -387,9 +387,9 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual([
                 'cannot destructure type `std::int::Int` into `std::option::Option`',
                 'identifier `value` not found',
-                'type error: non-callable operand of type `?`',
+                'unknown type',
                 'identifier `value` not found',
-                'type error: non-callable operand of type `?`'
+                'unknown type'
             ])
         })
     })
