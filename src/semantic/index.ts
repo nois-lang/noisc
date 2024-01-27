@@ -210,7 +210,7 @@ const checkStatement = (statement: Statement, ctx: Context): void => {
     }
 }
 
-// TODO: if fn is a part of impl for, make sure it implements trait's fn and signature matches
+// TODO: if fn is a part of impl for, make sure signature matches with its trait
 const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
     if (fnDef.type) return
 
@@ -245,7 +245,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
 
     if (fnDef.block) {
         checkBlock(fnDef.block, ctx)
-        const blockType = fnDef.block.type ?? unknownType
+        const blockType = fnDef.block.type!
         if (!isAssignable(blockType, returnTypeResolved, ctx)) {
             ctx.errors.push(typeError(fnDef.block, blockType, returnTypeResolved, ctx))
         }

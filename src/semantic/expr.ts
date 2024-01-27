@@ -378,12 +378,14 @@ export const checkClosureExpr = (
             param.type = inferredType.paramTypes[i]
             checkPattern(param.pattern, param.type, ctx)
         }
+
         closureExpr.type = {
             kind: 'fn-type',
             paramTypes: closureExpr.params.map(p => p.type!),
             returnType: inferredType.returnType,
             generics: []
         }
+        console.log('return type', inferredType.returnType)
     } else {
         closureExpr.params.forEach((p, i) => checkParam(p, i, ctx))
         checkType(closureExpr.returnType!, ctx)
@@ -426,7 +428,10 @@ export const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         operand.type = closure.type
     }
 
-    if (operand.type?.kind !== 'fn-type') {
+    if (operand.type?.kind === 'unknown-type') {
+        ctx.errors.push(unknownTypeError(operand, operand.type, ctx))
+        return
+    } else if (operand.type?.kind !== 'fn-type') {
         const message = `type error: non-callable operand of type \`${virtualTypeToString(operand.type!)}\``
         ctx.errors.push(semanticError(ctx, operand, message))
         return
