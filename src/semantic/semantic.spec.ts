@@ -186,10 +186,7 @@ fn main() {
         it('instance fns should not be available within itself', () => {
             const code = 'trait Foo { fn foo() { foo() } }'
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual([
-                'identifier `foo` not found',
-                'unknown type'
-            ])
+            expect(ctx.errors.map(e => e.message)).toEqual(['identifier `foo` not found', 'unknown type'])
         })
 
         it('instance fns should not be available without trait qualifier', () => {
@@ -202,10 +199,7 @@ fn main() {
     ${arg}foo()
 }`
             let ctx = check(code(''))
-            expect(ctx.errors.map(e => e.message)).toEqual([
-                'identifier `foo` not found',
-                'unknown type'
-            ])
+            expect(ctx.errors.map(e => e.message)).toEqual(['identifier `foo` not found', 'unknown type'])
 
             ctx = check(code('Foo::'))
             expect(ctx.errors.map(e => e.message)).toEqual([])
@@ -402,7 +396,6 @@ type Expr {
     Const(v: Int)
 }
 
-
 fn main() {
     let expr = Expr::Const(v: 4)
     match expr {
@@ -411,7 +404,9 @@ fn main() {
     }
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual(['non-exhaustive match expression'])
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'non-exhaustive match expression, unmatched paths:\n    Expr::Add(l: Expr::Const(), r: _) {}'
+            ])
         })
 
         it('unreachable pattern', () => {
@@ -420,7 +415,6 @@ type Expr {
     Add(l: Expr, r: Expr),
     Const(v: Int)
 }
-
 
 fn main() {
     let expr = Expr::Const(v: 4)

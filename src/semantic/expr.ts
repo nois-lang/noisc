@@ -318,6 +318,7 @@ export const checkMatchExpr = (matchExpr: MatchExpr, ctx: Context): void => {
         if (firstClauseBlock.type!.kind !== 'unknown-type') {
             matchExpr.type = firstClauseBlock.type
             for (const clause of matchExpr.clauses.slice(1)) {
+                // TODO: only report return type mismatch if result of a match-expr is used (same as in if-expr)
                 if (!isAssignable(clause.block.type!, firstClauseBlock.type!, ctx)) {
                     ctx.errors.push(typeError(clause.block, clause.block.type!, firstClauseBlock.type!, ctx))
                 }
@@ -385,7 +386,6 @@ export const checkClosureExpr = (
             returnType: inferredType.returnType,
             generics: []
         }
-        console.log('return type', inferredType.returnType)
     } else {
         closureExpr.params.forEach((p, i) => checkParam(p, i, ctx))
         checkType(closureExpr.returnType!, ctx)

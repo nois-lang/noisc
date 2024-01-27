@@ -27,7 +27,7 @@
 
 import { MatchExpr, PatternExpr } from '../ast/match'
 import { Context } from '../scope'
-import { idToVid, vidToString } from '../scope/util'
+import { concatVid, idToVid, vidFromScope, vidFromString, vidToString } from '../scope/util'
 import { VariantDef, resolveVid } from '../scope/vid'
 import { assert, todo, unreachable } from '../util/todo'
 import { semanticError } from './error'
@@ -67,8 +67,9 @@ export const checkExhaustion = (matchExpr: MatchExpr, ctx: Context): MatchTree =
     }
 
     if (!isExhaustive(tree.node)) {
-        // TODO: report what paths are not covered
-        ctx.errors.push(semanticError(ctx, matchExpr, `non-exhaustive match expression`))
+        const ps = unmatchedPaths(tree.node)
+        const pathsStr = ps.map(p => `    ${p} {}`).join('\n')
+        ctx.errors.push(semanticError(ctx, matchExpr, `non-exhaustive match expression, unmatched paths:\n${pathsStr}`))
     }
 
     return tree
@@ -92,18 +93,23 @@ const matchPattern = (pattern: PatternExpr, tree: MatchTree, ctx: Context): bool
             return true
         case 'con-pattern':
             // if node is not of kind `type`, make it so and populate every variant as unmatched
+            const vid = idToVid(pattern.identifier)
             if (tree.node.kind !== 'type') {
-                const vid = idToVid(pattern.identifier)
-                const def = resolveVid(vid, ctx, ['variant'])?.def
+                const ref = resolveVid(vid, ctx, ['variant'])
+                const def = ref?.def
                 if (!def || def.kind !== 'variant') throw Error(`\`${vidToString(vid)}\` not found`)
 
                 const variants: Map<string, MatchTree> = new Map(
-                    def.typeDef.variants.map(v => [v.name.value, { node: { kind: 'unmatched' } }])
+                    def.typeDef.variants.map(v => {
+                        // TODO: is full qualifier needed here? or Type::Variant is enough
+                        const variantVid = concatVid(vidFromScope(vid), vidFromString(v.name.value))
+                        return [vidToString(variantVid), { node: { kind: 'unmatched' } }]
+                    })
                 )
                 tree.node = { kind: 'type', def, variants }
             }
             const conName = pattern.identifier.name.value
-            let variantTree = tree.node.variants.get(conName)
+            let variantTree = tree.node.variants.get(vidToString(vid))
             if (!variantTree) throw Error()
             // if this variant hasn't been explored yet, populate fields as unmatched
             if (variantTree.node.kind !== 'variant') {
@@ -156,5 +162,29 @@ const isExhaustive = (node: MatchNode): boolean => {
             return true
         case 'unmatched':
             return false
+    }
+}
+
+/**
+ * @returns a list of strings each representing missing pattern, e.g. Option::Some(value: _)
+ */
+const unmatchedPaths = (node: MatchNode): string[] => {
+    switch (node.kind) {
+        case 'type':
+            return [...node.variants.entries()].flatMap(([name, n]) => {
+                return unmatchedPaths(n.node).map(v => {
+                    if (v === '_') return `${name}()`
+                    return `${name}(${v})`
+                })
+            })
+        case 'variant':
+            const fields = [...node.fields.entries()].flatMap(([name, field]) => {
+                return unmatchedPaths(field.node).map(n => `${name}: ${n}`)
+            })
+            return fields.length === 0 ? [] : [fields.join(', ')]
+        case 'exhaustive':
+            return []
+        case 'unmatched':
+            return ['_']
     }
 }
