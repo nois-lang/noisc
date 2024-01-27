@@ -149,6 +149,9 @@ export const checkBlock = (block: Block, ctx: Context): boolean => {
     // TODO: type of a ABR (all branches returned) block should be Never
     const lastStatement = <Partial<Typed> | undefined>block.statements.at(-1)
     block.type = lastStatement?.type ?? unitType
+    if (block.type.kind === 'unknown-type') {
+        ctx.errors.push(unknownTypeError(block, block.type, ctx))
+    }
 
     module.scopeStack.pop()
 
