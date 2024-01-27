@@ -313,6 +313,20 @@ export const checkMatchExpr = (matchExpr: MatchExpr, ctx: Context): void => {
         }
     })
 
+    if (matchExpr.clauses.length !== 0) {
+        const firstClauseBlock = matchExpr.clauses[0].block
+        if (firstClauseBlock.type!.kind !== 'unknown-type') {
+            matchExpr.type = firstClauseBlock.type
+            for (const clause of matchExpr.clauses.slice(1)) {
+                if (!isAssignable(clause.block.type!, firstClauseBlock.type!, ctx)) {
+                    ctx.errors.push(typeError(clause.block, clause.block.type!, firstClauseBlock.type!, ctx))
+                }
+            }
+        } else {
+            ctx.errors.push(unknownTypeError(firstClauseBlock, firstClauseBlock.type!, ctx))
+        }
+    }
+
     if (scope.kind === 'block' && abr) {
         scope.allBranchesReturned = true
     }

@@ -249,10 +249,12 @@ fn main() {
 type Foo
 
 impl Foo {
-    fn foo(): Bar {}
+    fn foo(): Bar {
+        Bar::Bar()
+    }
 }
 
-type Bar`
+type Bar()`
             let ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual([])
         })

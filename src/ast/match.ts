@@ -23,7 +23,7 @@ export const buildMatchExpr = (node: ParseNode): MatchExpr => {
     return { kind: 'match-expr', parseNode: node, expr, clauses }
 }
 
-export interface MatchClause extends AstNode<'match-clause'>, Partial<Typed> {
+export interface MatchClause extends AstNode<'match-clause'> {
     pattern: Pattern
     block: Block
     guard?: Expr
