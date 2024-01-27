@@ -25,6 +25,7 @@ export interface VirtualFnType {
 
 export interface UnknownType {
     kind: 'unknown-type'
+    mismatchedBranches?: { then: VirtualType; else?: VirtualType }
 }
 
 /**

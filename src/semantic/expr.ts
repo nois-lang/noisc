@@ -4,7 +4,7 @@ import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { MatchExpr } from '../ast/match'
 import { CallOp, ConOp } from '../ast/op'
 import { ClosureExpr, ForExpr, IfExpr, IfLetExpr, ListExpr, Operand, WhileExpr } from '../ast/operand'
-import { Context, instanceScope } from '../scope'
+import { Context, Scope, instanceScope } from '../scope'
 import { bool, iter, iterable } from '../scope/std'
 import { getInstanceForType } from '../scope/trait'
 import { idToVid, vidFromString, vidToString } from '../scope/util'
@@ -29,7 +29,7 @@ import {
 } from '../typecheck/generic'
 import { unitType, unknownType } from '../typecheck/type'
 import { assert } from '../util/todo'
-import { notFoundError, semanticError, typeError } from './error'
+import { notFoundError, semanticError, typeError, unknownTypeError } from './error'
 import { checkExhaustion } from './exhaust'
 import { checkAccessExpr } from './instance'
 import { checkPattern } from './match'
@@ -113,10 +113,8 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
             break
         case 'identifier':
             checkIdentifier(operand, ctx)
-            if (!operand.type) {
-                ctx.errors.push(
-                    semanticError(ctx, operand, `unknown type of identifier \`${vidToString(idToVid(operand))}\``)
-                )
+            if (operand.type!.kind === 'unknown-type') {
+                unknownTypeError(operand, operand.type!, ctx)
             }
             break
     }
@@ -188,38 +186,8 @@ export const checkIfExpr = (ifExpr: IfExpr, ctx: Context): void => {
     if (!isAssignable(condType, bool, ctx)) {
         ctx.errors.push(typeError(ifExpr.condition, condType, bool, ctx))
     }
-    const thenAbr = checkBlock(ifExpr.thenBlock, ctx)
-    if (ifExpr.elseBlock) {
-        const elseAbr = checkBlock(ifExpr.elseBlock, ctx)
 
-        if (scope.kind === 'block' && thenAbr && elseAbr) {
-            scope.allBranchesReturned = true
-        }
-
-        // TODO: ignore types if result of `if-expr` is not used
-        const thenType = ifExpr.thenBlock.type!
-        const elseType = ifExpr.elseBlock.type!
-        const combined = combine(thenType, elseType, ctx)
-        if (combined) {
-            ifExpr.type = combined
-        } else {
-            ctx.errors.push(
-                semanticError(
-                    ctx,
-                    ifExpr,
-                    `\
-if branches have incompatible types:
-    then: \`${virtualTypeToString(thenType)}\`
-    else: \`${virtualTypeToString(elseType)}\``
-                )
-            )
-
-            ifExpr.type = unknownType
-        }
-    } else {
-        // TODO: throw error if result of partial if expr (no else block) is used
-        ifExpr.type = unknownType
-    }
+    checkIfExprCommon(ifExpr, scope, ctx)
 }
 
 export const checkIfLetExpr = (ifLetExpr: IfLetExpr, ctx: Context): void => {
@@ -232,41 +200,31 @@ export const checkIfLetExpr = (ifLetExpr: IfLetExpr, ctx: Context): void => {
     // pattern definitions should only be available in `then` block
     checkPattern(ifLetExpr.pattern, ifLetExpr.expr.type!, ctx)
 
-    const thenAbr = checkBlock(ifLetExpr.thenBlock, ctx)
+    checkIfExprCommon(ifLetExpr, scope, ctx)
 
-    if (ifLetExpr.elseBlock) {
-        const elseAbr = checkBlock(ifLetExpr.elseBlock, ctx)
+    module.scopeStack.pop()
+}
+
+export const checkIfExprCommon = (ifExpr: IfExpr | IfLetExpr, scope: Scope, ctx: Context): void => {
+    const thenAbr = checkBlock(ifExpr.thenBlock, ctx)
+    if (ifExpr.elseBlock) {
+        const elseAbr = checkBlock(ifExpr.elseBlock, ctx)
 
         if (scope.kind === 'block' && thenAbr && elseAbr) {
             scope.allBranchesReturned = true
         }
 
-        // TODO: ignore types if result of `if-expr` is not used
-        const thenType = ifLetExpr.thenBlock.type!
-        const elseType = ifLetExpr.elseBlock.type!
+        const thenType = ifExpr.thenBlock.type!
+        const elseType = ifExpr.elseBlock.type!
         const combined = combine(thenType, elseType, ctx)
         if (combined) {
-            ifLetExpr.type = combined
+            ifExpr.type = combined
         } else {
-            ctx.errors.push(
-                semanticError(
-                    ctx,
-                    ifLetExpr,
-                    `\
-if branches have incompatible types:
-    then: \`${virtualTypeToString(thenType)}\`
-    else: \`${virtualTypeToString(elseType)}\``
-                )
-            )
-
-            ifLetExpr.type = unknownType
+            ifExpr.type = { kind: 'unknown-type', mismatchedBranches: { then: thenType, else: elseType } }
         }
     } else {
-        // TODO: throw error if result of partial if expr (no else block) is used
-        ifLetExpr.type = unknownType
+        ifExpr.type = { kind: 'unknown-type', mismatchedBranches: { then: ifExpr.thenBlock.type! } }
     }
-
-    module.scopeStack.pop()
 }
 
 export const checkWhileExpr = (whileExpr: WhileExpr, ctx: Context): void => {

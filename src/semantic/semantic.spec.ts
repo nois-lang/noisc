@@ -338,6 +338,17 @@ fn bar(foo @ Foo::Foo(a): Foo) {
 
     describe('if expr', () => {
         it('simple', () => {
+            const code = `\
+fn main() {
+    if true { "foo" }
+    if true { 4 } else { "foo" }
+    unit
+}`
+            let ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual([])
+        })
+
+        it('incompatible branches', () => {
             const code = (arg: string) => `\
 fn main() {
     let a = if true { 4 } else { ${arg} }

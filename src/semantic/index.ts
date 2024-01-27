@@ -20,7 +20,7 @@ import { VirtualType, genericToVirtual, isAssignable, typeToVirtual } from '../t
 import { instanceGenericMap, resolveType } from '../typecheck/generic'
 import { holeType, neverType, selfType, unitType, unknownType } from '../typecheck/type'
 import { assert, todo } from '../util/todo'
-import { notFoundError, semanticError, typeError } from './error'
+import { notFoundError, semanticError, typeError, unknownTypeError } from './error'
 import { checkClosureExpr, checkExpr } from './expr'
 import { checkPattern } from './match'
 import { typeNames } from './type-def'
@@ -148,7 +148,7 @@ export const checkBlock = (block: Block, ctx: Context): boolean => {
     // TODO: combine return statement types
     // TODO: type of a ABR (all branches returned) block should be Never
     const lastStatement = <Partial<Typed> | undefined>block.statements.at(-1)
-    block.type = lastStatement?.type ?? unknownType
+    block.type = lastStatement?.type ?? unitType
 
     module.scopeStack.pop()
 
@@ -460,7 +460,12 @@ const checkVarDef = (varDef: VarDef, ctx: Context): void => {
             ctx.errors.push(typeError(varDef, exprType, varType, ctx))
         }
     } else {
-        varType = varDef.expr.type
+        if (varDef.expr.type!.kind === 'unknown-type') {
+            ctx.errors.push(unknownTypeError(varDef.expr, varDef.expr.type!, ctx))
+            varType = unknownType
+        } else {
+            varType = varDef.expr.type
+        }
     }
 
     checkPattern(varDef.pattern, varType!, ctx)
@@ -525,6 +530,7 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
             case 'type-def':
             case 'generic':
             case 'module':
+                identifier.type = unknownType
                 break
         }
 
@@ -572,8 +578,8 @@ export const checkType = (type: Type, ctx: Context) => {
             }
             return
         case 'type-bounds':
-            // TODO
-            break
+            type.bounds.forEach(b => checkType(b, ctx))
+            return
         case 'fn-type':
             // TODO
             break
