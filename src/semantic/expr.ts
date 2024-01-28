@@ -316,12 +316,16 @@ export const checkMatchExpr = (matchExpr: MatchExpr, ctx: Context): void => {
     if (matchExpr.clauses.length !== 0) {
         const firstClauseBlock = matchExpr.clauses[0].block
         if (firstClauseBlock.type!.kind !== 'unknown-type') {
-            matchExpr.type = firstClauseBlock.type
-            for (const clause of matchExpr.clauses.slice(1)) {
-                // TODO: only report return type mismatch if result of a match-expr is used (same as in if-expr)
-                if (!isAssignable(clause.block.type!, firstClauseBlock.type!, ctx)) {
-                    ctx.errors.push(typeError(clause.block, clause.block.type!, firstClauseBlock.type!, ctx))
+            const mismatchedType = matchExpr.clauses
+                .slice(1)
+                .some(clause => !isAssignable(clause.block.type!, firstClauseBlock.type!, ctx))
+            if (mismatchedType) {
+                matchExpr.type = {
+                    kind: 'unknown-type',
+                    mismatchedMatchClauses: matchExpr.clauses.map(c => c.block.type!)
                 }
+            } else {
+                matchExpr.type = firstClauseBlock.type
             }
         } else {
             ctx.errors.push(unknownTypeError(firstClauseBlock, firstClauseBlock.type!, ctx))

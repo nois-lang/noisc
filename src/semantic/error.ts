@@ -21,8 +21,13 @@ export const notImplementedError = (ctx: Context, node: AstNode<any>, message?: 
     semanticError(ctx, node, 'not implemented:' + (message ? ' ' + message : ''))
 
 export const unknownTypeError = (node: AstNode<any>, type: VirtualType, ctx: Context): SemanticError => {
-    if (type.kind === 'unknown-type' && type.mismatchedBranches) {
-        return mismatchedBranchesError(node, type.mismatchedBranches.then, type.mismatchedBranches.else, ctx)
+    if (type.kind === 'unknown-type') {
+        if (type.mismatchedBranches) {
+            return mismatchedBranchesError(node, type.mismatchedBranches.then, type.mismatchedBranches.else, ctx)
+        }
+        if (type.mismatchedMatchClauses) {
+            return mismatchedClausesError(node, type.mismatchedMatchClauses, ctx)
+        }
     }
     return semanticError(ctx, node, 'unknown type')
 }
@@ -54,5 +59,14 @@ if branches have incompatible types:
     then: \`${virtualTypeToString(thenType)}\`
     else: \`${virtualTypeToString(elseType)}\``
         : 'missing `else` clause'
+    return semanticError(ctx, node, message)
+}
+
+/**
+ * TODO: include clause ref for better error reporting
+ */
+export const mismatchedClausesError = (node: AstNode<any>, types: VirtualType[], ctx: Context): SemanticError => {
+    const typesStr = types.map(t => `    ${virtualTypeToString(t)}`).join('\n')
+    const message = `match clauses have incompatible types:\n${typesStr}`
     return semanticError(ctx, node, message)
 }

@@ -429,5 +429,30 @@ fn main() {
 
             expect(ctx.warnings.map(e => e.message)).toEqual(['unreachable pattern'])
         })
+
+        it('clauses type mismatch', () => {
+            const code = (arg: string) => `\
+type Expr {
+    Add(l: Expr, r: Expr),
+    Const(v: Int)
+}
+
+fn main() {
+    let expr = Expr::Const(v: 4)
+    ${arg}match expr {
+        Expr::Add() { "foo" }
+        Expr::Const() { 5 }
+        _ {}
+    }
+    return unit
+}`
+            let ctx = check(code(''))
+            expect(ctx.errors.map(e => e.message)).toEqual([])
+
+            ctx = check(code('let a = '))
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'match clauses have incompatible types:\n    std::string::String\n    std::int::Int\n    std::unit::Unit'
+            ])
+        })
     })
 })
