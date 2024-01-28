@@ -5,6 +5,7 @@ import { Scope } from '../scope'
 import { VirtualIdentifier } from '../scope/vid'
 import { Typed } from '../semantic'
 import { Source } from '../source'
+import { assert } from '../util/todo'
 import { Expr, buildExpr } from './expr'
 import { Pattern, buildPattern } from './match'
 import { Name, buildName } from './operand'
@@ -31,7 +32,7 @@ export type AstNodeKind =
     | 'operand-expr'
     | 'unary-expr'
     | 'binary-expr'
-    | 'field-init'
+    | 'named-arg'
     | 'block'
     | 'closure-expr'
     | 'list-expr'
@@ -58,8 +59,8 @@ export type AstNodeKind =
     | 'neg-op'
     | 'not-op'
     | 'spread-op'
-    | 'call-op'
-    | 'con-op'
+    | 'pos-call'
+    | 'named-call'
     | 'add-op'
     | 'sub-op'
     | 'mult-op'
@@ -150,14 +151,15 @@ export const buildParam = (node: ParseNode): Param => {
     return { kind: 'param', parseNode: node, pattern, paramType: typeNode ? buildType(typeNode) : undefined }
 }
 
-export interface FieldInit extends AstNode<'field-init'> {
+export interface NamedArg extends AstNode<'named-arg'> {
     name: Name
     expr: Expr
 }
 
-export const buildFieldInit = (node: ParseNode): FieldInit => {
+export const buildNamedArg = (node: ParseNode): NamedArg => {
     const nodes = filterNonAstNodes(node)
+    assert(nodes.length === 2)
     const name = buildName(nodes[0])
     const expr = buildExpr(nodes[1])
-    return { kind: 'field-init', parseNode: node, name, expr }
+    return { kind: 'named-arg', parseNode: node, name, expr }
 }

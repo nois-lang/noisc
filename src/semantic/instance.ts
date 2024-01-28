@@ -1,6 +1,6 @@
 import { checkCallArgs, checkType } from '.'
 import { BinaryExpr, OperandExpr } from '../ast/expr'
-import { CallOp } from '../ast/op'
+import { PosCall } from '../ast/op'
 import { Identifier, Operand } from '../ast/operand'
 import { Context } from '../scope'
 import { getInstanceForType } from '../scope/trait'
@@ -27,7 +27,7 @@ export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
         binaryExpr.type = checkFieldAccessExpr(binaryExpr, ctx)
         return
     }
-    if (rOp.kind === 'unary-expr' && rOp.unaryOp.kind === 'call-op') {
+    if (rOp.kind === 'unary-expr' && rOp.unaryOp.kind === 'pos-call') {
         binaryExpr.type = checkMethodCallExpr(binaryExpr.lOperand, rOp.operand, rOp.unaryOp, ctx)
         return
     }
@@ -101,7 +101,7 @@ const checkFieldAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): VirtualType
 const checkMethodCallExpr = (
     lOperand: Operand,
     rOperand: Operand,
-    callOp: CallOp,
+    callOp: PosCall,
     ctx: Context
 ): VirtualType | undefined => {
     checkOperand(lOperand, ctx)
@@ -153,7 +153,7 @@ const makeMethodGenericMaps = (
     lOperand: Operand,
     rOperand: Identifier,
     methodDef: MethodDef,
-    callOp: CallOp,
+    callOp: PosCall,
     ctx: Context
 ): Map<string, VirtualType>[] => {
     const implForType = getInstanceForType(methodDef.trait, ctx)

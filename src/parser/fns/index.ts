@@ -72,22 +72,6 @@ export const parseModule = (parser: Parser): void => {
 }
 
 /**
- * args ::= O-PAREN (expr (COMMA expr)*)? COMMA? C-PAREN
- */
-export const parseArgs = (parser: Parser): void => {
-    const mark = parser.open()
-    parser.expect('o-paren')
-    while (!parser.at('c-paren') && !parser.eof()) {
-        parseExpr(parser)
-        if (!parser.at('c-paren')) {
-            parser.expect('comma')
-        }
-    }
-    parser.expect('c-paren')
-    parser.close(mark, 'args')
-}
-
-/**
  * TODO: closure generics
  * closure-expr ::= closure-params type-annot? block
  */
@@ -122,30 +106,46 @@ export const parseClosureParams = (parser: Parser): void => {
 }
 
 /**
- * con-op ::= O-PAREN (field-init (COMMA field-init)*)? COMMA? C-PAREN
+ * pos-call ::= O-PAREN (expr (COMMA expr)*)? COMMA? C-PAREN
  */
-export const parseConOp = (parser: Parser): void => {
+export const parsePosCall = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('o-paren')
-    while (parser.atAny(paramFirstTokens) && !parser.eof()) {
-        parseFieldInit(parser)
+    while (!parser.at('c-paren') && !parser.eof()) {
+        parseExpr(parser)
         if (!parser.at('c-paren')) {
             parser.expect('comma')
         }
     }
     parser.expect('c-paren')
-    parser.close(mark, 'con-op')
+    parser.close(mark, 'pos-call')
 }
 
 /**
- * field-init ::= NAME COLON expr
+ * named-call ::= O-PAREN (named-arg (COMMA named-arg)*)? COMMA? C-PAREN
  */
-export const parseFieldInit = (parser: Parser): void => {
+export const parseNamedCall = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('o-paren')
+    while (parser.atAny(paramFirstTokens) && !parser.eof()) {
+        parseNamedArg(parser)
+        if (!parser.at('c-paren')) {
+            parser.expect('comma')
+        }
+    }
+    parser.expect('c-paren')
+    parser.close(mark, 'named-call')
+}
+
+/**
+ * named-arg ::= NAME COLON expr
+ */
+export const parseNamedArg = (parser: Parser): void => {
     const mark = parser.open()
     parser.expectAny(nameLikeTokens)
     parser.expect('colon')
     parseExpr(parser)
-    parser.close(mark, 'field-init')
+    parser.close(mark, 'named-arg')
 }
 
 export const parseTodo = (parser: Parser): void => {

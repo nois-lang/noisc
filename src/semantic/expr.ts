@@ -2,7 +2,7 @@ import { checkBlock, checkCallArgs, checkIdentifier, checkParam, checkType } fro
 import { AstNode } from '../ast'
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { MatchExpr } from '../ast/match'
-import { CallOp, ConOp } from '../ast/op'
+import { NamedCall, PosCall } from '../ast/op'
 import { ClosureExpr, ForExpr, IfExpr, IfLetExpr, ListExpr, Operand, WhileExpr } from '../ast/operand'
 import { Context, Scope, instanceScope } from '../scope'
 import { bool, iter, iterable } from '../scope/std'
@@ -125,11 +125,11 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
 
 export const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     switch (unaryExpr.unaryOp.kind) {
-        case 'call-op':
-            checkCallExpr(unaryExpr, ctx)
+        case 'pos-call':
+            checkPosCall(unaryExpr, ctx)
             break
-        case 'con-op':
-            checkConExpr(unaryExpr, ctx)
+        case 'named-call':
+            checkNamedCall(unaryExpr, ctx)
             break
         case 'neg-op':
             // todo
@@ -409,8 +409,11 @@ export const checkClosureExpr = (
     module.scopeStack.pop()
 }
 
-export const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
-    const callOp = <CallOp>unaryExpr.unaryOp
+/**
+ * TODO: unify call op logic so that variant constructors and functions/methods can be called with both types
+ */
+export const checkPosCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
+    const callOp = <PosCall>unaryExpr.unaryOp
     const operand = unaryExpr.operand
 
     checkOperand(operand, ctx)
@@ -451,7 +454,7 @@ export const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
 const makeFnGenericMaps = (
     operand: Operand,
     fnType: VirtualFnType,
-    callOp: CallOp,
+    callOp: PosCall,
     ctx: Context
 ): Map<string, VirtualType>[] => {
     const typeArgs = operand.kind === 'identifier' ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
@@ -465,8 +468,8 @@ const makeFnGenericMaps = (
     return [instanceMap, fnTypeArgMap, fnMap]
 }
 
-export const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
-    const conOp = <ConOp>unaryExpr.unaryOp
+export const checkNamedCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
+    const namedCall = <NamedCall>unaryExpr.unaryOp
     const operand = unaryExpr.operand
     if (operand.kind !== 'identifier') {
         ctx.errors.push(semanticError(ctx, operand, `expected identifier, got ${operand.kind}`))
@@ -480,40 +483,42 @@ export const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         return
     }
     if (ref.def.kind !== 'variant') {
-        ctx.errors.push(
-            semanticError(ctx, unaryExpr, `constructor called on \`${ref.def.kind}\``)
-        )
+        ctx.errors.push(semanticError(ctx, unaryExpr, `constructor called on \`${ref.def.kind}\``))
         return
     }
-    conOp.fields.map(f => checkExpr(f.expr, ctx))
+    namedCall.fields.map(f => checkExpr(f.expr, ctx))
     const variant = ref.def.variant
     const variantType = <VirtualFnType>variant.type!
     // TODO: type args map
-    // TODO: fields might be specified out of order, match conOp.fields by name
-    const conOpMap = makeFnGenericMap(
+    // TODO: fields might be specified out of order, match namedCall.fields by name
+    const namedCallMap = makeFnGenericMap(
         variantType,
-        conOp.fields.map(f => f.expr.type ?? unknownType)
+        namedCall.fields.map(f => f.expr.type ?? unknownType)
     )
     const instScope = instanceScope(ctx)
     const instanceMap = instScope ? instanceGenericMap(instScope, ctx) : new Map()
-    const genericMaps = [conOpMap, instanceMap]
+    const genericMaps = [namedCallMap, instanceMap]
     variantType.generics.forEach(g => {
-        if (!conOpMap.get(g.name)) {
+        if (!namedCallMap.get(g.name)) {
             // TODO: find actual con op argument that's causing this
-            ctx.errors.push(semanticError(ctx, conOp, `unresolved type parameter ${g.name}`))
+            ctx.errors.push(semanticError(ctx, namedCall, `unresolved type parameter ${g.name}`))
         }
     })
-    if (variantType.paramTypes.length !== conOp.fields.length) {
+    if (variantType.paramTypes.length !== namedCall.fields.length) {
         ctx.errors.push(
-            semanticError(ctx, conOp, `expected ${variantType.paramTypes.length} arguments, got ${conOp.fields.length}`)
+            semanticError(
+                ctx,
+                namedCall,
+                `expected ${variantType.paramTypes.length} arguments, got ${namedCall.fields.length}`
+            )
         )
         return
     }
     variantType.paramTypes
         .map(pt => resolveType(pt, genericMaps, variant, ctx))
         .forEach((paramType, i) => {
-            // TODO: fields might be specified out of order, match conOp.fields by name
-            const field = conOp.fields[i]
+            // TODO: fields might be specified out of order, match namedCall.fields by name
+            const field = namedCall.fields[i]
             const argType = resolveType(field.expr.type ?? unknownType, genericMaps, field, ctx)
             if (!isAssignable(argType, paramType, ctx)) {
                 ctx.errors.push(typeError(field, argType, paramType, ctx))

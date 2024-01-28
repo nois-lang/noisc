@@ -83,15 +83,13 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
                       ;
       spread-op       ::= PERIOD PERIOD
                       ;
-    postfix-op        ::= call-op | con-op
+    postfix-op        ::= pos-call | named-call
                       ;
-      call-op         ::= args
+      pos-call        ::= O-PAREN (expr (COMMA expr)*)? COMMA? C-PAREN
                       ;
-        args          ::= O-PAREN (expr (COMMA expr)*)? COMMA? C-PAREN
+      named-call      ::= O-PAREN (named-arg (COMMA named-arg)*)? COMMA? C-PAREN
                       ;
-      con-op          ::= O-PAREN (field-init (COMMA field-init)*)? COMMA? C-PAREN
-                      ;
-        field-init    ::= NAME COLON expr
+        named-arg     ::= NAME COLON expr
                       ;
 identifier            ::= (NAME COLON COLON)* NAME type-args?
                       ;

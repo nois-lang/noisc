@@ -160,7 +160,7 @@ describe('ast', () => {
                         },
                         rOperand: {
                             kind: 'unary-expr',
-                            unaryOp: { kind: 'call-op', args: [] },
+                            unaryOp: { kind: 'pos-call', args: [] },
                             operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'b' }, typeArgs: [] }
                         }
                     }
@@ -193,7 +193,7 @@ describe('ast', () => {
                                 },
                                 rOperand: {
                                     kind: 'unary-expr',
-                                    unaryOp: { kind: 'call-op', args: [] },
+                                    unaryOp: { kind: 'pos-call', args: [] },
                                     operand: {
                                         kind: 'identifier',
                                         scope: [],
@@ -204,7 +204,7 @@ describe('ast', () => {
                             },
                             rOperand: {
                                 kind: 'unary-expr',
-                                unaryOp: { kind: 'call-op', args: [] },
+                                unaryOp: { kind: 'pos-call', args: [] },
                                 operand: {
                                     kind: 'identifier',
                                     scope: [],
@@ -215,7 +215,7 @@ describe('ast', () => {
                         },
                         rOperand: {
                             kind: 'unary-expr',
-                            unaryOp: { kind: 'call-op', args: [] },
+                            unaryOp: { kind: 'pos-call', args: [] },
                             operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'd' }, typeArgs: [] }
                         }
                     }

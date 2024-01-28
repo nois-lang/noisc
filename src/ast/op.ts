@@ -1,16 +1,16 @@
-import { ParseNode, ParseTree } from '../parser'
+import { ParseNode } from '../parser'
 import { Expr, buildExpr } from './expr'
-import { AstNode, AstNodeKind, FieldInit, buildFieldInit, filterNonAstNodes } from './index'
+import { AstNode, AstNodeKind, NamedArg, buildNamedArg, filterNonAstNodes } from './index'
 
-export type UnaryOp = NegOp | NotOp | SpreadOp | CallOp | ConOp
+export type UnaryOp = NegOp | NotOp | SpreadOp | PosCall | NamedCall
 
 export const buildUnaryOp = (node: ParseNode): UnaryOp => {
     const n = filterNonAstNodes(node)[0]
-    if (n.kind === 'call-op') {
-        return buildCallOp(n)
+    if (n.kind === 'pos-call') {
+        return buildPosCall(n)
     }
-    if (n.kind === 'con-op') {
-        return buildConOp(n)
+    if (n.kind === 'named-call') {
+        return buildNamedCall(n)
     }
     if (!['sub-op', 'not-op', 'spread-op'].includes(n.kind)) {
         throw Error(`expected unary-op, got ${node.kind}`)
@@ -108,30 +108,29 @@ export interface NotOp extends AstNode<'not-op'> {}
 
 export interface SpreadOp extends AstNode<'spread-op'> {}
 
-export interface CallOp extends AstNode<'call-op'> {
+export interface PosCall extends AstNode<'pos-call'> {
     args: Expr[]
 }
 
-export const buildCallOp = (node: ParseNode): CallOp => {
+export const buildPosCall = (node: ParseNode): PosCall => {
     const nodes = filterNonAstNodes(node)
-    const argExprs = filterNonAstNodes(<ParseTree>nodes[0])
     return {
-        kind: 'call-op',
+        kind: 'pos-call',
         parseNode: node,
-        args: argExprs.map(n => buildExpr(n))
+        args: nodes.map(n => buildExpr(n))
     }
 }
 
-export interface ConOp extends AstNode<'con-op'> {
-    fields: FieldInit[]
+export interface NamedCall extends AstNode<'named-call'> {
+    fields: NamedArg[]
 }
 
-export const buildConOp = (node: ParseNode): ConOp => {
+export const buildNamedCall = (node: ParseNode): NamedCall => {
     const nodes = filterNonAstNodes(node)
     return {
-        kind: 'con-op',
+        kind: 'named-call',
         parseNode: node,
-        fields: nodes.map(n => buildFieldInit(n))
+        fields: nodes.map(n => buildNamedArg(n))
     }
 }
 
