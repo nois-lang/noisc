@@ -51,6 +51,9 @@ impl <T: io::Display> io::Display for List<T> {
 
 type ListIter<T>(
     list: List<T>,
+    // TODO: this logic breaks if list size changes during iteration.
+    // Do something similar to Java's ConcurrentModificationException:
+    // if eqRef(self.lastItem, self.list.at(self.index - 1)) { panic("list modified during iteration") }
     index: Int,
 )
 

@@ -10,6 +10,12 @@ trait Iter<T> {
     }
 }
 
+impl <T> Iterable<T> for Iter<T> {
+    fn iter(self): Iter<T> {
+        return self
+    }
+}
+
 trait Collector<T> {
     fn fromIter<I: Iter<T>>(iter: I): Self
 }
