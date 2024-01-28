@@ -409,10 +409,6 @@ export const checkClosureExpr = (
     module.scopeStack.pop()
 }
 
-/**
- * TODO: call parameterless variant, e.g. Option::None()
- * TODO: better error when variant is called as a function, e.g. Option::Some(4)
- */
 export const checkCallExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const callOp = <CallOp>unaryExpr.unaryOp
     const operand = unaryExpr.operand
@@ -485,7 +481,7 @@ export const checkConExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     }
     if (ref.def.kind !== 'variant') {
         ctx.errors.push(
-            semanticError(ctx, operand, `type error: ${virtualTypeToString(operand.type!)} is not a variant`)
+            semanticError(ctx, unaryExpr, `constructor called on \`${ref.def.kind}\``)
         )
         return
     }
