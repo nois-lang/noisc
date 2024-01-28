@@ -145,12 +145,15 @@ export const checkBlock = (block: Block, ctx: Context): boolean => {
         }
     }
 
-    // TODO: combine return statement types
-    // TODO: type of a ABR (all branches returned) block should be Never
-    const lastStatement = <Partial<Typed> | undefined>block.statements.at(-1)
-    block.type = lastStatement?.type ?? unitType
-    if (block.type.kind === 'unknown-type') {
-        ctx.errors.push(unknownTypeError(block, block.type, ctx))
+    if (scope.allBranchesReturned) {
+        block.type = neverType
+    } else {
+        // TODO: combine return statement types
+        const lastStatement = <Partial<Typed> | undefined>block.statements.at(-1)
+        block.type = lastStatement?.type ?? unitType
+        if (block.type.kind === 'unknown-type') {
+            ctx.errors.push(unknownTypeError(block, block.type, ctx))
+        }
     }
 
     module.scopeStack.pop()
