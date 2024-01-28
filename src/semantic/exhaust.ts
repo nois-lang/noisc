@@ -172,10 +172,8 @@ const unmatchedPaths = (node: MatchNode): string[] => {
     switch (node.kind) {
         case 'type':
             return [...node.variants.entries()].flatMap(([name, n]) => {
-                return unmatchedPaths(n.node).map(v => {
-                    if (v === '_') return `${name}()`
-                    return `${name}(${v})`
-                })
+                if (n.node.kind === 'unmatched') return `${name}()`
+                return unmatchedPaths(n.node).map(v => `${name}(${v})`)
             })
         case 'variant':
             const fields = [...node.fields.entries()].flatMap(([name, field]) => {
