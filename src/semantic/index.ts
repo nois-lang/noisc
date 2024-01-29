@@ -152,7 +152,8 @@ export const checkBlock = (block: Block, ctx: Context): boolean => {
         const lastStatement = <Partial<Typed> | undefined>block.statements.at(-1)
         block.type = lastStatement?.type ?? unitType
         if (block.type.kind === 'unknown-type') {
-            ctx.errors.push(unknownTypeError(block, block.type, ctx))
+            // TODO: is this needed? there should already be a not found/unknown type error from that statement
+            // ctx.errors.push(unknownTypeError(block, block.type, ctx))
         }
     }
 

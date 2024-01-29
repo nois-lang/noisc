@@ -409,22 +409,26 @@ export const checkClosureExpr = (
     module.scopeStack.pop()
 }
 
-/**
- * TODO: unify call op logic so that variant constructors and functions/methods can be called with both types
- */
 export const checkPosCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const callOp = <PosCall>unaryExpr.unaryOp
     const operand = unaryExpr.operand
-
     checkOperand(operand, ctx)
-
     callOp.args.forEach(a => checkOperand(a, ctx))
+    unaryExpr.type = checkCall(unaryExpr, callOp, operand, callOp.args, ctx)
+}
 
+export const checkCall = (
+    node: AstNode<any>,
+    call: AstNode<any>,
+    operand: Operand,
+    args: Expr[],
+    ctx: Context
+): VirtualType => {
     if (operand.type?.kind === 'malleable-type') {
         const closureType: VirtualFnType = {
             kind: 'fn-type',
             generics: [],
-            paramTypes: callOp.args.map(arg => arg.type ?? unknownType),
+            paramTypes: args.map(arg => arg.type ?? unknownType),
             returnType: unknownType
         }
         const closure = operand.type.closure
@@ -434,38 +438,25 @@ export const checkPosCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
 
     if (operand.type?.kind === 'unknown-type') {
         ctx.errors.push(unknownTypeError(operand, operand.type, ctx))
-        return
-    } else if (operand.type?.kind !== 'fn-type') {
+        return unknownType
+    }
+    if (operand.type?.kind !== 'fn-type') {
         const message = `type error: non-callable operand of type \`${virtualTypeToString(operand.type!)}\``
         ctx.errors.push(semanticError(ctx, operand, message))
-        return
+        return unknownType
     }
 
     const fnType = <VirtualFnType>operand.type
-    const genericMaps = makeFnGenericMaps(operand, fnType, callOp, ctx)
-    const paramTypes = fnType.paramTypes.map((pt, i) =>
-        resolveType(pt, genericMaps, callOp.args.at(i) ?? unaryExpr, ctx)
-    )
-    checkCallArgs(callOp, callOp.args, paramTypes, ctx)
-
-    unaryExpr.type = replaceGenericsWithHoles(resolveType(fnType.returnType, genericMaps, unaryExpr, ctx))
-}
-
-const makeFnGenericMaps = (
-    operand: Operand,
-    fnType: VirtualFnType,
-    callOp: PosCall,
-    ctx: Context
-): Map<string, VirtualType>[] => {
-    const typeArgs = operand.kind === 'identifier' ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
-    const fnTypeArgMap = makeFnTypeArgGenericMap(fnType, typeArgs)
-    const instScope = instanceScope(ctx)
-    const instanceMap = instScope ? instanceGenericMap(instScope, ctx) : new Map()
-    const fnMap = makeFnGenericMap(
+    const genericMaps = makeFnGenericMaps(
+        operand,
         fnType,
-        callOp.args.map(a => a.type!)
+        args.map(a => a.type!),
+        ctx
     )
-    return [instanceMap, fnTypeArgMap, fnMap]
+    const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(pt, genericMaps, args.at(i) ?? node, ctx))
+    checkCallArgs(call, args, paramTypes, ctx)
+
+    return replaceGenericsWithHoles(resolveType(fnType.returnType, genericMaps, node, ctx))
 }
 
 export const checkNamedCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
@@ -486,45 +477,50 @@ export const checkNamedCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
         ctx.errors.push(semanticError(ctx, unaryExpr, `constructor called on \`${ref.def.kind}\``))
         return
     }
-    namedCall.fields.map(f => checkExpr(f.expr, ctx))
     const variant = ref.def.variant
-    const variantType = <VirtualFnType>variant.type!
-    // TODO: type args map
-    // TODO: fields might be specified out of order, match namedCall.fields by name
-    const namedCallMap = makeFnGenericMap(
-        variantType,
-        namedCall.fields.map(f => f.expr.type ?? unknownType)
-    )
-    const instScope = instanceScope(ctx)
-    const instanceMap = instScope ? instanceGenericMap(instScope, ctx) : new Map()
-    const genericMaps = [namedCallMap, instanceMap]
-    variantType.generics.forEach(g => {
-        if (!namedCallMap.get(g.name)) {
-            // TODO: find actual con op argument that's causing this
-            ctx.errors.push(semanticError(ctx, namedCall, `unresolved type parameter ${g.name}`))
-        }
-    })
-    if (variantType.paramTypes.length !== namedCall.fields.length) {
+    const conType = <VirtualFnType>variant.type!
+
+    namedCall.fields.map(f => checkExpr(f.expr, ctx))
+    if (conType.paramTypes.length !== namedCall.fields.length) {
         ctx.errors.push(
             semanticError(
                 ctx,
                 namedCall,
-                `expected ${variantType.paramTypes.length} arguments, got ${namedCall.fields.length}`
+                `expected ${conType.paramTypes.length} arguments, got ${namedCall.fields.length}`
             )
         )
         return
     }
-    variantType.paramTypes
+
+    // TODO: fields might be specified out of order, reorder by matching variant fields by name
+    const args = namedCall.fields.map(f => f.expr.type!)
+    const genericMaps = makeFnGenericMaps(operand, conType, args, ctx)
+
+    conType.paramTypes
         .map(pt => resolveType(pt, genericMaps, variant, ctx))
         .forEach((paramType, i) => {
-            // TODO: fields might be specified out of order, match namedCall.fields by name
             const field = namedCall.fields[i]
             const argType = resolveType(field.expr.type ?? unknownType, genericMaps, field, ctx)
             if (!isAssignable(argType, paramType, ctx)) {
                 ctx.errors.push(typeError(field, argType, paramType, ctx))
             }
         })
-    unaryExpr.type = resolveType(variantType.returnType, genericMaps, unaryExpr, ctx)
+
+    unaryExpr.type = resolveType(conType.returnType, genericMaps, unaryExpr, ctx)
+}
+
+const makeFnGenericMaps = (
+    operand: Operand,
+    fnType: VirtualFnType,
+    args: VirtualType[],
+    ctx: Context
+): Map<string, VirtualType>[] => {
+    const typeArgs = operand.kind === 'identifier' ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
+    const fnTypeArgMap = makeFnTypeArgGenericMap(fnType, typeArgs)
+    const instScope = instanceScope(ctx)
+    const instanceMap = instScope ? instanceGenericMap(instScope, ctx) : new Map()
+    const fnMap = makeFnGenericMap(fnType, args)
+    return [instanceMap, fnTypeArgMap, fnMap]
 }
 
 export const checkListExpr = (listExpr: ListExpr, ctx: Context): void => {

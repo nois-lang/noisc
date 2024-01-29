@@ -34,7 +34,6 @@ export type Scope = InstanceScope | TypeDefScope | FnDefScope | BlockScope | Com
  */
 export type DefinitionMap = Map<string, Definition>
 
-// TODO: refactor TraitScope and ImplScope into a single InstanceScope
 export interface InstanceScope {
     kind: 'instance'
     definitions: DefinitionMap
@@ -74,7 +73,6 @@ export const defKey = (def: Definition): string => {
         case 'self':
             return def.kind
         case 'name-def':
-            return def.kind + def.name.value
         case 'fn-def':
         case 'trait-def':
         case 'type-def':
