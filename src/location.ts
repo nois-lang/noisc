@@ -31,9 +31,9 @@ export const prettyLineAt = (range: LocationRange, source: Source): string => {
     if (!start || !end) return '<outside of a file>'
     const lineNumSize = start.line.toString().length
     const padSize = Math.max(6, 3 + lineNumSize)
-    const pad = '| '.padStart(padSize)
-    const linePad = `${(start.line + 1).toString()} | `.padStart(padSize)
     if (start.line === end.line) {
+        const pad = '│ '.padStart(padSize)
+        const linePad = `${(start.line + 1).toString()} │ `.padStart(padSize)
         const sourceLine = source.code.split('\n')[start.line]
         const line = linePad + sourceLine
         const lastLineColumn = sourceLine.length - 1
@@ -42,15 +42,22 @@ export const prettyLineAt = (range: LocationRange, source: Source): string => {
         const highlight = pad + ' '.repeat(start.column) + '^'.repeat(highlightLen)
         return [pad, line, highlight].join('\n')
     } else {
+        const maxLinesKeep = 2
         const lines = source.code.split('\n').slice(start.line, end.line + 1)
-        const first = pad + '-'.repeat(start.column) + 'v'.repeat(lines[0].length - start.column)
-        const last = pad + '-'.repeat(end.column - 1) + '^'.repeat(lines.at(-1)!.length - end.column + 1)
+        const first = '│┌'.padStart(padSize) + '─'.repeat(start.column) + '┐'
+        const last = '│└'.padStart(padSize) + '─'.repeat(Math.max(0, end.column - 1)) + '┘'
+        const tooLong = lines.length > maxLinesKeep * 2
         const linesErr = lines
-            .map((sourceLine, i) => {
+            .flatMap((sourceLine, i) => {
+                if (tooLong && i >= maxLinesKeep && i < lines.length - maxLinesKeep) {
+                    if (i === maxLinesKeep) {
+                        return ['...   '.padStart(padSize)]
+                    }
+                    return []
+                }
                 let lineNum = start.line + i + 1
-                const isPartialHighlight = i === 0 || i === lines.length - 1
-                const linePad = `${lineNum.toString()} |${isPartialHighlight ? ' ' : '>'}`.padStart(padSize)
-                return linePad + sourceLine
+                const linePad = `${lineNum.toString()} ││`.padStart(padSize)
+                return [linePad + sourceLine]
             })
             .join('\n')
         return [first, linesErr, last].join('\n')

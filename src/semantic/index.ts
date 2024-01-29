@@ -260,7 +260,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
         })
     } else {
         if (instanceScope(ctx)?.def.kind !== 'trait-def') {
-            ctx.warnings.push(semanticError(ctx, fnDef, `fn \`${fnDef.name.value}\` has no body -> must be native`))
+            ctx.warnings.push(semanticError(ctx, fnDef.name, `fn \`${fnDef.name.value}\` has no body -> must be native`))
         }
     }
 
