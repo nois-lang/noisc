@@ -1,6 +1,6 @@
 import { AstNode, Module, Param } from '../ast'
 import { Identifier } from '../ast/operand'
-import { Block, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '../ast/statement'
+import { Block, BreakStmt, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '../ast/statement'
 import { Generic, Type } from '../ast/type'
 import { TypeDef, Variant } from '../ast/type-def'
 import {
@@ -10,8 +10,9 @@ import {
     InstanceScope,
     TypeDefScope,
     defKey,
-    fnScope,
-    instanceScope
+    fnDefScope,
+    instanceScope,
+    unwindScope
 } from '../scope'
 import { findSuperRelChains, traitDefToVirtualType } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
@@ -125,7 +126,7 @@ export const checkTopLevelDefiniton = (module: Module, definition: Definition, c
 
 export const checkBlock = (block: Block, ctx: Context): boolean => {
     const module = ctx.moduleStack.at(-1)!
-    const scope: BlockScope = { kind: 'block', definitions: new Map(), allBranchesReturned: false }
+    const scope: BlockScope = { kind: 'block', definitions: new Map(), isLoop: false, allBranchesReturned: false }
     module.scopeStack.push(scope)
 
     // TODO: check for unreachable statements after return statement or fns returning `Never`
@@ -139,6 +140,7 @@ export const checkBlock = (block: Block, ctx: Context): boolean => {
 
         if (
             s.kind === 'return-stmt' ||
+            s.kind === 'break-stmt' ||
             ('type' in s && s.type?.kind === 'vid-type' && vidEq(s.type.identifier, neverType.identifier))
         ) {
             scope.allBranchesReturned = true
@@ -209,7 +211,7 @@ const checkStatement = (statement: Statement, ctx: Context): void => {
             checkReturnStmt(statement, ctx)
             break
         case 'break-stmt':
-            // TODO
+            checkBreakStmt(statement, ctx)
             break
     }
 }
@@ -253,7 +255,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
         if (!isAssignable(blockType, returnTypeResolved, ctx)) {
             ctx.errors.push(typeError(fnDef.block, blockType, returnTypeResolved, ctx))
         }
-        fnScope(ctx)!.returnStatements.forEach(rs => {
+        fnDefScope(ctx)!.returnStatements.forEach(rs => {
             if (!isAssignable(rs.type!, returnTypeResolved, ctx)) {
                 ctx.errors.push(typeError(rs, rs.type!, returnTypeResolved, ctx))
             }
@@ -499,16 +501,34 @@ const checkVarDef = (varDef: VarDef, ctx: Context): void => {
 }
 
 export const checkReturnStmt = (returnStmt: ReturnStmt, ctx: Context) => {
-    const scope = fnScope(ctx)
+    const scope = fnDefScope(ctx)
 
     if (!scope) {
-        ctx.errors.push(semanticError(ctx, returnStmt, `\`${returnStmt.kind}\` outside of function scope`))
+        ctx.errors.push(semanticError(ctx, returnStmt, `\`${returnStmt.kind}\` outside of the function scope`))
     }
 
     checkExpr(returnStmt.returnExpr, ctx)
     returnStmt.type = returnStmt.returnExpr.type
 
     scope?.returnStatements.push(returnStmt)
+}
+
+export const checkBreakStmt = (breakStmt: BreakStmt, ctx: Context) => {
+    const scopes = unwindScope(ctx)
+    const loopScopeExists = scopes.some(s => s.kind === 'block' && s.isLoop)
+    if (loopScopeExists) {
+        for (const scope of scopes) {
+            if (scope.kind === 'fn') {
+                ctx.errors.push(semanticError(ctx, breakStmt, 'cannot break from within the closure'))
+                return
+            }
+            if (scope.kind === 'block' && scope.isLoop) {
+                return
+            }
+        }
+    } else {
+        ctx.errors.push(semanticError(ctx, breakStmt, `\`${breakStmt.kind}\` outside of the loop`))
+    }
 }
 
 export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {

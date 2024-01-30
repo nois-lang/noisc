@@ -4,7 +4,7 @@ import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { MatchExpr } from '../ast/match'
 import { NamedCall, PosCall } from '../ast/op'
 import { ClosureExpr, ForExpr, IfExpr, IfLetExpr, ListExpr, Operand, WhileExpr } from '../ast/operand'
-import { Context, Scope, instanceScope } from '../scope'
+import { BlockScope, Context, Scope, instanceScope } from '../scope'
 import { bool, iter, iterable } from '../scope/std'
 import { getInstanceForType } from '../scope/trait'
 import { idToVid, vidFromString, vidToString } from '../scope/util'
@@ -193,7 +193,7 @@ export const checkIfExpr = (ifExpr: IfExpr, ctx: Context): void => {
 export const checkIfLetExpr = (ifLetExpr: IfLetExpr, ctx: Context): void => {
     const module = ctx.moduleStack.at(-1)!
     const scope = module.scopeStack.at(-1)!
-    module.scopeStack.push({ kind: 'block', definitions: new Map(), allBranchesReturned: false })
+    module.scopeStack.push({ kind: 'block', definitions: new Map(), isLoop: false, allBranchesReturned: false })
 
     checkExpr(ifLetExpr.expr, ctx)
     assert(!!ifLetExpr.expr.type)
@@ -230,6 +230,7 @@ export const checkIfExprCommon = (ifExpr: IfExpr | IfLetExpr, scope: Scope, ctx:
 export const checkWhileExpr = (whileExpr: WhileExpr, ctx: Context): void => {
     const module = ctx.moduleStack.at(-1)!
     const scope = module.scopeStack.at(-1)!
+    module.scopeStack.push({ kind: 'block', definitions: new Map(), isLoop: true, allBranchesReturned: false })
 
     checkExpr(whileExpr.condition, ctx)
     const condType = whileExpr.condition.type
@@ -239,7 +240,6 @@ export const checkWhileExpr = (whileExpr: WhileExpr, ctx: Context): void => {
     }
 
     const abr = checkBlock(whileExpr.block, ctx)
-    assert(!!whileExpr.block.type)
 
     if (scope.kind === 'block' && abr) {
         scope.allBranchesReturned = true
@@ -250,12 +250,14 @@ export const checkWhileExpr = (whileExpr: WhileExpr, ctx: Context): void => {
         identifier: iter.identifier,
         typeArgs: [whileExpr.block.type!]
     }
+
+    module.scopeStack.pop()
 }
 
 export const checkForExpr = (forExpr: ForExpr, ctx: Context): void => {
     const module = ctx.moduleStack.at(-1)!
     const scope = module.scopeStack.at(-1)!
-    module.scopeStack.push({ kind: 'block', definitions: new Map(), allBranchesReturned: false })
+    module.scopeStack.push({ kind: 'block', definitions: new Map(), isLoop: true, allBranchesReturned: false })
 
     checkExpr(forExpr.expr, ctx)
     assert(!!forExpr.expr.type)

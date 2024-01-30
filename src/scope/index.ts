@@ -58,6 +58,7 @@ export interface FnDefScope {
 export interface BlockScope {
     kind: 'block'
     definitions: DefinitionMap
+    isLoop: boolean
     allBranchesReturned: boolean
 }
 
@@ -98,24 +99,15 @@ export const pathToVid = (path: string, packageName?: string): VirtualIdentifier
     return { names: dirs }
 }
 
-export const instanceScope = (ctx: Context): InstanceScope | undefined => {
+export const unwindScope = (ctx: Context): Scope[] => {
     const module = ctx.moduleStack.at(-1)!
-    for (let i = module.scopeStack.length - 1; i >= 0; i--) {
-        let scope = module.scopeStack[i]
-        if (scope.kind === 'instance') {
-            return scope
-        }
-    }
-    return undefined
+    return module.scopeStack.toReversed()
 }
 
-export const fnScope = (ctx: Context): FnDefScope | undefined => {
-    const module = ctx.moduleStack.at(-1)!
-    for (let i = module.scopeStack.length - 1; i >= 0; i--) {
-        let scope = module.scopeStack[i]
-        if (scope.kind === 'fn') {
-            return scope
-        }
-    }
-    return undefined
+export const instanceScope = (ctx: Context): InstanceScope | undefined => {
+    return <InstanceScope | undefined>unwindScope(ctx).find(s => s.kind === 'instance')
+}
+
+export const fnDefScope = (ctx: Context): FnDefScope | undefined => {
+    return <FnDefScope | undefined>unwindScope(ctx).find(s => s.kind === 'fn')
 }

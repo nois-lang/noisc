@@ -455,4 +455,37 @@ fn main() {
             ])
         })
     })
+
+    describe('break stmt', () => {
+        it('ok', () => {
+            const code = `\
+fn main() {
+    while true {
+        break
+    }
+}`
+            const ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual([])
+        })
+
+        it('no loop scope', () => {
+            const code = `\
+fn main() {
+    break
+}`
+            const ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual(['`break-stmt` outside of the loop'])
+        })
+
+        it('from closure', () => {
+            const code = `\
+fn main() {
+    while true {
+        (|| { break })()
+    }
+}`
+            const ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual(['cannot break from within the closure'])
+        })
+    })
 })
