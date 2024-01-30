@@ -12,13 +12,19 @@
         "declaration": true,
         "sourceMap": true,
         "outDir": "./dist",
-        "lib": ["es2022", "dom", "scripthost", "es2015.symbol.wellknown", "es2015.collection"],
+        "lib": [
+            "es2022",
+            "dom",
+            "scripthost",
+            "es2015.symbol.wellknown",
+            "es2015.collection"
+        ],
         "skipLibCheck": true
     },
-    "include": ["src/**/*"],
-    "exclude": ["src/**/*.spec.ts"],
-    "ts-node": {
-        "esm": true,
-        "experimentalSpecifierResolution": "node"
-    }
+    "include": [
+        "src/**/*"
+    ],
+    "exclude": [
+        "src/**/*.spec.ts"
+    ]
 }
