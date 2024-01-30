@@ -1,4 +1,4 @@
-import { ParseToken } from '../lexer/lexer'
+import { LexerToken } from '../lexer/lexer'
 import { ParseNode } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
 import { Typed } from '../semantic'
@@ -55,7 +55,7 @@ export type PatternExpr = Name | ConPattern | Operand | UnaryExpr | Hole
 
 export const buildPatternExpr = (node: ParseNode): PatternExpr => {
     const nodes = filterNonAstNodes(node)
-    if (nameLikeTokens.includes((<ParseToken>nodes[0]).kind)) {
+    if (nameLikeTokens.includes((<LexerToken>nodes[0]).kind)) {
         return buildName(nodes[0])
     }
     if (nodes[0].kind === 'con-pattern') {

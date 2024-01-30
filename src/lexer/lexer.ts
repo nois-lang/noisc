@@ -66,13 +66,13 @@ export type TokenKind = (typeof lexerTokenKinds)[number]
 
 export const erroneousTokenKinds: TokenKind[] = ['unknown', 'unterminated-char', 'unterminated-string']
 
-export interface ParseToken {
+export interface LexerToken {
     kind: TokenKind
     value: string
     span: Span
 }
 
-export const constTokenKindMap: Map<TokenKind, string> = new Map([
+export const lexerKeywordMap: Map<TokenKind, string> = new Map([
     ['use-keyword', 'use'],
     ['type-keyword', 'type'],
     ['trait-keyword', 'trait'],
@@ -134,12 +134,12 @@ export const isWhitespace = (char: string): boolean => char === ' ' || char === 
 
 export const isNewline = (char: string): boolean => char === '\n' || char === '\r'
 
-export const tokenize = (code: String): ParseToken[] => {
+export const tokenize = (code: String): LexerToken[] => {
     const pos = { pos: 0 }
     const chars = code.split('')
-    const tokens: ParseToken[] = []
+    const tokens: LexerToken[] = []
 
-    let unknownToken: ParseToken | undefined = undefined
+    let unknownToken: LexerToken | undefined = undefined
 
     const flushUnknown = () => {
         if (unknownToken) {
@@ -197,7 +197,7 @@ export const tokenize = (code: String): ParseToken[] => {
     return tokens
 }
 
-const parseComment = (chars: string[], tokens: ParseToken[], pos: { pos: number }): boolean => {
+const parseComment = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
     if (chars.slice(pos.pos, pos.pos + 2).join('') === '//') {
         const start = pos.pos
         let buffer: string[] = []
@@ -211,9 +211,9 @@ const parseComment = (chars: string[], tokens: ParseToken[], pos: { pos: number 
     return false
 }
 
-const parseConstToken = (chars: string[], tokens: ParseToken[], pos: { pos: number }): boolean => {
+const parseConstToken = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
     let codeLeft = chars.slice(pos.pos).join('')
-    let pair = [...constTokenKindMap.entries()].find(([, v]) => {
+    let pair = [...lexerKeywordMap.entries()].find(([, v]) => {
         if (!isAlpha(v[0])) {
             return codeLeft.startsWith(v)
         } else {
@@ -231,7 +231,7 @@ const parseConstToken = (chars: string[], tokens: ParseToken[], pos: { pos: numb
     return false
 }
 
-const parseName = (chars: string[], tokens: ParseToken[], pos: { pos: number }): boolean => {
+const parseName = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
     if (isAlpha(chars[pos.pos])) {
         const start = pos.pos
         const name: string[] = []
@@ -245,7 +245,7 @@ const parseName = (chars: string[], tokens: ParseToken[], pos: { pos: number }):
     return false
 }
 
-const parseFloat = (chars: string[], tokens: ParseToken[], pos: { pos: number }): boolean => {
+const parseFloat = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
     if (!isNumeric(chars[pos.pos]) && chars[pos.pos] !== '.') return false
     const leftCode = chars.slice(pos.pos).join('')
     const match = leftCode.match(floatRegex)
@@ -258,7 +258,7 @@ const parseFloat = (chars: string[], tokens: ParseToken[], pos: { pos: number })
     return true
 }
 
-const parseInt = (chars: string[], tokens: ParseToken[], pos: { pos: number }): boolean => {
+const parseInt = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
     const start = pos.pos
     let int = ''
     while (isNumeric(chars[pos.pos])) {
@@ -271,7 +271,7 @@ const parseInt = (chars: string[], tokens: ParseToken[], pos: { pos: number }): 
     return true
 }
 
-const parseCharLiteral = (chars: string[], tokens: ParseToken[], pos: { pos: number }): boolean => {
+const parseCharLiteral = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
     const quote = `'`
     if (chars[pos.pos] !== quote) return false
 
@@ -289,7 +289,7 @@ const parseCharLiteral = (chars: string[], tokens: ParseToken[], pos: { pos: num
     return true
 }
 
-const parseUnterminatedChar = (chars: string[], tokens: ParseToken[], pos: { pos: number }): void => {
+const parseUnterminatedChar = (chars: string[], tokens: LexerToken[], pos: { pos: number }): void => {
     const quote = `'`
     const start = pos.pos
     pos.pos++
@@ -304,7 +304,7 @@ const parseUnterminatedChar = (chars: string[], tokens: ParseToken[], pos: { pos
     tokens.push(createToken('unterminated-char', char, pos, start))
 }
 
-const parseStringLiteral = (chars: string[], tokens: ParseToken[], pos: { pos: number }): boolean => {
+const parseStringLiteral = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
     const quote = '"'
     if (chars[pos.pos] !== quote) return false
 
@@ -322,7 +322,7 @@ const parseStringLiteral = (chars: string[], tokens: ParseToken[], pos: { pos: n
     return true
 }
 
-const parseUnterminatedString = (chars: string[], tokens: ParseToken[], pos: { pos: number }): void => {
+const parseUnterminatedString = (chars: string[], tokens: LexerToken[], pos: { pos: number }): void => {
     const quote = '"'
     const start = pos.pos
     pos.pos++
@@ -335,7 +335,7 @@ const parseUnterminatedString = (chars: string[], tokens: ParseToken[], pos: { p
     return
 }
 
-const createToken = (name: TokenKind, value: string, pos: { pos: number }, start: number = pos.pos): ParseToken => {
+const createToken = (name: TokenKind, value: string, pos: { pos: number }, start: number = pos.pos): LexerToken => {
     return { kind: name, value, span: { start, end: pos.pos } }
 }
 

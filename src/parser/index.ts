@@ -1,4 +1,4 @@
-import { ParseToken, TokenKind } from '../lexer/lexer'
+import { LexerToken, TokenKind } from '../lexer/lexer'
 import { Span } from '../location'
 import { Source } from '../source'
 
@@ -91,7 +91,7 @@ export interface ParseTree {
     nodes: ParseNode[]
 }
 
-export type ParseNode = ParseToken | ParseTree
+export type ParseNode = LexerToken | ParseTree
 
 export const compactParseNode = (node: ParseNode): any => {
     if ('value' in node) {
@@ -102,14 +102,14 @@ export const compactParseNode = (node: ParseNode): any => {
 }
 
 export const getSpan = (node: ParseNode): Span => {
-    const leftmostNode = (node: ParseNode): ParseToken => {
+    const leftmostNode = (node: ParseNode): LexerToken => {
         if ('nodes' in node) {
             return leftmostNode(node.nodes[0])
         } else {
             return node
         }
     }
-    const rightmostNode = (node: ParseNode): ParseToken => {
+    const rightmostNode = (node: ParseNode): LexerToken => {
         if ('nodes' in node) {
             return rightmostNode(node.nodes.at(-1)!)
         } else {

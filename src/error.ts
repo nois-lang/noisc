@@ -1,4 +1,4 @@
-import { ParseToken, TokenKind } from './lexer/lexer'
+import { LexerToken, TokenKind } from './lexer/lexer'
 import { Span, indexToLocation, locationToString, prettyLineAt } from './location'
 import { red, yellow } from './output'
 import { Parser } from './parser/parser'
@@ -6,7 +6,7 @@ import { Source } from './source'
 
 export interface SyntaxError {
     expected: TokenKind[]
-    got: ParseToken
+    got: LexerToken
     message?: string
 }
 
@@ -14,7 +14,7 @@ export const syntaxError = (parser: Parser, message?: string): SyntaxError => {
     return { expected: [], got: parser.tokens[parser.pos], message }
 }
 
-export const prettyLexerError = (token: ParseToken): string => {
+export const prettyLexerError = (token: LexerToken): string => {
     return colorError(`lexer error: ${token.kind} token \`${token.value}\``)
 }
 

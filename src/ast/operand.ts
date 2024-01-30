@@ -1,4 +1,4 @@
-import { ParseToken } from '../lexer/lexer'
+import { LexerToken } from '../lexer/lexer'
 import { ParseNode, ParseTree } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
 import { Typed } from '../semantic'
@@ -163,7 +163,7 @@ export interface StringLiteral extends AstNode<'string-literal'>, Partial<Typed>
 }
 
 export const buildStringLiteral = (node: ParseNode): StringLiteral => {
-    return { kind: 'string-literal', parseNode: node, value: (<ParseToken>node).value }
+    return { kind: 'string-literal', parseNode: node, value: (<LexerToken>node).value }
 }
 
 export interface CharLiteral extends AstNode<'char-literal'>, Partial<Typed> {
@@ -171,7 +171,7 @@ export interface CharLiteral extends AstNode<'char-literal'>, Partial<Typed> {
 }
 
 export const buildCharLiteral = (node: ParseNode): CharLiteral => {
-    return { kind: 'char-literal', parseNode: node, value: (<ParseToken>node).value }
+    return { kind: 'char-literal', parseNode: node, value: (<LexerToken>node).value }
 }
 
 export interface IntLiteral extends AstNode<'int-literal'>, Partial<Typed> {
@@ -179,7 +179,7 @@ export interface IntLiteral extends AstNode<'int-literal'>, Partial<Typed> {
 }
 
 export const buildIntLiteral = (node: ParseNode): IntLiteral => {
-    return { kind: 'int-literal', parseNode: node, value: (<ParseToken>node).value }
+    return { kind: 'int-literal', parseNode: node, value: (<LexerToken>node).value }
 }
 
 export interface FloatLiteral extends AstNode<'float-literal'>, Partial<Typed> {
@@ -187,7 +187,7 @@ export interface FloatLiteral extends AstNode<'float-literal'>, Partial<Typed> {
 }
 
 export const buildFloatLiteral = (node: ParseNode): FloatLiteral => {
-    return { kind: 'float-literal', parseNode: node, value: (<ParseToken>node).value }
+    return { kind: 'float-literal', parseNode: node, value: (<LexerToken>node).value }
 }
 
 export interface Identifier extends AstNode<'identifier'>, Partial<Typed> {
@@ -197,7 +197,7 @@ export interface Identifier extends AstNode<'identifier'>, Partial<Typed> {
 }
 
 export const buildIdentifier = (node: ParseNode): Identifier => {
-    const names = (<ParseTree>node).nodes.filter(n => nameLikeTokens.includes((<ParseToken>n).kind)).map(buildName)
+    const names = (<ParseTree>node).nodes.filter(n => nameLikeTokens.includes((<LexerToken>n).kind)).map(buildName)
     const scope = names.slice(0, -1)
     const name = names.at(-1)!
     const typeArgsNode = filterNonAstNodes(node).find(n => n.kind === 'type-args')
@@ -210,5 +210,5 @@ export interface Name extends AstNode<'name'>, Partial<Typed> {
 }
 
 export const buildName = (node: ParseNode): Name => {
-    return { kind: 'name', parseNode: node, value: (<ParseToken>node).value }
+    return { kind: 'name', parseNode: node, value: (<LexerToken>node).value }
 }

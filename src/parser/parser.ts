@@ -1,5 +1,5 @@
 import { SyntaxError } from '../error'
-import { ParseToken, TokenKind, independentTokenKinds } from '../lexer/lexer'
+import { LexerToken, TokenKind, independentTokenKinds } from '../lexer/lexer'
 import { ParseTree, TreeKind } from './index'
 
 export type ParseEvent = { type: 'open'; kind: TreeKind } | { type: 'close' } | { type: 'advance' }
@@ -9,7 +9,7 @@ export type ParseEvent = { type: 'open'; kind: TreeKind } | { type: 'close' } | 
  */
 export class Parser {
     constructor(
-        public tokens: ParseToken[],
+        public tokens: LexerToken[],
         public pos: number = 0,
         public events: ParseEvent[] = [],
         public errors: SyntaxError[] = [],
