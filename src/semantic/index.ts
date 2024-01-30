@@ -607,6 +607,7 @@ export const checkType = (type: Type, ctx: Context) => {
                 return
             }
             if (k === 'type-def' || k === 'trait-def') {
+                type.typeArgs.forEach(tp => checkType(tp, ctx))
                 const typeParams = ref.def.generics.filter(g => g.name.value !== selfType.name)
                 if (type.typeArgs.length !== typeParams.length) {
                     ctx.errors.push(
@@ -618,17 +619,16 @@ export const checkType = (type: Type, ctx: Context) => {
                     )
                     return
                 }
-                type.typeArgs.forEach(tp => {
-                    checkType(tp, ctx)
-                })
             }
             return
         case 'type-bounds':
             type.bounds.forEach(b => checkType(b, ctx))
             return
         case 'fn-type':
-            // TODO
-            break
+            // TODO: scope for generics
+            type.paramTypes.forEach(p => checkType(p, ctx))
+            checkType(type.returnType, ctx)
+            return
     }
 }
 
