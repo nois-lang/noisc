@@ -1,5 +1,5 @@
 import { ParseToken, TokenKind } from '../lexer/lexer'
-import { LocationRange } from '../location'
+import { Span } from '../location'
 import { Source } from '../source'
 
 export const treeKinds = <const>[
@@ -101,7 +101,7 @@ export const compactParseNode = (node: ParseNode): any => {
     }
 }
 
-export const getLocationRange = (node: ParseNode): LocationRange => {
+export const getSpan = (node: ParseNode): Span => {
     const leftmostNode = (node: ParseNode): ParseToken => {
         if ('nodes' in node) {
             return leftmostNode(node.nodes[0])
@@ -116,10 +116,10 @@ export const getLocationRange = (node: ParseNode): LocationRange => {
             return node
         }
     }
-    return { start: leftmostNode(node).location.start, end: rightmostNode(node).location.end }
+    return { start: leftmostNode(node).span.start, end: rightmostNode(node).span.end }
 }
 
 export const parseNodeCode = (node: ParseNode, source: Source): string => {
-    const range = getLocationRange(node)
+    const range = getSpan(node)
     return source.code.slice(range.start, range.end)
 }

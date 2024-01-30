@@ -124,7 +124,7 @@ export class Parser {
     }
 
     error(e: SyntaxError): void {
-        if (this.errors.at(-1)?.got.location.start !== e.got.location.start) {
+        if (this.errors.at(-1)?.got.span.start !== e.got.span.start) {
             this.errors.push(e)
         }
     }

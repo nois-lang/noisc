@@ -1,4 +1,4 @@
-import { LocationRange } from '../location'
+import { Span } from '../location'
 import { NodeKind } from '../parser'
 
 export const lexerOperatorKinds = <const>[
@@ -69,7 +69,7 @@ export const erroneousTokenKinds: TokenKind[] = ['unknown', 'unterminated-char',
 export interface ParseToken {
     kind: TokenKind
     value: string
-    location: LocationRange
+    span: Span
 }
 
 export const constTokenKindMap: Map<TokenKind, string> = new Map([
@@ -143,7 +143,7 @@ export const tokenize = (code: String): ParseToken[] => {
 
     const flushUnknown = () => {
         if (unknownToken) {
-            unknownToken.value = code.slice(unknownToken.location.start, unknownToken.location.end)
+            unknownToken.value = code.slice(unknownToken.span.start, unknownToken.span.end)
             tokens.push(unknownToken)
             unknownToken = undefined
         }
@@ -179,12 +179,12 @@ export const tokenize = (code: String): ParseToken[] => {
         if (!parsed) {
             if (unknownToken) {
                 unknownToken!.value += chars[pos.pos]
-                unknownToken!.location.end++
+                unknownToken!.span.end++
             } else {
                 unknownToken = {
                     kind: 'unknown',
                     value: '',
-                    location: { start: pos.pos, end: pos.pos + 1 }
+                    span: { start: pos.pos, end: pos.pos + 1 }
                 }
             }
             pos.pos++
@@ -351,7 +351,7 @@ const parseUnterminatedString = (chars: string[], tokens: ParseToken[], pos: { p
 }
 
 const createToken = (name: TokenKind, value: string, pos: { pos: number }, start: number = pos.pos): ParseToken => {
-    return { kind: name, value, location: { start, end: pos.pos } }
+    return { kind: name, value, span: { start, end: pos.pos } }
 }
 
 const isAlpha = (char: string): boolean =>

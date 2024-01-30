@@ -102,7 +102,7 @@ describe('parser', () => {
             expect(errors.length).toEqual(2)
             expect(errors[0]).toEqual({
                 expected: [],
-                got: { kind: 'equals', location: { end: 5, start: 4 }, value: '=' },
+                got: { kind: 'equals', span: { end: 5, start: 4 }, value: '=' },
                 message: 'expected pattern'
             })
         })
@@ -163,7 +163,7 @@ describe('parser', () => {
             expect(errors.length).toEqual(1)
             expect(errors[0]).toEqual({
                 expected: [],
-                got: { kind: 'c-paren', location: { end: 9, start: 8 }, value: ')' },
+                got: { kind: 'c-paren', span: { end: 9, start: 8 }, value: ')' },
                 message: 'expected statement'
             })
         })
@@ -173,7 +173,7 @@ describe('parser', () => {
             expect(errors.length).toEqual(2)
             expect(errors[0]).toEqual({
                 expected: [],
-                got: { kind: 'o-brace', location: { end: 28, start: 27 }, value: '{' },
+                got: { kind: 'o-brace', span: { end: 28, start: 27 }, value: '{' },
                 message: 'expected statement'
             })
         })

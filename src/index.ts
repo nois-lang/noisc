@@ -7,7 +7,7 @@ import { colorError, colorWarning, prettySourceMessage } from './error'
 import { Package } from './package'
 import { buildModule } from './package/build'
 import { buildPackage } from './package/io'
-import { getLocationRange } from './parser'
+import { getSpan } from './parser'
 import { Context, pathToVid } from './scope'
 import { buildInstanceRelations } from './scope/trait'
 import { checkModule, prepareModule } from './semantic'
@@ -89,7 +89,7 @@ if (ctx.config.libCheck) {
 if (ctx.errors.length > 0) {
     for (const error of ctx.errors) {
         console.error(
-            prettySourceMessage(colorError(error.message), getLocationRange(error.node.parseNode), error.module.source)
+            prettySourceMessage(colorError(error.message), getSpan(error.node.parseNode), error.module.source)
         )
     }
     process.exit(1)
@@ -99,7 +99,7 @@ for (const warning of ctx.warnings) {
     console.error(
         prettySourceMessage(
             colorWarning(warning.message),
-            getLocationRange(warning.node.parseNode),
+            getSpan(warning.node.parseNode),
             warning.module.source
         )
     )

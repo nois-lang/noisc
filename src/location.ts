@@ -1,7 +1,7 @@
 import { isNewline } from './lexer/lexer'
 import { Source } from './source'
 
-export interface LocationRange {
+export interface Span {
     /**
      * Start position index of this span, inclusive
      */
@@ -31,9 +31,9 @@ export const indexToLocation = (index: number, source: Source): Location | undef
     return { line, column }
 }
 
-export const prettyLineAt = (range: LocationRange, source: Source): string => {
-    const start = indexToLocation(range.start, source)
-    const end = indexToLocation(range.end, source)
+export const prettyLineAt = (span: Span, source: Source): string => {
+    const start = indexToLocation(span.start, source)
+    const end = indexToLocation(span.end, source)
     if (!start || !end) return '<outside of a file>'
     const lineNumSize = start.line.toString().length
     const padSize = Math.max(6, 3 + lineNumSize)
