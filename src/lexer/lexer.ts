@@ -49,7 +49,7 @@ export const lexerKeywordKinds = <const>[
 
 export const lexerDynamicKinds = <const>['name', 'string', 'char', 'int', 'float']
 
-const lexerParseIndependentKinds = <const>['newline', 'comment']
+const lexerParseIndependentKinds = <const>['comment']
 
 const lexerSpecialKinds = <const>['unknown', 'unterminated-string', 'unterminated-char', 'eof']
 
@@ -128,7 +128,7 @@ const stringRegex = new RegExp(
 /**
  * Independent tokens are tokens that do not hold semantic meaning and automatically advanced by parser
  */
-export const independentTokenKinds: NodeKind[] = ['newline', 'comment']
+export const independentTokenKinds: NodeKind[] = ['comment']
 
 export const isWhitespace = (char: string): boolean => char === ' ' || char === '\t'
 
@@ -150,7 +150,7 @@ export const tokenize = (code: String): ParseToken[] => {
     }
 
     while (pos.pos < chars.length) {
-        if (isWhitespace(chars[pos.pos])) {
+        if (isWhitespace(chars[pos.pos]) || isNewline(chars[pos.pos])) {
             pos.pos++
             flushUnknown()
             continue
@@ -160,7 +160,6 @@ export const tokenize = (code: String): ParseToken[] => {
             parseFloat,
             parseInt,
             parseComment,
-            parseNewline,
             parseConstToken,
             parseName,
             parseCharLiteral,
@@ -207,20 +206,6 @@ const parseComment = (chars: string[], tokens: ParseToken[], pos: { pos: number 
             pos.pos++
         }
         tokens.push(createToken('comment', buffer.join(''), pos, start))
-        return true
-    }
-    return false
-}
-
-const parseNewline = (chars: string[], tokens: ParseToken[], pos: { pos: number }): boolean => {
-    if (isNewline(chars[pos.pos])) {
-        const start = pos.pos
-        let buffer: string[] = []
-        while (isNewline(chars[pos.pos])) {
-            buffer.push(chars[pos.pos])
-            pos.pos++
-        }
-        tokens.push(createToken('newline', buffer.join(''), pos, start))
         return true
     }
     return false

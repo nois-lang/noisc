@@ -186,9 +186,7 @@ describe('parser', () => {
    [ { statement:
         [ { expr: [ { 'sub-expr': [ { operand: [ { identifier: [ { name: 'foo' } ] } ] } ] } ] } ] },
      { statement:
-        [ { newline: '\n' },
-          { comment: '// comment here' },
-          { newline: '\n' },
+        [ { comment: '// comment here' },
           { expr: [ { 'sub-expr': [ { operand: [ { identifier: [ { name: 'bar' } ] } ] } ] } ] } ] } ] }
         )
     })

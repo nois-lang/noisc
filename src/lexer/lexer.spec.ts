@@ -16,12 +16,10 @@ let main = (): Unit {
             ['colon', ':'],
             ['name', 'Unit'],
             ['o-brace', '{'],
-            ['newline', '\n'],
             ['name', 'print'],
             ['o-paren', '('],
             ['int', '4'],
             ['c-paren', ')'],
-            ['newline', '\n'],
             ['c-brace', '}'],
             ['eof', '']
         ])
@@ -163,7 +161,6 @@ let main = (): Unit {
         it('unterminated', () => {
             expect(tokenize(`"string 123 ok\n`)).toEqual([
                 { kind: 'unterminated-string', value: `"string 123 ok`, span: { start: 0, end: 14 } },
-                { kind: 'newline', value: `\n`, span: { start: 14, end: 15 } },
                 { kind: 'eof', value: '', span: { start: 15, end: 16 } }
             ])
         })
@@ -214,7 +211,6 @@ let main = (): Unit {
     it('tokenize comment', () => {
         expect(tokenize(`//this is 4\n4`)).toEqual([
             { kind: 'comment', span: { start: 0, end: 11 }, value: '//this is 4' },
-            { kind: 'newline', span: { start: 11, end: 12 }, value: '\n' },
             { kind: 'int', span: { start: 12, end: 13 }, value: '4' },
             { kind: 'eof', span: { start: 13, end: 14 }, value: '' }
         ])
