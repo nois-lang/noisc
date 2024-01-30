@@ -143,7 +143,7 @@ export const tokenize = (code: String): ParseToken[] => {
 
     const flushUnknown = () => {
         if (unknownToken) {
-            unknownToken.value = code.slice(unknownToken.location.start, unknownToken.location.end + 1)
+            unknownToken.value = code.slice(unknownToken.location.start, unknownToken.location.end)
             tokens.push(unknownToken)
             unknownToken = undefined
         }
@@ -184,7 +184,7 @@ export const tokenize = (code: String): ParseToken[] => {
                 unknownToken = {
                     kind: 'unknown',
                     value: '',
-                    location: { start: pos.pos, end: pos.pos }
+                    location: { start: pos.pos, end: pos.pos + 1 }
                 }
             }
             pos.pos++
@@ -351,7 +351,7 @@ const parseUnterminatedString = (chars: string[], tokens: ParseToken[], pos: { p
 }
 
 const createToken = (name: TokenKind, value: string, pos: { pos: number }, start: number = pos.pos): ParseToken => {
-    return { kind: name, value, location: { start, end: pos.pos - 1 } }
+    return { kind: name, value, location: { start, end: pos.pos } }
 }
 
 const isAlpha = (char: string): boolean =>

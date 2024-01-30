@@ -13,7 +13,7 @@ export class Parser {
         public pos: number = 0,
         public events: ParseEvent[] = [],
         public errors: SyntaxError[] = [],
-        public independentCount: number | undefined,
+        public independentCount: number | undefined = undefined,
         public fuel: number = 256
     ) {}
 

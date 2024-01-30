@@ -121,5 +121,5 @@ export const getLocationRange = (node: ParseNode): LocationRange => {
 
 export const parseNodeCode = (node: ParseNode, source: Source): string => {
     const range = getLocationRange(node)
-    return source.code.slice(range.start, range.end + 1)
+    return source.code.slice(range.start, range.end)
 }

@@ -2,7 +2,13 @@ import { isNewline } from './lexer/lexer'
 import { Source } from './source'
 
 export interface LocationRange {
+    /**
+     * Start position index of this span, inclusive
+     */
     start: number
+    /**
+     * End position index of this span, exclusive
+     */
     end: number
 }
 
@@ -36,9 +42,8 @@ export const prettyLineAt = (range: LocationRange, source: Source): string => {
         const linePad = `${(start.line + 1).toString()} │ `.padStart(padSize)
         const sourceLine = source.code.split('\n')[start.line]
         const line = linePad + sourceLine
-        const lastLineColumn = sourceLine.length - 1
-        const highlightEnd = end.column === sourceLine.length && start.line !== end.line ? end.column : lastLineColumn
-        const highlightLen = highlightEnd + 1 - start.column
+        const highlightEnd = start.line === end.line ? end.column : sourceLine.length
+        const highlightLen = highlightEnd - start.column
         const highlight = pad + ' '.repeat(start.column) + '^'.repeat(highlightLen)
         return [pad, line, highlight].join('\n')
     } else {
