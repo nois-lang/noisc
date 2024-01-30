@@ -126,7 +126,7 @@ const stringRegex = new RegExp(
 )
 
 /**
- * Independent tokens are automatically advanced by parser by default
+ * Independent tokens are tokens that do not hold semantic meaning and automatically advanced by parser
  */
 export const independentTokenKinds: NodeKind[] = ['newline', 'comment']
 

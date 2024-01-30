@@ -88,8 +88,6 @@ fn main() {
         a = a + 1
     }
 
-    // TODO: while let loop
-
     // for loop
     let f = for g in [1, 2, 3] {
         println(g)

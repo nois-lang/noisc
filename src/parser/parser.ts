@@ -2,12 +2,7 @@ import { SyntaxError } from '../error'
 import { ParseToken, TokenKind, independentTokenKinds } from '../lexer/lexer'
 import { ParseTree, TreeKind } from './index'
 
-export type ParseEvent = OpenEvent | { type: 'close' } | { type: 'advance' }
-
-export interface OpenEvent {
-    type: 'open'
-    kind: TreeKind
-}
+export type ParseEvent = { type: 'open'; kind: TreeKind } | { type: 'close' } | { type: 'advance' }
 
 /**
  * @see https://matklad.github.io/2023/05/21/resilient-ll-parsing-tutorial.html
@@ -18,12 +13,14 @@ export class Parser {
         public pos: number = 0,
         public events: ParseEvent[] = [],
         public errors: SyntaxError[] = [],
+        public independentCount: number | undefined,
         public fuel: number = 256
     ) {}
 
     open(): number {
         const mark = this.events.length
         this.events.push({ type: 'open', kind: 'error' })
+        this.replayIndependent()
         this.advanceIndependent()
         return mark
     }
@@ -33,18 +30,38 @@ export class Parser {
         this.events.push({ type: 'close' })
     }
 
-    advance(independent: boolean = true): void {
+    advance(): void {
         if (this.eof()) throw Error('eof')
         this.fuel = 256
         this.events.push({ type: 'advance' })
         this.pos++
-        if (independent) {
-            this.advanceIndependent()
+        this.recordIndependent()
+    }
+
+    /**
+     * Independent tokens should are attached to the parse node that is coming right after it.
+     * To do that, incoming independent token count is stored until advance() or open() call
+     */
+    recordIndependent(): void {
+        this.replayIndependent()
+        for (let i = 0; ; i++) {
+            if (!independentTokenKinds.includes(this.nth(i))) {
+                this.independentCount = i
+                this.pos += i
+                return
+            }
         }
     }
 
+    replayIndependent(): void {
+        if (this.independentCount === undefined) return
+        for (let i = 0; i < this.independentCount; i++) {
+            this.events.push({ type: 'advance' })
+        }
+        this.independentCount = undefined
+    }
+
     advanceIndependent(): void {
-        // TODO: attach comments to the subsequent tree instead
         if (!this.eof() && independentTokenKinds.some(t => t === this.tokens[this.pos].kind)) {
             this.advance()
         }

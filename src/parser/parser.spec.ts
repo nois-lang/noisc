@@ -1,3 +1,4 @@
+import { inspect } from 'util'
 import { tokenize } from '../lexer/lexer'
 import { parseModule } from './fns'
 import { compactParseNode } from './index'
@@ -177,5 +178,19 @@ describe('parser', () => {
                 message: 'expected statement'
             })
         })
+    })
+    describe('parse comments', () => {
+        const { tree } = parse('foo\n// comment here\nbar')
+        // biome-ignore format: compact
+        expect(tree).toEqual(
+{ module:
+   [ { statement:
+        [ { expr: [ { 'sub-expr': [ { operand: [ { identifier: [ { name: 'foo' } ] } ] } ] } ] } ] },
+     { statement:
+        [ { newline: '\n' },
+          { comment: '// comment here' },
+          { newline: '\n' },
+          { expr: [ { 'sub-expr': [ { operand: [ { identifier: [ { name: 'bar' } ] } ] } ] } ] } ] } ] }
+        )
     })
 })
