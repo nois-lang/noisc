@@ -13,7 +13,7 @@ import {
     fnScope,
     instanceScope
 } from '../scope'
-import { getInstanceForType, traitDefToVirtualType } from '../scope/trait'
+import { findSuperRelChains, traitDefToVirtualType } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
 import { Definition, NameDef, resolveVid } from '../scope/vid'
 import { VirtualType, genericToVirtual, isAssignable, typeToVirtual } from '../typecheck'
@@ -260,7 +260,9 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
         })
     } else {
         if (instanceScope(ctx)?.def.kind !== 'trait-def') {
-            ctx.warnings.push(semanticError(ctx, fnDef.name, `fn \`${fnDef.name.value}\` has no body -> must be native`))
+            ctx.warnings.push(
+                semanticError(ctx, fnDef.name, `fn \`${fnDef.name.value}\` has no body -> must be native`)
+            )
         }
     }
 
@@ -327,6 +329,10 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
     if (implDef.checked) return
     implDef.checked = true
 
+    // TODO: should any errors be reported?
+    const rel = ctx.impls.find(i => i.instanceDef === implDef)
+    if (!rel) return
+
     const module = ctx.moduleStack.at(-1)!
 
     if (instanceScope(ctx)) {
@@ -334,29 +340,31 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
         return
     }
 
-    module.scopeStack.push({
+    const scope: InstanceScope = {
         kind: 'instance',
-        selfType: unknownType,
+        selfType: rel.forType,
         def: implDef,
         definitions: new Map(implDef.generics.map(g => [defKey(g), g]))
-    })
-    const selfType = getInstanceForType(implDef, ctx)
-    // must be set afterwards since impl generics cannot be resolved
-    ;(<InstanceScope>module.scopeStack.at(-1)!).selfType = selfType
+    }
+    module.scopeStack.push(scope)
 
     checkType(implDef.identifier, ctx)
     if (implDef.forTrait) {
         checkType(implDef.forTrait, ctx)
 
-        // presence of for trait means that implDef.identifier is an implemented trait
         const vid = idToVid(implDef.identifier)
         const ref = resolveVid(vid, ctx)
         if (ref) {
             if (ref.def.kind === 'trait-def') {
-                const requiredImplMethods = ref.def.block.statements
-                    .filter(s => s.kind === 'fn-def')
-                    .map(s => <FnDef>s)
-                    .filter(f => !f.block)
+                // TODO: calculate super relation chains once at ctx creation
+                const traits = [
+                    ref.def,
+                    ...findSuperRelChains(ref.vid, ctx).flatMap(chain => chain.map(i => i.instanceDef))
+                ]
+                const traitMethods = traits.flatMap(t =>
+                    t.block.statements.filter(s => s.kind === 'fn-def').map(s => <FnDef>s)
+                )
+                const requiredImplMethods = traitMethods.filter(f => !f.block)
                 const implMethods = implDef.block.statements.filter(s => s.kind === 'fn-def').map(s => <FnDef>s)
                 for (let m of requiredImplMethods) {
                     const mName = m.name.value
@@ -364,8 +372,20 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                         ctx.errors.push(
                             semanticError(
                                 ctx,
-                                implDef.forTrait,
+                                implDef.identifier.name,
                                 `missing method implementation \`${vidToString(ref.vid)}::${mName}\``
+                            )
+                        )
+                    }
+                }
+                for (let m of implMethods) {
+                    const mName = m.name.value
+                    if (!traitMethods.find(im => im.name.value === mName)) {
+                        ctx.errors.push(
+                            semanticError(
+                                ctx,
+                                m.name,
+                                `method \`${vidToString(ref.vid)}::${mName}\` is not defined by implemented trait`
                             )
                         )
                     }
@@ -495,7 +515,6 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
     const vid = idToVid(identifier)
     const ref = resolveVid(vid, ctx)
     if (ref) {
-        // TODO: refactor
         switch (ref.def.kind) {
             case 'self':
                 identifier.type = instanceScope(ctx)!.selfType
