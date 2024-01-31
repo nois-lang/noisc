@@ -91,7 +91,7 @@ export const parsePatternExpr = (parser: Parser): void => {
         } else if (parser.at('float')) {
             parser.expect('float')
         } else {
-            parser.advanceWithError(syntaxError(parser, 'expected pattern'))
+            parser.advanceWithError(syntaxError(parser, 'expected int or float'))
         }
     } else if (parser.at('underscore')) {
         parseHole(parser)

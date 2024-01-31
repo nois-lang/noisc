@@ -19,9 +19,6 @@ import { allEqual } from '../util/array'
 import { notFoundError, semanticError } from './error'
 import { checkOperand, makeFnGenericMaps } from './expr'
 
-/**
- * TODO: differentiate call of a fn type field
- */
 export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     const rOp = binaryExpr.rOperand
     if (rOp.kind === 'operand-expr' && rOp.operand.kind === 'identifier') {

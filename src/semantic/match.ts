@@ -6,6 +6,7 @@ import { NameDef, resolveVid } from '../scope/vid'
 import { VidType, VirtualType, genericToVirtual, virtualTypeToString } from '../typecheck'
 import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { notFoundError, semanticError } from './error'
+import { checkOperand } from './expr'
 
 export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: Context): void => {
     const module = ctx.moduleStack.at(-1)!
@@ -22,17 +23,22 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
             expr.type = expectedType
             break
         case 'unary-expr':
-            // TODO: check unaryExpr
+            if (expr.unaryOp.kind !== 'neg-op') {
+                ctx.errors.push(semanticError(ctx, expr.unaryOp, `unexpected operator \`${expr.unaryOp.kind}\``))
+            }
+            checkOperand(expr.operand, ctx)
+            expr.type = expr.operand.type
             break
         case 'operand-expr':
-            // TODO: check operandExpr
+            checkOperand(expr.operand, ctx)
+            expr.type = expr.operand.type
             break
         case 'con-pattern':
             if (expectedType.kind !== 'vid-type') {
                 ctx.errors.push(
                     semanticError(ctx, pattern, `cannot destructure type \`${virtualTypeToString(expectedType)}\``)
                 )
-                return
+                break
             }
 
             const defs = checkConPattern(expr, expectedType, ctx)
@@ -43,6 +49,7 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
             break
     }
 
+    // TODO expectedType is assignable to expr.type
     if (pattern.name) {
         pattern.name.type = expectedType
         const nameDef: NameDef = { kind: 'name-def', name: pattern.name }

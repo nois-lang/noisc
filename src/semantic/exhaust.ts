@@ -29,7 +29,7 @@ import { MatchExpr, PatternExpr } from '../ast/match'
 import { Context } from '../scope'
 import { concatVid, idToVid, vidFromScope, vidFromString, vidToString } from '../scope/util'
 import { VariantDef, resolveVid } from '../scope/vid'
-import { assert, todo, unreachable } from '../util/todo'
+import { assert, unreachable } from '../util/todo'
 import { semanticError } from './error'
 
 export interface MatchTree {
@@ -89,6 +89,7 @@ const matchPattern = (pattern: PatternExpr, tree: MatchTree, ctx: Context): bool
         case 'string-literal':
         case 'char-literal':
         case 'unary-expr':
+        case 'operand-expr':
             // match the node
             return true
         case 'con-pattern':
@@ -101,7 +102,6 @@ const matchPattern = (pattern: PatternExpr, tree: MatchTree, ctx: Context): bool
 
                 const variants: Map<string, MatchTree> = new Map(
                     def.typeDef.variants.map(v => {
-                        // TODO: is full qualifier needed here? or Type::Variant is enough
                         const variantVid = concatVid(vidFromScope(vid), vidFromString(v.name.value))
                         return [vidToString(variantVid), { node: { kind: 'unmatched' } }]
                     })
@@ -145,8 +145,6 @@ const matchPattern = (pattern: PatternExpr, tree: MatchTree, ctx: Context): bool
                 }
             }
             return matched
-        case 'operand-expr':
-            return todo(`pattern \`${pattern.kind}\``)
         default:
             return unreachable(pattern.kind)
     }
