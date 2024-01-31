@@ -1,3 +1,6 @@
+use std::io::Display
+use std::eq::Eq
+
 type String
 
 impl String {
@@ -6,10 +9,18 @@ impl String {
     }
 }
 
-impl io::Display for String {
+impl Display for String {
     fn fmt(self): String {
         self
     }
 }
 
+impl Eq for String {
+    fn eq(self, other: Self): Bool {
+        eqString(self, other)
+    }
+}
+
 fn concatString(a: String, b: String): String
+
+fn eqString(a: String, b: String): Bool

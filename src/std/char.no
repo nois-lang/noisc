@@ -1,9 +1,20 @@
+use std::io::Display
+use std::eq::Eq
+
 type Char
 
-impl io::Display for Char {
+impl Display for Char {
     fn fmt(self): String {
-        charToString(self)
+        fmtChar(self)
     }
 }
 
-fn charToString(char: Char): String
+impl Eq for Char {
+    fn eq(self, other: Self): Bool {
+        eqChar(self, other)
+    }
+}
+
+fn fmtChar(a: Char): String
+
+fn eqChar(a: Char, b: Char): Bool

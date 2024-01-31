@@ -1,7 +1,16 @@
 /**
- * @param {Char} char
+ * @param {Char} a
  * @returns {String}
  */
-function charToString(char) {
-    return { $noisType: 'std::string::String', value: char.value }
+function fmtChar(a) {
+    return String(a.value)
+}
+
+/**
+ * @param {Char} a
+ * @param {Char} b
+ * @returns {Bool}
+ */
+function eqChar(a, b) {
+    return Bool(a.value === b.value)
 }

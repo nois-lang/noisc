@@ -1,3 +1,6 @@
+use std::eq::Eq
+use std::io::Display
+
 type Int
 
 impl Int {
@@ -36,7 +39,13 @@ impl Num for Int {
     }
 }
 
-impl io::Display for Int {
+impl Eq for Int {
+    fn eq(self, other: Self): Bool {
+        eqInt(self, other)
+    }
+}
+
+impl Display for Int {
     fn fmt(self): String {
         fmtInt(self)
     }
@@ -57,6 +66,8 @@ fn multInt(a: Int, b: Int): Int
 fn divInt(a: Int, b: Int): Int
 
 fn expInt(a: Int, b: Int): Int
+
+fn eqInt(a: Int, b: Int): Bool
 
 fn fmtInt(a: Int): String
 

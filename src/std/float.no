@@ -1,3 +1,6 @@
+use std::eq::Eq
+use std::io::Display
+
 type Float
 
 impl Num for Float {
@@ -30,7 +33,13 @@ impl Num for Float {
     }
 }
 
-impl io::Display for Float {
+impl Eq for Float {
+    fn eq(self, other: Self): Bool {
+        eqFloat(self, other)
+    }
+}
+
+impl Display for Float {
     fn fmt(self): String {
         fmtFloat(self)
     }
@@ -51,6 +60,8 @@ fn multFloat(a: Float, b: Float): Float
 fn divFloat(a: Float, b: Float): Float
 
 fn expFloat(a: Float, b: Float): Float
+
+fn eqFloat(a: Float, b: Float): Bool
 
 fn fmtFloat(a: Float): String
 

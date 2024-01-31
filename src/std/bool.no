@@ -1,3 +1,6 @@
+use std::io::Display
+use std::eq::Eq
+
 type Bool {
     True,
     False
@@ -21,8 +24,24 @@ impl Bool {
     }
 }
 
+impl Display for Bool {
+    fn fmt(self): String {
+        fmtBool(self)
+    }
+}
+
+impl Eq for Bool {
+    fn eq(self, other: Self): Bool {
+        eqBool(self, other)
+    }
+}
+
 fn andBool(a: Bool, b: Bool): Bool
 
 fn orBool(a: Bool, b: Bool): Bool
 
 fn notBool(a: Bool): Bool
+
+fn fmtBool(a: Bool): String
+
+fn eqBool(a: Bool, b: Bool): Bool

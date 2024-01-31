@@ -69,6 +69,15 @@ function expFloat(a, b) {
 
 /**
  * @param {Float} a
+ * @param {Float} b
+ * @returns {Bool}
+ */
+function eqFloat(a, b) {
+    return Bool(a.value === b.value)
+}
+
+/**
+ * @param {Float} a
  * @returns {String}
  */
 function fmtFloat(a) {

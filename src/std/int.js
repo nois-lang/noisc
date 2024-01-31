@@ -69,6 +69,15 @@ function expInt(a, b) {
 
 /**
  * @param {Int} a
+ * @param {Int} b
+ * @returns {Bool}
+ */
+function eqInt(a) {
+    return Bool(a.value === b.value)
+}
+
+/**
+ * @param {Int} a
  * @returns {String}
  */
 function fmtInt(a) {
