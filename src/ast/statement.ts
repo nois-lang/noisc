@@ -1,4 +1,4 @@
-import { ParseToken } from '../lexer/lexer'
+import { LexerToken } from '../lexer/lexer'
 import { ParseNode } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
 import { Checked, Typed } from '../semantic'
@@ -42,7 +42,7 @@ export interface UseExpr extends AstNode<'use-expr'> {
 
 export const buildUseExpr = (node: ParseNode): UseExpr => {
     const nodes = filterNonAstNodes(node.kind === 'use-stmt' ? filterNonAstNodes(node)[1] : node)
-    const names = nodes.filter(n => nameLikeTokens.includes((<ParseToken>n).kind)).map(buildName)
+    const names = nodes.filter(n => nameLikeTokens.includes((<LexerToken>n).kind)).map(buildName)
     const lastNode = nodes.at(-1)!
     if (lastNode.kind === 'use-list') {
         const scope = names
