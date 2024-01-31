@@ -2,12 +2,13 @@ import { checkCallArgs, checkType } from '.'
 import { BinaryExpr } from '../ast/expr'
 import { PosCall } from '../ast/op'
 import { Identifier, Operand } from '../ast/operand'
-import { Context } from '../scope'
+import { Context, instanceScope } from '../scope'
 import { getInstanceForType } from '../scope/trait'
 import { vidToString } from '../scope/util'
 import { MethodDef, resolveVid } from '../scope/vid'
 import { VirtualFnType, VirtualType, genericToVirtual, typeToVirtual, virtualTypeToString } from '../typecheck'
 import {
+    instanceGenericMap,
     makeFnGenericMap,
     makeFnTypeArgGenericMap,
     makeGenericMapOverStructure,
@@ -97,7 +98,17 @@ const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): Vi
 const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: PosCall, ctx: Context): VirtualType => {
     checkOperand(lOperand, ctx)
     callOp.args.forEach(a => checkOperand(a, ctx))
-    if (lOperand.type?.kind !== 'vid-type') {
+    if (rOperand.kind !== 'identifier' || rOperand.scope.length !== 0) {
+        ctx.errors.push(semanticError(ctx, rOperand, `expected method name, got \`${rOperand.kind}\``))
+        return unknownType
+    }
+    const methodName = rOperand.name.value
+    const instScope = instanceScope(ctx)
+    if (instScope) {
+        const instanceMap = instScope ? instanceGenericMap(instScope, ctx) : new Map()
+        lOperand.type = resolveType(lOperand.type!, [instanceMap], ctx)
+    }
+    if (lOperand.type!.kind !== 'vid-type') {
         ctx.errors.push(
             semanticError(
                 ctx,
@@ -107,12 +118,7 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: PosCa
         )
         return unknownType
     }
-    if (rOperand.kind !== 'identifier' || rOperand.scope.length !== 0) {
-        ctx.errors.push(semanticError(ctx, rOperand, `expected method name, got \`${rOperand.kind}\``))
-        return unknownType
-    }
-    const methodName = rOperand.name.value
-    const traitFnVid = { names: [...lOperand.type.identifier.names, methodName] }
+    const traitFnVid = { names: [...lOperand.type!.identifier.names, methodName] }
     const ref = resolveVid(traitFnVid, ctx, ['method-def'])
     if (!ref || ref.def.kind !== 'method-def') {
         // it still can be a field of fn type
@@ -139,6 +145,7 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: PosCa
 
         return replaceGenericsWithHoles(resolveType(fieldType.returnType, genericMaps, ctx))
     } else {
+        const genericMaps = makeMethodGenericMaps(lOperand, rOperand, ref.def, callOp, ctx)
         // normal method call
         const fnType = <VirtualFnType>ref.def.fn.type
 
@@ -153,7 +160,6 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: PosCa
         // TODO: check required type args (that cannot be inferred via `resolveFnGenerics`)
         rOperand.typeArgs.forEach(typeArg => checkType(typeArg, ctx))
 
-        const genericMaps = makeMethodGenericMaps(lOperand, rOperand, ref.def, callOp, ctx)
         const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
         checkCallArgs(callOp, [lOperand, ...callOp.args], paramTypes, ctx)
 
