@@ -68,7 +68,8 @@ describe('ast', () => {
                             value: 'type'
                         },
                         params: [],
-                        returnType: undefined
+                        returnType: undefined,
+                        topLevelChecked: false
                     }
                 ]
             })

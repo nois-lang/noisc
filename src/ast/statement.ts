@@ -75,6 +75,7 @@ export interface FnDef extends AstNode<'fn-def'>, Partial<Typed> {
     params: Param[]
     block?: Block
     returnType?: Type
+    topLevelChecked: boolean
 }
 
 export const buildFnDef = (node: ParseNode): FnDef => {
@@ -87,7 +88,7 @@ export const buildFnDef = (node: ParseNode): FnDef => {
     const params = nodes.at(idx)?.kind === 'params' ? filterNonAstNodes(nodes[idx++]).map(buildParam) : []
     const returnType = nodes.at(idx)?.kind === 'type-annot' ? buildType(nodes[idx++]) : undefined
     const block = nodes.at(idx)?.kind === 'block' ? buildBlock(nodes[idx++]) : undefined
-    return { kind: 'fn-def', parseNode: node, name, generics, params, block, returnType }
+    return { kind: 'fn-def', parseNode: node, name, generics, params, block, returnType, topLevelChecked: false }
 }
 
 export interface TraitDef extends AstNode<'trait-def'> {

@@ -218,7 +218,8 @@ const checkStatement = (statement: Statement, ctx: Context): void => {
 
 // TODO: if fn is a part of impl for, make sure signature matches with its trait
 const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
-    if (fnDef.type) return
+    if (fnDef.type || fnDef.topLevelChecked || !ctx.check) return
+    fnDef.topLevelChecked = true
 
     const module = ctx.moduleStack.at(-1)!
     module.scopeStack.push({
