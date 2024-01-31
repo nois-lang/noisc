@@ -91,7 +91,7 @@ export const parsePrefixOp = (parser: Parser): void => {
     const m = parser.open()
 
     if (parser.consume('minus')) {
-        parser.close(m, 'sub-op')
+        parser.close(m, 'neg-op')
     } else if (parser.consume('excl')) {
         parser.close(m, 'not-op')
     } else if (parser.at('period') && parser.nth(1) === 'period') {

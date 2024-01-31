@@ -12,7 +12,7 @@ export const buildUnaryOp = (node: ParseNode): UnaryOp => {
     if (n.kind === 'named-call') {
         return buildNamedCall(n)
     }
-    if (!['sub-op', 'not-op', 'spread-op'].includes(n.kind)) {
+    if (!['neg-op', 'not-op', 'spread-op'].includes(n.kind)) {
         throw Error(`expected unary-op, got ${node.kind}`)
     }
     return { kind: <any>n.kind, parseNode: node }

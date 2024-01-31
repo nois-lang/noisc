@@ -49,6 +49,7 @@ export const treeKinds = <const>[
     'assign-op',
     'prefix-op',
     'not-op',
+    'neg-op',
     'spread-op',
     'postfix-op',
     'pos-call',
