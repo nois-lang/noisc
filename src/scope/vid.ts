@@ -180,10 +180,14 @@ const resolveScopeVid = (
                 // match type def by first vid name
                 const typeDef = scope.definitions.get('type-def' + typeDefName)
                 if (typeDef && typeDef.kind === 'type-def') {
-                    // if matched, try to find variant with matching name
-                    const variant = typeDef.variants.find(v => v.name.value === variantName)
-                    if (variant) {
-                        return { vid, moduleVid, def: { kind: 'variant', typeDef, variant } }
+                    const module = resolveVid(moduleVid, ctx, ['module'])
+                    if (module && module.def.kind === 'module') {
+                        checkTopLevelDefiniton(module.def, typeDef, ctx)
+                        // if matched, try to find variant with matching name
+                        const variant = typeDef.variants.find(v => v.name.value === variantName)
+                        if (variant) {
+                            return { vid, moduleVid, def: { kind: 'variant', typeDef, variant } }
+                        }
                     }
                 }
             }
