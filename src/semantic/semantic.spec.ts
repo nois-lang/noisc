@@ -42,11 +42,7 @@ describe('semantic', () => {
         ctx.impls = buildInstanceRelations(ctx)
         ctx.check = true
         if (checkStd) {
-            ctx.packages
-                .flatMap(p => p.modules)
-                .forEach(m => {
-                    checkModule(m, ctx)
-                })
+            ctx.packages.flatMap(p => p.modules).forEach(m => checkModule(m, ctx))
         } else {
             checkModule(moduleAst, ctx)
         }

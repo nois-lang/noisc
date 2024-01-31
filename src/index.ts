@@ -97,10 +97,6 @@ if (ctx.errors.length > 0) {
 
 for (const warning of ctx.warnings) {
     console.error(
-        prettySourceMessage(
-            colorWarning(warning.message),
-            getSpan(warning.node.parseNode),
-            warning.module.source
-        )
+        prettySourceMessage(colorWarning(warning.message), getSpan(warning.node.parseNode), warning.module.source)
     )
 }

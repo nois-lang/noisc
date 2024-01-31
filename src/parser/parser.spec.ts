@@ -6,7 +6,7 @@ import { Parser } from './parser'
 describe('parser', () => {
     /**
      * Use the following command to get compact tree output:
-     * console.log(inspect(tree, { depth: null, compact: true, breakLength: 120 }))
+     * inspect(tree, { depth: null, compact: true, breakLength: 120 })
      */
     const parse = (code: string) => {
         const p = new Parser(tokenize(code))
