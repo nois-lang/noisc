@@ -28,7 +28,7 @@ import {
     resolveType
 } from '../typecheck/generic'
 import { unitType, unknownType } from '../typecheck/type'
-import { assert } from '../util/todo'
+import { assert, todo } from '../util/todo'
 import { notFoundError, semanticError, typeError, unknownTypeError } from './error'
 import { checkExhaustion } from './exhaust'
 import { checkAccessExpr } from './instance'
@@ -124,22 +124,40 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
 }
 
 export const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
-    switch (unaryExpr.unaryOp.kind) {
-        case 'pos-call':
-            checkPosCall(unaryExpr, ctx)
-            break
-        case 'named-call':
-            checkNamedCall(unaryExpr, ctx)
-            break
-        case 'neg-op':
-            // todo
-            break
-        case 'not-op':
-            // todo
-            break
-        case 'spread-op':
-            // todo
-            break
+    const op = unaryExpr.unaryOp
+    if (op.kind === 'pos-call') {
+        checkPosCall(unaryExpr, ctx)
+        return
+    }
+    if (op.kind === 'named-call') {
+        checkNamedCall(unaryExpr, ctx)
+        return
+    }
+    if (op.kind === 'spread-op') {
+        todo()
+        return
+    }
+    checkOperand(unaryExpr.operand, ctx)
+    const opImplFnVid = operatorImplMap.get(op.kind)
+    assert(!!opImplFnVid, `operator ${op.kind} without impl function`)
+
+    const methodRef = resolveVid(opImplFnVid!, ctx, ['method-def'])
+    assert(!!methodRef, `impl fn \`${vidToString(opImplFnVid!)}\` not found`)
+    const methodDef = <MethodDef>methodRef!.def
+    assert(!!methodDef.fn.type, 'untyped impl fn')
+    assert(methodDef.fn.type!.kind === 'fn-type', 'impl fn type in not fn')
+
+    const implTargetType = getInstanceForType(methodDef.instance, ctx)
+    const fnType = <VirtualFnType>methodDef.fn.type
+    if (isAssignable(unaryExpr.operand.type!, implTargetType, ctx)) {
+        const genericMaps = makeUnaryExprGenericMaps(unaryExpr, fnType, implTargetType)
+        const args = [unaryExpr.operand]
+        const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
+        checkCallArgs(unaryExpr, args, paramTypes, ctx)
+        unaryExpr.type = resolveType(fnType.returnType, genericMaps, ctx)
+    } else {
+        ctx.errors.push(typeError(unaryExpr, unaryExpr.operand.type!, implTargetType, ctx))
+        unaryExpr.type = unknownType
     }
 }
 
@@ -538,6 +556,17 @@ export const checkAssignExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     if (!isAssignable(valueType, assigneeType, ctx)) {
         ctx.errors.push(typeError(binaryExpr, valueType, assigneeType, ctx))
     }
+}
+
+export const makeUnaryExprGenericMaps = (
+    unaryExpr: UnaryExpr,
+    fnType: VirtualFnType,
+    implTargetType: VirtualType
+): Map<string, VirtualType>[] => {
+    // TODO: lOperand acts as a type args provider for generics, improve it
+    const implGenericMap = makeGenericMapOverStructure(unaryExpr.operand.type!, implTargetType)
+    const fnGenericMap = makeFnGenericMap(fnType, [unaryExpr.operand.type!])
+    return [implGenericMap, fnGenericMap]
 }
 
 export const makeBinaryExprGenericMaps = (
