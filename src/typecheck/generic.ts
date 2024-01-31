@@ -1,4 +1,3 @@
-import { AstNode } from '../ast'
 import { Context, InstanceScope } from '../scope'
 import { fold } from '../util/array'
 import { merge } from '../util/map'
@@ -159,16 +158,14 @@ export const instanceGenericMap = (instScope: InstanceScope, ctx: Context): Map<
 export const resolveType = (
     virtualType: VirtualType,
     genericMaps: Map<string, VirtualType>[],
-    node: AstNode<any>,
     ctx: Context
 ): VirtualType => {
-    return fold(genericMaps, (t, map) => resolveGenericMap(t, map, node, ctx), virtualType)
+    return fold(genericMaps, (t, map) => resolveGenericMap(t, map, ctx), virtualType)
 }
 
 const resolveGenericMap = (
     virtualType: VirtualType,
     genericMap: Map<string, VirtualType>,
-    node: AstNode<any>,
     ctx: Context
 ): VirtualType => {
     switch (virtualType.kind) {
@@ -176,7 +173,7 @@ const resolveGenericMap = (
             return {
                 kind: 'vid-type',
                 identifier: virtualType.identifier,
-                typeArgs: virtualType.typeArgs.map(g => resolveGenericMap(g, genericMap, node, ctx))
+                typeArgs: virtualType.typeArgs.map(g => resolveGenericMap(g, genericMap, ctx))
             }
         case 'generic':
             const res = genericMap.get(virtualTypeToString(virtualType))
@@ -187,8 +184,8 @@ const resolveGenericMap = (
         case 'fn-type':
             return {
                 kind: 'fn-type',
-                paramTypes: virtualType.paramTypes.map(pt => resolveGenericMap(pt, genericMap, node, ctx)),
-                returnType: resolveGenericMap(virtualType.returnType, genericMap, node, ctx),
+                paramTypes: virtualType.paramTypes.map(pt => resolveGenericMap(pt, genericMap, ctx)),
+                returnType: resolveGenericMap(virtualType.returnType, genericMap, ctx),
                 generics: virtualType.generics
             }
         case 'hole-type':

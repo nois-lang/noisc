@@ -488,4 +488,47 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual(['cannot break from within the closure'])
         })
     })
+
+    describe('field access', () => {
+        it('ok', () => {
+            const code = `\
+type Foo(x: Int)
+
+fn main() {
+    let foo = Foo::Foo(5)
+    let a = foo.x
+    a()
+    return unit
+}`
+            const ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `std::int::Int`'])
+        })
+
+        it('field called like a method', () => {
+            const code = `\
+type Foo(x: Int)
+
+fn main() {
+    let foo = Foo::Foo(5)
+    foo.x()
+    return unit
+}`
+            const ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual(['type error: non-callable field of type `std::int::Int`'])
+        })
+
+        it('field is a closure', () => {
+            const code = `\
+type Foo(x: ||: Int)
+
+fn main() {
+    let foo = Foo::Foo(|| { 5 })
+    let a = foo.x()
+    a()
+    return unit
+}`
+            const ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `std::int::Int`'])
+        })
+    })
 })

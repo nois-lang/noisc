@@ -87,7 +87,7 @@ const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Contex
             identifier: typeDefVid,
             typeArgs: ref.def.typeDef.generics.map(g => genericToVirtual(g, ctx))
         })
-        field.name.type = resolveType(field.type!, [conGenericMap], field, ctx)
+        field.name.type = resolveType(field.type!, [conGenericMap], ctx)
 
         if (fp.pattern) {
             checkPattern(fp.pattern, field.name.type, ctx)

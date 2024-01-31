@@ -104,7 +104,7 @@ export const checkTopLevelDefiniton = (module: Module, definition: Definition, c
             break
         case 'method-def':
             // TODO: narrow to not check unrelated methods
-            checkStatement(definition.trait, ctx)
+            checkStatement(definition.instance, ctx)
             break
         case 'name-def':
             if (definition.parent) {
@@ -247,7 +247,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
 
     const instScope = instanceScope(ctx)
     const genericMaps = instScope ? [instanceGenericMap(instScope, ctx)] : []
-    const returnTypeResolved = resolveType(returnType, genericMaps, fnDef.returnType ?? fnDef, ctx)
+    const returnTypeResolved = resolveType(returnType, genericMaps, ctx)
 
     if (fnDef.block) {
         checkBlock(fnDef.block, ctx)
@@ -476,7 +476,6 @@ const checkVarDef = (varDef: VarDef, ctx: Context): void => {
         varType = resolveType(
             typeToVirtual(varDef.varType, ctx),
             instScope ? [instanceGenericMap(instScope, ctx)] : [],
-            varDef,
             ctx
         )
     }
@@ -543,12 +542,7 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
                 const name = ref.def.name
                 if (name.type === selfType) {
                     const instScope = instanceScope(ctx)
-                    identifier.type = resolveType(
-                        name.type,
-                        instScope ? [instanceGenericMap(instScope, ctx)] : [],
-                        identifier,
-                        ctx
-                    )
+                    identifier.type = resolveType(name.type, instScope ? [instanceGenericMap(instScope, ctx)] : [], ctx)
                 } else {
                     identifier.type = name.type
                 }
@@ -557,13 +551,13 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
                 const instScope: InstanceScope = {
                     kind: 'instance',
                     selfType: unknownType,
-                    def: ref.def.trait,
-                    definitions: new Map(ref.def.trait.generics.map(g => [defKey(g), g]))
+                    def: ref.def.instance,
+                    definitions: new Map(ref.def.instance.generics.map(g => [defKey(g), g]))
                 }
                 // must be set afterwards since impl generics cannot be resolved
-                instScope.selfType = traitDefToVirtualType(ref.def.trait, ctx)
+                instScope.selfType = traitDefToVirtualType(ref.def.instance, ctx)
 
-                identifier.type = resolveType(ref.def.fn.type!, [instanceGenericMap(instScope, ctx)], identifier, ctx)
+                identifier.type = resolveType(ref.def.fn.type!, [instanceGenericMap(instScope, ctx)], ctx)
                 break
             case 'variant':
                 identifier.type = ref.def.variant.type

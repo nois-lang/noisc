@@ -62,7 +62,7 @@ export interface VariantDef {
 export interface MethodDef {
     kind: 'method-def'
     fn: FnDef
-    trait: ImplDef | TraitDef
+    instance: ImplDef | TraitDef
 }
 
 export interface VirtualIdentifierMatch<D = Definition> {
@@ -202,7 +202,7 @@ const resolveScopeVid = (
                         // if matched, try to find fn with matching name in specified trait
                         const fn = traitDef.block.statements.find(s => s.kind === 'fn-def' && s.name.value === fnName)
                         if (fn && fn.kind === 'fn-def') {
-                            return { vid, moduleVid: module.vid, def: { kind: 'method-def', fn, trait: traitDef } }
+                            return { vid, moduleVid: module.vid, def: { kind: 'method-def', fn, instance: traitDef } }
                         }
                     }
                 }

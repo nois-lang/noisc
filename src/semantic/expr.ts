@@ -4,7 +4,7 @@ import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { MatchExpr } from '../ast/match'
 import { NamedCall, PosCall } from '../ast/op'
 import { ClosureExpr, ForExpr, IfExpr, IfLetExpr, ListExpr, Operand, WhileExpr } from '../ast/operand'
-import { BlockScope, Context, Scope, instanceScope } from '../scope'
+import { Context, Scope, instanceScope } from '../scope'
 import { bool, iter, iterable } from '../scope/std'
 import { getInstanceForType } from '../scope/trait'
 import { idToVid, vidFromString, vidToString } from '../scope/util'
@@ -163,14 +163,14 @@ export const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     assert(!!methodRef.fn.type, 'untyped impl fn')
     assert(methodRef.fn.type!.kind === 'fn-type', 'impl fn type in not fn')
 
-    const implTargetType = getInstanceForType(methodRef.trait, ctx)
+    const implTargetType = getInstanceForType(methodRef.instance, ctx)
     const fnType = <VirtualFnType>methodRef.fn.type
     if (isAssignable(binaryExpr.lOperand.type!, implTargetType, ctx)) {
         const genericMaps = makeBinaryExprGenericMaps(binaryExpr, fnType, implTargetType)
         const args = [binaryExpr.lOperand, binaryExpr.rOperand]
-        const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(pt, genericMaps, args.at(i) ?? binaryExpr, ctx))
+        const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
         checkCallArgs(binaryExpr, args, paramTypes, ctx)
-        binaryExpr.type = resolveType(fnType.returnType, genericMaps, binaryExpr, ctx)
+        binaryExpr.type = resolveType(fnType.returnType, genericMaps, ctx)
     } else {
         ctx.errors.push(typeError(binaryExpr, binaryExpr.lOperand.type!, implTargetType, ctx))
         binaryExpr.type = unknownType
@@ -416,16 +416,10 @@ export const checkPosCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const operand = unaryExpr.operand
     checkOperand(operand, ctx)
     callOp.args.forEach(a => checkOperand(a, ctx))
-    unaryExpr.type = checkCall(unaryExpr, callOp, operand, callOp.args, ctx)
+    unaryExpr.type = checkCall(callOp, operand, callOp.args, ctx)
 }
 
-export const checkCall = (
-    node: AstNode<any>,
-    call: AstNode<any>,
-    operand: Operand,
-    args: Expr[],
-    ctx: Context
-): VirtualType => {
+export const checkCall = (call: AstNode<any>, operand: Operand, args: Expr[], ctx: Context): VirtualType => {
     if (operand.type?.kind === 'malleable-type') {
         const closureType: VirtualFnType = {
             kind: 'fn-type',
@@ -450,15 +444,15 @@ export const checkCall = (
 
     const fnType = <VirtualFnType>operand.type
     const genericMaps = makeFnGenericMaps(
-        operand,
+        operand.kind === 'identifier' ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : [],
         fnType,
         args.map(a => a.type!),
         ctx
     )
-    const paramTypes = fnType.paramTypes.map((pt, i) => resolveType(pt, genericMaps, args.at(i) ?? node, ctx))
+    const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
     checkCallArgs(call, args, paramTypes, ctx)
 
-    return replaceGenericsWithHoles(resolveType(fnType.returnType, genericMaps, node, ctx))
+    return replaceGenericsWithHoles(resolveType(fnType.returnType, genericMaps, ctx))
 }
 
 export const checkNamedCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
@@ -496,28 +490,28 @@ export const checkNamedCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
 
     // TODO: fields might be specified out of order, reorder by matching variant fields by name
     const args = namedCall.fields.map(f => f.expr.type!)
-    const genericMaps = makeFnGenericMaps(operand, conType, args, ctx)
+    const typeArgs = operand.kind === 'identifier' ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
+    const genericMaps = makeFnGenericMaps(typeArgs, conType, args, ctx)
 
     conType.paramTypes
-        .map(pt => resolveType(pt, genericMaps, variant, ctx))
+        .map(pt => resolveType(pt, genericMaps, ctx))
         .forEach((paramType, i) => {
             const field = namedCall.fields[i]
-            const argType = resolveType(field.expr.type ?? unknownType, genericMaps, field, ctx)
+            const argType = resolveType(field.expr.type ?? unknownType, genericMaps, ctx)
             if (!isAssignable(argType, paramType, ctx)) {
                 ctx.errors.push(typeError(field, argType, paramType, ctx))
             }
         })
 
-    unaryExpr.type = resolveType(conType.returnType, genericMaps, unaryExpr, ctx)
+    unaryExpr.type = resolveType(conType.returnType, genericMaps, ctx)
 }
 
-const makeFnGenericMaps = (
-    operand: Operand,
+export const makeFnGenericMaps = (
+    typeArgs: VirtualType[],
     fnType: VirtualFnType,
     args: VirtualType[],
     ctx: Context
 ): Map<string, VirtualType>[] => {
-    const typeArgs = operand.kind === 'identifier' ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
     const fnTypeArgMap = makeFnTypeArgGenericMap(fnType, typeArgs)
     const instScope = instanceScope(ctx)
     const instanceMap = instScope ? instanceGenericMap(instScope, ctx) : new Map()
@@ -546,7 +540,7 @@ export const checkAssignExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     }
 }
 
-const makeBinaryExprGenericMaps = (
+export const makeBinaryExprGenericMaps = (
     binaryExpr: BinaryExpr,
     fnType: VirtualFnType,
     implTargetType: VirtualType

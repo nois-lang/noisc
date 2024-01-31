@@ -176,5 +176,5 @@ export const traitDefToVirtualType = (traitDef: TraitDef | ImplDef, ctx: Context
  */
 export const getConcreteTrait = (type: VirtualType, rel: InstanceRelation, ctx: Context): VirtualType => {
     const genericMap = makeGenericMapOverStructure(type, rel.forType)
-    return resolveType(rel.implType, [genericMap], rel.implDef.def, ctx)
+    return resolveType(rel.implType, [genericMap], ctx)
 }
