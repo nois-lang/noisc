@@ -124,24 +124,24 @@ describe('ast', () => {
                 kind: 'block',
                 statements: [
                     {
+                        kind: 'binary-expr',
                         binaryOp: { kind: 'add-op' },
                         lOperand: {
-                            operand: { kind: 'int-literal', value: '1' },
-                            kind: 'operand-expr'
+                            kind: 'operand-expr',
+                            operand: { kind: 'int-literal', value: '1' }
                         },
                         rOperand: {
+                            kind: 'binary-expr',
                             binaryOp: { kind: 'mult-op' },
                             lOperand: {
-                                operand: { kind: 'int-literal', value: '2' },
-                                kind: 'operand-expr'
+                                kind: 'operand-expr',
+                                operand: { kind: 'int-literal', value: '2' }
                             },
                             rOperand: {
-                                operand: { kind: 'int-literal', value: '3' },
-                                kind: 'operand-expr'
-                            },
-                            kind: 'binary-expr'
-                        },
-                        kind: 'binary-expr'
+                                kind: 'operand-expr',
+                                operand: { kind: 'int-literal', value: '3' }
+                            }
+                        }
                     }
                 ]
             })
@@ -157,12 +157,25 @@ describe('ast', () => {
                         binaryOp: { kind: 'access-op' },
                         lOperand: {
                             kind: 'operand-expr',
-                            operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'a' }, typeArgs: [] }
+                            operand: {
+                                kind: 'identifier',
+                                scope: [],
+                                name: { kind: 'name', value: 'a' },
+                                typeArgs: []
+                            }
                         },
                         rOperand: {
                             kind: 'unary-expr',
                             unaryOp: { kind: 'pos-call', args: [] },
-                            operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'b' }, typeArgs: [] }
+                            expr: {
+                                kind: 'operand-expr',
+                                operand: {
+                                    kind: 'identifier',
+                                    scope: [],
+                                    name: { kind: 'name', value: 'b' },
+                                    typeArgs: []
+                                }
+                            }
                         }
                     }
                 ]
@@ -171,57 +184,32 @@ describe('ast', () => {
 
         it('method call chain', () => {
             const ast = buildAst('a.b().c().d()')
-            expect(compactAstNode(ast.block)).toEqual({
-                kind: 'block',
-                statements: [
-                    {
-                        kind: 'binary-expr',
-                        binaryOp: { kind: 'access-op' },
-                        lOperand: {
-                            kind: 'binary-expr',
-                            binaryOp: { kind: 'access-op' },
-                            lOperand: {
-                                kind: 'binary-expr',
-                                binaryOp: { kind: 'access-op' },
-                                lOperand: {
-                                    kind: 'operand-expr',
-                                    operand: {
-                                        kind: 'identifier',
-                                        scope: [],
-                                        name: { kind: 'name', value: 'a' },
-                                        typeArgs: []
-                                    }
-                                },
-                                rOperand: {
-                                    kind: 'unary-expr',
-                                    unaryOp: { kind: 'pos-call', args: [] },
-                                    operand: {
-                                        kind: 'identifier',
-                                        scope: [],
-                                        name: { kind: 'name', value: 'b' },
-                                        typeArgs: []
-                                    }
-                                }
-                            },
-                            rOperand: {
-                                kind: 'unary-expr',
-                                unaryOp: { kind: 'pos-call', args: [] },
-                                operand: {
-                                    kind: 'identifier',
-                                    scope: [],
-                                    name: { kind: 'name', value: 'c' },
-                                    typeArgs: []
-                                }
-                            }
-                        },
-                        rOperand: {
-                            kind: 'unary-expr',
-                            unaryOp: { kind: 'pos-call', args: [] },
-                            operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'd' }, typeArgs: [] }
-                        }
-                    }
-                ]
-            })
+            // biome-ignore format: compact
+            expect(compactAstNode(ast.block)).toEqual(
+{ kind: 'block',
+  statements:
+   [ { kind: 'binary-expr',
+       binaryOp: { kind: 'access-op' },
+       lOperand:
+        { kind: 'binary-expr',
+          binaryOp: { kind: 'access-op' },
+          lOperand:
+           { kind: 'binary-expr',
+             binaryOp: { kind: 'access-op' },
+             lOperand: { kind: 'operand-expr', operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'a' }, typeArgs: [] } },
+             rOperand:
+              { kind: 'unary-expr',
+                unaryOp: { kind: 'pos-call', args: [] },
+                expr: { kind: 'operand-expr', operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'b' }, typeArgs: [] } } } },
+          rOperand:
+           { kind: 'unary-expr',
+             unaryOp: { kind: 'pos-call', args: [] },
+             expr: { kind: 'operand-expr', operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'c' }, typeArgs: [] } } } },
+       rOperand:
+        { kind: 'unary-expr',
+          unaryOp: { kind: 'pos-call', args: [] },
+          expr: { kind: 'operand-expr', operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'd' }, typeArgs: [] } } } } ] }
+            )
         })
     })
 

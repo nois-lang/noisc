@@ -56,6 +56,14 @@ export const buildOperand = (node: ParseNode): Operand => {
     throw Error(`expected operand, got ${node.kind}`)
 }
 
+export const identifierFromOperand = (operand: Operand): Identifier | undefined => {
+    if (operand.kind === 'identifier') return operand
+    if (operand.kind === 'operand-expr') {
+        return identifierFromOperand(operand.operand)
+    }
+    return undefined
+}
+
 export interface IfExpr extends AstNode<'if-expr'>, Partial<Typed> {
     condition: Expr
     thenBlock: Block

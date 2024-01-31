@@ -137,7 +137,7 @@ export const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         todo()
         return
     }
-    checkOperand(unaryExpr.operand, ctx)
+    checkExpr(unaryExpr.expr, ctx)
     const opImplFnVid = operatorImplMap.get(op.kind)
     assert(!!opImplFnVid, `operator ${op.kind} without impl function`)
 
@@ -149,14 +149,14 @@ export const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
 
     const implTargetType = getInstanceForType(methodDef.instance, ctx)
     const fnType = <VirtualFnType>methodDef.fn.type
-    if (isAssignable(unaryExpr.operand.type!, implTargetType, ctx)) {
-        const genericMaps = makeUnaryExprGenericMaps(unaryExpr, fnType, implTargetType)
-        const args = [unaryExpr.operand]
+    if (isAssignable(unaryExpr.expr.type!, implTargetType, ctx)) {
+        const genericMaps = makeUnaryExprGenericMaps(unaryExpr.expr.type!, fnType, implTargetType)
+        const args = [unaryExpr.expr]
         const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
         checkCallArgs(unaryExpr, args, paramTypes, ctx)
         unaryExpr.type = resolveType(fnType.returnType, genericMaps, ctx)
     } else {
-        ctx.errors.push(typeError(unaryExpr, unaryExpr.operand.type!, implTargetType, ctx))
+        ctx.errors.push(typeError(unaryExpr, unaryExpr.expr.type!, implTargetType, ctx))
         unaryExpr.type = unknownType
     }
 }
@@ -431,10 +431,10 @@ export const checkClosureExpr = (
 
 export const checkPosCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const callOp = <PosCall>unaryExpr.unaryOp
-    const operand = unaryExpr.operand
-    checkOperand(operand, ctx)
+    const expr = unaryExpr.expr
+    checkExpr(expr, ctx)
     callOp.args.forEach(a => checkOperand(a, ctx))
-    unaryExpr.type = checkCall(callOp, operand, callOp.args, ctx)
+    unaryExpr.type = checkCall(callOp, expr, callOp.args, ctx)
 }
 
 export const checkCall = (call: AstNode<any>, operand: Operand, args: Expr[], ctx: Context): VirtualType => {
@@ -475,16 +475,16 @@ export const checkCall = (call: AstNode<any>, operand: Operand, args: Expr[], ct
 
 export const checkNamedCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const namedCall = <NamedCall>unaryExpr.unaryOp
-    const operand = unaryExpr.operand
-    if (operand.kind !== 'identifier') {
-        ctx.errors.push(semanticError(ctx, operand, `expected identifier, got ${operand.kind}`))
+    const expr = unaryExpr.expr
+    if (expr.kind !== 'operand-expr' || expr.operand.kind !== 'identifier') {
+        ctx.errors.push(semanticError(ctx, expr, `expected identifier, got ${expr.kind}`))
         return
     }
-    checkOperand(operand, ctx)
-    const vid = idToVid(operand)
+    checkExpr(expr, ctx)
+    const vid = idToVid(expr.operand)
     const ref = resolveVid(vid, ctx)
     if (!ref) {
-        ctx.errors.push(notFoundError(ctx, operand, vidToString(vid)))
+        ctx.errors.push(notFoundError(ctx, expr, vidToString(vid)))
         return
     }
     if (ref.def.kind !== 'variant') {
@@ -508,7 +508,7 @@ export const checkNamedCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
 
     // TODO: fields might be specified out of order, reorder by matching variant fields by name
     const args = namedCall.fields.map(f => f.expr.type!)
-    const typeArgs = operand.kind === 'identifier' ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
+    const typeArgs = expr.operand.kind === 'identifier' ? expr.operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
     const genericMaps = makeFnGenericMaps(typeArgs, conType, args, ctx)
 
     conType.paramTypes
@@ -559,13 +559,13 @@ export const checkAssignExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
 }
 
 export const makeUnaryExprGenericMaps = (
-    unaryExpr: UnaryExpr,
+    operandType: VirtualType,
     fnType: VirtualFnType,
     implTargetType: VirtualType
 ): Map<string, VirtualType>[] => {
     // TODO: lOperand acts as a type args provider for generics, improve it
-    const implGenericMap = makeGenericMapOverStructure(unaryExpr.operand.type!, implTargetType)
-    const fnGenericMap = makeFnGenericMap(fnType, [unaryExpr.operand.type!])
+    const implGenericMap = makeGenericMapOverStructure(operandType, implTargetType)
+    const fnGenericMap = makeFnGenericMap(fnType, [operandType])
     return [implGenericMap, fnGenericMap]
 }
 

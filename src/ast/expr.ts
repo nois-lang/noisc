@@ -20,7 +20,7 @@ export const buildOperandExpr = (node: ParseNode): OperandExpr => {
 
 export interface UnaryExpr extends AstNode<'unary-expr'>, Partial<Typed> {
     unaryOp: UnaryOp
-    operand: Operand
+    expr: Expr
 }
 
 export interface BinaryExpr extends AstNode<'binary-expr'>, Partial<Typed> {
@@ -49,12 +49,20 @@ export const buildSubExpr = (node: ParseNode): Expr => {
     if (nodes.length === 1) {
         return buildOperandExpr(nodes[0])
     }
-    const isPrefix = nodes[0].kind === 'prefix-op'
-    return {
-        kind: 'unary-expr',
-        parseNode: node,
-        unaryOp: buildUnaryOp(nodes[isPrefix ? 0 : 1]),
-        operand: buildOperand(nodes[isPrefix ? 1 : 0])
+    if (nodes[0].kind === 'prefix-op') {
+        return {
+            kind: 'unary-expr',
+            parseNode: node,
+            unaryOp: buildUnaryOp(nodes[0]),
+            expr: buildExpr(nodes[1])
+        }
+    } else {
+        return {
+            kind: 'unary-expr',
+            parseNode: node,
+            unaryOp: buildUnaryOp(nodes[1]),
+            expr: buildOperandExpr(nodes[0])
+        }
     }
 }
 export const buildBinaryExpr = (node: ParseNode): Expr => {

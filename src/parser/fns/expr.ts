@@ -32,13 +32,13 @@ export const parseExpr = (parser: Parser): void => {
 }
 
 /**
- * sub-expr ::= prefix-op operand | operand postfix-op?
+ * sub-expr ::= prefix-op expr | operand postfix-op?
  */
 export const parseSubExpr = (parser: Parser): void => {
     const mark = parser.open()
     if (parser.atAny(prefixOpFirstTokens)) {
         parsePrefixOp(parser)
-        parseOperand(parser)
+        parseExpr(parser)
     } else {
         parseOperand(parser)
         if (parser.atAny(postfixOpFirstTokens)) {

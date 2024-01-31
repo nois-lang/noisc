@@ -5,7 +5,7 @@ import { Typed } from '../semantic'
 import { Expr, UnaryExpr, buildExpr, buildOperandExpr } from './expr'
 import { AstNode, filterNonAstNodes } from './index'
 import { buildUnaryOp } from './op'
-import { Identifier, Name, Operand, buildIdentifier, buildName, buildOperand } from './operand'
+import { Identifier, Name, Operand, buildIdentifier, buildName } from './operand'
 import { Block, buildBlock } from './statement'
 
 export interface MatchExpr extends AstNode<'match-expr'>, Partial<Typed> {
@@ -66,8 +66,8 @@ export const buildPatternExpr = (node: ParseNode): PatternExpr => {
     }
     if (nodes[0].kind === 'prefix-op') {
         const unaryOp = buildUnaryOp(nodes[0])
-        const operand = buildOperand({ kind: 'operand', nodes: [nodes[1]] })
-        return { kind: 'unary-expr', parseNode: node, unaryOp, operand }
+        const expr = buildOperandExpr({ kind: 'operand', nodes: [nodes[1]] })
+        return { kind: 'unary-expr', parseNode: node, unaryOp, expr }
     }
     return buildOperandExpr(node)
 }
