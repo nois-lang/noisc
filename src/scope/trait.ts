@@ -5,7 +5,7 @@ import { notFoundError } from '../semantic/error'
 import { VirtualType, genericToVirtual, typeToVirtual } from '../typecheck'
 import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { assert } from '../util/todo'
-import { Context, defKey } from './index'
+import { Context, addError, defKey } from './index'
 import { concatVid, idToVid, vidFromString, vidToString } from './util'
 import { VirtualIdentifier, VirtualIdentifierMatch, resolveVid } from './vid'
 
@@ -93,7 +93,7 @@ const getImplImplRel = (instance: ImplDef, module: Module, ctx: Context): Instan
     const implVid = idToVid(instance.identifier)
     const ref = resolveVid(implVid, ctx, ['trait-def', 'type-def'])
     if (!ref || (ref.def.kind !== 'trait-def' && ref.def.kind !== 'type-def')) {
-        ctx.errors.push(notFoundError(ctx, instance.identifier, vidToString(implVid)))
+        addError(ctx, notFoundError(ctx, instance.identifier, vidToString(implVid)))
         return undefined
     }
     const implRef = <VirtualIdentifierMatch<TypeDef | TraitDef>>ref
@@ -102,7 +102,7 @@ const getImplImplRel = (instance: ImplDef, module: Module, ctx: Context): Instan
     if (instance.forTrait) {
         const ref = resolveVid(idToVid(instance.forTrait), ctx, ['type-def', 'trait-def'])
         if (!ref || (ref.def.kind !== 'type-def' && ref.def.kind !== 'trait-def')) {
-            ctx.errors.push(notFoundError(ctx, instance.identifier, vidToString(implVid), 'trait'))
+            addError(ctx, notFoundError(ctx, instance.identifier, vidToString(implVid), 'trait'))
             return undefined
         }
         forDef = <VirtualIdentifierMatch<TypeDef | TraitDef>>ref

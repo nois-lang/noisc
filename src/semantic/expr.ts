@@ -4,7 +4,7 @@ import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { MatchExpr } from '../ast/match'
 import { NamedCall, PosCall } from '../ast/op'
 import { ClosureExpr, ForExpr, IfExpr, IfLetExpr, ListExpr, Operand, WhileExpr } from '../ast/operand'
-import { Context, Scope, instanceScope } from '../scope'
+import { Context, Scope, addError, instanceScope } from '../scope'
 import { bool, iter, iterable } from '../scope/std'
 import { getInstanceForType } from '../scope/trait'
 import { idToVid, vidFromString, vidToString } from '../scope/util'
@@ -156,7 +156,7 @@ export const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
         checkCallArgs(unaryExpr, args, paramTypes, ctx)
         unaryExpr.type = resolveType(fnType.returnType, genericMaps, ctx)
     } else {
-        ctx.errors.push(typeError(unaryExpr, unaryExpr.operand.type!, implTargetType, ctx))
+        addError(ctx, typeError(unaryExpr, unaryExpr.operand.type!, implTargetType, ctx))
         unaryExpr.type = unknownType
     }
 }
@@ -190,7 +190,7 @@ export const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
         checkCallArgs(binaryExpr, args, paramTypes, ctx)
         binaryExpr.type = resolveType(fnType.returnType, genericMaps, ctx)
     } else {
-        ctx.errors.push(typeError(binaryExpr, binaryExpr.lOperand.type!, implTargetType, ctx))
+        addError(ctx, typeError(binaryExpr, binaryExpr.lOperand.type!, implTargetType, ctx))
         binaryExpr.type = unknownType
     }
 }
@@ -202,7 +202,7 @@ export const checkIfExpr = (ifExpr: IfExpr, ctx: Context): void => {
     checkExpr(ifExpr.condition, ctx)
     const condType = ifExpr.condition.type ?? unknownType
     if (!isAssignable(condType, bool, ctx)) {
-        ctx.errors.push(typeError(ifExpr.condition, condType, bool, ctx))
+        addError(ctx, typeError(ifExpr.condition, condType, bool, ctx))
     }
 
     checkIfExprCommon(ifExpr, scope, ctx)
@@ -254,7 +254,7 @@ export const checkWhileExpr = (whileExpr: WhileExpr, ctx: Context): void => {
     const condType = whileExpr.condition.type
     assert(!!condType)
     if (!isAssignable(condType!, bool, ctx)) {
-        ctx.errors.push(typeError(whileExpr.condition, condType!, bool, ctx))
+        addError(ctx, typeError(whileExpr.condition, condType!, bool, ctx))
     }
 
     const abr = checkBlock(whileExpr.block, ctx)
@@ -280,7 +280,8 @@ export const checkForExpr = (forExpr: ForExpr, ctx: Context): void => {
     checkExpr(forExpr.expr, ctx)
     assert(!!forExpr.expr.type)
     if (![iter, iterable].some(t => isAssignable(forExpr.expr.type!, t, ctx))) {
-        ctx.errors.push(
+        addError(
+            ctx,
             semanticError(ctx, forExpr.expr, `type ${virtualTypeToString(forExpr.expr.type!)} is not iterable`)
         )
     }
@@ -324,7 +325,7 @@ export const checkMatchExpr = (matchExpr: MatchExpr, ctx: Context): void => {
             checkExpr(clause.guard, ctx)
             const guardType = clause.guard.type ?? unknownType
             if (guardType.kind !== 'vid-type' || !isAssignable(guardType, bool, ctx)) {
-                ctx.errors.push(typeError(clause.guard, guardType, bool, ctx))
+                addError(ctx, typeError(clause.guard, guardType, bool, ctx))
             }
         }
         const clauseAbr = checkBlock(clause.block, ctx)
@@ -348,7 +349,7 @@ export const checkMatchExpr = (matchExpr: MatchExpr, ctx: Context): void => {
                 matchExpr.type = firstClauseBlock.type
             }
         } else {
-            ctx.errors.push(unknownTypeError(firstClauseBlock, firstClauseBlock.type!, ctx))
+            addError(ctx, unknownTypeError(firstClauseBlock, firstClauseBlock.type!, ctx))
         }
     }
 
@@ -389,7 +390,8 @@ export const checkClosureExpr = (
 
     if (caller && inferredType) {
         if (closureExpr.params.length > inferredType.paramTypes.length) {
-            ctx.errors.push(
+            addError(
+                ctx,
                 semanticError(
                     ctx,
                     caller,
@@ -451,12 +453,12 @@ export const checkCall = (call: AstNode<any>, operand: Operand, args: Expr[], ct
     }
 
     if (operand.type?.kind === 'unknown-type') {
-        ctx.errors.push(unknownTypeError(operand, operand.type, ctx))
+        addError(ctx, unknownTypeError(operand, operand.type, ctx))
         return unknownType
     }
     if (operand.type?.kind !== 'fn-type') {
         const message = `type error: non-callable operand of type \`${virtualTypeToString(operand.type!)}\``
-        ctx.errors.push(semanticError(ctx, operand, message))
+        addError(ctx, semanticError(ctx, operand, message))
         return unknownType
     }
 
@@ -477,18 +479,18 @@ export const checkNamedCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const namedCall = <NamedCall>unaryExpr.postfixOp
     const operand = unaryExpr.operand
     if (operand.kind !== 'identifier') {
-        ctx.errors.push(semanticError(ctx, operand, `expected identifier, got ${operand.kind}`))
+        addError(ctx, semanticError(ctx, operand, `expected identifier, got ${operand.kind}`))
         return
     }
     checkOperand(operand, ctx)
     const vid = idToVid(operand)
     const ref = resolveVid(vid, ctx)
     if (!ref) {
-        ctx.errors.push(notFoundError(ctx, operand, vidToString(vid)))
+        addError(ctx, notFoundError(ctx, operand, vidToString(vid)))
         return
     }
     if (ref.def.kind !== 'variant') {
-        ctx.errors.push(semanticError(ctx, unaryExpr, `constructor called on \`${ref.def.kind}\``))
+        addError(ctx, semanticError(ctx, unaryExpr, `constructor called on \`${ref.def.kind}\``))
         return
     }
     const variant = ref.def.variant
@@ -496,7 +498,8 @@ export const checkNamedCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
 
     namedCall.fields.map(f => checkExpr(f.expr, ctx))
     if (conType.paramTypes.length !== namedCall.fields.length) {
-        ctx.errors.push(
+        addError(
+            ctx,
             semanticError(
                 ctx,
                 namedCall,
@@ -517,7 +520,7 @@ export const checkNamedCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
             const field = namedCall.fields[i]
             const argType = resolveType(field.expr.type ?? unknownType, genericMaps, ctx)
             if (!isAssignable(argType, paramType, ctx)) {
-                ctx.errors.push(typeError(field, argType, paramType, ctx))
+                addError(ctx, typeError(field, argType, paramType, ctx))
             }
         })
 
@@ -554,7 +557,7 @@ export const checkAssignExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     const assigneeType = binaryExpr.lOperand.type!
     const valueType = binaryExpr.rOperand.type!
     if (!isAssignable(valueType, assigneeType, ctx)) {
-        ctx.errors.push(typeError(binaryExpr, valueType, assigneeType, ctx))
+        addError(ctx, typeError(binaryExpr, valueType, assigneeType, ctx))
     }
 }
 

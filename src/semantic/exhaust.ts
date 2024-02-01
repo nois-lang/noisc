@@ -26,7 +26,7 @@
  */
 
 import { MatchExpr, PatternExpr } from '../ast/match'
-import { Context } from '../scope'
+import { Context, addError, addWarning } from '../scope'
 import { concatVid, idToVid, vidFromScope, vidFromString, vidToString } from '../scope/util'
 import { VariantDef, resolveVid } from '../scope/vid'
 import { assert, unreachable } from '../util/todo'
@@ -62,14 +62,14 @@ export const checkExhaustion = (matchExpr: MatchExpr, ctx: Context): MatchTree =
     for (const clause of matchExpr.clauses) {
         const nodeAffected = matchPattern(clause.pattern.expr, tree, ctx)
         if (!nodeAffected) {
-            ctx.warnings.push(semanticError(ctx, clause, `unreachable pattern`))
+            addWarning(ctx, semanticError(ctx, clause, `unreachable pattern`))
         }
     }
 
     if (!isExhaustive(tree.node)) {
         const ps = unmatchedPaths(tree.node)
         const pathsStr = ps.map(p => `    ${p} {}`).join('\n')
-        ctx.errors.push(semanticError(ctx, matchExpr, `non-exhaustive match expression, unmatched paths:\n${pathsStr}`))
+        addError(ctx, semanticError(ctx, matchExpr, `non-exhaustive match expression, unmatched paths:\n${pathsStr}`))
     }
 
     return tree

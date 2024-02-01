@@ -2,7 +2,7 @@ import { checkCallArgs, checkType } from '.'
 import { BinaryExpr } from '../ast/expr'
 import { PosCall } from '../ast/op'
 import { Identifier, Operand, identifierFromOperand } from '../ast/operand'
-import { Context, instanceScope } from '../scope'
+import { Context, addError, instanceScope } from '../scope'
 import { getInstanceForType } from '../scope/trait'
 import { vidToString } from '../scope/util'
 import { MethodDef, resolveVid } from '../scope/vid'
@@ -30,26 +30,25 @@ export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
         binaryExpr.type = checkMethodCallExpr(binaryExpr.lOperand, rOp.operand, rOp.postfixOp, ctx)
         return
     }
-    ctx.errors.push(semanticError(ctx, rOp, `expected field access or method call, got ${rOp.kind}`))
+    addError(ctx, semanticError(ctx, rOp, `expected field access or method call, got ${rOp.kind}`))
 }
 
 const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): VirtualType | undefined => {
     checkOperand(lOp, ctx)
     // TODO: make sure no type args specified; check other identifier uses also
     if (field.scope.length > 0) {
-        ctx.errors.push(semanticError(ctx, field, `expected field name`))
+        addError(ctx, semanticError(ctx, field, `expected field name`))
         return
     }
     if (!(lOp.type?.kind === 'vid-type')) {
-        ctx.errors.push(
-            semanticError(ctx, field, `expected variant type, got \`${virtualTypeToString(lOp.type ?? unknownType)}\``)
-        )
+        const msg = `expected variant type, got \`${virtualTypeToString(lOp.type ?? unknownType)}\``
+        addError(ctx, semanticError(ctx, field, msg))
         return
     }
     const typeVid = lOp.type.identifier
     const typeRef = resolveVid(typeVid, ctx, ['type-def'])
     if (!typeRef || typeRef.def.kind !== 'type-def') {
-        ctx.errors.push(notFoundError(ctx, lOp, vidToString(typeVid), 'type'))
+        addError(ctx, notFoundError(ctx, lOp, vidToString(typeVid), 'type'))
         return
     }
     const typeDef = typeRef.def
@@ -58,12 +57,12 @@ const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): Vi
     const matchedCount = typeDef.variants.filter(v => v.fieldDefs.find(f => f.name.value === fieldName)).length
     if (matchedCount === 0) {
         const msg = `field \`${fieldName}\` is not defined in type \`${vidToString(typeRef.vid)}\``
-        ctx.errors.push(semanticError(ctx, field, msg))
+        addError(ctx, semanticError(ctx, field, msg))
         return
     } else {
         if (matchedCount !== typeDef.variants.length) {
             const msg = `field \`${fieldName}\` is not defined in all variants of type \`${vidToString(typeRef.vid)}\``
-            ctx.errors.push(semanticError(ctx, field, msg))
+            addError(ctx, semanticError(ctx, field, msg))
             return
         }
     }
@@ -75,15 +74,8 @@ const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): Vi
         .map(t => typeToVirtual(t, ctx))
     // TODO: probably there is a better way to compare type equality
     if (!allEqual(typeCandidates.map(virtualTypeToString))) {
-        ctx.errors.push(
-            semanticError(
-                ctx,
-                field,
-                `field \`${fieldName}\` of \`${vidToString(
-                    typeRef.vid
-                )}\` variants must be of the same type to be accessed`
-            )
-        )
+        const msg = `field \`${fieldName}\` is not defined in every variant of type \`${vidToString(typeRef.vid)}\``
+        addError(ctx, semanticError(ctx, field, msg))
         return
     }
     const fieldType = typeCandidates[0]
@@ -100,7 +92,7 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: PosCa
     callOp.args.forEach(a => checkOperand(a, ctx))
     const identifier = identifierFromOperand(rOperand)
     if (!identifier || identifier.scope.length !== 0) {
-        ctx.errors.push(semanticError(ctx, rOperand, `expected method name, got \`${rOperand.kind}\``))
+        addError(ctx, semanticError(ctx, rOperand, `expected method name, got \`${rOperand.kind}\``))
         return unknownType
     }
     const methodName = identifier.name.value
@@ -110,7 +102,8 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: PosCa
         lOperand.type = resolveType(lOperand.type!, [instanceMap], ctx)
     }
     if (lOperand.type!.kind !== 'vid-type') {
-        ctx.errors.push(
+        addError(
+            ctx,
             semanticError(
                 ctx,
                 identifier,
@@ -125,14 +118,14 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: PosCa
         // it still can be a field of fn type
         let fieldType = checkFieldAccessExpr(lOperand, identifier, ctx)
         if (!fieldType) {
-            ctx.errors.push(notFoundError(ctx, identifier, methodName, 'method or field'))
+            addError(ctx, notFoundError(ctx, identifier, methodName, 'method or field'))
             return unknownType
         }
         // field exists, now it's just a regular function call
         // TODO: missing type def generic map, since field is defined in type def scope
         if (fieldType.kind !== 'fn-type') {
             const message = `type error: non-callable field of type \`${virtualTypeToString(fieldType)}\``
-            ctx.errors.push(semanticError(ctx, identifier, message))
+            addError(ctx, semanticError(ctx, identifier, message))
             return unknownType
         }
         const genericMaps = makeFnGenericMaps(
@@ -152,7 +145,8 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: PosCa
 
         // TODO: custom check for static methods
         if (fnType.paramTypes.length !== callOp.args.length + 1) {
-            ctx.errors.push(
+            addError(
+                ctx,
                 semanticError(ctx, callOp, `expected ${fnType.paramTypes.length} arguments, got ${callOp.args.length}`)
             )
             return unknownType

@@ -22,6 +22,10 @@ export interface Context {
      * Whether should perform semantic checking or not
      */
     check: boolean
+    /**
+     * Suppress all errors and warnings that coming while the field is false
+     */
+    silent: boolean
 }
 
 export type Scope = InstanceScope | TypeDefScope | FnDefScope | BlockScope | CommonScope
@@ -110,4 +114,16 @@ export const instanceScope = (ctx: Context): InstanceScope | undefined => {
 
 export const fnDefScope = (ctx: Context): FnDefScope | undefined => {
     return <FnDefScope | undefined>unwindScope(ctx).find(s => s.kind === 'fn')
+}
+
+export const addError = (ctx: Context, error: SemanticError): void => {
+    if (!ctx.silent) {
+        ctx.errors.push(error)
+    }
+}
+
+export const addWarning = (ctx: Context, error: SemanticError): void => {
+    if (!ctx.silent) {
+        ctx.warnings.push(error)
+    }
 }

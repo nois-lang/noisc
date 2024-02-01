@@ -1,6 +1,6 @@
 import { ConPattern, Pattern } from '../ast/match'
 import { Name } from '../ast/operand'
-import { Context, defKey } from '../scope'
+import { Context, addError, defKey } from '../scope'
 import { idToVid, vidFromScope, vidToString } from '../scope/util'
 import { NameDef, resolveVid } from '../scope/vid'
 import { VidType, VirtualType, genericToVirtual, virtualTypeToString } from '../typecheck'
@@ -24,10 +24,10 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
             break
         case 'unary-expr':
             if (expr.prefixOp && expr.prefixOp?.kind !== 'neg-op') {
-                ctx.errors.push(semanticError(ctx, expr.prefixOp, `unexpected operator \`${expr.prefixOp.kind}\``))
+                addError(ctx, semanticError(ctx, expr.prefixOp, `unexpected operator \`${expr.prefixOp.kind}\``))
             }
             if (expr.postfixOp) {
-                ctx.errors.push(semanticError(ctx, expr.postfixOp, `unexpected operator`))
+                addError(ctx, semanticError(ctx, expr.postfixOp, `unexpected operator`))
             }
             checkOperand(expr.operand, ctx)
             expr.type = expr.operand.type
@@ -38,7 +38,8 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
             break
         case 'con-pattern':
             if (expectedType.kind !== 'vid-type') {
-                ctx.errors.push(
+                addError(
+                    ctx,
                     semanticError(ctx, pattern, `cannot destructure type \`${virtualTypeToString(expectedType)}\``)
                 )
                 break
@@ -69,26 +70,23 @@ const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Contex
     const ref = resolveVid(conVid, ctx, ['variant'])
 
     if (!ref || ref.def.kind !== 'variant') {
-        ctx.errors.push(notFoundError(ctx, pattern, vidToString(conVid), 'variant'))
+        addError(ctx, notFoundError(ctx, pattern, vidToString(conVid), 'variant'))
         return []
     }
 
     const typeDefVid = vidFromScope(ref.vid)
     if (ref.def.typeDef.name.value !== expectedType.identifier.names.at(-1)!) {
-        ctx.errors.push(
-            semanticError(
-                ctx,
-                pattern.identifier,
-                `cannot destructure type \`${virtualTypeToString(expectedType)}\` into \`${vidToString(typeDefVid)}\``
-            )
-        )
+        const msg = `cannot destructure type \`${virtualTypeToString(expectedType)}\` into \`${vidToString(
+            typeDefVid
+        )}\``
+        addError(ctx, semanticError(ctx, pattern.identifier, msg))
         return []
     }
 
     for (const fp of pattern.fieldPatterns) {
         const field = ref.def.variant.fieldDefs.find(fd => fd.name.value === fp.name.value)
         if (!field) {
-            ctx.errors.push(notFoundError(ctx, fp, fp.name.value, 'field'))
+            addError(ctx, notFoundError(ctx, fp, fp.name.value, 'field'))
             return []
         }
 

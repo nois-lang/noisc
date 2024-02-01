@@ -65,7 +65,8 @@ const ctx: Context = {
     impls: [],
     errors: [],
     warnings: [],
-    check: false
+    check: false,
+    silent: false
 }
 
 // AOT module preparation allows:

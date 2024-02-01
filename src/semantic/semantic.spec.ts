@@ -31,7 +31,8 @@ describe('semantic', () => {
             impls: [],
             errors: [],
             warnings: [],
-            check: false
+            check: false,
+            silent: false
         }
 
         ctx.packages.forEach(p => {

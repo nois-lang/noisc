@@ -1,6 +1,6 @@
 import { ClosureExpr } from '../ast/operand'
 import { Generic, Type } from '../ast/type'
-import { Context } from '../scope'
+import { Context, addError } from '../scope'
 import { findSuperRelChains, getConcreteTrait } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
 import { VirtualIdentifier, resolveVid } from '../scope/vid'
@@ -84,7 +84,7 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
             const vid = idToVid(type)
             const ref = resolveVid(vid, ctx)
             if (!ref) {
-                ctx.errors.push(notFoundError(ctx, type, vidToString(vid)))
+                addError(ctx, notFoundError(ctx, type, vidToString(vid)))
                 return unknownType
             }
             if (ref.def.kind === 'self') {
@@ -98,7 +98,7 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
                     typeArgs: type.typeArgs.map(arg => typeToVirtual(arg, ctx))
                 }
             } else {
-                ctx.errors.push(semanticError(ctx, type, `expected type, got \`${ref.def.kind}\``))
+                addError(ctx, semanticError(ctx, type, `expected type, got \`${ref.def.kind}\``))
                 return unknownType
             }
         case 'fn-type':

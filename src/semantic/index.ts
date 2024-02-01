@@ -9,6 +9,8 @@ import {
     DefinitionMap,
     InstanceScope,
     TypeDefScope,
+    addError,
+    addWarning,
     defKey,
     fnDefScope,
     instanceScope,
@@ -78,7 +80,7 @@ export const checkModule = (module: Module, ctx: Context): void => {
         const vid = vidToString(module.identifier)
         const stackVids = ctx.moduleStack.map(m => vidToString(m.identifier))
         const refChain = [...stackVids.slice(stackVids.indexOf(vid)), vid].join(' -> ')
-        ctx.errors.push(semanticError(ctx, module, `circular module reference: ${refChain}`))
+        addError(ctx, semanticError(ctx, module, `circular module reference: ${refChain}`))
         return
     }
     ctx.moduleStack.push(module)
@@ -133,7 +135,7 @@ export const checkBlock = (block: Block, ctx: Context): boolean => {
     // TODO: check less trivial cases when if expr returns in every branch
     for (const s of block.statements) {
         if (scope.allBranchesReturned) {
-            ctx.warnings.push(semanticError(ctx, s, `unreachable statement`))
+            addWarning(ctx, semanticError(ctx, s, `unreachable statement`))
         }
 
         checkStatement(s, ctx)
@@ -155,7 +157,7 @@ export const checkBlock = (block: Block, ctx: Context): boolean => {
         block.type = lastStatement?.type ?? unitType
         if (block.type.kind === 'unknown-type') {
             // TODO: is this needed? there should already be a not found/unknown type error from that statement
-            // ctx.errors.push(unknownTypeError(block, block.type, ctx))
+            // addError(ctx, unknownTypeError(block, block.type, ctx))
         }
     }
 
@@ -170,11 +172,11 @@ const checkStatement = (statement: Statement, ctx: Context): void => {
     const topLevel = module.scopeStack.length === 1
 
     if (topLevel && !['var-def', 'fn-def', 'trait-def', 'impl-def', 'type-def'].includes(statement.kind)) {
-        ctx.errors.push(semanticError(ctx, statement, `top level \`${statement.kind}\` is not allowed`))
+        addError(ctx, semanticError(ctx, statement, `top level \`${statement.kind}\` is not allowed`))
         return
     }
     if (['impl-def', 'trait-def'].includes(scope.kind) && statement.kind !== 'fn-def') {
-        ctx.errors.push(semanticError(ctx, statement, `\`${statement.kind}\` in instance scope is not allowed`))
+        addError(ctx, semanticError(ctx, statement, `\`${statement.kind}\` in instance scope is not allowed`))
         return
     }
 
@@ -254,18 +256,16 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
         checkBlock(fnDef.block, ctx)
         const blockType = fnDef.block.type!
         if (!isAssignable(blockType, returnTypeResolved, ctx)) {
-            ctx.errors.push(typeError(fnDef.block, blockType, returnTypeResolved, ctx))
+            addError(ctx, typeError(fnDef.block, blockType, returnTypeResolved, ctx))
         }
         fnDefScope(ctx)!.returnStatements.forEach(rs => {
             if (!isAssignable(rs.type!, returnTypeResolved, ctx)) {
-                ctx.errors.push(typeError(rs, rs.type!, returnTypeResolved, ctx))
+                addError(ctx, typeError(rs, rs.type!, returnTypeResolved, ctx))
             }
         })
     } else {
         if (instanceScope(ctx)?.def.kind !== 'trait-def') {
-            ctx.warnings.push(
-                semanticError(ctx, fnDef.name, `fn \`${fnDef.name.value}\` has no body -> must be native`)
-            )
+            addWarning(ctx, semanticError(ctx, fnDef.name, `fn \`${fnDef.name.value}\` has no body -> must be native`))
         }
     }
 
@@ -279,7 +279,7 @@ export const checkParam = (param: Param, index: number, ctx: Context): void => {
         if (index === 0 && instScope && param.pattern.expr.kind === 'name' && param.pattern.expr.value === 'self') {
             param.type = selfType
         } else {
-            ctx.errors.push(semanticError(ctx, param, 'parameter type not specified'))
+            addError(ctx, semanticError(ctx, param, 'parameter type not specified'))
             param.type = unknownType
         }
     } else {
@@ -295,7 +295,8 @@ export const checkParam = (param: Param, index: number, ctx: Context): void => {
         case 'operand-expr':
         case 'unary-expr':
         case 'binary-expr':
-            ctx.errors.push(
+            addError(
+                ctx,
                 semanticError(ctx, param.pattern, `\`${param.pattern.kind}\` can only be used in match expressions`)
             )
             break
@@ -309,7 +310,7 @@ const checkTraitDef = (traitDef: TraitDef, ctx: Context) => {
     const module = ctx.moduleStack.at(-1)!
 
     if (instanceScope(ctx)) {
-        ctx.errors.push(semanticError(ctx, traitDef, `\`${traitDef.kind}\` within instance scope`))
+        addError(ctx, semanticError(ctx, traitDef, `\`${traitDef.kind}\` within instance scope`))
         return
     }
 
@@ -339,7 +340,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
     const module = ctx.moduleStack.at(-1)!
 
     if (instanceScope(ctx)) {
-        ctx.errors.push(semanticError(ctx, implDef, 'impl definition within instance scope'))
+        addError(ctx, semanticError(ctx, implDef, 'impl definition within instance scope'))
         return
     }
 
@@ -372,32 +373,22 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                 for (let m of requiredImplMethods) {
                     const mName = m.name.value
                     if (!implMethods.find(im => im.name.value === mName)) {
-                        ctx.errors.push(
-                            semanticError(
-                                ctx,
-                                implDef.identifier.name,
-                                `missing method implementation \`${vidToString(ref.vid)}::${mName}\``
-                            )
-                        )
+                        const msg = `missing method implementation \`${vidToString(ref.vid)}::${mName}\``
+                        addError(ctx, semanticError(ctx, implDef.identifier.name, msg))
                     }
                 }
                 for (let m of implMethods) {
                     const mName = m.name.value
                     if (!traitMethods.find(im => im.name.value === mName)) {
-                        ctx.errors.push(
-                            semanticError(
-                                ctx,
-                                m.name,
-                                `method \`${vidToString(ref.vid)}::${mName}\` is not defined by implemented trait`
-                            )
-                        )
+                        const msg = `method \`${vidToString(ref.vid)}::${mName}\` is not defined by implemented trait`
+                        addError(ctx, semanticError(ctx, m.name, msg))
                     }
                 }
             } else {
-                ctx.errors.push(semanticError(ctx, implDef.forTrait, `expected \`trait-def\`, got \`${ref.def.kind}\``))
+                addError(ctx, semanticError(ctx, implDef.forTrait, `expected \`trait-def\`, got \`${ref.def.kind}\``))
             }
         } else {
-            ctx.errors.push(notFoundError(ctx, implDef.forTrait, vidToString(vid)))
+            addError(ctx, notFoundError(ctx, implDef.forTrait, vidToString(vid)))
         }
 
         // TODO: check bounded traits are implemented by type,
@@ -465,7 +456,7 @@ const checkVarDef = (varDef: VarDef, ctx: Context): void => {
     const topLevel = ctx.moduleStack.at(-1)!.scopeStack.length === 1
 
     if (topLevel && !varDef.varType) {
-        ctx.errors.push(semanticError(ctx, varDef, `top level \`${varDef.kind}\` must have explicit type`))
+        addError(ctx, semanticError(ctx, varDef, `top level \`${varDef.kind}\` must have explicit type`))
         return
     }
 
@@ -486,11 +477,11 @@ const checkVarDef = (varDef: VarDef, ctx: Context): void => {
     if (varType) {
         const exprType = varDef.expr.type!
         if (!isAssignable(exprType, varType, ctx)) {
-            ctx.errors.push(typeError(varDef, exprType, varType, ctx))
+            addError(ctx, typeError(varDef, exprType, varType, ctx))
         }
     } else {
         if (varDef.expr.type!.kind === 'unknown-type') {
-            ctx.errors.push(unknownTypeError(varDef.expr, varDef.expr.type!, ctx))
+            addError(ctx, unknownTypeError(varDef.expr, varDef.expr.type!, ctx))
             varType = unknownType
         } else {
             varType = varDef.expr.type
@@ -504,7 +495,7 @@ export const checkReturnStmt = (returnStmt: ReturnStmt, ctx: Context) => {
     const scope = fnDefScope(ctx)
 
     if (!scope) {
-        ctx.errors.push(semanticError(ctx, returnStmt, `\`${returnStmt.kind}\` outside of the function scope`))
+        addError(ctx, semanticError(ctx, returnStmt, `\`${returnStmt.kind}\` outside of the function scope`))
     }
 
     checkExpr(returnStmt.returnExpr, ctx)
@@ -519,7 +510,7 @@ export const checkBreakStmt = (breakStmt: BreakStmt, ctx: Context) => {
     if (loopScopeExists) {
         for (const scope of scopes) {
             if (scope.kind === 'fn') {
-                ctx.errors.push(semanticError(ctx, breakStmt, 'cannot break from within the closure'))
+                addError(ctx, semanticError(ctx, breakStmt, 'cannot break from within the closure'))
                 return
             }
             if (scope.kind === 'block' && scope.isLoop) {
@@ -527,7 +518,7 @@ export const checkBreakStmt = (breakStmt: BreakStmt, ctx: Context) => {
             }
         }
     } else {
-        ctx.errors.push(semanticError(ctx, breakStmt, `\`${breakStmt.kind}\` outside of the loop`))
+        addError(ctx, semanticError(ctx, breakStmt, `\`${breakStmt.kind}\` outside of the loop`))
     }
 }
 
@@ -578,7 +569,7 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
         // TODO: check that type args match type params
         identifier.typeArgs.forEach(typeArg => checkType(typeArg, ctx))
     } else {
-        ctx.errors.push(notFoundError(ctx, identifier, vidToString(vid)))
+        addError(ctx, notFoundError(ctx, identifier, vidToString(vid)))
         identifier.type = unknownType
     }
 }
@@ -589,29 +580,24 @@ export const checkType = (type: Type, ctx: Context) => {
             const vid = idToVid(type)
             const ref = resolveVid(vid, ctx)
             if (!ref) {
-                ctx.errors.push(notFoundError(ctx, type, vidToString(vid)))
+                addError(ctx, notFoundError(ctx, type, vidToString(vid)))
                 return
             }
             const k = ref.def.kind
             if (!['type-def', 'trait-def', 'generic', 'self'].includes(k)) {
-                ctx.errors.push(semanticError(ctx, type.name, `expected type, got \`${ref.def.kind}\``))
+                addError(ctx, semanticError(ctx, type.name, `expected type, got \`${ref.def.kind}\``))
                 return
             }
             if (type.typeArgs.length > 0 && (k === 'generic' || k === 'self')) {
-                ctx.errors.push(semanticError(ctx, type.name, `\`${ref.def.kind}\` does not accept type arguments`))
+                addError(ctx, semanticError(ctx, type.name, `\`${ref.def.kind}\` does not accept type arguments`))
                 return
             }
             if (k === 'type-def' || k === 'trait-def') {
                 type.typeArgs.forEach(tp => checkType(tp, ctx))
                 const typeParams = ref.def.generics.filter(g => g.name.value !== selfType.name)
                 if (type.typeArgs.length !== typeParams.length) {
-                    ctx.errors.push(
-                        semanticError(
-                            ctx,
-                            type,
-                            `expected ${typeParams.length} type arguments, got ${type.typeArgs.length}`
-                        )
-                    )
+                    const msg = `expected ${typeParams.length} type arguments, got ${type.typeArgs.length}`
+                    addError(ctx, semanticError(ctx, type, msg))
                     return
                 }
             }
@@ -634,7 +620,7 @@ export const checkCallArgs = (
     ctx: Context
 ): void => {
     if (args.length !== paramTypes.length) {
-        ctx.errors.push(semanticError(ctx, node, `expected ${paramTypes.length} arguments, got ${args.length}`))
+        addError(ctx, semanticError(ctx, node, `expected ${paramTypes.length} arguments, got ${args.length}`))
         return
     }
 
@@ -648,7 +634,7 @@ export const checkCallArgs = (
         const argType = arg.type || unknownType
 
         if (!isAssignable(argType, paramType, ctx)) {
-            ctx.errors.push(typeError(arg, argType, paramType, ctx))
+            addError(ctx, typeError(arg, argType, paramType, ctx))
         }
     }
 }
