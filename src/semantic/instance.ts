@@ -55,17 +55,17 @@ const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): Vi
     const typeDef = typeRef.def
     const fieldName = field.name.value
     // check that every type variant has such field
-    if (
-        !(typeDef.variants.length > 0 && typeDef.variants.every(v => v.fieldDefs.find(f => f.name.value === fieldName)))
-    ) {
-        ctx.errors.push(
-            semanticError(
-                ctx,
-                field,
-                `field \`${fieldName}\` is not defined in all variants of type \`${vidToString(typeRef.vid)}\``
-            )
-        )
+    const matchedCount = typeDef.variants.filter(v => v.fieldDefs.find(f => f.name.value === fieldName)).length
+    if (matchedCount === 0) {
+        const msg = `field \`${fieldName}\` is not defined in type \`${vidToString(typeRef.vid)}\``
+        ctx.errors.push(semanticError(ctx, field, msg))
         return
+    } else {
+        if (matchedCount !== typeDef.variants.length) {
+            const msg = `field \`${fieldName}\` is not defined in all variants of type \`${vidToString(typeRef.vid)}\``
+            ctx.errors.push(semanticError(ctx, field, msg))
+            return
+        }
     }
     // if field is defined in multiple variants, make sure their type is equal
     // normaly single variant types use field access, but there is no reason to restrict multiple variants sharing the
