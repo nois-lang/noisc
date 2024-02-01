@@ -20,30 +20,24 @@ import { parseType } from './type'
 export const parseExpr = (parser: Parser): void => {
     const mark = parser.open()
     parseSubExpr(parser)
-    while (parser.atAny(infixOpFirstTokens) && !parser.eof()) {
+    while (parser.atAny(infixOpFirstTokens)) {
         parseInfixOp(parser)
-        if (!parser.eof()) {
-            parseSubExpr(parser)
-        } else {
-            parser.advanceWithError(syntaxError(parser, 'expected expression'))
-        }
+        parseSubExpr(parser)
     }
     parser.close(mark, 'expr')
 }
 
 /**
- * sub-expr ::= prefix-op expr | operand postfix-op?
+ * sub-expr ::= prefix-op? operand postfix-op?
  */
 export const parseSubExpr = (parser: Parser): void => {
     const mark = parser.open()
     if (parser.atAny(prefixOpFirstTokens)) {
         parsePrefixOp(parser)
-        parseExpr(parser)
-    } else {
-        parseOperand(parser)
-        if (parser.atAny(postfixOpFirstTokens)) {
-            parsePostfixOp(parser)
-        }
+    }
+    parseOperand(parser)
+    if (parser.atAny(postfixOpFirstTokens)) {
+        parsePostfixOp(parser)
     }
     parser.close(mark, 'sub-expr')
 }

@@ -42,7 +42,7 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
                       ;
   expr                ::= sub-expr (infix-op sub-expr)*
                       ;
-    sub-expr          ::= prefix-op expr | operand postfix-op?
+    sub-expr          ::= prefix-op? operand postfix-op?
                       ;
       operand         ::= if-expr
                       | if-let-expr

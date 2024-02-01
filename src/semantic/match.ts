@@ -6,7 +6,7 @@ import { NameDef, resolveVid } from '../scope/vid'
 import { VidType, VirtualType, genericToVirtual, virtualTypeToString } from '../typecheck'
 import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { notFoundError, semanticError } from './error'
-import { checkExpr, checkOperand } from './expr'
+import { checkOperand } from './expr'
 
 export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: Context): void => {
     const module = ctx.moduleStack.at(-1)!
@@ -23,11 +23,14 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
             expr.type = expectedType
             break
         case 'unary-expr':
-            if (expr.unaryOp.kind !== 'neg-op') {
-                ctx.errors.push(semanticError(ctx, expr.unaryOp, `unexpected operator \`${expr.unaryOp.kind}\``))
+            if (expr.prefixOp && expr.prefixOp?.kind !== 'neg-op') {
+                ctx.errors.push(semanticError(ctx, expr.prefixOp, `unexpected operator \`${expr.prefixOp.kind}\``))
             }
-            checkExpr(expr.expr, ctx)
-            expr.type = expr.expr.type
+            if (expr.postfixOp) {
+                ctx.errors.push(semanticError(ctx, expr.postfixOp, `unexpected operator`))
+            }
+            checkOperand(expr.operand, ctx)
+            expr.type = expr.operand.type
             break
         case 'operand-expr':
             checkOperand(expr.operand, ctx)

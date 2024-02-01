@@ -2,9 +2,19 @@ import { ParseNode } from '../parser'
 import { Expr, buildExpr } from './expr'
 import { AstNode, AstNodeKind, NamedArg, buildNamedArg, filterNonAstNodes } from './index'
 
-export type UnaryOp = NegOp | NotOp | SpreadOp | PosCall | NamedCall
+export type PrefixOp = NegOp | NotOp | SpreadOp
 
-export const buildUnaryOp = (node: ParseNode): UnaryOp => {
+export type PostfixOp = PosCall | NamedCall
+
+export const buildPrefixOp = (node: ParseNode): PrefixOp => {
+    const n = filterNonAstNodes(node)[0]
+    if (!['neg-op', 'not-op', 'spread-op'].includes(n.kind)) {
+        throw Error(`expected prefix-op, got ${node.kind}`)
+    }
+    return { kind: <any>n.kind, parseNode: node }
+}
+
+export const buildPostfixOp = (node: ParseNode): PostfixOp => {
     const n = filterNonAstNodes(node)[0]
     if (n.kind === 'pos-call') {
         return buildPosCall(n)
@@ -12,10 +22,7 @@ export const buildUnaryOp = (node: ParseNode): UnaryOp => {
     if (n.kind === 'named-call') {
         return buildNamedCall(n)
     }
-    if (!['neg-op', 'not-op', 'spread-op'].includes(n.kind)) {
-        throw Error(`expected unary-op, got ${node.kind}`)
-    }
-    return { kind: <any>n.kind, parseNode: node }
+    throw Error(`expected postfix-op, got ${node.kind}`)
 }
 
 export type BinaryOp =
@@ -39,6 +46,10 @@ export type BinaryOp =
 export type Associativity = 'left' | 'right' | 'none'
 
 export const associativityMap: Map<AstNodeKind, Associativity> = new Map([
+    ['pos-call', 'none'],
+    ['named-call', 'none'],
+    ['neg-op', 'none'],
+    ['not-op', 'none'],
     ['add-op', 'left'],
     ['sub-op', 'left'],
     ['mult-op', 'left'],
@@ -57,23 +68,31 @@ export const associativityMap: Map<AstNodeKind, Associativity> = new Map([
     ['assign-op', 'none']
 ])
 
+/**
+ * Similar to JavaScript priority table
+ * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_precedence#table
+ */
 export const precedenceMap: Map<AstNodeKind, number> = new Map([
-    ['add-op', 6],
-    ['sub-op', 6],
-    ['mult-op', 7],
-    ['div-op', 7],
-    ['exp-op', 8],
-    ['mod-op', 7],
-    ['access-op', 9],
-    ['eq-op', 4],
-    ['ne-op', 4],
-    ['ge-op', 4],
-    ['le-op', 4],
-    ['gt-op', 4],
-    ['lt-op', 4],
-    ['and-op', 3],
-    ['or-op', 2],
-    ['assign-op', 1]
+    ['pos-call', 17],
+    ['named-call', 17],
+    ['neg-op', 14],
+    ['not-op', 14],
+    ['add-op', 11],
+    ['sub-op', 11],
+    ['mult-op', 12],
+    ['div-op', 12],
+    ['exp-op', 13],
+    ['mod-op', 12],
+    ['access-op', 17],
+    ['eq-op', 8],
+    ['ne-op', 8],
+    ['ge-op', 9],
+    ['le-op', 9],
+    ['gt-op', 9],
+    ['lt-op', 9],
+    ['and-op', 4],
+    ['or-op', 3],
+    ['assign-op', 2]
 ])
 
 export const buildBinaryOp = (node: ParseNode): BinaryOp => {

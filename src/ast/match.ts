@@ -4,8 +4,8 @@ import { nameLikeTokens } from '../parser/fns'
 import { Typed } from '../semantic'
 import { Expr, UnaryExpr, buildExpr, buildOperandExpr } from './expr'
 import { AstNode, filterNonAstNodes } from './index'
-import { buildUnaryOp } from './op'
-import { Identifier, Name, Operand, buildIdentifier, buildName } from './operand'
+import { buildPrefixOp } from './op'
+import { Identifier, Name, Operand, buildIdentifier, buildName, buildOperand } from './operand'
 import { Block, buildBlock } from './statement'
 
 export interface MatchExpr extends AstNode<'match-expr'>, Partial<Typed> {
@@ -65,9 +65,9 @@ export const buildPatternExpr = (node: ParseNode): PatternExpr => {
         return buildHole(nodes[0])
     }
     if (nodes[0].kind === 'prefix-op') {
-        const unaryOp = buildUnaryOp(nodes[0])
-        const expr = buildOperandExpr({ kind: 'operand', nodes: [nodes[1]] })
-        return { kind: 'unary-expr', parseNode: node, unaryOp, expr }
+        const prefixOp = buildPrefixOp(nodes[0])
+        const operand = buildOperand(nodes[1])
+        return { kind: 'unary-expr', parseNode: node, prefixOp, operand }
     }
     return buildOperandExpr(node)
 }

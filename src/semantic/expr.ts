@@ -124,20 +124,20 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
 }
 
 export const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
-    const op = unaryExpr.unaryOp
-    if (op.kind === 'pos-call') {
+    if (unaryExpr.postfixOp?.kind === 'pos-call') {
         checkPosCall(unaryExpr, ctx)
         return
     }
-    if (op.kind === 'named-call') {
+    if (unaryExpr.postfixOp?.kind === 'named-call') {
         checkNamedCall(unaryExpr, ctx)
         return
     }
-    if (op.kind === 'spread-op') {
+    if (unaryExpr.prefixOp?.kind === 'spread-op') {
         todo()
         return
     }
-    checkExpr(unaryExpr.expr, ctx)
+    const op = unaryExpr.prefixOp!
+    checkOperand(unaryExpr.operand, ctx)
     const opImplFnVid = operatorImplMap.get(op.kind)
     assert(!!opImplFnVid, `operator ${op.kind} without impl function`)
 
@@ -149,14 +149,14 @@ export const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
 
     const implTargetType = getInstanceForType(methodDef.instance, ctx)
     const fnType = <VirtualFnType>methodDef.fn.type
-    if (isAssignable(unaryExpr.expr.type!, implTargetType, ctx)) {
-        const genericMaps = makeUnaryExprGenericMaps(unaryExpr.expr.type!, fnType, implTargetType)
-        const args = [unaryExpr.expr]
+    if (isAssignable(unaryExpr.operand.type!, implTargetType, ctx)) {
+        const genericMaps = makeUnaryExprGenericMaps(unaryExpr.operand.type!, fnType, implTargetType)
+        const args = [unaryExpr.operand]
         const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
         checkCallArgs(unaryExpr, args, paramTypes, ctx)
         unaryExpr.type = resolveType(fnType.returnType, genericMaps, ctx)
     } else {
-        ctx.errors.push(typeError(unaryExpr, unaryExpr.expr.type!, implTargetType, ctx))
+        ctx.errors.push(typeError(unaryExpr, unaryExpr.operand.type!, implTargetType, ctx))
         unaryExpr.type = unknownType
     }
 }
@@ -430,11 +430,11 @@ export const checkClosureExpr = (
 }
 
 export const checkPosCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
-    const callOp = <PosCall>unaryExpr.unaryOp
-    const expr = unaryExpr.expr
-    checkExpr(expr, ctx)
+    const callOp = <PosCall>unaryExpr.postfixOp
+    const operand = unaryExpr.operand
+    checkOperand(operand, ctx)
     callOp.args.forEach(a => checkOperand(a, ctx))
-    unaryExpr.type = checkCall(callOp, expr, callOp.args, ctx)
+    unaryExpr.type = checkCall(callOp, operand, callOp.args, ctx)
 }
 
 export const checkCall = (call: AstNode<any>, operand: Operand, args: Expr[], ctx: Context): VirtualType => {
@@ -474,17 +474,17 @@ export const checkCall = (call: AstNode<any>, operand: Operand, args: Expr[], ct
 }
 
 export const checkNamedCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
-    const namedCall = <NamedCall>unaryExpr.unaryOp
-    const expr = unaryExpr.expr
-    if (expr.kind !== 'operand-expr' || expr.operand.kind !== 'identifier') {
-        ctx.errors.push(semanticError(ctx, expr, `expected identifier, got ${expr.kind}`))
+    const namedCall = <NamedCall>unaryExpr.postfixOp
+    const operand = unaryExpr.operand
+    if (operand.kind !== 'identifier') {
+        ctx.errors.push(semanticError(ctx, operand, `expected identifier, got ${operand.kind}`))
         return
     }
-    checkExpr(expr, ctx)
-    const vid = idToVid(expr.operand)
+    checkOperand(operand, ctx)
+    const vid = idToVid(operand)
     const ref = resolveVid(vid, ctx)
     if (!ref) {
-        ctx.errors.push(notFoundError(ctx, expr, vidToString(vid)))
+        ctx.errors.push(notFoundError(ctx, operand, vidToString(vid)))
         return
     }
     if (ref.def.kind !== 'variant') {
@@ -508,7 +508,7 @@ export const checkNamedCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
 
     // TODO: fields might be specified out of order, reorder by matching variant fields by name
     const args = namedCall.fields.map(f => f.expr.type!)
-    const typeArgs = expr.operand.kind === 'identifier' ? expr.operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
+    const typeArgs = operand.kind === 'identifier' ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
     const genericMaps = makeFnGenericMaps(typeArgs, conType, args, ctx)
 
     conType.paramTypes

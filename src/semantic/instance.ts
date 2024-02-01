@@ -22,12 +22,12 @@ import { checkOperand, makeFnGenericMaps } from './expr'
 
 export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     const rOp = binaryExpr.rOperand
-    if (rOp.kind === 'operand-expr' && rOp.operand.kind === 'identifier') {
-        binaryExpr.type = checkFieldAccessExpr(binaryExpr.lOperand, rOp.operand, ctx)
+    if (rOp.kind === 'identifier') {
+        binaryExpr.type = checkFieldAccessExpr(binaryExpr.lOperand, rOp, ctx)
         return
     }
-    if (rOp.kind === 'unary-expr' && rOp.unaryOp.kind === 'pos-call') {
-        binaryExpr.type = checkMethodCallExpr(binaryExpr.lOperand, rOp.expr, rOp.unaryOp, ctx)
+    if (rOp.kind === 'unary-expr' && rOp.postfixOp && rOp.postfixOp.kind === 'pos-call') {
+        binaryExpr.type = checkMethodCallExpr(binaryExpr.lOperand, rOp.operand, rOp.postfixOp, ctx)
         return
     }
     ctx.errors.push(semanticError(ctx, rOp, `expected field access or method call, got ${rOp.kind}`))

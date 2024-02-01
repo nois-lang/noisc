@@ -79,107 +79,99 @@ describe('ast', () => {
     describe('operand', () => {
         it('operand-expr', () => {
             const ast = buildAst('a.b')
-            expect(compactAstNode(ast.block)).toEqual({
-                kind: 'block',
-                statements: [
-                    {
-                        binaryOp: {
-                            kind: 'access-op'
-                        },
-                        kind: 'binary-expr',
-                        lOperand: {
-                            kind: 'operand-expr',
-                            operand: {
-                                kind: 'identifier',
-                                name: {
-                                    kind: 'name',
-                                    value: 'a'
-                                },
-                                scope: [],
-                                typeArgs: []
-                            }
-                        },
-                        rOperand: {
-                            kind: 'operand-expr',
-                            operand: {
-                                kind: 'identifier',
-                                name: {
-                                    kind: 'name',
-                                    value: 'b'
-                                },
-                                scope: [],
-                                typeArgs: []
-                            }
-                        }
-                    }
-                ]
-            })
+            // biome-ignore format: compact
+            expect(compactAstNode(ast.block)).toEqual(
+{ kind: 'block',
+  statements:
+   [ { kind: 'binary-expr',
+       binaryOp: { kind: 'access-op' },
+       lOperand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'a' }, typeArgs: [] },
+       rOperand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'b' }, typeArgs: [] } } ] }
+            )
         })
     })
 
     describe('expr', () => {
         it('basic', () => {
             const ast = buildAst('1 + 2 * 3')
-            expect(compactAstNode(ast.block)).toEqual({
-                kind: 'block',
-                statements: [
-                    {
-                        kind: 'binary-expr',
-                        binaryOp: { kind: 'add-op' },
-                        lOperand: {
-                            kind: 'operand-expr',
-                            operand: { kind: 'int-literal', value: '1' }
-                        },
-                        rOperand: {
-                            kind: 'binary-expr',
-                            binaryOp: { kind: 'mult-op' },
-                            lOperand: {
-                                kind: 'operand-expr',
-                                operand: { kind: 'int-literal', value: '2' }
-                            },
-                            rOperand: {
-                                kind: 'operand-expr',
-                                operand: { kind: 'int-literal', value: '3' }
-                            }
-                        }
-                    }
-                ]
-            })
+            // biome-ignore format: compact
+            expect(compactAstNode(ast.block)).toEqual(
+{ kind: 'block',
+  statements:
+   [ { kind: 'binary-expr',
+       binaryOp: { kind: 'add-op' },
+       lOperand: { kind: 'int-literal', value: '1' },
+       rOperand:
+        { kind: 'binary-expr',
+          binaryOp: { kind: 'mult-op' },
+          lOperand: { kind: 'int-literal', value: '2' },
+          rOperand: { kind: 'int-literal', value: '3' } } } ] }
+            )
+        })
+
+        it('prefix and infix', () => {
+            const ast = buildAst('-1 + 2')
+            // biome-ignore format: compact
+            expect(compactAstNode(ast.block)).toEqual(
+{ kind: 'block',
+  statements:
+   [ { kind: 'binary-expr',
+       binaryOp: { kind: 'add-op' },
+       lOperand: { kind: 'unary-expr', prefixOp: { kind: 'neg-op' }, operand: { kind: 'int-literal', value: '1' } },
+       rOperand: { kind: 'int-literal', value: '2' } } ] }
+            )
+        })
+
+        it('prefix and method call', () => {
+            const ast = buildAst('-a.foo()')
+            // biome-ignore format: compact
+            expect(compactAstNode(ast.block)).toEqual(
+{ kind: 'block',
+  statements:
+   [ { kind: 'unary-expr',
+       prefixOp: { kind: 'neg-op' },
+       operand:
+        { kind: 'binary-expr',
+          binaryOp: { kind: 'access-op' },
+          lOperand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'a' }, typeArgs: [] },
+          rOperand:
+           { kind: 'unary-expr',
+             postfixOp: { kind: 'pos-call', args: [] },
+             operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'foo' }, typeArgs: [] } } } } ] }
+            )
+        })
+
+        it('prefix and postfix on unary-expr', () => {
+            const ast = buildAst('let a = !foo()')
+            // biome-ignore format: compact
+            expect(compactAstNode(ast.block)).toEqual(
+{ kind: 'block',
+  statements:
+   [ { kind: 'var-def',
+       pattern: { kind: 'pattern', name: undefined, expr: { kind: 'name', value: 'a' } },
+       varType: undefined,
+       expr:
+        { kind: 'unary-expr',
+          prefixOp: { kind: 'not-op' },
+          postfixOp: { kind: 'pos-call', args: [] },
+          operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'foo' }, typeArgs: [] } } } ] }
+            )
         })
 
         it('method call', () => {
             const ast = buildAst('a.b()')
-            expect(compactAstNode(ast.block)).toEqual({
-                kind: 'block',
-                statements: [
-                    {
-                        kind: 'binary-expr',
-                        binaryOp: { kind: 'access-op' },
-                        lOperand: {
-                            kind: 'operand-expr',
-                            operand: {
-                                kind: 'identifier',
-                                scope: [],
-                                name: { kind: 'name', value: 'a' },
-                                typeArgs: []
-                            }
-                        },
-                        rOperand: {
-                            kind: 'unary-expr',
-                            unaryOp: { kind: 'pos-call', args: [] },
-                            expr: {
-                                kind: 'operand-expr',
-                                operand: {
-                                    kind: 'identifier',
-                                    scope: [],
-                                    name: { kind: 'name', value: 'b' },
-                                    typeArgs: []
-                                }
-                            }
-                        }
-                    }
-                ]
-            })
+            // biome-ignore format: compact
+            expect(compactAstNode(ast.block)).toEqual(
+{ kind: 'block',
+  statements:
+   [ { kind: 'binary-expr',
+       binaryOp: { kind: 'access-op' },
+       lOperand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'a' }, typeArgs: [] },
+       rOperand:
+        { kind: 'unary-expr',
+          postfixOp: { kind: 'pos-call', args: [] },
+          operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'b' }, typeArgs: [] } } } ] }
+            )
         })
 
         it('method call chain', () => {
@@ -196,19 +188,19 @@ describe('ast', () => {
           lOperand:
            { kind: 'binary-expr',
              binaryOp: { kind: 'access-op' },
-             lOperand: { kind: 'operand-expr', operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'a' }, typeArgs: [] } },
+             lOperand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'a' }, typeArgs: [] },
              rOperand:
               { kind: 'unary-expr',
-                unaryOp: { kind: 'pos-call', args: [] },
-                expr: { kind: 'operand-expr', operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'b' }, typeArgs: [] } } } },
+                postfixOp: { kind: 'pos-call', args: [] },
+                operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'b' }, typeArgs: [] } } },
           rOperand:
            { kind: 'unary-expr',
-             unaryOp: { kind: 'pos-call', args: [] },
-             expr: { kind: 'operand-expr', operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'c' }, typeArgs: [] } } } },
+             postfixOp: { kind: 'pos-call', args: [] },
+             operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'c' }, typeArgs: [] } } },
        rOperand:
         { kind: 'unary-expr',
-          unaryOp: { kind: 'pos-call', args: [] },
-          expr: { kind: 'operand-expr', operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'd' }, typeArgs: [] } } } } ] }
+          postfixOp: { kind: 'pos-call', args: [] },
+          operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'd' }, typeArgs: [] } } } ] }
             )
         })
     })
