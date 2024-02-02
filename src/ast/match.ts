@@ -72,7 +72,7 @@ export const buildPatternExpr = (node: ParseNode): PatternExpr => {
     return buildOperandExpr(node)
 }
 
-export interface ConPattern extends AstNode<'con-pattern'> {
+export interface ConPattern extends AstNode<'con-pattern'>, Partial<Typed> {
     identifier: Identifier
     fieldPatterns: FieldPattern[]
 }

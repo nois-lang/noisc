@@ -3,9 +3,10 @@ import { Name } from '../ast/operand'
 import { Context, addError, defKey } from '../scope'
 import { idToVid, vidFromScope, vidToString } from '../scope/util'
 import { NameDef, resolveVid } from '../scope/vid'
-import { VidType, VirtualType, genericToVirtual, virtualTypeToString } from '../typecheck'
+import { VidType, VirtualFnType, VirtualType, genericToVirtual, isAssignable, virtualTypeToString } from '../typecheck'
 import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
-import { notFoundError, semanticError } from './error'
+import { unknownType } from '../typecheck/type'
+import { notFoundError, semanticError, typeError } from './error'
 import { checkOperand } from './expr'
 
 export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: Context): void => {
@@ -38,10 +39,8 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
             break
         case 'con-pattern':
             if (expectedType.kind !== 'vid-type') {
-                addError(
-                    ctx,
-                    semanticError(ctx, pattern, `cannot destructure type \`${virtualTypeToString(expectedType)}\``)
-                )
+                const msg = `cannot destructure type \`${virtualTypeToString(expectedType)}\``
+                addError(ctx, semanticError(ctx, pattern, msg))
                 break
             }
 
@@ -50,14 +49,18 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
                 const nameDef: NameDef = { kind: 'name-def', name: p }
                 scope.definitions.set(defKey(nameDef), nameDef)
             })
+            expr.type ??= unknownType
             break
     }
 
-    // TODO expectedType is assignable to expr.type
     if (pattern.name) {
-        pattern.name.type = expectedType
+        pattern.name.type = expr.type
         const nameDef: NameDef = { kind: 'name-def', name: pattern.name }
         scope.definitions.set(defKey(nameDef), nameDef)
+    }
+
+    if (!isAssignable(expectedType, expr.type!, ctx)) {
+        addError(ctx, typeError(pattern.expr, expr.type!, expectedType, ctx))
     }
 }
 
@@ -82,6 +85,9 @@ const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Contex
         addError(ctx, semanticError(ctx, pattern.identifier, msg))
         return []
     }
+
+    // TODO: generic mapping
+    pattern.type = (<VirtualFnType>ref.def.variant.type).returnType
 
     for (const fp of pattern.fieldPatterns) {
         const field = ref.def.variant.fieldDefs.find(fd => fd.name.value === fp.name.value)
