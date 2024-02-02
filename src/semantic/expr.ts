@@ -27,7 +27,7 @@ import {
     replaceGenericsWithHoles,
     resolveType
 } from '../typecheck/generic'
-import { unitType, unknownType } from '../typecheck/type'
+import { holeType, unitType, unknownType } from '../typecheck/type'
 import { assert, todo } from '../util/todo'
 import { notFoundError, semanticError, typeError, unknownTypeError } from './error'
 import { checkExhaustion } from './exhaust'
@@ -527,27 +527,17 @@ export const checkNamedCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
     unaryExpr.type = resolveType(conType.returnType, genericMaps, ctx)
 }
 
-export const makeFnGenericMaps = (
-    typeArgs: VirtualType[],
-    fnType: VirtualFnType,
-    args: VirtualType[],
-    ctx: Context
-): Map<string, VirtualType>[] => {
-    const fnTypeArgMap = makeFnTypeArgGenericMap(fnType, typeArgs)
-    const instScope = instanceScope(ctx)
-    const instanceMap = instScope ? instanceGenericMap(instScope, ctx) : new Map()
-    const fnMap = makeFnGenericMap(fnType, args)
-    return [instanceMap, fnTypeArgMap, fnMap]
-}
-
 export const checkListExpr = (listExpr: ListExpr, ctx: Context): void => {
     listExpr.exprs.forEach(e => checkExpr(e, ctx))
-    listExpr.type = {
-        kind: 'vid-type',
-        identifier: vidFromString('std::list::List'),
-        // TODO: combine items types
-        typeArgs: [listExpr.exprs.at(0)?.type ?? unknownType]
+    const itemType = listExpr.exprs.length === 0 ? holeType : listExpr.exprs.at(0)?.type ?? unknownType
+    for (let i = 1; i < listExpr.exprs.length; i++) {
+        let expr = listExpr.exprs[i]
+        let otherType = expr.type!
+        if (!combine(itemType, otherType, ctx)) {
+            addError(ctx, typeError(expr, otherType, itemType, ctx))
+        }
     }
+    listExpr.type = { kind: 'vid-type', identifier: vidFromString('std::list::List'), typeArgs: [itemType] }
 }
 
 export const checkAssignExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
@@ -561,12 +551,24 @@ export const checkAssignExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     }
 }
 
+export const makeFnGenericMaps = (
+    typeArgs: VirtualType[],
+    fnType: VirtualFnType,
+    args: VirtualType[],
+    ctx: Context
+): Map<string, VirtualType>[] => {
+    const fnTypeArgMap = makeFnTypeArgGenericMap(fnType, typeArgs)
+    const instScope = instanceScope(ctx)
+    const instanceMap = instScope ? instanceGenericMap(instScope, ctx) : new Map()
+    const fnMap = makeFnGenericMap(fnType, args)
+    return [instanceMap, fnTypeArgMap, fnMap]
+}
+
 export const makeUnaryExprGenericMaps = (
     operandType: VirtualType,
     fnType: VirtualFnType,
     implTargetType: VirtualType
 ): Map<string, VirtualType>[] => {
-    // TODO: lOperand acts as a type args provider for generics, improve it
     const implGenericMap = makeGenericMapOverStructure(operandType, implTargetType)
     const fnGenericMap = makeFnGenericMap(fnType, [operandType])
     return [implGenericMap, fnGenericMap]
@@ -577,7 +579,6 @@ export const makeBinaryExprGenericMaps = (
     fnType: VirtualFnType,
     implTargetType: VirtualType
 ): Map<string, VirtualType>[] => {
-    // TODO: lOperand acts as a type args provider for generics, improve it
     const implGenericMap = makeGenericMapOverStructure(binaryExpr.lOperand.type!, implTargetType)
     const fnGenericMap = makeFnGenericMap(fnType, [binaryExpr.lOperand.type!, binaryExpr.rOperand.type!])
     return [implGenericMap, fnGenericMap]

@@ -385,6 +385,44 @@ fn main() {
         })
     })
 
+    describe('list expr', () => {
+        it('empty', () => {
+            const code = `\
+fn main() {
+    let a = []
+    a()
+}`
+            const ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: non-callable operand of type `std::list::List<_>`'
+            ])
+        })
+
+        it('multi', () => {
+            const code = (a: string, b: string) => `\
+fn main() {
+    let a = [${a}, ${b}]
+    a()
+}`
+            let ctx = check(code('1', '2'))
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: non-callable operand of type `std::list::List<std::int::Int>`'
+            ])
+
+            ctx = check(code('1', '"foo"'))
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: expected std::int::Int\n            got      std::string::String',
+                'type error: non-callable operand of type `std::list::List<std::int::Int>`'
+            ])
+
+            ctx = check(code('Option::Some(4)', '"foo"'))
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: expected std::option::Option<std::int::Int>\n            got      std::string::String',
+                'type error: non-callable operand of type `std::list::List<std::option::Option<std::int::Int>>`'
+            ])
+        })
+    })
+
     describe('match expr', () => {
         it('non-exhaustive', () => {
             const code = `\
