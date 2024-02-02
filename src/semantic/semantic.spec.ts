@@ -227,7 +227,7 @@ fn main() {
     let a = none()
     a()
 }`
-            let ctx = check(code)
+            const ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual([
                 'type error: non-callable operand of type `std::option::Option<_>`'
             ])
@@ -246,7 +246,7 @@ impl Foo {
 }
 
 type Bar()`
-            let ctx = check(code)
+            const ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual([])
         })
 
@@ -257,7 +257,7 @@ fn main() {
 }
 
 fn foo() {}`
-            let ctx = check(code)
+            const ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual([])
         })
     })
@@ -271,7 +271,7 @@ fn bar(Foo::Foo(a, b): Foo) {
     a()
     b()
 }`
-            let ctx = check(code)
+            const ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual([
                 'type error: non-callable operand of type `std::int::Int`',
                 'type error: non-callable operand of type `std::int::Int`'
@@ -288,7 +288,7 @@ fn bar(Foo::Foo(a: namedA, b: namedB): Foo) {
     namedA()
     namedB()
 }`
-            let ctx = check(code)
+            const ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual([
                 'identifier `a` not found',
                 'unknown type',
@@ -309,7 +309,7 @@ fn bar(Foo::Foo(b: Bar::Bar(a)): Foo) {
     b()
     a()
 }`
-            let ctx = check(code)
+            const ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual([
                 'identifier `b` not found',
                 'unknown type',
@@ -324,7 +324,7 @@ type Foo(a: Int)
 fn bar(foo @ Foo::Foo(a): Foo) {
     foo()
 }`
-            let ctx = check(code)
+            const ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `test::Foo`'])
         })
     })
@@ -337,7 +337,7 @@ fn main() {
     if true { 4 } else { "foo" }
     unit
 }`
-            let ctx = check(code)
+            const ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual([])
         })
 

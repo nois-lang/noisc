@@ -57,7 +57,7 @@ export interface Unmatched {
 }
 
 export const checkExhaustion = (matchExpr: MatchExpr, ctx: Context): MatchTree => {
-    let tree: MatchTree = { node: { kind: 'unmatched' } }
+    const tree: MatchTree = { node: { kind: 'unmatched' } }
 
     for (const clause of matchExpr.clauses) {
         const nodeAffected = matchPattern(clause.pattern.expr, tree, ctx)
@@ -109,7 +109,7 @@ const matchPattern = (pattern: PatternExpr, tree: MatchTree, ctx: Context): bool
                 tree.node = { kind: 'type', def, variants }
             }
             const conName = pattern.identifier.name.value
-            let variantTree = tree.node.variants.get(vidToString(vid))
+            const variantTree = tree.node.variants.get(vidToString(vid))
             if (!variantTree) throw Error()
             // if this variant hasn't been explored yet, populate fields as unmatched
             if (variantTree.node.kind !== 'variant') {
@@ -127,7 +127,9 @@ const matchPattern = (pattern: PatternExpr, tree: MatchTree, ctx: Context): bool
             }
             // if pattern has no fields, exhaust every field of that variant
             if (pattern.fieldPatterns.length === 0) {
-                fields.forEach(f => (f.node = { kind: 'exhaustive' }))
+                fields.forEach(f => {
+                    f.node = { kind: 'exhaustive' }
+                })
                 return true
             }
             // if this variant has unmatched fields, recursively match every pattern field

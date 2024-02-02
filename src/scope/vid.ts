@@ -165,7 +165,7 @@ const resolveScopeVid = (
     moduleVid: VirtualIdentifier,
     checkSuper: boolean = true
 ): VirtualIdentifierMatch | undefined => {
-    for (let k of ofKind) {
+    for (const k of ofKind) {
         if (vid.names.length === 1) {
             const name = vid.names[0]
             const def = scope.definitions.get(k + name)
@@ -214,7 +214,7 @@ const resolveScopeVid = (
                     // lookup supertypes' traits/impls that might contain that function
                     const fullTypeVid = { names: [...(moduleVid?.names ?? []), traitName] }
                     const superRels = findSuperRelChains(fullTypeVid, ctx).map(c => c.at(-1)!)
-                    for (let superRel of superRels) {
+                    for (const superRel of superRels) {
                         // don't check itself
                         if (vidEq(fullTypeVid, superRel.implDef.vid)) continue
                         const fullMethodVid = { names: [...superRel.implDef.vid.names, fnName] }

@@ -376,14 +376,14 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                 )
                 const requiredImplMethods = traitMethods.filter(f => !f.block)
                 const implMethods = implDef.block.statements.filter(s => s.kind === 'fn-def').map(s => <FnDef>s)
-                for (let m of requiredImplMethods) {
+                for (const m of requiredImplMethods) {
                     const mName = m.name.value
                     if (!implMethods.find(im => im.name.value === mName)) {
                         const msg = `missing method implementation \`${vidToString(ref.vid)}::${mName}\``
                         addError(ctx, semanticError(ctx, implDef.identifier.name, msg))
                     }
                 }
-                for (let m of implMethods) {
+                for (const m of implMethods) {
                     const mName = m.name.value
                     if (!traitMethods.find(im => im.name.value === mName)) {
                         const msg = `method \`${vidToString(ref.vid)}::${mName}\` is not defined by implemented trait`

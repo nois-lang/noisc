@@ -531,8 +531,8 @@ export const checkListExpr = (listExpr: ListExpr, ctx: Context): void => {
     listExpr.exprs.forEach(e => checkExpr(e, ctx))
     const itemType = listExpr.exprs.length === 0 ? holeType : listExpr.exprs.at(0)?.type ?? unknownType
     for (let i = 1; i < listExpr.exprs.length; i++) {
-        let expr = listExpr.exprs[i]
-        let otherType = expr.type!
+        const expr = listExpr.exprs[i]
+        const otherType = expr.type!
         if (!combine(itemType, otherType, ctx)) {
             addError(ctx, typeError(expr, otherType, itemType, ctx))
         }

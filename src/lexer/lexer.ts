@@ -119,10 +119,10 @@ const floatRegex = /^((\d+(\.\d*)?e[+-]?\d+)|(\d+\.\d*)|(\d*\.\d+))/
 const escapeCharReg = /(\\[btnvfr\\'"])/
 const unicodeCharReg = /(\\u{[0-9a-fA-F]{1,4}})/
 const charRegex = new RegExp(
-    "^'(" + ["(\\\\')", /[^\\\n\r']/.source, escapeCharReg.source, unicodeCharReg.source].join('|') + ")'"
+    `^'(${["(\\\\')", /[^\\\n\r']/.source, escapeCharReg.source, unicodeCharReg.source].join('|')})'`
 )
 const stringRegex = new RegExp(
-    '^"(' + ['(\\\\")', /[^\\\n\r"]/.source, escapeCharReg.source, unicodeCharReg.source].join('|') + ')*"'
+    `^"(${['(\\\\")', /[^\\\n\r"]/.source, escapeCharReg.source, unicodeCharReg.source].join('|')})*"`
 )
 
 /**
@@ -134,7 +134,7 @@ export const isWhitespace = (char: string): boolean => char === ' ' || char === 
 
 export const isNewline = (char: string): boolean => char === '\n' || char === '\r'
 
-export const tokenize = (code: String): LexerToken[] => {
+export const tokenize = (code: string): LexerToken[] => {
     const pos = { pos: 0 }
     const chars = code.split('')
     const tokens: LexerToken[] = []
@@ -200,7 +200,7 @@ export const tokenize = (code: String): LexerToken[] => {
 const parseComment = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
     if (chars.slice(pos.pos, pos.pos + 2).join('') === '//') {
         const start = pos.pos
-        let buffer: string[] = []
+        const buffer: string[] = []
         while (!isNewline(chars[pos.pos])) {
             buffer.push(chars[pos.pos])
             pos.pos++
@@ -212,8 +212,8 @@ const parseComment = (chars: string[], tokens: LexerToken[], pos: { pos: number 
 }
 
 const parseConstToken = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
-    let codeLeft = chars.slice(pos.pos).join('')
-    let pair = [...lexerKeywordMap.entries()].find(([, v]) => {
+    const codeLeft = chars.slice(pos.pos).join('')
+    const pair = [...lexerKeywordMap.entries()].find(([, v]) => {
         if (!isAlpha(v[0])) {
             return codeLeft.startsWith(v)
         } else {

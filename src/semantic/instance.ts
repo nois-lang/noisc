@@ -122,7 +122,7 @@ const checkMethodCallExpr = (
     if (!ref || ref.def.kind !== 'method-def') {
         // it still can be a field of fn type
         ctx.silent = true
-        let fieldType = checkFieldAccessExpr(lOperand, identifier, ctx)
+        const fieldType = checkFieldAccessExpr(lOperand, identifier, ctx)
         ctx.silent = false
         if (!fieldType) {
             addError(ctx, notFoundError(ctx, identifier, methodName, 'method or field'))

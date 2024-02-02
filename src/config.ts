@@ -16,7 +16,7 @@ export const defaultConfig = (): Config => ({
 })
 
 export const fromCmdFlags = (args: string[]): Config => {
-    let config = defaultConfig()
+    const config = defaultConfig()
     const typeCheckCmd = args
         .find(a => a.startsWith('--typeCheck='))
         ?.split('=')

@@ -60,7 +60,7 @@ export const prettyLineAt = (span: Span, source: Source): string => {
                     }
                     return []
                 }
-                let lineNum = start.line + i + 1
+                const lineNum = start.line + i + 1
                 const linePad = `${lineNum.toString()} ││`.padStart(padSize)
                 return [linePad + sourceLine]
             })

@@ -21,7 +21,7 @@ export const notFoundError = (ctx: Context, node: AstNode<any>, id: string, name
     semanticError(ctx, node, `${name} \`${id}\` not found`)
 
 export const notImplementedError = (ctx: Context, node: AstNode<any>, message?: string): SemanticError =>
-    semanticError(ctx, node, 'not implemented:' + (message ? ' ' + message : ''))
+    semanticError(ctx, node, `not implemented:${message ? ` ${message}` : ''}`)
 
 export const unknownTypeError = (node: AstNode<any>, type: VirtualType, ctx: Context): SemanticError => {
     if (type.kind === 'unknown-type') {
