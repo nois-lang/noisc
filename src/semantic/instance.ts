@@ -23,11 +23,11 @@ import { checkOperand, makeFnGenericMaps } from './expr'
 export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     const rOp = binaryExpr.rOperand
     if (rOp.kind === 'identifier') {
-        binaryExpr.type = checkFieldAccessExpr(binaryExpr.lOperand, rOp, ctx)
+        binaryExpr.type = checkFieldAccessExpr(binaryExpr.lOperand, rOp, ctx) ?? unknownType
         return
     }
     if (rOp.kind === 'unary-expr' && rOp.postfixOp && rOp.postfixOp.kind === 'pos-call') {
-        binaryExpr.type = checkMethodCallExpr(binaryExpr.lOperand, rOp.operand, rOp.postfixOp, ctx)
+        binaryExpr.type = checkMethodCallExpr(binaryExpr.lOperand, rOp.operand, rOp.postfixOp, ctx) ?? unknownType
         return
     }
     addError(ctx, semanticError(ctx, rOp, `expected field access or method call, got ${rOp.kind}`))
@@ -87,13 +87,18 @@ const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): Vi
     return resolveType(fieldType, [conGenericMap], ctx)
 }
 
-const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: PosCall, ctx: Context): VirtualType => {
+const checkMethodCallExpr = (
+    lOperand: Operand,
+    rOperand: Operand,
+    callOp: PosCall,
+    ctx: Context
+): VirtualType | undefined => {
     checkOperand(lOperand, ctx)
     callOp.args.forEach(a => checkOperand(a, ctx))
     const identifier = identifierFromOperand(rOperand)
     if (!identifier || identifier.scope.length !== 0) {
         addError(ctx, semanticError(ctx, rOperand, `expected method name, got \`${rOperand.kind}\``))
-        return unknownType
+        return
     }
     const methodName = identifier.name.value
     const instScope = instanceScope(ctx)
@@ -110,7 +115,7 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: PosCa
                 `expected instance type, got \`${virtualTypeToString(lOperand.type ?? unknownType)}\``
             )
         )
-        return unknownType
+        return
     }
     const traitFnVid = { names: [...lOperand.type!.identifier.names, methodName] }
     const ref = resolveVid(traitFnVid, ctx, ['method-def'])
@@ -121,14 +126,14 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: PosCa
         ctx.silent = false
         if (!fieldType) {
             addError(ctx, notFoundError(ctx, identifier, methodName, 'method or field'))
-            return unknownType
+            return
         }
         // field exists, now it's just a regular function call
         // TODO: missing type def generic map, since field is defined in type def scope
         if (fieldType.kind !== 'fn-type') {
             const message = `type error: non-callable field of type \`${virtualTypeToString(fieldType)}\``
             addError(ctx, semanticError(ctx, identifier, message))
-            return unknownType
+            return
         }
         const genericMaps = makeFnGenericMaps(
             identifier.typeArgs.map(tp => typeToVirtual(tp, ctx)),
@@ -151,7 +156,7 @@ const checkMethodCallExpr = (lOperand: Operand, rOperand: Operand, callOp: PosCa
                 ctx,
                 semanticError(ctx, callOp, `expected ${fnType.paramTypes.length} arguments, got ${callOp.args.length}`)
             )
-            return unknownType
+            return
         }
 
         // TODO: check required type args (that cannot be inferred via `resolveFnGenerics`)
