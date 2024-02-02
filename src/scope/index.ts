@@ -19,7 +19,7 @@ export interface Context {
     errors: SemanticError[]
     warnings: SemanticError[]
     /**
-     * Whether should perform semantic checking or not
+     * When disabled, semantic checker will not visit fn-def blocks only to populate top-level type information
      */
     check: boolean
     /**

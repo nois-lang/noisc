@@ -218,10 +218,11 @@ const checkStatement = (statement: Statement, ctx: Context): void => {
     }
 }
 
-// TODO: if fn is a part of impl for, make sure signature matches with its trait
 const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
-    if (fnDef.type || fnDef.topLevelChecked || !ctx.check) return
-    fnDef.topLevelChecked = true
+    if (fnDef.checked) return
+    if (ctx.check) {
+        fnDef.checked = true
+    }
 
     const module = ctx.moduleStack.at(-1)!
     module.scopeStack.push({
@@ -252,20 +253,25 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
     const genericMaps = instScope ? [instanceGenericMap(instScope, ctx)] : []
     const returnTypeResolved = resolveType(returnType, genericMaps, ctx)
 
-    if (fnDef.block) {
-        checkBlock(fnDef.block, ctx)
-        const blockType = fnDef.block.type!
-        if (!isAssignable(blockType, returnTypeResolved, ctx)) {
-            addError(ctx, typeError(fnDef.block, blockType, returnTypeResolved, ctx))
-        }
-        fnDefScope(ctx)!.returnStatements.forEach(rs => {
-            if (!isAssignable(rs.type!, returnTypeResolved, ctx)) {
-                addError(ctx, typeError(rs, rs.type!, returnTypeResolved, ctx))
+    if (ctx.check) {
+        if (fnDef.block) {
+            checkBlock(fnDef.block, ctx)
+            const blockType = fnDef.block.type!
+            if (!isAssignable(blockType, returnTypeResolved, ctx)) {
+                addError(ctx, typeError(fnDef.block, blockType, returnTypeResolved, ctx))
             }
-        })
-    } else {
-        if (instanceScope(ctx)?.def.kind !== 'trait-def') {
-            addWarning(ctx, semanticError(ctx, fnDef.name, `fn \`${fnDef.name.value}\` has no body -> must be native`))
+            fnDefScope(ctx)!.returnStatements.forEach(rs => {
+                if (!isAssignable(rs.type!, returnTypeResolved, ctx)) {
+                    addError(ctx, typeError(rs, rs.type!, returnTypeResolved, ctx))
+                }
+            })
+        } else {
+            if (instanceScope(ctx)?.def.kind !== 'trait-def') {
+                addWarning(
+                    ctx,
+                    semanticError(ctx, fnDef.name, `fn \`${fnDef.name.value}\` has no body -> must be native`)
+                )
+            }
         }
     }
 
@@ -307,32 +313,32 @@ export const checkParam = (param: Param, index: number, ctx: Context): void => {
 }
 
 const checkTraitDef = (traitDef: TraitDef, ctx: Context) => {
+    // TODO: should any errors be reported?
+    const rel = ctx.impls.find(i => i.instanceDef === traitDef)
+    if (!rel) return
+
     const module = ctx.moduleStack.at(-1)!
 
     if (instanceScope(ctx)) {
-        addError(ctx, semanticError(ctx, traitDef, `\`${traitDef.kind}\` within instance scope`))
+        addError(ctx, semanticError(ctx, traitDef, `trait definition within instance scope`))
         return
     }
 
-    module.scopeStack.push({
+    const scope: InstanceScope = {
         kind: 'instance',
-        selfType: unknownType,
+        selfType: rel.forType,
         def: traitDef,
         definitions: new Map(traitDef.generics.map(g => [defKey(g), g]))
-    })
-    const selfType = traitDefToVirtualType(traitDef, ctx)
-    // must be set afterwards since impl generics cannot be resolved
-    ;(<InstanceScope>module.scopeStack.at(-1)!).selfType = selfType
+    }
+    module.scopeStack.push(scope)
 
     checkBlock(traitDef.block, ctx)
+    // TODO: make sure method signature matches with its trait
 
     module.scopeStack.pop()
 }
 
 const checkImplDef = (implDef: ImplDef, ctx: Context) => {
-    if (implDef.checked) return
-    implDef.checked = true
-
     // TODO: should any errors be reported?
     const rel = ctx.impls.find(i => i.instanceDef === implDef)
     if (!rel) return
@@ -396,6 +402,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
     }
 
     checkBlock(implDef.block, ctx)
+    // TODO: make sure method signature matches with its trait
 
     module.scopeStack.pop()
 }

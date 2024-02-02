@@ -9,8 +9,11 @@ import { buildPackage } from './package/io'
 import { getSpan } from './parser'
 import { Context, pathToVid } from './scope'
 import { buildInstanceRelations } from './scope/trait'
-import { checkModule, prepareModule } from './semantic'
+import { checkModule, checkTopLevelDefiniton, prepareModule } from './semantic'
 import { Source } from './source'
+import { virtualTypeToString } from './typecheck'
+
+Error.stackTraceLimit = Infinity
 
 const dir = dirname(fileURLToPath(import.meta.url))
 const version = JSON.parse(readFileSync(join(dir, '..', 'package.json')).toString()).version
@@ -77,8 +80,8 @@ ctx.packages.forEach(p => {
         prepareModule(m)
     })
 })
-// TODO: all impls should probably be checked, either when method is resolved, or just with checkTopLevelDefinition
 ctx.impls = buildInstanceRelations(ctx)
+ctx.impls.forEach(impl => checkTopLevelDefiniton(impl.module, impl.instanceDef, ctx))
 ctx.check = true
 if (ctx.config.libCheck) {
     ctx.packages.flatMap(p => p.modules).forEach(m => checkModule(m, ctx))

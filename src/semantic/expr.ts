@@ -144,7 +144,7 @@ export const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const methodRef = resolveVid(opImplFnVid!, ctx, ['method-def'])
     assert(!!methodRef, `impl fn \`${vidToString(opImplFnVid!)}\` not found`)
     const methodDef = <MethodDef>methodRef!.def
-    assert(!!methodDef.fn.type, 'untyped impl fn')
+    assert(!!methodDef.fn.type, `untyped impl fn ${vidToString(methodRef!.vid)}`)
     assert(methodDef.fn.type!.kind === 'fn-type', 'impl fn type in not fn')
 
     const implTargetType = getInstanceForType(methodDef.instance, ctx)

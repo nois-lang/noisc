@@ -68,14 +68,13 @@ export const buildVarDef = (node: ParseNode): VarDef => {
     return { kind: 'var-def', parseNode: node, pattern, varType, expr }
 }
 
-export interface FnDef extends AstNode<'fn-def'>, Partial<Typed> {
+export interface FnDef extends AstNode<'fn-def'>, Partial<Typed>, Partial<Checked> {
     kind: 'fn-def'
     name: Name
     generics: Generic[]
     params: Param[]
     block?: Block
     returnType?: Type
-    topLevelChecked: boolean
 }
 
 export const buildFnDef = (node: ParseNode): FnDef => {
@@ -88,7 +87,7 @@ export const buildFnDef = (node: ParseNode): FnDef => {
     const params = nodes.at(idx)?.kind === 'params' ? filterNonAstNodes(nodes[idx++]).map(buildParam) : []
     const returnType = nodes.at(idx)?.kind === 'type-annot' ? buildType(nodes[idx++]) : undefined
     const block = nodes.at(idx)?.kind === 'block' ? buildBlock(nodes[idx++]) : undefined
-    return { kind: 'fn-def', parseNode: node, name, generics, params, block, returnType, topLevelChecked: false }
+    return { kind: 'fn-def', parseNode: node, name, generics, params, block, returnType }
 }
 
 export interface TraitDef extends AstNode<'trait-def'> {
@@ -108,7 +107,7 @@ export const buildTraitDef = (node: ParseNode): TraitDef => {
     return { kind: 'trait-def', parseNode: node, name, generics, block }
 }
 
-export interface ImplDef extends AstNode<'impl-def'>, Partial<Checked> {
+export interface ImplDef extends AstNode<'impl-def'> {
     identifier: Identifier
     generics: Generic[]
     forTrait?: Identifier
