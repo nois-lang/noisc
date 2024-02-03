@@ -11,9 +11,6 @@ import { Context, pathToVid } from './scope'
 import { buildInstanceRelations } from './scope/trait'
 import { checkModule, checkTopLevelDefiniton, prepareModule } from './semantic'
 import { Source } from './source'
-import { virtualTypeToString } from './typecheck'
-
-Error.stackTraceLimit = Infinity
 
 const dir = dirname(fileURLToPath(import.meta.url))
 const version = JSON.parse(readFileSync(join(dir, '..', 'package.json')).toString()).version

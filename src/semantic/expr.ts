@@ -470,6 +470,7 @@ export const checkCall = (call: AstNode<any>, operand: Operand, args: Expr[], ct
         ctx
     )
     const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
+    // TODO: if it is a vid type call without args (e.g. Option::Some()), use checkNamedCall() reporting
     checkCallArgs(call, args, paramTypes, ctx)
 
     return replaceGenericsWithHoles(resolveType(fnType.returnType, genericMaps, ctx))
@@ -480,6 +481,7 @@ export const checkNamedCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const operand = unaryExpr.operand
     if (operand.kind !== 'identifier') {
         addError(ctx, semanticError(ctx, operand, `expected identifier, got ${operand.kind}`))
+        unaryExpr.type = unknownType
         return
     }
     checkOperand(operand, ctx)
@@ -487,44 +489,50 @@ export const checkNamedCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const ref = resolveVid(vid, ctx)
     if (!ref) {
         addError(ctx, notFoundError(ctx, operand, vidToString(vid)))
+        unaryExpr.type = unknownType
         return
     }
     if (ref.def.kind !== 'variant') {
         addError(ctx, semanticError(ctx, unaryExpr, `constructor called on \`${ref.def.kind}\``))
+        unaryExpr.type = unknownType
         return
     }
     const variant = ref.def.variant
-    const conType = <VirtualFnType>variant.type!
 
     namedCall.fields.map(f => checkExpr(f.expr, ctx))
-    if (conType.paramTypes.length !== namedCall.fields.length) {
-        addError(
-            ctx,
-            semanticError(
-                ctx,
-                namedCall,
-                `expected ${conType.paramTypes.length} arguments, got ${namedCall.fields.length}`
-            )
-        )
+
+    let argsHaveErrors = false
+    const orderedArgs = []
+    const missingFields = []
+    for (const fieldDef of variant.fieldDefs) {
+        const field = namedCall.fields.find(f => f.name.value === fieldDef.name.value)
+        if (!field) {
+            missingFields.push(fieldDef)
+            continue
+        }
+        orderedArgs.push(field)
+    }
+    if (missingFields.length > 0) {
+        const msg = `missing fields: ${missingFields.map(f => `\`${f.name.value}\``).join(', ')}`
+        addError(ctx, semanticError(ctx, namedCall, msg))
+        argsHaveErrors = true
+    }
+    for (const arg of namedCall.fields) {
+        if (!orderedArgs.includes(arg)) {
+            const msg = `unknown field: \`${arg.name.value}\``
+            addError(ctx, semanticError(ctx, arg.name, msg))
+            argsHaveErrors = true
+        }
+    }
+
+    if (argsHaveErrors) {
+        // TODO: set variant type
+        unaryExpr.type = unknownType
         return
     }
 
-    // TODO: fields might be specified out of order, reorder by matching variant fields by name
-    const args = namedCall.fields.map(f => f.expr.type!)
-    const typeArgs = operand.kind === 'identifier' ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : []
-    const genericMaps = makeFnGenericMaps(typeArgs, conType, args, ctx)
-
-    conType.paramTypes
-        .map(pt => resolveType(pt, genericMaps, ctx))
-        .forEach((paramType, i) => {
-            const field = namedCall.fields[i]
-            const argType = resolveType(field.expr.type ?? unknownType, genericMaps, ctx)
-            if (!isAssignable(argType, paramType, ctx)) {
-                addError(ctx, typeError(field, argType, paramType, ctx))
-            }
-        })
-
-    unaryExpr.type = resolveType(conType.returnType, genericMaps, ctx)
+    const args = orderedArgs.map(a => a?.expr)
+    unaryExpr.type = checkCall(namedCall, operand, args, ctx)
 }
 
 export const checkListExpr = (listExpr: ListExpr, ctx: Context): void => {

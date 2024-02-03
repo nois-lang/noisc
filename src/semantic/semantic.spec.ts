@@ -552,7 +552,9 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual(['method `x` not found'])
 
             ctx = check(code('x: Int', '5'))
-            expect(ctx.errors.map(e => e.message)).toEqual(['method `x` not found\n    to call a method, surround operand in parentheses'])
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'method `x` not found\n    to call a method, surround operand in parentheses'
+            ])
         })
 
         it('field is a closure', () => {
@@ -567,6 +569,61 @@ fn main() {
 }`
             const ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `std::int::Int`'])
+        })
+    })
+
+    describe('constructor call', () => {
+        it('pos call', () => {
+            const code = `\
+type Foo(x: Int)
+
+fn main() {
+    let foo = Foo::Foo(5)
+    foo()
+    return unit
+}`
+            const ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `test::Foo`'])
+        })
+
+        it('named call', () => {
+            const code = (arg: string) => `\
+type Foo(x: Int)
+
+fn main() {
+    let foo = Foo::Foo(${arg}: 5)
+    foo()
+    return unit
+}`
+            let ctx = check(code('x'))
+            expect(ctx.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `test::Foo`'])
+
+            ctx = check(code('y'))
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'missing fields: `x`',
+                'unknown field: `y`',
+                'unknown type',
+                'unknown type'
+            ])
+        })
+
+        it('wrong arg count', () => {
+            const code = (arg: string) => `\
+type Foo(x: Int)
+
+fn main() {
+    let foo = Foo::Foo(${arg})
+    foo()
+    return unit
+}`
+            let ctx = check(code(''))
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'expected 1 arguments, got 0',
+                'type error: non-callable operand of type `test::Foo`'
+            ])
+
+            ctx = check(code('x: 5, y: 6'))
+            expect(ctx.errors.map(e => e.message)).toEqual(['unknown field: `y`', 'unknown type', 'unknown type'])
         })
     })
 })
