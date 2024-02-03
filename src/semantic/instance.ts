@@ -12,13 +12,12 @@ import {
     makeFnGenericMap,
     makeFnTypeArgGenericMap,
     makeGenericMapOverStructure,
-    replaceGenericsWithHoles,
     resolveType
 } from '../typecheck/generic'
 import { selfType, unknownType } from '../typecheck/type'
 import { allEqual } from '../util/array'
 import { notFoundError, semanticError } from './error'
-import { checkOperand, makeFnGenericMaps } from './expr'
+import { checkOperand } from './expr'
 
 export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     const rOp = binaryExpr.rOperand
@@ -120,53 +119,38 @@ const checkMethodCallExpr = (
     const traitFnVid = { names: [...lOperand.type!.identifier.names, methodName] }
     const ref = resolveVid(traitFnVid, ctx, ['method-def'])
     if (!ref || ref.def.kind !== 'method-def') {
-        // it still can be a field of fn type
+        // hint if it is a field call
         ctx.silent = true
         const fieldType = checkFieldAccessExpr(lOperand, identifier, ctx)
         ctx.silent = false
-        if (!fieldType) {
-            addError(ctx, notFoundError(ctx, identifier, methodName, 'method or field'))
-            return
+        if (fieldType) {
+            const msg = `method \`${methodName}\` not found\n    to call a method, surround operand in parentheses`
+            addError(ctx, semanticError(ctx, identifier, msg))
+        } else {
+            addError(ctx, notFoundError(ctx, identifier, methodName, 'method'))
         }
-        // field exists, now it's just a regular function call
-        // TODO: missing type def generic map, since field is defined in type def scope
-        if (fieldType.kind !== 'fn-type') {
-            const message = `type error: non-callable field of type \`${virtualTypeToString(fieldType)}\``
-            addError(ctx, semanticError(ctx, identifier, message))
-            return
-        }
-        const genericMaps = makeFnGenericMaps(
-            identifier.typeArgs.map(tp => typeToVirtual(tp, ctx)),
-            fieldType,
-            callOp.args.map(a => a.type!),
-            ctx
-        )
-        const paramTypes = fieldType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
-        checkCallArgs(callOp, callOp.args, paramTypes, ctx)
-
-        return replaceGenericsWithHoles(resolveType(fieldType.returnType, genericMaps, ctx))
-    } else {
-        const genericMaps = makeMethodGenericMaps(lOperand, identifier, ref.def, callOp, ctx)
-        // normal method call
-        const fnType = <VirtualFnType>ref.def.fn.type
-
-        // TODO: custom check for static methods
-        if (fnType.paramTypes.length !== callOp.args.length + 1) {
-            addError(
-                ctx,
-                semanticError(ctx, callOp, `expected ${fnType.paramTypes.length} arguments, got ${callOp.args.length}`)
-            )
-            return
-        }
-
-        // TODO: check required type args (that cannot be inferred via `resolveFnGenerics`)
-        identifier.typeArgs.forEach(typeArg => checkType(typeArg, ctx))
-
-        const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
-        checkCallArgs(callOp, [lOperand, ...callOp.args], paramTypes, ctx)
-
-        return resolveType(fnType.returnType, genericMaps, ctx)
+        return
     }
+    const genericMaps = makeMethodGenericMaps(lOperand, identifier, ref.def, callOp, ctx)
+    // normal method call
+    const fnType = <VirtualFnType>ref.def.fn.type
+
+    // TODO: custom check for static methods
+    if (fnType.paramTypes.length !== callOp.args.length + 1) {
+        addError(
+            ctx,
+            semanticError(ctx, callOp, `expected ${fnType.paramTypes.length} arguments, got ${callOp.args.length}`)
+        )
+        return
+    }
+
+    // TODO: check required type args (that cannot be inferred via `resolveFnGenerics`)
+    identifier.typeArgs.forEach(typeArg => checkType(typeArg, ctx))
+
+    const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
+    checkCallArgs(callOp, [lOperand, ...callOp.args], paramTypes, ctx)
+
+    return resolveType(fnType.returnType, genericMaps, ctx)
 }
 
 const makeMethodGenericMaps = (

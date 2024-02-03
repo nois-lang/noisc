@@ -540,16 +540,19 @@ fn main() {
         })
 
         it('field called like a method', () => {
-            const code = `\
-type Foo(x: Int)
+            const code = (arg: string, arg2: string) => `\
+type Foo(${arg})
 
 fn main() {
-    let foo = Foo::Foo(5)
+    let foo = Foo::Foo(${arg2})
     foo.x()
     return unit
 }`
-            const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual(['type error: non-callable field of type `std::int::Int`'])
+            let ctx = check(code('', ''))
+            expect(ctx.errors.map(e => e.message)).toEqual(['method `x` not found'])
+
+            ctx = check(code('x: Int', '5'))
+            expect(ctx.errors.map(e => e.message)).toEqual(['method `x` not found\n    to call a method, surround operand in parentheses'])
         })
 
         it('field is a closure', () => {
@@ -558,7 +561,7 @@ type Foo(x: ||: Int)
 
 fn main() {
     let foo = Foo::Foo(|| { 5 })
-    let a = foo.x()
+    let a = (foo.x)()
     a()
     return unit
 }`
