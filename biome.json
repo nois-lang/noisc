@@ -8,6 +8,9 @@
     "linter": {
         "rules": {
             "recommended": true,
+            "nursery": {
+                "noUnusedImports": "warn"
+            },
             "correctness": {
                 "noSwitchDeclarations": "off"
             },
