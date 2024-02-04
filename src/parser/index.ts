@@ -57,7 +57,6 @@ export const treeKinds = <const>[
     'named-call',
     'closure-expr',
     'closure-params',
-    'constructor',
     'named-arg',
     'identifier',
     'block',

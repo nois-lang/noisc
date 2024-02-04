@@ -6,7 +6,7 @@ import { Context, addError, instanceScope } from '../scope'
 import { getInstanceForType } from '../scope/trait'
 import { vidToString } from '../scope/util'
 import { MethodDef, resolveVid } from '../scope/vid'
-import { VirtualFnType, VirtualType, genericToVirtual, typeToVirtual, virtualTypeToString } from '../typecheck'
+import { VirtualFnType, VirtualType, combine, genericToVirtual, typeToVirtual, virtualTypeToString } from '../typecheck'
 import {
     instanceGenericMap,
     makeFnGenericMap,
@@ -15,7 +15,7 @@ import {
     resolveType
 } from '../typecheck/generic'
 import { selfType, unknownType } from '../typecheck/type'
-import { allEqual } from '../util/array'
+import { assert } from '../util/todo'
 import { notFoundError, semanticError } from './error'
 import { checkOperand } from './expr'
 
@@ -69,10 +69,12 @@ const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): Vi
     // normaly single variant types use field access, but there is no reason to restrict multiple variants sharing the
     // same field
     const typeCandidates = typeDef.variants
-        .flatMap(v => v.fieldDefs.find(f => f.name.value === fieldName)?.fieldType ?? [])
+        .map(v => v.fieldDefs.find(f => f.name.value === fieldName)?.fieldType)
+        .filter(t => !!t)
+        .map(t => t!)
         .map(t => typeToVirtual(t, ctx))
-    // TODO: probably there is a better way to compare type equality
-    if (!allEqual(typeCandidates.map(virtualTypeToString))) {
+    assert(typeCandidates.length > 0)
+    if (!typeCandidates.every(t => !!combine(typeCandidates[0], t, ctx))) {
         const msg = `field \`${fieldName}\` is not defined in every variant of type \`${vidToString(typeRef.vid)}\``
         addError(ctx, semanticError(ctx, field, msg))
         return
