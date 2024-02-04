@@ -2,7 +2,6 @@ trait Eq {
     fn eq(self, other: Self): Bool
 
     fn ne(self, other: Self): Bool {
-        // TODO: incorrect operator priority
-        !(self.eq(other))
+        !self.eq(other)
     }
 }

@@ -3,7 +3,7 @@ import { Name } from '../ast/operand'
 import { Context, addError, defKey } from '../scope'
 import { idToVid, vidFromScope, vidToString } from '../scope/util'
 import { NameDef, resolveVid } from '../scope/vid'
-import { VidType, VirtualFnType, VirtualType, genericToVirtual, isAssignable, virtualTypeToString } from '../typecheck'
+import { VidType, VirtualFnType, VirtualType, isAssignable, virtualTypeToString } from '../typecheck'
 import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { unknownType } from '../typecheck/type'
 import { notFoundError, semanticError, typeError } from './error'
@@ -86,8 +86,9 @@ const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Contex
         return []
     }
 
-    // TODO: generic mapping
-    pattern.type = (<VirtualFnType>ref.def.variant.type).returnType
+    const conType = <VirtualFnType>ref.def.variant.type
+    const conGenericMap = makeGenericMapOverStructure(expectedType, conType.returnType)
+    pattern.type = resolveType(conType.returnType, [conGenericMap], ctx)
 
     for (const fp of pattern.fieldPatterns) {
         const field = ref.def.variant.fieldDefs.find(fd => fd.name.value === fp.name.value)
@@ -96,11 +97,6 @@ const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Contex
             return []
         }
 
-        const conGenericMap = makeGenericMapOverStructure(expectedType, {
-            kind: 'vid-type',
-            identifier: typeDefVid,
-            typeArgs: ref.def.typeDef.generics.map(g => genericToVirtual(g, ctx))
-        })
         field.name.type = resolveType(field.type!, [conGenericMap], ctx)
 
         if (fp.pattern) {

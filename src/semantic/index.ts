@@ -105,8 +105,7 @@ export const checkTopLevelDefiniton = (module: Module, definition: Definition, c
             checkTypeDef(definition.typeDef, ctx)
             break
         case 'method-def':
-            // TODO: narrow to not check unrelated methods
-            checkStatement(definition.instance, ctx)
+            checkStatement(definition.fn, ctx)
             break
         case 'name-def':
             if (definition.parent) {
@@ -132,7 +131,6 @@ export const checkBlock = (block: Block, ctx: Context): boolean => {
     module.scopeStack.push(scope)
 
     // TODO: check for unreachable statements after return statement or fns returning `Never`
-    // TODO: check less trivial cases when if expr returns in every branch
     for (const s of block.statements) {
         if (scope.allBranchesReturned) {
             addWarning(ctx, semanticError(ctx, s, `unreachable statement`))
@@ -152,13 +150,8 @@ export const checkBlock = (block: Block, ctx: Context): boolean => {
     if (scope.allBranchesReturned) {
         block.type = neverType
     } else {
-        // TODO: combine return statement types
         const lastStatement = <Partial<Typed> | undefined>block.statements.at(-1)
         block.type = lastStatement?.type ?? unitType
-        if (block.type.kind === 'unknown-type') {
-            // TODO: is this needed? there should already be a not found/unknown type error from that statement
-            // addError(ctx, unknownTypeError(block, block.type, ctx))
-        }
     }
 
     module.scopeStack.pop()
@@ -267,10 +260,8 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
             })
         } else {
             if (instanceScope(ctx)?.def.kind !== 'trait-def') {
-                addWarning(
-                    ctx,
-                    semanticError(ctx, fnDef.name, `fn \`${fnDef.name.value}\` has no body -> must be native`)
-                )
+                const msg = `fn \`${fnDef.name.value}\` has no body -> must be native`
+                addWarning(ctx, semanticError(ctx, fnDef.name, msg))
             }
         }
     }
@@ -446,8 +437,6 @@ const checkVariant = (variant: Variant, ctx: Context) => {
     // e.g. `Option::None()` should have type of `||: Option<_>`
     const typeArgs = generics.map(g => (names.includes(g.name) ? g : holeType))
 
-    // TODO: introduce a new type kind 'variant', that, unlike fn type, will also record field names
-    // it should be assignable to fn type if argument position matches
     variant.type = {
         kind: 'fn-type',
         paramTypes: variant.fieldDefs.map(f => typeToVirtual(f.fieldType, ctx)),

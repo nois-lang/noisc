@@ -390,14 +390,8 @@ export const checkClosureExpr = (
 
     if (caller && inferredType) {
         if (closureExpr.params.length > inferredType.paramTypes.length) {
-            addError(
-                ctx,
-                semanticError(
-                    ctx,
-                    caller,
-                    `expected ${closureExpr.params.length} arguments, got ${inferredType.paramTypes.length}`
-                )
-            )
+            const msg = `expected ${closureExpr.params.length} arguments, got ${inferredType.paramTypes.length}`
+            addError(ctx, semanticError(ctx, caller, msg))
             return
         }
         for (let i = 0; i < closureExpr.params.length; i++) {
