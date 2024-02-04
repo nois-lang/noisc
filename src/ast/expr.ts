@@ -1,7 +1,7 @@
-import { ParseNode } from '../parser'
+import { ParseNode, filterNonAstNodes } from '../parser'
 import { Typed } from '../semantic'
 import { assert } from '../util/todo'
-import { AstNode, filterNonAstNodes } from './index'
+import { AstNode } from './index'
 import {
     BinaryOp,
     PostfixOp,
@@ -10,6 +10,8 @@ import {
     buildBinaryOp,
     buildPostfixOp,
     buildPrefixOp,
+    isPostfixOp,
+    isPrefixOp,
     precedenceMap
 } from './op'
 import { Operand, buildOperand } from './operand'
@@ -65,9 +67,6 @@ export const buildExpr = (node: ParseNode): Expr => {
             const o1 = buildBinaryOp(n)
             while (operatorStack.length !== 0) {
                 const o2 = operatorStack.at(-1)!
-                // if (o2.kind === 'pos-call' || o2.kind === 'named-call') {
-                //     exprStack
-                // }
                 const o1Prec = precedenceMap.get(o1.kind)!
                 const o2Prec = precedenceMap.get(o2.kind)!
                 const o1Assoc = associativityMap.get(o1.kind)!
@@ -79,15 +78,14 @@ export const buildExpr = (node: ParseNode): Expr => {
                     operatorStack.pop()
                     const rExp = exprStack.pop()!
 
-                    // TODO: refactor many or checks
-                    if (o2.kind === 'neg-op' || o2.kind === 'not-op' || o2.kind === 'spread-op') {
+                    if (isPrefixOp(o2)) {
                         exprStack.push({
                             kind: 'unary-expr',
                             parseNode: { kind: 'expr', nodes: [o2.parseNode, rExp.parseNode] },
                             prefixOp: o2,
                             operand: rExp
                         })
-                    } else if (o2.kind === 'pos-call' || o2.kind === 'named-call') {
+                    } else if (isPostfixOp(o2)) {
                         exprStack.push({
                             kind: 'unary-expr',
                             parseNode: { kind: 'expr', nodes: [rExp.parseNode, o2.parseNode] },
@@ -115,8 +113,7 @@ export const buildExpr = (node: ParseNode): Expr => {
     while (operatorStack.length !== 0) {
         const op = operatorStack.pop()!
         const rExp = exprStack.pop()!
-        // TODO: refactor check for unaryOp
-        if (op.kind === 'neg-op' || op.kind === 'not-op' || op.kind === 'spread-op') {
+        if (isPrefixOp(op)) {
             // no need to wrap in additional unary-expr
             if (rExp.kind === 'unary-expr' && !rExp.prefixOp) {
                 rExp.prefixOp = op
@@ -128,7 +125,7 @@ export const buildExpr = (node: ParseNode): Expr => {
                     operand: rExp
                 })
             }
-        } else if (op.kind === 'pos-call' || op.kind === 'named-call') {
+        } else if (isPostfixOp(op)) {
             // no need to wrap in additional unary-expr
             if (rExp.kind === 'unary-expr' && !rExp.postfixOp) {
                 rExp.postfixOp = op
@@ -153,10 +150,7 @@ export const buildExpr = (node: ParseNode): Expr => {
     }
     assert(exprStack.length === 1, 'leftover expressions in the stack')
     const result = exprStack.pop()!
-    assert(
-        result.kind === 'operand-expr' || result.kind === 'unary-expr' || result.kind === 'binary-expr',
-        `result is ${result.kind}`
-    )
+    assert(result.kind === 'operand-expr' || result.kind === 'unary-expr' || result.kind === 'binary-expr')
     return <Expr>result
 }
 

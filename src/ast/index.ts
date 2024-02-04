@@ -1,6 +1,4 @@
-import { lexerDynamicKinds } from '../lexer/lexer'
-import { NodeKind, ParseNode, ParseTree, treeKinds } from '../parser'
-import { nameLikeTokens } from '../parser/fns'
+import { ParseNode, filterNonAstNodes } from '../parser'
 import { Scope } from '../scope'
 import { VirtualIdentifier } from '../scope/vid'
 import { Typed } from '../semantic'
@@ -17,71 +15,74 @@ export interface AstNode<T extends AstNodeKind> {
     parseNode: ParseNode
 }
 
-export type AstNodeKind =
-    | 'module'
-    | 'use-expr'
-    | 'var-def'
-    | 'fn-def'
-    | 'trait-def'
-    | 'impl-def'
-    | 'type-def'
-    | 'field-def'
-    | 'variant'
-    | 'return-stmt'
-    | 'break-stmt'
-    | 'operand-expr'
-    | 'unary-expr'
-    | 'binary-expr'
-    | 'named-arg'
-    | 'block'
-    | 'closure-expr'
-    | 'list-expr'
-    | 'param'
-    | 'type-bounds'
-    | 'fn-type'
-    | 'generic'
-    | 'if-expr'
-    | 'if-let-expr'
-    | 'while-expr'
-    | 'for-expr'
-    | 'match-expr'
-    | 'match-clause'
-    | 'pattern'
-    | 'con-pattern'
-    | 'field-pattern'
-    | 'hole'
-    | 'identifier'
-    | 'name'
-    | 'string-literal'
-    | 'char-literal'
-    | 'int-literal'
-    | 'float-literal'
-    | 'neg-op'
-    | 'not-op'
-    | 'spread-op'
-    | 'pos-call'
-    | 'named-call'
-    | 'add-op'
-    | 'sub-op'
-    | 'mult-op'
-    | 'div-op'
-    | 'exp-op'
-    | 'mod-op'
-    | 'access-op'
-    | 'eq-op'
-    | 'ne-op'
-    | 'ge-op'
-    | 'le-op'
-    | 'gt-op'
-    | 'lt-op'
-    | 'and-op'
-    | 'or-op'
-    | 'assign-op'
+export const astExprKinds = <const>[
+    'operand-expr',
+    'unary-expr',
+    'binary-expr',
+    'closure-expr',
+    'list-expr',
+    'if-let-expr',
+    'while-expr',
+    'for-expr',
+    'match-expr'
+]
 
-export const astNodes: NodeKind[] = [...lexerDynamicKinds, ...nameLikeTokens, ...treeKinds]
+export const astDefKinds = <const>['var-def', 'fn-def', 'trait-def', 'impl-def', 'type-def', 'field-def']
 
-export const filterNonAstNodes = (node: ParseNode): ParseNode[] =>
-    (<ParseTree>node).nodes.filter(n => astNodes.includes(n.kind))
+export const astLiteralKinds = <const>['string-literal', 'char-literal', 'int-literal', 'float-literal']
+
+export const astPrefixOpKinds = <const>['neg-op', 'not-op', 'spread-op']
+
+export const astPostfixOpKinds = <const>['pos-call', 'named-call']
+
+export const astInfixOpKinds = <const>[
+    'add-op',
+    'sub-op',
+    'mult-op',
+    'div-op',
+    'exp-op',
+    'mod-op',
+    'access-op',
+    'eq-op',
+    'ne-op',
+    'ge-op',
+    'le-op',
+    'gt-op',
+    'lt-op',
+    'and-op',
+    'or-op',
+    'assign-op'
+]
+
+export const astKinds = <const>[
+    'module',
+    'use-expr',
+    'variant',
+    'return-stmt',
+    'break-stmt',
+    'named-arg',
+    'block',
+    'param',
+    'type-bounds',
+    'fn-type',
+    'generic',
+    'if-expr',
+    'match-clause',
+    'pattern',
+    'con-pattern',
+    'field-pattern',
+    'hole',
+    'identifier',
+    'name',
+    ...astExprKinds,
+    ...astDefKinds,
+    ...astLiteralKinds,
+    ...astPrefixOpKinds,
+    ...astPostfixOpKinds,
+    ...astInfixOpKinds
+]
+
+export type AstNodeKind = (typeof astKinds)[number]
 
 export const compactAstNode = (node: AstNode<any>): any => {
     if (typeof node !== 'object') return node

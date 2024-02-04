@@ -1,10 +1,18 @@
-import { ParseNode } from '../parser'
+import { ParseNode, filterNonAstNodes } from '../parser'
 import { Expr, buildExpr } from './expr'
-import { AstNode, AstNodeKind, NamedArg, buildNamedArg, filterNonAstNodes } from './index'
+import { AstNode, AstNodeKind, NamedArg, buildNamedArg } from './index'
 
 export type PrefixOp = NegOp | NotOp | SpreadOp
 
+export const isPrefixOp = (op: AstNode<AstNodeKind>): op is PrefixOp => {
+    return op.kind === 'neg-op' || op.kind === 'not-op' || op.kind === 'spread-op'
+}
+
 export type PostfixOp = PosCall | NamedCall
+
+export const isPostfixOp = (op: AstNode<AstNodeKind>): op is PostfixOp => {
+    return op.kind === 'pos-call' || op.kind === 'named-call'
+}
 
 export const buildPrefixOp = (node: ParseNode): PrefixOp => {
     const n = filterNonAstNodes(node)[0]

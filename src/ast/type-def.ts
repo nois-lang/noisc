@@ -1,6 +1,6 @@
-import { ParseNode } from '../parser'
+import { ParseNode, filterNonAstNodes } from '../parser'
 import { Checked, Typed } from '../semantic'
-import { AstNode, filterNonAstNodes } from './index'
+import { AstNode } from './index'
 import { Name, buildName } from './operand'
 import { Generic, Type, buildGeneric, buildType } from './type'
 

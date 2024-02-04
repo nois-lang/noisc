@@ -1,6 +1,7 @@
-import { LexerToken, TokenKind } from '../lexer/lexer'
+import { LexerToken, TokenKind, lexerDynamicKinds } from '../lexer/lexer'
 import { Span } from '../location'
 import { Source } from '../source'
+import { nameLikeTokens } from './fns'
 
 export const treeKinds = <const>[
     'error',
@@ -93,6 +94,11 @@ export interface ParseTree {
 }
 
 export type ParseNode = LexerToken | ParseTree
+
+export const parseNodeKinds: NodeKind[] = [...lexerDynamicKinds, ...nameLikeTokens, ...treeKinds]
+
+export const filterNonAstNodes = (node: ParseNode): ParseNode[] =>
+    (<ParseTree>node).nodes.filter(n => parseNodeKinds.includes(n.kind))
 
 export const compactParseNode = (node: ParseNode): any => {
     if ('value' in node) {

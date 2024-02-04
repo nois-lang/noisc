@@ -1,5 +1,5 @@
-import { ParseNode } from '../parser'
-import { AstNode, filterNonAstNodes } from './index'
+import { ParseNode, filterNonAstNodes } from '../parser'
+import { AstNode } from './index'
 import { Hole, buildHole } from './match'
 import { Identifier, Name, buildIdentifier, buildName } from './operand'
 
