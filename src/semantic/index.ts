@@ -358,9 +358,14 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
         if (ref) {
             if (ref.def.kind === 'trait-def') {
                 // TODO: calculate super relation chains once at ctx creation
+                const type: VirtualType = {
+                    kind: 'vid-type',
+                    identifier: ref.vid,
+                    typeArgs: ref.def.generics.map(g => genericToVirtual(g, ctx))
+                }
                 const traits = [
                     ref.def,
-                    ...findSuperRelChains(ref.vid, ctx).flatMap(chain => chain.map(i => i.instanceDef))
+                    ...findSuperRelChains(type.identifier, ctx).flatMap(chain => chain.map(i => i.instanceDef))
                 ]
                 const traitMethods = traits.flatMap(t =>
                     t.block.statements.filter(s => s.kind === 'fn-def').map(s => <FnDef>s)

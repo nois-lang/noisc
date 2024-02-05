@@ -4,6 +4,7 @@ import { FnDef, ImplDef, Statement, TraitDef } from '../ast/statement'
 import { Generic } from '../ast/type'
 import { TypeDef, Variant } from '../ast/type-def'
 import { checkTopLevelDefiniton } from '../semantic'
+import { VirtualType, genericToVirtual } from '../typecheck'
 import { selfType } from '../typecheck/type'
 import { unreachable } from '../util/todo'
 import { Context, Scope, instanceScope } from './index'
@@ -213,7 +214,16 @@ const resolveScopeVid = (
                 if (traitDef && checkSuper) {
                     // lookup supertypes' traits/impls that might contain that function
                     const fullTypeVid = { names: [...(moduleVid?.names ?? []), traitName] }
-                    const superRels = findSuperRelChains(fullTypeVid, ctx).map(c => c.at(-1)!)
+                    const typeRef = resolveVid(fullTypeVid, ctx, ['type-def', 'trait-def'])
+                    if (!typeRef || (typeRef.def.kind !== 'type-def' && typeRef.def.kind !== 'trait-def')) {
+                        return unreachable()
+                    }
+                    const type: VirtualType = {
+                        kind: 'vid-type',
+                        identifier: typeRef.vid,
+                        typeArgs: typeRef.def.generics.map(g => genericToVirtual(g, ctx))
+                    }
+                    const superRels = findSuperRelChains(type.identifier, ctx).map(c => c.at(-1)!)
                     for (const superRel of superRels) {
                         // don't check itself
                         if (vidEq(fullTypeVid, superRel.implDef.vid)) continue

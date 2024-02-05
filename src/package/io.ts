@@ -22,8 +22,8 @@ export const getPackageModuleSources = (packagePath: string): Source[] => {
 }
 
 const listFiles = (dir: string): string[] => {
-    return readdirSync(dir).flatMap(f => {
-        const fPath = join(dir, f)
-        return statSync(fPath).isDirectory() ? listFiles(fPath) : [fPath]
-    })
+    return readdirSync(dir)
+        .map(f => join(dir, f))
+        .flatMap(f => (statSync(f).isDirectory() ? listFiles(f) : [f]))
+        .toSorted()
 }

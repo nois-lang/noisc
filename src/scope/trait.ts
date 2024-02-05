@@ -6,7 +6,7 @@ import { VirtualType, genericToVirtual, typeToVirtual } from '../typecheck'
 import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { assert } from '../util/todo'
 import { Context, addError, defKey } from './index'
-import { concatVid, idToVid, vidFromString, vidToString } from './util'
+import { concatVid, idToVid, vidEq, vidFromString, vidToString } from './util'
 import { VirtualIdentifier, VirtualIdentifierMatch, resolveVid } from './vid'
 
 /**
@@ -122,26 +122,21 @@ const getImplImplRel = (instance: ImplDef, module: Module, ctx: Context): Instan
 /**
  * Find all instance relation chains to supertypes (types/traits implemented by specified type), ignoring current scope
  * Chains take a format [type, ..., super]
- * Every chain corresponds to a single supertype
- * For all, chain.length >= 2
+ * Every chain corresponds to a single `impl for` where type is assignable to impl trait
+ * For all, chain.length > 0
+ * For example (impl vid listed):
+ *   - String        -> [Display], [Eq], ...]
+ *   - Iter          -> [[Iterable], [PeekableAdapter], [MapAdapter], ...]
+ *   - ListIter      -> [[Iter], [Iter, Iterable], ...]
  */
 export const findSuperRelChains = (
     typeVid: VirtualIdentifier,
     ctx: Context,
     chain: InstanceRelation[] = []
 ): InstanceRelation[][] => {
-    const ref = resolveVid(typeVid, ctx)
-    if (!ref) return []
-
-    const vid = vidToString(typeVid)
     const chains = ctx.impls
-        .filter(
-            r =>
-                r.forType.kind === 'vid-type' &&
-                vidToString(r.forType.identifier) === vid &&
-                // avoid infinite recursion by looking up for the same type
-                vidToString(r.implDef.vid) !== vid
-        )
+        // avoid infinite recursion by looking up for the same type
+        .filter(r => !vidEq(r.implDef.vid, typeVid) && vidEq(r.forDef.vid, typeVid))
         .flatMap(r => {
             const newChain = [...chain, r]
             return [newChain, ...findSuperRelChains(r.implDef.vid, ctx, newChain)]
