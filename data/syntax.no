@@ -1,0 +1,25 @@
+// comment
+use pkg
+use std::io::Display
+use std::iter::{Iter, peekableIter::PeekableIter}
+type Foo
+type Bar<T>(v: T)
+type V<T>{ A(), B(v: T) }
+trait Baz<U> { fn a(self): Unit fn f<T>(self): T {} }
+impl <T> Baz<Option<T>> for Bar<T> { fn f(self): T {} }
+fn foo<T: std::io::Display + U, U>(b: T): Option<U> {
+    let a = [1, "str", 'c', true, Option::None(), Option::Some(value: 1), Option::Some(2)]
+    let Foo::Foo(x) = Foo::Foo(4)
+    let b = if a.next().isSome() { a } else { [] }
+    let c = if let Option::Some(value) = a.next { value } else { panic("err") }
+    while a.count() < 5 + 3 { List::add(a, 8) }
+    for Option::Some(value: v) in a { println(a.x) }
+    match c.foo() {
+        -5 if a.count() > 6 {}
+        a @ V::B(v, o: _) {}
+        V::B() {}
+        "str" {}
+        'c' {}
+        _ {}
+    }
+}
