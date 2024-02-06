@@ -124,10 +124,11 @@ const getImplImplRel = (instance: ImplDef, module: Module, ctx: Context): Instan
  * Chains take a format [type, ..., super]
  * Every chain corresponds to a single `impl for` where type is assignable to impl trait
  * For all, chain.length > 0
- * For example (impl vid listed):
- *   - String        -> [Display], [Eq], ...]
- *   - Iter          -> [[Iterable], [PeekableAdapter], [MapAdapter], ...]
- *   - ListIter      -> [[Iter], [Iter, Iterable], ...]
+ * For example:
+ *   - String   -> [Display for String], [Eq for String], ...]
+ *   - Iter     -> [[Iterable for Iter], [PeekableAdapter for Iter], [MapAdapter for Iter], ...]
+ *   - ListIter -> [[Iter for ListIter], [Iter for ListIter, Iterable for Iter], ...]
+ * TODO: detect cases where impl.forType is a generic, e.g. `impl <T: B> A for T`
  */
 export const findSuperRelChains = (
     typeVid: VirtualIdentifier,

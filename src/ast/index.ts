@@ -122,12 +122,9 @@ export interface Module extends AstNode<'module'> {
 }
 
 export const buildModuleAst = (node: ParseNode, id: VirtualIdentifier, source: Source): Module => {
-    const useExprs = filterNonAstNodes(node)
-        .filter(n => n.kind === 'use-stmt')
-        .map(buildUseExpr)
-    const statements = filterNonAstNodes(node)
-        .filter(n => n.kind === 'statement')
-        .map(buildStatement)
+    const nodes = filterNonAstNodes(node)
+    const useExprs = nodes.filter(n => n.kind === 'use-stmt').map(buildUseExpr)
+    const statements = nodes.filter(n => n.kind === 'statement').map(buildStatement)
     const block: Block = { kind: 'block', parseNode: node, statements }
     return {
         kind: 'module',

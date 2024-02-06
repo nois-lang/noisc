@@ -8,11 +8,14 @@ export interface TypeDef extends AstNode<'type-def'>, Partial<Checked> {
     name: Name
     generics: Generic[]
     variants: Variant[]
+    pub: boolean
 }
 
 export const buildTypeDef = (node: ParseNode): TypeDef => {
     const nodes = filterNonAstNodes(node)
     let idx = 0
+    const pub = nodes[idx].kind === 'pub-keyword'
+    if (pub) idx++
     // skip type-keyword
     idx++
     const name = buildName(nodes[idx++])
@@ -28,7 +31,7 @@ export const buildTypeDef = (node: ParseNode): TypeDef => {
         const fieldDefs = filterNonAstNodes(nodes[idx]).map(buildFieldDef)
         variants = [{ kind: 'variant', parseNode: nodes[idx++], name, fieldDefs }]
     }
-    return { kind: 'type-def', parseNode: node, name, generics, variants }
+    return { kind: 'type-def', parseNode: node, name, generics, variants, pub }
 }
 
 export interface Variant extends AstNode<'variant'>, Partial<Typed> {
@@ -46,11 +49,15 @@ export const buildTypeCon = (node: ParseNode): Variant => {
 export interface FieldDef extends AstNode<'field-def'>, Partial<Typed> {
     name: Name
     fieldType: Type
+    pub: boolean
 }
 
 export const buildFieldDef = (node: ParseNode): FieldDef => {
     const nodes = filterNonAstNodes(node)
-    const name = buildName(nodes[0])
-    const fieldType = buildType(filterNonAstNodes(nodes[1])[0])
-    return { kind: 'field-def', parseNode: node, name, fieldType }
+    let idx = 0
+    const pub = nodes[idx].kind === 'pub-keyword'
+    if (pub) idx++
+    const name = buildName(nodes[idx++])
+    const fieldType = buildType(filterNonAstNodes(nodes[idx++])[0])
+    return { kind: 'field-def', parseNode: node, name, fieldType, pub }
 }

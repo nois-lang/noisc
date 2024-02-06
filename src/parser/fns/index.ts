@@ -44,7 +44,7 @@ export const exprFirstTokens: TokenKind[] = [
     'pipe',
     ...prefixOpFirstTokens
 ]
-export const paramFirstTokens: TokenKind[] = [...nameLikeTokens, 'underscore']
+export const paramFirstTokens: TokenKind[] = [...nameLikeTokens, 'underscore', 'pub-keyword']
 export const useExprFirstTokens: TokenKind[] = [...nameLikeTokens, 'o-brace']
 export const fieldPatternFirstTokens: TokenKind[] = [...nameLikeTokens, 'period']
 export const patternFollowTokens: TokenKind[] = [
@@ -62,7 +62,7 @@ export const patternFollowTokens: TokenKind[] = [
  */
 export const parseModule = (parser: Parser): void => {
     const mark = parser.open()
-    while (parser.at('use-keyword') && !parser.eof()) {
+    while (parser.atOptionalFirst('pub-keyword', 'use-keyword') && !parser.eof()) {
         parseUseStmt(parser)
     }
     while (!parser.eof()) {

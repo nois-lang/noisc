@@ -8,12 +8,5 @@ export const useExprToVids = (useExpr: UseExpr): VirtualIdentifier[] => {
             return useExprToVids({ ...useExpr, scope, expr: expr.expr })
         })
     }
-    return [useExprToVid(useExpr)]
-}
-
-const useExprToVid = (useExpr: UseExpr): VirtualIdentifier => {
-    if (Array.isArray(useExpr.expr)) {
-        throw Error(`non-terminal use-expr`)
-    }
-    return { names: [...useExpr.scope.map(n => n.value), useExpr.expr.value] }
+    return [{ names: [...useExpr.scope.map(n => n.value), useExpr.expr.value] }]
 }

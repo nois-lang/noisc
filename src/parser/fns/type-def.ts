@@ -4,10 +4,11 @@ import { parseGenerics } from './statement'
 import { parseTypeAnnot } from './type'
 
 /**
- * type-def ::= TYPE-KEYWORD NAME generics? (variant-list | variant-params)?
+ * type-def ::= PUB-KEYWORD? TYPE-KEYWORD NAME generics? (variant-list | variant-params)?
  */
 export const parseTypeDef = (parser: Parser): void => {
     const mark = parser.open()
+    parser.consume('pub-keyword')
     parser.expect('type-keyword')
     parser.expectAny(nameLikeTokens)
     if (parser.at('o-angle')) {
@@ -38,10 +39,11 @@ export const parseTypeConParams = (parser: Parser): void => {
 }
 
 /**
- * field-def ::= NAME type-annot
+ * field-def ::= PUB-KEYWORD? NAME type-annot
  */
 export const parseFieldDef = (parser: Parser): void => {
     const mark = parser.open()
+    parser.consume('pub-keyword')
     parser.expectAny(nameLikeTokens)
     parseTypeAnnot(parser)
     parser.close(mark, 'field-def')

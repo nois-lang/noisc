@@ -1,8 +1,8 @@
-trait Iterable<T> {
+pub trait Iterable<T> {
     fn iter(self): Iter<T>
 }
 
-trait Iter<T> {
+pub trait Iter<T> {
     fn next(self): Option<T>
 
     fn collect<C: Collector<T>>(self): C {
@@ -16,6 +16,6 @@ impl <T> Iterable<T> for Iter<T> {
     }
 }
 
-trait Collector<T> {
+pub trait Collector<T> {
     fn fromIter<I: Iter<T>>(iter: I): Self
 }

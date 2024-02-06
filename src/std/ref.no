@@ -1,1 +1,1 @@
-fn eqRef<T>(a: T, b: T): Bool
+pub fn eqRef<T>(a: T, b: T): Bool

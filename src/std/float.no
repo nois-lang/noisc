@@ -1,7 +1,7 @@
 use std::eq::Eq
 use std::io::Display
 
-type Float
+pub type Float
 
 impl Num for Float {
     fn neg(self): Self {

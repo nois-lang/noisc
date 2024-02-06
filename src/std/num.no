@@ -1,4 +1,4 @@
-trait Num {
+pub trait Num {
     fn neg(self): Self
     fn add(self, other: Self): Self
     fn sub(self, other: Self): Self

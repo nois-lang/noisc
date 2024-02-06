@@ -1,7 +1,7 @@
 use std::io::Display
 use std::eq::Eq
 
-type Char
+pub type Char
 
 impl Display for Char {
     fn fmt(self): String {

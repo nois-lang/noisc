@@ -1,7 +1,7 @@
 use std::eq::Eq
 use std::io::Display
 
-type Int
+pub type Int
 
 impl Int {
     fn mod(self, other: Self): Self {

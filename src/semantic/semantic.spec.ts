@@ -6,6 +6,7 @@ import { buildModule } from '../package/build'
 import { buildPackage } from '../package/io'
 import { Context, pathToVid } from '../scope'
 import { buildInstanceRelations } from '../scope/trait'
+import { vidToString } from '../scope/util'
 import { Source } from '../source'
 import { checkModule, prepareModule } from './index'
 
@@ -77,6 +78,16 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual([
                 'type error: expected test::Foo<std::string::String>\n            got      test::Foo<std::int::Int>'
             ])
+        })
+    })
+
+    describe('use expr', () => {
+        it('ok', () => {
+            const code = `use std::iter::{self, Iter, Iterator}`
+            const ctx = check(code, false)
+            expect(ctx.errors.map(e => e.message)).toEqual([])
+            const refs = ctx.packages.at(-1)!.modules[0].references
+            expect(refs!.map(vidToString)).toEqual(['std::iter::self', 'std::iter::Iter', 'std::iter::Iterator'])
         })
     })
 

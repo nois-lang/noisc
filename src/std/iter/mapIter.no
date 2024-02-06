@@ -1,6 +1,6 @@
 use std::iter::Iter
 
-type MapIter<T, U>(
+pub type MapIter<T, U>(
     iter: Iter<T>,
     f: |T|: U
 )
@@ -11,7 +11,7 @@ impl <T, U> Iter<U> for MapIter<T, U> {
     }
 }
 
-trait MapAdapter<Self: Iter<T>, T> {
+pub trait MapAdapter<Self: Iter<T>, T> {
     fn map<U>(self, f: |T|: U): MapIter<T, U>
 }
 

@@ -1,10 +1,11 @@
 use std::io::Display
 use std::eq::Eq
 
-type String
+pub type String
 
 impl String {
-    fn concat(self, other: Self): Self {
+    // TODO: belongs to the Monoid trait
+    pub fn concat(self, other: Self): Self {
         concatString(self, other)
     }
 }

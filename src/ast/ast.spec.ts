@@ -1,3 +1,4 @@
+import { inspect } from 'util'
 import { tokenize } from '../lexer/lexer'
 import { parseModule } from '../parser/fns'
 import { Parser } from '../parser/parser'
@@ -5,6 +6,10 @@ import { vidFromString } from '../scope/util'
 import { Module, buildModuleAst, compactAstNode } from './index'
 
 describe('ast', () => {
+    /**
+     * Use the following function to get compact tree output:
+     * inspect(compactAstNode(ast), { depth: null, compact: true, breakLength: 120 })
+     */
     const buildAst = (code: string): Module => {
         const source = { code, filepath: 'test.no' }
 
@@ -14,6 +19,22 @@ describe('ast', () => {
 
         return buildModuleAst(parseTree, vidFromString('test'), source)
     }
+
+    describe('use-stmt', () => {
+        it('nested', () => {
+            const ast = buildAst('use std::iter::{self, Iter, Iterator}')
+            // biome-ignore format: compact
+            expect(compactAstNode(ast.useExprs[0])).toEqual(
+{ kind: 'use-expr',
+  scope: [ { kind: 'name', value: 'std' }, { kind: 'name', value: 'iter' } ],
+  expr:
+   [ { kind: 'use-expr', scope: [], expr: { kind: 'name', value: 'self' }, pub: false },
+     { kind: 'use-expr', scope: [], expr: { kind: 'name', value: 'Iter' }, pub: false },
+     { kind: 'use-expr', scope: [], expr: { kind: 'name', value: 'Iterator' }, pub: false } ],
+  pub: false }
+            )
+        })
+    })
 
     describe('type-def', () => {
         it('variant type', () => {
@@ -38,12 +59,14 @@ describe('ast', () => {
                                             scope: [],
                                             name: { kind: 'name', value: 'T' },
                                             typeArgs: []
-                                        }
+                                        },
+                                        pub: false
                                     }
                                 ]
                             },
                             { kind: 'variant', name: { kind: 'name', value: 'None' }, fieldDefs: [] }
-                        ]
+                        ],
+                        pub: false
                     }
                 ]
             })
@@ -69,7 +92,8 @@ describe('ast', () => {
                         },
                         params: [],
                         returnType: undefined,
-                        topLevelChecked: false
+                        topLevelChecked: false,
+                        pub: false
                     }
                 ]
             })
@@ -154,7 +178,8 @@ describe('ast', () => {
         { kind: 'unary-expr',
           prefixOp: { kind: 'not-op' },
           postfixOp: { kind: 'pos-call', args: [] },
-          operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'foo' }, typeArgs: [] } } } ] }
+          operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'foo' }, typeArgs: [] } },
+          pub: false } ] }
             )
         })
 

@@ -1,6 +1,4 @@
-import { LexerToken } from '../lexer/lexer'
 import { ParseNode, filterNonAstNodes } from '../parser'
-import { nameLikeTokens } from '../parser/fns'
 import { Checked, Typed } from '../semantic'
 import { assert } from '../util/todo'
 import { Expr, buildExpr } from './expr'
@@ -38,34 +36,51 @@ export const buildStatement = (node: ParseNode): Statement => {
 export interface UseExpr extends AstNode<'use-expr'> {
     scope: Name[]
     expr: UseExpr[] | Name
+    pub: boolean
 }
 
 export const buildUseExpr = (node: ParseNode): UseExpr => {
-    const nodes = filterNonAstNodes(node.kind === 'use-stmt' ? filterNonAstNodes(node)[1] : node)
-    const names = nodes.filter(n => nameLikeTokens.includes((<LexerToken>n).kind)).map(buildName)
+    const nodes = filterNonAstNodes(node)
+    let i = 0
+    const pub = nodes[i].kind === 'pub-keyword'
+    if (pub) i++
+    // skip use keyword
+    if (nodes[i].kind === 'use-keyword') i++
+    if (nodes[i].kind === 'use-expr') {
+        const expr = buildUseExpr(nodes[i])
+        expr.pub = pub
+        return expr
+    }
+    const names = nodes
+        .slice(i)
+        .filter(n => n.kind === 'name')
+        .map(buildName)
     const lastNode = nodes.at(-1)!
     if (lastNode.kind === 'use-list') {
         const scope = names
-        return { kind: 'use-expr', parseNode: node, scope, expr: filterNonAstNodes(lastNode).map(buildUseExpr) }
+        return { kind: 'use-expr', parseNode: node, scope, expr: filterNonAstNodes(lastNode).map(buildUseExpr), pub }
     }
-    return { kind: 'use-expr', parseNode: node, scope: names.slice(0, -1), expr: names.at(-1)! }
+    return { kind: 'use-expr', parseNode: node, scope: names.slice(0, -1), expr: names.at(-1)!, pub }
 }
 
 export interface VarDef extends AstNode<'var-def'>, Partial<Checked> {
     pattern: Pattern
     varType?: Type
     expr: Expr
+    pub: boolean
 }
 
 export const buildVarDef = (node: ParseNode): VarDef => {
     const nodes = filterNonAstNodes(node)
     let idx = 0
+    const pub = nodes[idx].kind === 'pub-keyword'
+    if (pub) idx++
     // skip let-keyword
     idx++
     const pattern = buildPattern(nodes[idx++])
     const varType = nodes[idx].kind === 'type-annot' ? buildType(filterNonAstNodes(nodes[idx++])[0]) : undefined
     const expr = buildExpr(nodes[idx++])
-    return { kind: 'var-def', parseNode: node, pattern, varType, expr }
+    return { kind: 'var-def', parseNode: node, pattern, varType, expr, pub }
 }
 
 export interface FnDef extends AstNode<'fn-def'>, Partial<Typed>, Partial<Checked> {
@@ -75,11 +90,14 @@ export interface FnDef extends AstNode<'fn-def'>, Partial<Typed>, Partial<Checke
     params: Param[]
     block?: Block
     returnType?: Type
+    pub: boolean
 }
 
 export const buildFnDef = (node: ParseNode): FnDef => {
     const nodes = filterNonAstNodes(node)
     let idx = 0
+    const pub = nodes[idx].kind === 'pub-keyword'
+    if (pub) idx++
     // skip fn-keyword
     idx++
     const name = buildName(nodes[idx++])
@@ -87,24 +105,27 @@ export const buildFnDef = (node: ParseNode): FnDef => {
     const params = nodes.at(idx)?.kind === 'params' ? filterNonAstNodes(nodes[idx++]).map(buildParam) : []
     const returnType = nodes.at(idx)?.kind === 'type-annot' ? buildType(nodes[idx++]) : undefined
     const block = nodes.at(idx)?.kind === 'block' ? buildBlock(nodes[idx++]) : undefined
-    return { kind: 'fn-def', parseNode: node, name, generics, params, block, returnType }
+    return { kind: 'fn-def', parseNode: node, name, generics, params, block, returnType, pub }
 }
 
 export interface TraitDef extends AstNode<'trait-def'> {
     name: Name
     generics: Generic[]
     block: Block
+    pub: boolean
 }
 
 export const buildTraitDef = (node: ParseNode): TraitDef => {
     const nodes = filterNonAstNodes(node)
     let idx = 0
+    const pub = nodes[idx].kind === 'pub-keyword'
+    if (pub) idx++
     // skip trait-keyword
     idx++
     const name = buildName(nodes[idx++])
     const generics = nodes.at(idx)?.kind === 'generics' ? filterNonAstNodes(nodes[idx++]).map(buildGeneric) : []
     const block = buildBlock(nodes[idx++])
-    return { kind: 'trait-def', parseNode: node, name, generics, block }
+    return { kind: 'trait-def', parseNode: node, name, generics, block, pub }
 }
 
 export interface ImplDef extends AstNode<'impl-def'> {

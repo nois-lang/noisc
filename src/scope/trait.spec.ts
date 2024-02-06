@@ -53,6 +53,7 @@ describe('trait', () => {
             ['std::io::Display'],
             ['std::io::Display']
         ])
+
         expect(formatImplTypes(findSuperRelChains(vidFromString('std::list::ListIter'), ctx))).toEqual([
             ['std::iter::Iter<T>'],
             ['std::iter::Iter<T>', 'std::iter::intersperseIter::IntersperseAdapter<T>'],

@@ -1,12 +1,12 @@
 use std::eq::Eq
 
-type Ordering {
+pub type Ordering {
     Less,
     Equal,
     Greater
 }
 
-trait Ord<Self: Eq> {
+pub trait Ord<Self: Eq> {
     fn cmp(self, other: Self): Ordering
 
     fn ge(self, other: Self): Ordering

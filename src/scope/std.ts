@@ -31,16 +31,13 @@ export const defaultImportedVids: VirtualIdentifier[] = [
     'std::panic::panic',
 
     'std::math',
-    'std::op',
 
     'std::io',
     'std::io::println',
 
     'std::option::Option',
 
-    'std::result::Result',
-
-    'std::into::Into'
+    'std::result::Result'
 ].map(s => vidFromString(s))
 
 export const bool: VidType = { kind: 'vid-type', identifier: vidFromString('std::bool::Bool'), typeArgs: [] }

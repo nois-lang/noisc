@@ -94,7 +94,7 @@ export interface ParseTree {
 
 export type ParseNode = LexerToken | ParseTree
 
-export const parseNodeKinds: NodeKind[] = [...lexerDynamicKinds, ...nameLikeTokens, ...treeKinds]
+export const parseNodeKinds: NodeKind[] = [...lexerDynamicKinds, ...nameLikeTokens, ...treeKinds, 'pub-keyword']
 
 export const filterNonAstNodes = (node: ParseNode): ParseNode[] =>
     (<ParseTree>node).nodes.filter(n => parseNodeKinds.includes(n.kind))

@@ -1,5 +1,5 @@
-type Option<T> {
-    Some(value: T),
+pub type Option<T> {
+    Some(pub value: T),
     None
 }
 

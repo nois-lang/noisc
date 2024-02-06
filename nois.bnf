@@ -2,15 +2,15 @@ module                ::= use-stmt* statement*
                       ;
 statement             ::= var-def | fn-def | trait-def | impl-def | type-def | return-stmt | break-stmt | expr
                       ;
-  use-stmt            ::= USE-KEYWORD use-expr
+  use-stmt            ::= PUB-KEYWORD? USE-KEYWORD use-expr
                       ;
     use-expr          ::= (NAME COLON COLON)* (use-list | NAME)
                       ;
     use-list          ::= O-BRACE (use-expr (COMMA use-expr)*)? COMMA? C-BRACE
                       ;
-  var-def             ::= LET-KEYWORD pattern type-annot? EQUALS expr
+  var-def             ::= PUB-KEYWORD? LET-KEYWORD pattern type-annot? EQUALS expr
                       ;
-  fn-def              ::= FN-KEYWORD NAME generics? params type-annot? block?
+  fn-def              ::= PUB-KEYWORD? FN-KEYWORD NAME generics? params type-annot? block?
                       ;
     generics          ::= O-ANGLE (generic (COMMA generic)* COMMA?)? C-ANGLE
                       ;
@@ -20,17 +20,17 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
                       ;
       param           ::= pattern type-annot?
                       ;
-  trait-def           ::= TRAIT-KEYWORD NAME generics? block
+  trait-def           ::= PUB-KEYWORD? TRAIT-KEYWORD NAME generics? block
                       ;
   impl-def            ::= IMPL-KEYWORD generics? identifier impl-for? block
                       ;
     impl-for          ::= FOR-KEYWORD identifier
                       ;
-  type-def            ::= TYPE-KEYWORD NAME generics? (variant-list | variant-params)?
+  type-def            ::= PUB-KEYWORD? TYPE-KEYWORD NAME generics? (variant-list | variant-params)?
                       ;
     variant-params    ::= O-PAREN (field-def (COMMA field-def)*)? COMMA? C-PAREN
                       ;
-      field-def       ::= NAME type-annot
+      field-def       ::= PUB-KEYWORD? NAME type-annot
                       ;
     variant-list      ::= O-BRACE (variant (COMMA variant)* COMMA?)? C-BRACE
                       ;
@@ -125,6 +125,7 @@ match-expr            ::= MATCH-KEYWORD expr match-clauses
                       ;
   match-clauses       ::= O-BRACE match-clause* C-BRACE
                       ;
+                      // TODO: union clauses
     match-clause      ::= pattern guard? block
                       ;
       guard           ::= IF-KEYWORD expr

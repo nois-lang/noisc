@@ -1,7 +1,7 @@
-fn panic(message: String): Never {
+pub fn panic(message: String): Never {
     todo("panic")
 }
 
-fn todo(message: String): Never {
+pub fn todo(message: String): Never {
     todo("todo")
 }

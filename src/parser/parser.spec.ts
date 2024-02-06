@@ -5,7 +5,7 @@ import { Parser } from './parser'
 
 describe('parser', () => {
     /**
-     * Use the following command to get compact tree output:
+     * Use the following function to get compact tree output:
      * inspect(tree, { depth: null, compact: true, breakLength: 120 })
      */
     const parse = (code: string) => {
@@ -15,6 +15,33 @@ describe('parser', () => {
         return { tree: compactParseNode(tree), errors: p.errors }
     }
 
+    describe('parse use-stmt', () => {
+        it('nested', () => {
+            const { tree, errors } = parse('use std::iter::{self, Iter, Iterator}')
+            expect(errors.length).toEqual(0)
+            // biome-ignore format: compact
+            expect(tree).toEqual(
+{ module:
+   [ { 'use-stmt':
+        [ { 'use-keyword': 'use' },
+          { 'use-expr':
+             [ { name: 'std' },
+               { colon: ':' },
+               { colon: ':' },
+               { name: 'iter' },
+               { colon: ':' },
+               { colon: ':' },
+               { 'use-list':
+                  [ { 'o-brace': '{' },
+                    { 'use-expr': [ { name: 'self' } ] },
+                    { comma: ',' },
+                    { 'use-expr': [ { name: 'Iter' } ] },
+                    { comma: ',' },
+                    { 'use-expr': [ { name: 'Iterator' } ] },
+                    { 'c-brace': '}' } ] } ] } ] } ] }
+            )
+        })
+    })
     describe('parse type-def', () => {
         it('empty', () => {
             const { tree, errors } = parse('type Unit')

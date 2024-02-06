@@ -12,15 +12,15 @@ import { parseTypeDef } from './type-def'
 export const parseStatement = (parser: Parser): void => {
     const mark = parser.open()
 
-    if (parser.at('let-keyword')) {
+    if (parser.atOptionalFirst('pub-keyword', 'let-keyword')) {
         parseVarDef(parser)
-    } else if (parser.at('fn-keyword')) {
+    } else if (parser.atOptionalFirst('pub-keyword', 'fn-keyword')) {
         parseFnDef(parser)
-    } else if (parser.at('trait-keyword')) {
+    } else if (parser.atOptionalFirst('pub-keyword', 'trait-keyword')) {
         parseTraitDef(parser)
     } else if (parser.at('impl-keyword')) {
         parseImplDef(parser)
-    } else if (parser.at('type-keyword')) {
+    } else if (parser.atOptionalFirst('pub-keyword', 'type-keyword')) {
         parseTypeDef(parser)
     } else if (parser.at('return-keyword')) {
         parseReturnStmt(parser)
@@ -36,10 +36,11 @@ export const parseStatement = (parser: Parser): void => {
 }
 
 /**
- * use-stmt ::= USE-KEYWORD use-expr
+ * use-stmt ::= PUB-KEYWORD USE-KEYWORD use-expr
  */
 export const parseUseStmt = (parser: Parser): void => {
     const mark = parser.open()
+    parser.consume('pub-keyword')
     parser.expect('use-keyword')
     parseUseExpr(parser)
     parser.close(mark, 'use-stmt')
@@ -82,10 +83,11 @@ export const parseUseList = (parser: Parser): void => {
 }
 
 /**
- * use-list ::= O-BRACE (use-expr (COMMA use-expr)*)? COMMA? C-BRACE
+ * var-def ::= PUB-KEYWORD? LET-KEYWORD pattern type-annot? EQUALS expr
  */
 export const parseVarDef = (parser: Parser): void => {
     const mark = parser.open()
+    parser.consume('pub-keyword')
     parser.expect('let-keyword')
     parsePattern(parser)
     if (parser.at('colon')) {
@@ -97,10 +99,11 @@ export const parseVarDef = (parser: Parser): void => {
 }
 
 /**
- * fn-def ::= FN-KEYWORD NAME generic-list? params type-annot? block?
+ * fn-def ::= PUB-KEYWORD? FN-KEYWORD NAME generic-list? params type-annot? block?
  */
 export const parseFnDef = (parser: Parser): void => {
     const mark = parser.open()
+    parser.consume('pub-keyword')
     parser.expect('fn-keyword')
     parser.expectAny(nameLikeTokens)
     if (parser.at('o-angle')) {
@@ -175,10 +178,11 @@ export const parseGeneric = (parser: Parser): void => {
 }
 
 /**
- * kind-def ::= KIND-KEYWORD NAME generics? block
+ * trait-def ::= PUB-KEYWORD? KIND-KEYWORD NAME generics? block
  */
 export const parseTraitDef = (parser: Parser): void => {
     const mark = parser.open()
+    parser.consume('pub-keyword')
     parser.expect('trait-keyword')
     parser.expectAny(nameLikeTokens)
     if (parser.at('o-angle')) {

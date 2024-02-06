@@ -1,6 +1,6 @@
 use std::iter::Iter
 
-type PeekableIter<T>(
+pub type PeekableIter<T>(
     iter: Iter<T>,
     peeked: Option<Option<T>>,
 )
@@ -24,7 +24,7 @@ impl <T> Iter<T> for PeekableIter<T> {
     }
 }
 
-trait PeekableAdapter<Self: Iter<T>, T> {
+pub trait PeekableAdapter<Self: Iter<T>, T> {
     fn peek(self): Option<T>
 }
 

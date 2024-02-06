@@ -83,6 +83,13 @@ export class Parser {
         return this.nth(0) === kind
     }
 
+    atOptionalFirst(first: TokenKind, kind: TokenKind): boolean {
+        if (this.at(first)) {
+            return this.nth(1) === kind
+        }
+        return this.at(kind)
+    }
+
     atAny(kinds: TokenKind[]): boolean {
         return kinds.some(k => this.at(k))
     }

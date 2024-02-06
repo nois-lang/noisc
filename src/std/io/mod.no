@@ -1,8 +1,8 @@
-trait Display {
+pub trait Display {
     fn fmt(self): String
 }
 
-fn println(display: Display): Unit {
+pub fn println(display: Display): Unit {
     printlnStr(display.fmt())
 }
 

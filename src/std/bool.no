@@ -1,25 +1,25 @@
 use std::io::Display
 use std::eq::Eq
 
-type Bool {
+pub type Bool {
     True,
     False
 }
 
-let true: Bool = Bool::True()
+pub let true: Bool = Bool::True()
 
-let false: Bool = Bool::False()
+pub let false: Bool = Bool::False()
 
 impl Bool {
-    fn and(self, other: Self): Self {
+    pub fn and(self, other: Self): Self {
         andBool(self, other)
     }
 
-    fn or(self, other: Self): Self {
+    pub fn or(self, other: Self): Self {
         orBool(self, other)
     }
 
-    fn not(self): Self {
+    pub fn not(self): Self {
         notBool(self)
     }
 }

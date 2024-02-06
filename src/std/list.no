@@ -1,14 +1,14 @@
-use std::iter::{ Iter, Iterable, Collector }
+use std::iter::{Iter, Iterable, Collector}
 use std::io::Display
 
-type List<T>
+pub type List<T>
 
 impl <T> List<T> {
-    fn at(self, index: Int): Option<T> {
+    pub fn at(self, index: Int): Option<T> {
         listAt(self, index)
     }
 
-    fn add(self, item: T): Unit {
+    pub fn add(self, item: T): Unit {
         listAdd(self, item)
     }
 }
@@ -48,7 +48,7 @@ impl <T: Display> Display for List<T> {
     }
 }
 
-type ListIter<T>(
+pub type ListIter<T>(
     list: List<T>,
     // TODO: this logic breaks if list size changes during iteration.
     // Do something similar to Java's ConcurrentModificationException:

@@ -1,6 +1,6 @@
 use std::iter::Iter
 
-type IntersperseIter<T>(
+pub type IntersperseIter<T>(
     iter: Iter<T>,
     separator: T,
     needsSeparator: Bool
@@ -18,7 +18,7 @@ impl <T> Iter<T> for IntersperseIter<T> {
     }
 }
 
-trait IntersperseAdapter<Self: Iter<T>, T> {
+pub trait IntersperseAdapter<Self: Iter<T>, T> {
     fn intersperse(self, separator: T): IntersperseIter<T>
 }
 
