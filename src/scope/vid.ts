@@ -216,12 +216,7 @@ const resolveScopeVid = (
                     if (!typeRef || (typeRef.def.kind !== 'type-def' && typeRef.def.kind !== 'trait-def')) {
                         return unreachable()
                     }
-                    const type: VirtualType = {
-                        kind: 'vid-type',
-                        identifier: typeRef.vid,
-                        typeArgs: typeRef.def.generics.map(g => genericToVirtual(g, ctx))
-                    }
-                    const superRels = findSuperRelChains(type.identifier, ctx).map(c => c.at(-1)!)
+                    const superRels = findSuperRelChains(typeRef.vid, ctx).map(c => c.at(-1)!)
                     for (const superRel of superRels) {
                         // don't check itself
                         if (vidEq(fullTypeVid, superRel.implDef.vid)) continue
