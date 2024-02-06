@@ -114,6 +114,10 @@ export interface Module extends AstNode<'module'> {
      */
     references?: VirtualIdentifier[]
     /**
+     * All vids that are "re-exported" from other modules, based on {@link useExprs}
+     */
+    reExports?: VirtualIdentifier[]
+    /**
      * Persistent top level scope.
      * Different from scopeStack[0] because it is always available
      * If module is accessed during its check, use scopeStack.at(0) instead

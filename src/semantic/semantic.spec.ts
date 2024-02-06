@@ -86,8 +86,18 @@ fn main() {
             const code = `use std::iter::{self, Iter, Iterator}`
             const ctx = check(code, false)
             expect(ctx.errors.map(e => e.message)).toEqual([])
-            const refs = ctx.packages.at(-1)!.modules[0].references
-            expect(refs!.map(vidToString)).toEqual(['std::iter', 'std::iter::Iter', 'std::iter::Iterator'])
+            const module = ctx.packages.at(-1)!.modules[0]
+            expect(module.reExports!.length).toEqual(0)
+            expect(module.references!.map(vidToString)).toEqual(['std::iter', 'std::iter::Iter', 'std::iter::Iterator'])
+        })
+
+        it('re-export', () => {
+            const code = `pub use std::iter::{self, Iter, Iterator}`
+            const ctx = check(code, false)
+            expect(ctx.errors.map(e => e.message)).toEqual([])
+            const module = ctx.packages.at(-1)!.modules[0]
+            expect(module.reExports!.map(vidToString)).toEqual(['std::iter', 'std::iter::Iter', 'std::iter::Iterator'])
+            expect(module.references!.length).toEqual(0)
         })
     })
 

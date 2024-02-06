@@ -71,7 +71,9 @@ export const prepareModule = (module: Module): void => {
 
     // TODO: check duplicate useExprs
     // TODO: check self references
-    module.references = module.useExprs.flatMap(useExpr => useExprToVids(useExpr))
+    // TODO: validate paths
+    module.references = module.useExprs.filter(e => !e.pub).flatMap(e => useExprToVids(e))
+    module.reExports = module.useExprs.filter(e => e.pub).flatMap(e => useExprToVids(e))
 }
 
 export const checkModule = (module: Module, ctx: Context): void => {
