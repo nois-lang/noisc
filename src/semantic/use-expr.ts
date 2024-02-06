@@ -7,6 +7,9 @@ export const useExprToVids = (useExpr: UseExpr): VirtualIdentifier[] => {
             const scope = [...useExpr.scope, ...expr.scope]
             return useExprToVids({ ...useExpr, scope, expr: expr.expr })
         })
+    } else if (useExpr.expr.value === 'self') {
+        return [{ names: useExpr.scope.map(n => n.value) }]
+    } else {
+        return [{ names: [...useExpr.scope.map(n => n.value), useExpr.expr.value] }]
     }
-    return [{ names: [...useExpr.scope.map(n => n.value), useExpr.expr.value] }]
 }

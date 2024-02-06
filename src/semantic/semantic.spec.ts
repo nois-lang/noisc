@@ -87,7 +87,7 @@ fn main() {
             const ctx = check(code, false)
             expect(ctx.errors.map(e => e.message)).toEqual([])
             const refs = ctx.packages.at(-1)!.modules[0].references
-            expect(refs!.map(vidToString)).toEqual(['std::iter::self', 'std::iter::Iter', 'std::iter::Iterator'])
+            expect(refs!.map(vidToString)).toEqual(['std::iter', 'std::iter::Iter', 'std::iter::Iterator'])
         })
     })
 
