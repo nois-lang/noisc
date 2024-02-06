@@ -118,6 +118,7 @@ export const fnDefScope = (ctx: Context): FnDefScope | undefined => {
 
 export const addError = (ctx: Context, error: SemanticError): void => {
     if (!ctx.silent) {
+        // console.trace(error.message)
         ctx.errors.push(error)
     }
 }

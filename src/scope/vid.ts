@@ -68,7 +68,7 @@ export interface MethodDef {
 
 export interface VirtualIdentifierMatch<D = Definition> {
     vid: VirtualIdentifier
-    moduleVid: VirtualIdentifier
+    module: Module
     def: D
 }
 
@@ -106,12 +106,12 @@ export const resolveVid = (
     let ref: VirtualIdentifierMatch | undefined
 
     if (vidToString(vid) === selfType.name && instanceScope(ctx)) {
-        return { vid, moduleVid: module.identifier, def: { kind: 'self' } }
+        return { vid, module, def: { kind: 'self' } }
     }
 
     // walk through scopes inside out
     for (let i = module.scopeStack.length - 1; i >= 0; i--) {
-        ref = resolveScopeVid(vid, module.scopeStack[i], ctx, ofKind, module.identifier)
+        ref = resolveScopeVid(vid, module.scopeStack[i], ctx, ofKind, module)
         if (ref) {
             // in case of top-level ref, qualify with module
             if (i === 0) {
@@ -120,7 +120,7 @@ export const resolveVid = (
                 }
                 return {
                     vid: concatVid(module.identifier, ref.vid),
-                    moduleVid: module.identifier,
+                    module,
                     def: ref.def
                 }
             }
@@ -129,14 +129,14 @@ export const resolveVid = (
     }
 
     // check in top scope
-    ref = resolveScopeVid(vid, module.topScope!, ctx, ofKind, module.identifier)
+    ref = resolveScopeVid(vid, module.topScope!, ctx, ofKind, module)
     if (ref) {
         if (ctx.check) {
             checkTopLevelDefiniton(module, ref.def, ctx)
         }
         return {
             vid: concatVid(module.identifier, ref.vid),
-            moduleVid: module.identifier,
+            module,
             def: ref.def
         }
     }
@@ -163,7 +163,7 @@ const resolveScopeVid = (
     scope: Scope,
     ctx: Context,
     ofKind: DefinitionKind[],
-    moduleVid: VirtualIdentifier,
+    module: Module,
     checkSuper: boolean = true
 ): VirtualIdentifierMatch | undefined => {
     for (const k of ofKind) {
@@ -171,7 +171,7 @@ const resolveScopeVid = (
             const name = vid.names[0]
             const def = scope.definitions.get(k + name)
             if (def) {
-                return { vid, moduleVid, def }
+                return { vid, module, def }
             }
         }
         if (vid.names.length === 2) {
@@ -181,14 +181,11 @@ const resolveScopeVid = (
                 // match type def by first vid name
                 const typeDef = scope.definitions.get('type-def' + typeDefName)
                 if (typeDef && typeDef.kind === 'type-def') {
-                    const module = resolveVid(moduleVid, ctx, ['module'])
-                    if (module && module.def.kind === 'module') {
-                        checkTopLevelDefiniton(module.def, typeDef, ctx)
-                        // if matched, try to find variant with matching name
-                        const variant = typeDef.variants.find(v => v.name.value === variantName)
-                        if (variant) {
-                            return { vid, moduleVid, def: { kind: 'variant', typeDef, variant } }
-                        }
+                    checkTopLevelDefiniton(module, typeDef, ctx)
+                    // if matched, try to find variant with matching name
+                    const variant = typeDef.variants.find(v => v.name.value === variantName)
+                    if (variant) {
+                        return { vid, module, def: { kind: 'variant', typeDef, variant } }
                     }
                 }
             }
@@ -201,19 +198,20 @@ const resolveScopeVid = (
                     scope.definitions.get('impl-def' + traitName) ??
                     scope.definitions.get('type-def' + traitName)
                 if (traitDef && (traitDef.kind === 'trait-def' || traitDef.kind === 'impl-def')) {
-                    const module = resolveVid(moduleVid, ctx, ['module'])
-                    if (module && module.def.kind === 'module') {
-                        checkTopLevelDefiniton(module.def, traitDef, ctx)
-                        // if matched, try to find fn with matching name in specified trait
-                        const fn = traitDef.block.statements.find(s => s.kind === 'fn-def' && s.name.value === fnName)
-                        if (fn && fn.kind === 'fn-def') {
-                            return { vid, moduleVid: module.vid, def: { kind: 'method-def', fn, instance: traitDef } }
+                    checkTopLevelDefiniton(module, traitDef, ctx)
+                    // if matched, try to find fn with matching name in specified trait
+                    const fn = traitDef.block.statements.find(s => s.kind === 'fn-def' && s.name.value === fnName)
+                    if (fn && fn.kind === 'fn-def') {
+                        return {
+                            vid,
+                            module,
+                            def: { kind: 'method-def', fn, instance: traitDef }
                         }
                     }
                 }
                 if (traitDef && checkSuper) {
                     // lookup supertypes' traits/impls that might contain that function
-                    const fullTypeVid = { names: [...(moduleVid?.names ?? []), traitName] }
+                    const fullTypeVid = { names: [...(module.identifier.names ?? []), traitName] }
                     const typeRef = resolveVid(fullTypeVid, ctx, ['type-def', 'trait-def'])
                     if (!typeRef || (typeRef.def.kind !== 'type-def' && typeRef.def.kind !== 'trait-def')) {
                         return unreachable()
@@ -230,7 +228,7 @@ const resolveScopeVid = (
                         const fullMethodVid = { names: [...superRel.implDef.vid.names, fnName] }
                         const methodRef = resolveVid(fullMethodVid, ctx, ['method-def'])
                         if (methodRef && methodRef.def.kind === 'method-def') {
-                            const module = resolveVid(methodRef.moduleVid, ctx, ['module'])
+                            const module = resolveVid(methodRef.module.identifier, ctx, ['module'])
                             if (!module || module.def.kind !== 'module') return unreachable()
                             checkTopLevelDefiniton(module.def, methodRef.def, ctx)
                             return methodRef
@@ -247,9 +245,7 @@ const resolveScopeVid = (
                         const fnVid: VirtualIdentifier = { names: [...boundVid.names, fnName] }
                         const boundRef = resolveVid(fnVid, ctx, ['method-def'])
                         if (boundRef) {
-                            const module = resolveVid(moduleVid, ctx, ['module'])
-                            if (!module || module.def.kind !== 'module') return unreachable()
-                            checkTopLevelDefiniton(module.def, boundRef.def, ctx)
+                            checkTopLevelDefiniton(module, boundRef.def, ctx)
                             return boundRef
                         }
                     }
@@ -276,30 +272,38 @@ export const resolveMatchedVid = (
     // if vid is module, e.g. std::option
     module = pkg.modules.find(m => vidEq(m.identifier, vid))
     if (module) {
-        return { vid, moduleVid: module.identifier, def: module }
+        return { vid, module, def: module }
     }
 
     // if vid is varDef, typeDef, trait or impl, e.g. std::option::Option
     module = pkg.modules.find(m => vidEq(m.identifier, { names: vid.names.slice(0, -1) }))
     if (module) {
+        ctx.moduleStack.push(module)
         const moduleLocalVid = { names: vid.names.slice(-1) }
-        const ref = resolveScopeVid(moduleLocalVid, module.topScope!, ctx, ofKind, module.identifier)
+        const ref = resolveScopeVid(moduleLocalVid, module.topScope!, ctx, ofKind, module)
         if (ref) {
-            const defModule = resolveVid(ref.moduleVid, ctx, ['module'])
+            const defModule = resolveVid(ref.module.identifier, ctx, ['module'])
             if (!defModule || defModule.def.kind !== 'module') return unreachable()
             checkTopLevelDefiniton(defModule.def, ref.def, ctx)
-            return { vid, moduleVid: module.identifier, def: ref.def }
+            const match = { vid, module, def: ref.def }
+            ctx.moduleStack.pop()
+            return match
         }
+        ctx.moduleStack.pop()
     }
 
     // if vid is a variant or a traitFn, e.g. std::option::Option::Some
     module = pkg.modules.find(m => vidEq(m.identifier, { names: vid.names.slice(0, -2) }))
     if (module) {
+        ctx.moduleStack.push(module)
         const moduleLocalVid = { names: vid.names.slice(-2) }
-        const ref = resolveScopeVid(moduleLocalVid, module.topScope!, ctx, ofKind, module.identifier)
+        const ref = resolveScopeVid(moduleLocalVid, module.topScope!, ctx, ofKind, module)
         if (ref) {
-            return { vid, moduleVid: module.identifier, def: ref.def }
+            const match = { vid, module, def: ref.def }
+            ctx.moduleStack.pop()
+            return match
         }
+        ctx.moduleStack.pop()
     }
 
     return undefined

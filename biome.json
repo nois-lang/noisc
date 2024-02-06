@@ -9,7 +9,8 @@
         "rules": {
             "recommended": true,
             "nursery": {
-                "noUnusedImports": "warn"
+                "noUnusedImports": "warn",
+                "useImportType": "off"
             },
             "correctness": {
                 "noSwitchDeclarations": "off"
