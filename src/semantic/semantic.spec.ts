@@ -550,11 +550,13 @@ fn main() {
             const code = `\
 type Foo(x: Int)
 
-fn main() {
-    let foo = Foo::Foo(5)
-    let a = foo.x
-    a()
-    return unit
+impl Foo {
+    fn main() {
+        let foo = Foo::Foo(5)
+        let a = foo.x
+        a()
+        return unit
+    }
 }`
             const ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `std::int::Int`'])
@@ -564,10 +566,12 @@ fn main() {
             const code = (arg: string, arg2: string) => `\
 type Foo(${arg})
 
-fn main() {
-    let foo = Foo::Foo(${arg2})
-    foo.x()
-    return unit
+impl Foo {
+    fn main() {
+        let foo = Foo::Foo(${arg2})
+        foo.x()
+        return unit
+    }
 }`
             let ctx = check(code('', ''))
             expect(ctx.errors.map(e => e.message)).toEqual(['method `x` not found'])
@@ -582,11 +586,13 @@ fn main() {
             const code = `\
 type Foo(x: ||: Int)
 
-fn main() {
-    let foo = Foo::Foo(|| { 5 })
-    let a = (foo.x)()
-    a()
-    return unit
+impl Foo {
+    fn main() {
+        let foo = Foo::Foo(|| { 5 })
+        let a = (foo.x)()
+        a()
+        return unit
+    }
 }`
             const ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `std::int::Int`'])
@@ -632,10 +638,12 @@ fn main() {
             const code = (arg: string) => `\
 type Foo(x: Int)
 
-fn main() {
-    let foo = Foo::Foo(${arg})
-    foo()
-    return unit
+impl Foo {
+    fn main() {
+        let foo = Foo::Foo(${arg})
+        foo()
+        return unit
+    }
 }`
             let ctx = check(code(''))
             expect(ctx.errors.map(e => e.message)).toEqual([
@@ -645,6 +653,39 @@ fn main() {
 
             ctx = check(code('x: 5, y: 6'))
             expect(ctx.errors.map(e => e.message)).toEqual(['unknown field: `y`', 'unknown type', 'unknown type'])
+        })
+    })
+
+    describe('pub', () => {
+        it('private field access', () => {
+            const code = (arg: string) => `\
+type Foo(${arg}x: Int)
+
+fn main() {
+    let foo = Foo::Foo(5)
+    foo.x
+    return unit
+}`
+            let ctx = check(code('pub '))
+            expect(ctx.errors.map(e => e.message)).toEqual([])
+
+            ctx = check(code(''))
+            expect(ctx.errors.map(e => e.message)).toEqual(['field `x` is private in type `test::Foo`'])
+        })
+
+        it('private in some variants', () => {
+            const code = `\
+type Foo{ A(pub x: Int), B(x: Int) }
+
+fn main() {
+    let foo = Foo::A(5)
+    foo.x
+    return unit
+}`
+            const ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'field `x` is private in some variants of type `test::Foo`'
+            ])
         })
     })
 })

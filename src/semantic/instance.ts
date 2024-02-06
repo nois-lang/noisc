@@ -2,9 +2,9 @@ import { checkCallArgs, checkType } from '.'
 import { BinaryExpr } from '../ast/expr'
 import { PosCall } from '../ast/op'
 import { Identifier, Operand, identifierFromOperand } from '../ast/operand'
-import { Context, addError, instanceScope } from '../scope'
+import { Context, addError, instanceRelation, instanceScope } from '../scope'
 import { getInstanceForType } from '../scope/trait'
-import { vidToString } from '../scope/util'
+import { vidEq, vidToString } from '../scope/util'
 import { MethodDef, resolveVid } from '../scope/vid'
 import { VirtualFnType, VirtualType, combine, genericToVirtual, typeToVirtual, virtualTypeToString } from '../typecheck'
 import {
@@ -69,17 +69,29 @@ const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): Vi
     // normaly single variant types use field access, but there is no reason to restrict multiple variants sharing the
     // same field
     const typeCandidates = typeDef.variants
-        .map(v => v.fieldDefs.find(f => f.name.value === fieldName)?.fieldType)
-        .filter(t => !!t)
-        .map(t => t!)
-        .map(t => typeToVirtual(t, ctx))
+        .map(v => v.fieldDefs.find(f => f.name.value === fieldName))
+        .filter(f => !!f)
+        .map(f => f!)
     assert(typeCandidates.length > 0)
-    if (!typeCandidates.every(t => !!combine(typeCandidates[0], t, ctx))) {
+    const fieldType = typeCandidates[0].type!
+    if (!typeCandidates.every(f => !!combine(fieldType, f.type!, ctx))) {
         const msg = `field \`${fieldName}\` is not defined in every variant of type \`${vidToString(typeRef.vid)}\``
         addError(ctx, semanticError(ctx, field, msg))
         return
     }
-    const fieldType = typeCandidates[0]
+
+    const instanceDef = instanceScope(ctx)?.def
+    const rel = instanceDef ? instanceRelation(instanceDef, ctx) : undefined
+    const inInherentImpl = rel ? vidEq(rel.forDef.vid, typeVid) : undefined
+    if (!inInherentImpl && !typeCandidates.every(f => f.pub)) {
+        const msg =
+            typeCandidates.length === 1
+                ? `field \`${fieldName}\` is private in type \`${vidToString(typeRef.vid)}\``
+                : `field \`${fieldName}\` is private in some variants of type \`${vidToString(typeRef.vid)}\``
+        addError(ctx, semanticError(ctx, field, msg))
+        return
+    }
+
     const conGenericMap = makeGenericMapOverStructure(lOp.type, {
         kind: 'vid-type',
         identifier: typeRef.vid,

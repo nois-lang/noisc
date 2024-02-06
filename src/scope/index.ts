@@ -112,6 +112,10 @@ export const instanceScope = (ctx: Context): InstanceScope | undefined => {
     return <InstanceScope | undefined>unwindScope(ctx).find(s => s.kind === 'instance')
 }
 
+export const instanceRelation = (instanceDef: ImplDef | TraitDef, ctx: Context): InstanceRelation | undefined => {
+    return ctx.impls.find(i => i.instanceDef === instanceDef)
+}
+
 export const fnDefScope = (ctx: Context): FnDefScope | undefined => {
     return <FnDefScope | undefined>unwindScope(ctx).find(s => s.kind === 'fn')
 }
