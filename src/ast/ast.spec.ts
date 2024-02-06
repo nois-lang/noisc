@@ -1,4 +1,3 @@
-import { inspect } from 'util'
 import { tokenize } from '../lexer/lexer'
 import { parseModule } from '../parser/fns'
 import { Parser } from '../parser/parser'

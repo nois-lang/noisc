@@ -1,6 +1,5 @@
 import { syntaxError } from '../../error'
 import { Parser } from '../parser'
-import { parseExpr } from './expr'
 import { nameLikeTokens, parseNamedCall, parsePosCall } from './index'
 
 /**
