@@ -1,6 +1,6 @@
 import { checkCallArgs, checkType } from '.'
 import { BinaryExpr } from '../ast/expr'
-import { PosCall } from '../ast/op'
+import { Call } from '../ast/op'
 import { Identifier, Operand, identifierFromOperand } from '../ast/operand'
 import { Context, addError, instanceRelation, instanceScope } from '../scope'
 import { getInstanceForType } from '../scope/trait'
@@ -17,7 +17,7 @@ import {
 import { selfType, unknownType } from '../typecheck/type'
 import { assert } from '../util/todo'
 import { notFoundError, semanticError } from './error'
-import { checkOperand } from './expr'
+import { checkExpr, checkOperand } from './expr'
 
 export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     const rOp = binaryExpr.rOperand
@@ -25,8 +25,8 @@ export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
         binaryExpr.type = checkFieldAccessExpr(binaryExpr.lOperand, rOp, ctx) ?? unknownType
         return
     }
-    if (rOp.kind === 'unary-expr' && rOp.postfixOp && rOp.postfixOp.kind === 'pos-call') {
-        binaryExpr.type = checkMethodCallExpr(binaryExpr.lOperand, rOp.operand, rOp.postfixOp, ctx) ?? unknownType
+    if (rOp.kind === 'unary-expr' && rOp.call) {
+        binaryExpr.type = checkMethodCallExpr(binaryExpr.lOperand, rOp.operand, rOp.call, ctx) ?? unknownType
         return
     }
     addError(ctx, semanticError(ctx, rOp, `expected field access or method call, got ${rOp.kind}`))
@@ -103,11 +103,18 @@ const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): Vi
 const checkMethodCallExpr = (
     lOperand: Operand,
     rOperand: Operand,
-    callOp: PosCall,
+    call: Call,
     ctx: Context
 ): VirtualType | undefined => {
     checkOperand(lOperand, ctx)
-    callOp.args.forEach(a => checkOperand(a, ctx))
+    call.args.forEach(a => checkExpr(a.expr, ctx))
+
+    const namedArgs = call.args.filter(a => a.name)
+    namedArgs.forEach(arg => {
+        addError(ctx, semanticError(ctx, arg.name!, `unexpected named argument`))
+        return
+    })
+
     const identifier = identifierFromOperand(rOperand)
     if (!identifier || identifier.scope.length !== 0) {
         addError(ctx, semanticError(ctx, rOperand, `expected method name, got \`${rOperand.kind}\``))
@@ -145,16 +152,14 @@ const checkMethodCallExpr = (
         }
         return
     }
-    const genericMaps = makeMethodGenericMaps(lOperand, identifier, ref.def, callOp, ctx)
+    const genericMaps = makeMethodGenericMaps(lOperand, identifier, ref.def, call, ctx)
     // normal method call
     const fnType = <VirtualFnType>ref.def.fn.type
 
     // TODO: custom check for static methods
-    if (fnType.paramTypes.length !== callOp.args.length + 1) {
-        addError(
-            ctx,
-            semanticError(ctx, callOp, `expected ${fnType.paramTypes.length} arguments, got ${callOp.args.length}`)
-        )
+    if (fnType.paramTypes.length !== call.args.length + 1) {
+        const msg = `expected ${fnType.paramTypes.length} arguments, got ${call.args.length}`
+        addError(ctx, semanticError(ctx, call, msg))
         return
     }
 
@@ -162,7 +167,7 @@ const checkMethodCallExpr = (
     identifier.typeArgs.forEach(typeArg => checkType(typeArg, ctx))
 
     const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
-    checkCallArgs(callOp, [lOperand, ...callOp.args], paramTypes, ctx)
+    checkCallArgs(call, [lOperand, ...call.args.map(a => a.expr)], paramTypes, ctx)
 
     return resolveType(fnType.returnType, genericMaps, ctx)
 }
@@ -171,7 +176,7 @@ const makeMethodGenericMaps = (
     lOperand: Operand,
     rOperand: Identifier,
     methodDef: MethodDef,
-    callOp: PosCall,
+    call: Call,
     ctx: Context
 ): Map<string, VirtualType>[] => {
     const implForType = getInstanceForType(methodDef.instance, ctx)
@@ -183,7 +188,7 @@ const makeMethodGenericMaps = (
     const fnType = <VirtualFnType>methodDef.fn.type
     const typeArgs = rOperand.typeArgs.map(tp => typeToVirtual(tp, ctx))
     const fnTypeArgGenericMap = makeFnTypeArgGenericMap(fnType, typeArgs)
-    const fnGenericMap = makeFnGenericMap(fnType, [lOperand.type!, ...callOp.args.map(a => a.type!)])
+    const fnGenericMap = makeFnGenericMap(fnType, [lOperand.type!, ...call.args.map(a => a.expr.type!)])
 
     return [implGenericMap, fnTypeArgGenericMap, fnGenericMap]
 }

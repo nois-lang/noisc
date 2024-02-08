@@ -5,12 +5,12 @@ import {
     exprFirstTokens,
     infixOpFirstTokens,
     nameLikeTokens,
+    parseCall,
     parseClosureExpr,
-    postfixOpFirstTokens,
     prefixOpFirstTokens
 } from './index'
 import { parseMatchExpr, parsePattern } from './match'
-import { parseInfixOp, parsePostfixOp, parsePrefixOp } from './op'
+import { parseInfixOp, parsePrefixOp } from './op'
 import { parseBlock } from './statement'
 import { parseType } from './type'
 
@@ -36,8 +36,8 @@ export const parseSubExpr = (parser: Parser): void => {
         parsePrefixOp(parser)
     }
     parseOperand(parser)
-    if (parser.atAny(postfixOpFirstTokens)) {
-        parsePostfixOp(parser)
+    if (parser.at('o-paren')) {
+        parseCall(parser)
     }
     parser.close(mark, 'sub-expr')
 }

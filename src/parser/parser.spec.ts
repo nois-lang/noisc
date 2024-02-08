@@ -146,15 +146,14 @@ describe('parser', () => {
         [ { expr:
              [ { 'sub-expr':
                   [ { operand: [ { identifier: [ { name: 'a' } ] } ] },
-                    { 'postfix-op':
-                       [ { 'pos-call':
-                            [ { 'o-paren': '(' },
-                              { expr:
+                    { call:
+                       [ { 'o-paren': '(' },
+                         { arg:
+                            [ { expr:
                                  [ { 'sub-expr':
                                       [ { operand: [ { identifier: [ { name: 'B' }, { colon: ':' }, { colon: ':' }, { name: 'b' } ] } ] },
-                                        { 'postfix-op':
-                                           [ { 'pos-call': [ { 'o-paren': '(' }, { expr: [ { 'sub-expr': [ { operand: [ { int: '4' } ] } ] } ] }, { 'c-paren': ')' } ] } ] } ] } ] },
-                              { 'c-paren': ')' } ] } ] } ] } ] } ] } ] }
+                                        { call: [ { 'o-paren': '(' }, { arg: [ { expr: [ { 'sub-expr': [ { operand: [ { int: '4' } ] } ] } ] } ] }, { 'c-paren': ')' } ] } ] } ] } ] },
+                         { 'c-paren': ')' } ] } ] } ] } ] } ] }
             )
         })
     })

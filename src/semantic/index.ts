@@ -1,5 +1,5 @@
 import { AstNode, Module, Param } from '../ast'
-import { Identifier } from '../ast/operand'
+import { Identifier, Operand } from '../ast/operand'
 import { Block, BreakStmt, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '../ast/statement'
 import { Generic, Type } from '../ast/type'
 import { TypeDef, Variant } from '../ast/type-def'
@@ -616,12 +616,7 @@ export const checkType = (type: Type, ctx: Context) => {
     }
 }
 
-export const checkCallArgs = (
-    node: AstNode<any>,
-    args: (AstNode<any> & Partial<Typed>)[],
-    paramTypes: VirtualType[],
-    ctx: Context
-): void => {
+export const checkCallArgs = (node: AstNode<any>, args: Operand[], paramTypes: VirtualType[], ctx: Context): void => {
     if (args.length !== paramTypes.length) {
         addError(ctx, semanticError(ctx, node, `expected ${paramTypes.length} arguments, got ${args.length}`))
         return

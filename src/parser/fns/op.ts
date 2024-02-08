@@ -1,6 +1,5 @@
 import { syntaxError } from '../../error'
 import { Parser } from '../parser'
-import { nameLikeTokens, parseNamedCall, parsePosCall } from './index'
 
 /**
  * infix-op ::= add-op | sub-op | mult-op | div-op | exp-op | mod-op | access-op | eq-op | ne-op | ge-op | le-op | gt-op
@@ -110,24 +109,4 @@ export const parseSpreadOp = (parser: Parser): void => {
     parser.expect('period')
     parser.expect('period')
     parser.close(mark, 'spread-op')
-}
-
-/**
- * postfix-op ::= pos-call | named-call
- */
-export const parsePostfixOp = (parser: Parser): void => {
-    const mark = parser.open()
-    if (
-        parser.at('o-paren') &&
-        nameLikeTokens.includes(parser.nth(1)) &&
-        parser.nth(2) === 'colon' &&
-        parser.nth(3) !== 'colon'
-    ) {
-        parseNamedCall(parser)
-    } else if (parser.at('o-paren')) {
-        parsePosCall(parser)
-    } else {
-        parser.advanceWithError(syntaxError(parser, 'expected postfix operator'))
-    }
-    parser.close(mark, 'postfix-op')
 }

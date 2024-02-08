@@ -27,8 +27,8 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
             if (expr.prefixOp && expr.prefixOp?.kind !== 'neg-op') {
                 addError(ctx, semanticError(ctx, expr.prefixOp, `unexpected operator \`${expr.prefixOp.kind}\``))
             }
-            if (expr.postfixOp) {
-                addError(ctx, semanticError(ctx, expr.postfixOp, `unexpected operator`))
+            if (expr.call) {
+                addError(ctx, semanticError(ctx, expr.call, `unexpected operator`))
             }
             checkOperand(expr.operand, ctx)
             expr.type = expr.operand.type

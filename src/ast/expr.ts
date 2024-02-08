@@ -4,13 +4,12 @@ import { assert } from '../util/todo'
 import { AstNode } from './index'
 import {
     BinaryOp,
-    PostfixOp,
+    Call,
     PrefixOp,
     associativityMap,
     buildBinaryOp,
-    buildPostfixOp,
+    buildCall,
     buildPrefixOp,
-    isPostfixOp,
     isPrefixOp,
     precedenceMap
 } from './op'
@@ -32,7 +31,7 @@ export const buildOperandExpr = (node: ParseNode): OperandExpr => {
 
 export interface UnaryExpr extends AstNode<'unary-expr'>, Partial<Typed> {
     prefixOp?: PrefixOp
-    postfixOp?: PostfixOp
+    call?: Call
     operand: Operand
 }
 
@@ -48,7 +47,7 @@ export const buildExpr = (node: ParseNode): Expr => {
         return buildSubExpr(nodes[0])
     }
 
-    const operatorStack: (BinaryOp | PrefixOp | PostfixOp)[] = []
+    const operatorStack: (BinaryOp | PrefixOp | Call)[] = []
     const exprStack: (Operand | Expr)[] = []
 
     for (const n of nodes) {
@@ -59,8 +58,8 @@ export const buildExpr = (node: ParseNode): Expr => {
                 if (expr.prefixOp) {
                     operatorStack.push(expr.prefixOp)
                 }
-                if (expr.postfixOp) {
-                    operatorStack.push(expr.postfixOp)
+                if (expr.call) {
+                    operatorStack.push(expr.call)
                 }
             }
         } else {
@@ -85,11 +84,11 @@ export const buildExpr = (node: ParseNode): Expr => {
                             prefixOp: o2,
                             operand: rExp
                         })
-                    } else if (isPostfixOp(o2)) {
+                    } else if (o2.kind === 'call') {
                         exprStack.push({
                             kind: 'unary-expr',
                             parseNode: { kind: 'expr', nodes: [rExp.parseNode, o2.parseNode] },
-                            postfixOp: o2,
+                            call: o2,
                             operand: rExp
                         })
                     } else {
@@ -125,15 +124,15 @@ export const buildExpr = (node: ParseNode): Expr => {
                     operand: rExp
                 })
             }
-        } else if (isPostfixOp(op)) {
+        } else if (op.kind === 'call') {
             // no need to wrap in additional unary-expr
-            if (rExp.kind === 'unary-expr' && !rExp.postfixOp) {
-                rExp.postfixOp = op
+            if (rExp.kind === 'unary-expr' && !rExp.call) {
+                rExp.call = op
             } else {
                 exprStack.push({
                     kind: 'unary-expr',
                     parseNode: { kind: 'expr', nodes: [rExp.parseNode, op.parseNode] },
-                    postfixOp: op,
+                    call: op,
                     operand: rExp
                 })
             }
@@ -160,12 +159,12 @@ export const buildSubExpr = (node: ParseNode): UnaryExpr | OperandExpr => {
         return buildOperandExpr(nodes[0])
     }
     const prefixOp = nodes[0].kind === 'prefix-op' ? buildPrefixOp(nodes[0]) : undefined
-    const postfixOp = nodes.at(-1)!.kind === 'postfix-op' ? buildPostfixOp(nodes.at(-1)!) : undefined
+    const call = nodes.at(-1)!.kind === 'call' ? buildCall(nodes.at(-1)!) : undefined
     return {
         kind: 'unary-expr',
         parseNode: node,
         prefixOp,
-        postfixOp,
+        call,
         operand: buildOperand(nodes[prefixOp ? 1 : 0])
     }
 }

@@ -646,10 +646,7 @@ impl Foo {
     }
 }`
             let ctx = check(code(''))
-            expect(ctx.errors.map(e => e.message)).toEqual([
-                'expected 1 arguments, got 0',
-                'type error: non-callable operand of type `test::Foo`'
-            ])
+            expect(ctx.errors.map(e => e.message)).toEqual(['missing fields: `x`', 'unknown type', 'unknown type'])
 
             ctx = check(code('x: 5, y: 6'))
             expect(ctx.errors.map(e => e.message)).toEqual(['unknown field: `y`', 'unknown type', 'unknown type'])

@@ -159,7 +159,7 @@ describe('ast', () => {
           lOperand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'a' }, typeArgs: [] },
           rOperand:
            { kind: 'unary-expr',
-             postfixOp: { kind: 'pos-call', args: [] },
+             call: { kind: 'call', args: [] },
              operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'foo' }, typeArgs: [] } } } } ] }
             )
         })
@@ -176,7 +176,7 @@ describe('ast', () => {
        expr:
         { kind: 'unary-expr',
           prefixOp: { kind: 'not-op' },
-          postfixOp: { kind: 'pos-call', args: [] },
+          call: { kind: 'call', args: [] },
           operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'foo' }, typeArgs: [] } },
           pub: false } ] }
             )
@@ -193,7 +193,7 @@ describe('ast', () => {
        lOperand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'a' }, typeArgs: [] },
        rOperand:
         { kind: 'unary-expr',
-          postfixOp: { kind: 'pos-call', args: [] },
+          call: { kind: 'call', args: [] },
           operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'b' }, typeArgs: [] } } } ] }
             )
         })
@@ -215,15 +215,15 @@ describe('ast', () => {
              lOperand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'a' }, typeArgs: [] },
              rOperand:
               { kind: 'unary-expr',
-                postfixOp: { kind: 'pos-call', args: [] },
+                call: { kind: 'call', args: [] },
                 operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'b' }, typeArgs: [] } } },
           rOperand:
            { kind: 'unary-expr',
-             postfixOp: { kind: 'pos-call', args: [] },
+             call: { kind: 'call', args: [] },
              operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'c' }, typeArgs: [] } } },
        rOperand:
         { kind: 'unary-expr',
-          postfixOp: { kind: 'pos-call', args: [] },
+          call: { kind: 'call', args: [] },
           operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'd' }, typeArgs: [] } } } ] }
             )
         })

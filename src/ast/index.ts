@@ -3,7 +3,6 @@ import { Scope } from '../scope'
 import { VirtualIdentifier } from '../scope/vid'
 import { Typed } from '../semantic'
 import { Source } from '../source'
-import { assert } from '../util/todo'
 import { Expr, buildExpr } from './expr'
 import { Pattern, buildPattern } from './match'
 import { Name, buildName } from './operand'
@@ -33,8 +32,6 @@ export const astLiteralKinds = <const>['string-literal', 'char-literal', 'int-li
 
 export const astPrefixOpKinds = <const>['neg-op', 'not-op', 'spread-op']
 
-export const astPostfixOpKinds = <const>['pos-call', 'named-call']
-
 export const astInfixOpKinds = <const>[
     'add-op',
     'sub-op',
@@ -60,7 +57,8 @@ export const astKinds = <const>[
     'variant',
     'return-stmt',
     'break-stmt',
-    'named-arg',
+    'call',
+    'arg',
     'block',
     'param',
     'type-bounds',
@@ -78,7 +76,6 @@ export const astKinds = <const>[
     ...astDefKinds,
     ...astLiteralKinds,
     ...astPrefixOpKinds,
-    ...astPostfixOpKinds,
     ...astInfixOpKinds
 ]
 
@@ -153,15 +150,15 @@ export const buildParam = (node: ParseNode): Param => {
     return { kind: 'param', parseNode: node, pattern, paramType: typeNode ? buildType(typeNode) : undefined }
 }
 
-export interface NamedArg extends AstNode<'named-arg'> {
-    name: Name
+export interface Arg extends AstNode<'arg'> {
+    name?: Name
     expr: Expr
 }
 
-export const buildNamedArg = (node: ParseNode): NamedArg => {
+export const buildArg = (node: ParseNode): Arg => {
     const nodes = filterNonAstNodes(node)
-    assert(nodes.length === 2)
-    const name = buildName(nodes[0])
-    const expr = buildExpr(nodes[1])
-    return { kind: 'named-arg', parseNode: node, name, expr }
+    let i = 0
+    const name = nodes[i].kind === 'name' ? buildName(nodes[i++]) : undefined
+    const expr = buildExpr(nodes[i++])
+    return { kind: 'arg', parseNode: node, name, expr }
 }

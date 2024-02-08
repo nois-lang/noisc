@@ -1,17 +1,10 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
-import { Expr, buildExpr } from './expr'
-import { AstNode, AstNodeKind, NamedArg, buildNamedArg } from './index'
+import { Arg, AstNode, AstNodeKind, buildArg } from './index'
 
 export type PrefixOp = NegOp | NotOp | SpreadOp
 
 export const isPrefixOp = (op: AstNode<AstNodeKind>): op is PrefixOp => {
     return op.kind === 'neg-op' || op.kind === 'not-op' || op.kind === 'spread-op'
-}
-
-export type PostfixOp = PosCall | NamedCall
-
-export const isPostfixOp = (op: AstNode<AstNodeKind>): op is PostfixOp => {
-    return op.kind === 'pos-call' || op.kind === 'named-call'
 }
 
 export const buildPrefixOp = (node: ParseNode): PrefixOp => {
@@ -20,17 +13,6 @@ export const buildPrefixOp = (node: ParseNode): PrefixOp => {
         throw Error(`expected prefix-op, got ${node.kind}`)
     }
     return { kind: <any>n.kind, parseNode: node }
-}
-
-export const buildPostfixOp = (node: ParseNode): PostfixOp => {
-    const n = filterNonAstNodes(node)[0]
-    if (n.kind === 'pos-call') {
-        return buildPosCall(n)
-    }
-    if (n.kind === 'named-call') {
-        return buildNamedCall(n)
-    }
-    throw Error(`expected postfix-op, got ${node.kind}`)
 }
 
 export type BinaryOp =
@@ -54,8 +36,7 @@ export type BinaryOp =
 export type Associativity = 'left' | 'right' | 'none'
 
 export const associativityMap: Map<AstNodeKind, Associativity> = new Map([
-    ['pos-call', 'none'],
-    ['named-call', 'none'],
+    ['call', 'none'],
     ['neg-op', 'none'],
     ['not-op', 'none'],
     ['add-op', 'left'],
@@ -81,8 +62,7 @@ export const associativityMap: Map<AstNodeKind, Associativity> = new Map([
  * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_precedence#table
  */
 export const precedenceMap: Map<AstNodeKind, number> = new Map([
-    ['pos-call', 17],
-    ['named-call', 17],
+    ['call', 17],
     ['neg-op', 14],
     ['not-op', 14],
     ['add-op', 11],
@@ -129,37 +109,20 @@ export const buildBinaryOp = (node: ParseNode): BinaryOp => {
     return { kind: <any>node.kind, parseNode: node }
 }
 
+export interface Call extends AstNode<'call'> {
+    args: Arg[]
+}
+
+export const buildCall = (node: ParseNode): Call => {
+    const args = filterNonAstNodes(node).map(n => buildArg(n))
+    return { kind: 'call', parseNode: node, args }
+}
+
 export interface NegOp extends AstNode<'neg-op'> {}
 
 export interface NotOp extends AstNode<'not-op'> {}
 
 export interface SpreadOp extends AstNode<'spread-op'> {}
-
-export interface PosCall extends AstNode<'pos-call'> {
-    args: Expr[]
-}
-
-export const buildPosCall = (node: ParseNode): PosCall => {
-    const nodes = filterNonAstNodes(node)
-    return {
-        kind: 'pos-call',
-        parseNode: node,
-        args: nodes.map(n => buildExpr(n))
-    }
-}
-
-export interface NamedCall extends AstNode<'named-call'> {
-    fields: NamedArg[]
-}
-
-export const buildNamedCall = (node: ParseNode): NamedCall => {
-    const nodes = filterNonAstNodes(node)
-    return {
-        kind: 'named-call',
-        parseNode: node,
-        fields: nodes.map(n => buildNamedArg(n))
-    }
-}
 
 export interface AddOp extends AstNode<'add-op'> {}
 

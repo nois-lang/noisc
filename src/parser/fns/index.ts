@@ -12,7 +12,6 @@ import { parseTypeAnnot } from './type'
 export const nameLikeTokens: TokenKind[] = ['name', ...lexerKeywordKinds]
 
 export const prefixOpFirstTokens: TokenKind[] = ['excl', 'minus', 'period']
-export const postfixOpFirstTokens: TokenKind[] = ['o-paren']
 export const infixOpFirstTokens: TokenKind[] = [
     'ampersand',
     'asterisk',
@@ -106,48 +105,31 @@ export const parseClosureParams = (parser: Parser): void => {
 }
 
 /**
- * pos-call ::= O-PAREN (expr (COMMA expr)*)? COMMA? C-PAREN
+ * call ::= O-PAREN (arg (COMMA arg)*)? COMMA? C-PAREN
  */
-export const parsePosCall = (parser: Parser): void => {
+export const parseCall = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('o-paren')
     while (!parser.at('c-paren') && !parser.eof()) {
-        parseExpr(parser)
+        parseArg(parser)
         if (!parser.at('c-paren')) {
             parser.expect('comma')
         }
     }
     parser.expect('c-paren')
-    parser.close(mark, 'pos-call')
+    parser.close(mark, 'call')
 }
 
 /**
- * named-call ::= O-PAREN (named-arg (COMMA named-arg)*)? COMMA? C-PAREN
+ * arg ::= (NAME COLON)? expr
  */
-export const parseNamedCall = (parser: Parser): void => {
+export const parseArg = (parser: Parser): void => {
     const mark = parser.open()
-    parser.expect('o-paren')
-    while (parser.atAny(paramFirstTokens) && !parser.eof()) {
-        parseNamedArg(parser)
-        if (!parser.at('c-paren')) {
-            parser.expect('comma')
-        }
+    // avoid parsing qualified ids as named args
+    if (parser.nth(1) === 'colon' && parser.nth(2) !== 'colon') {
+        parser.expectAny(nameLikeTokens)
+        parser.expect('colon')
     }
-    parser.expect('c-paren')
-    parser.close(mark, 'named-call')
-}
-
-/**
- * named-arg ::= NAME COLON expr
- */
-export const parseNamedArg = (parser: Parser): void => {
-    const mark = parser.open()
-    parser.expectAny(nameLikeTokens)
-    parser.expect('colon')
     parseExpr(parser)
-    parser.close(mark, 'named-arg')
-}
-
-export const parseTodo = (parser: Parser): void => {
-    parser.advanceWithError(syntaxError(parser, 'todo'))
+    parser.close(mark, 'arg')
 }

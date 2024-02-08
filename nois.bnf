@@ -42,7 +42,7 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
                       ;
   expr                ::= sub-expr (infix-op sub-expr)*
                       ;
-    sub-expr          ::= prefix-op? operand postfix-op?
+    sub-expr          ::= prefix-op? operand call?
                       ;
       operand         ::= if-expr
                       | if-let-expr
@@ -83,13 +83,9 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
                       ;
       spread-op       ::= PERIOD PERIOD
                       ;
-    postfix-op        ::= pos-call | named-call
+    call              ::= O-PAREN (arg (COMMA arg)*)? COMMA? C-PAREN
                       ;
-      pos-call        ::= O-PAREN (expr (COMMA expr)*)? COMMA? C-PAREN
-                      ;
-      named-call      ::= O-PAREN (named-arg (COMMA named-arg)*)? COMMA? C-PAREN
-                      ;
-        named-arg     ::= NAME COLON expr
+      arg             ::= (NAME COLON)? expr
                       ;
 identifier            ::= (NAME COLON COLON)* NAME type-args?
                       ;

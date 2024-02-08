@@ -2,13 +2,21 @@ import { checkBlock, checkCallArgs, checkIdentifier, checkParam, checkType } fro
 import { AstNode } from '../ast'
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { MatchExpr } from '../ast/match'
-import { NamedCall, PosCall } from '../ast/op'
-import { ClosureExpr, ForExpr, IfExpr, IfLetExpr, ListExpr, Operand, WhileExpr } from '../ast/operand'
+import {
+    ClosureExpr,
+    ForExpr,
+    IfExpr,
+    IfLetExpr,
+    ListExpr,
+    Operand,
+    WhileExpr,
+    identifierFromOperand
+} from '../ast/operand'
 import { Context, Scope, addError, instanceScope } from '../scope'
 import { bool, iter, iterable } from '../scope/std'
 import { getInstanceForType } from '../scope/trait'
 import { idToVid, vidFromString, vidToString } from '../scope/util'
-import { MethodDef, resolveVid } from '../scope/vid'
+import { MethodDef, VariantDef, VirtualIdentifierMatch, resolveVid } from '../scope/vid'
 import {
     VidType,
     VirtualFnType,
@@ -29,7 +37,7 @@ import {
 } from '../typecheck/generic'
 import { holeType, unitType, unknownType } from '../typecheck/type'
 import { assert, todo } from '../util/todo'
-import { notFoundError, semanticError, typeError, unknownTypeError } from './error'
+import { semanticError, typeError, unknownTypeError } from './error'
 import { checkExhaustion } from './exhaust'
 import { checkAccessExpr } from './instance'
 import { checkPattern } from './match'
@@ -124,12 +132,8 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
 }
 
 export const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
-    if (unaryExpr.postfixOp?.kind === 'pos-call') {
-        checkPosCall(unaryExpr, ctx)
-        return
-    }
-    if (unaryExpr.postfixOp?.kind === 'named-call') {
-        checkNamedCall(unaryExpr, ctx)
+    if (unaryExpr.call) {
+        checkCall(unaryExpr, ctx)
         return
     }
     if (unaryExpr.prefixOp?.kind === 'spread-op') {
@@ -425,15 +429,77 @@ export const checkClosureExpr = (
     module.scopeStack.pop()
 }
 
-export const checkPosCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
-    const callOp = <PosCall>unaryExpr.postfixOp
+export const checkCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
+    const call = unaryExpr.call!
     const operand = unaryExpr.operand
     checkOperand(operand, ctx)
-    callOp.args.forEach(a => checkOperand(a, ctx))
-    unaryExpr.type = checkCall(callOp, operand, callOp.args, ctx)
+    const args = call.args.map(a => a.expr)
+    args.forEach(a => checkExpr(a, ctx))
+    const variantRef = variantCallRef(operand, ctx)
+    if (variantRef) {
+        // variant call
+        unaryExpr.type = checkVariantCall(unaryExpr, variantRef, ctx)
+    } else {
+        // function call
+        unaryExpr.type = checkCall_(call, operand, args, ctx)
+    }
 }
 
-export const checkCall = (call: AstNode<any>, operand: Operand, args: Expr[], ctx: Context): VirtualType => {
+export const checkVariantCall = (
+    unaryExpr: UnaryExpr,
+    ref: VirtualIdentifierMatch<VariantDef>,
+    ctx: Context
+): VirtualType | undefined => {
+    const call = unaryExpr.call!
+    call.args.forEach(a => checkExpr(a.expr, ctx))
+
+    for (const arg of call.args) {
+        if (!arg.name) {
+            const id = identifierFromOperand(arg.expr)
+            if (id) {
+                arg.name = id.name
+            }
+        }
+    }
+
+    const allArgsNamed = call.args.every(arg => arg.name)
+    const orderedArgs = []
+    if (allArgsNamed) {
+        let argsHaveErrors = false
+        const missingFields = []
+        for (const fieldDef of ref.def.variant.fieldDefs) {
+            const field = call.args.find(a => a.name!.value === fieldDef.name.value)
+            if (!field) {
+                missingFields.push(fieldDef)
+                continue
+            }
+            orderedArgs.push(field)
+        }
+        if (missingFields.length > 0) {
+            const msg = `missing fields: ${missingFields.map(f => `\`${f.name.value}\``).join(', ')}`
+            addError(ctx, semanticError(ctx, call, msg))
+            argsHaveErrors = true
+        }
+        for (const arg of call.args) {
+            if (!orderedArgs.includes(arg)) {
+                const msg = `unknown field: \`${arg.name!.value}\``
+                addError(ctx, semanticError(ctx, arg.name!, msg))
+                argsHaveErrors = true
+            }
+        }
+
+        if (argsHaveErrors) {
+            // TODO: set variant type
+            return unknownType
+        }
+    }
+
+    // if there are regular positional args, call it as a regular function
+    const args = (allArgsNamed ? orderedArgs : call.args).map(a => a?.expr)
+    return checkCall_(call, unaryExpr.operand, args, ctx)
+}
+
+export const checkCall_ = (call: AstNode<any>, operand: Operand, args: Expr[], ctx: Context): VirtualType => {
     if (operand.type?.kind === 'malleable-type') {
         const closureType: VirtualFnType = {
             kind: 'fn-type',
@@ -470,63 +536,22 @@ export const checkCall = (call: AstNode<any>, operand: Operand, args: Expr[], ct
     return replaceGenericsWithHoles(resolveType(fnType.returnType, genericMaps, ctx))
 }
 
-export const checkNamedCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
-    const namedCall = <NamedCall>unaryExpr.postfixOp
-    const operand = unaryExpr.operand
+export const variantCallRef = (operand: Operand, ctx: Context): VirtualIdentifierMatch<VariantDef> | undefined => {
     if (operand.kind !== 'identifier') {
-        addError(ctx, semanticError(ctx, operand, `expected identifier, got ${operand.kind}`))
-        unaryExpr.type = unknownType
-        return
+        return undefined
     }
+
+    const old = ctx.silent
+    ctx.silent = true
     checkOperand(operand, ctx)
+    ctx.silent = old
+
     const vid = idToVid(operand)
     const ref = resolveVid(vid, ctx)
-    if (!ref) {
-        addError(ctx, notFoundError(ctx, operand, vidToString(vid)))
-        unaryExpr.type = unknownType
-        return
+    if (!ref || ref.def.kind !== 'variant') {
+        return undefined
     }
-    if (ref.def.kind !== 'variant') {
-        addError(ctx, semanticError(ctx, unaryExpr, `constructor called on \`${ref.def.kind}\``))
-        unaryExpr.type = unknownType
-        return
-    }
-    const variant = ref.def.variant
-
-    namedCall.fields.map(f => checkExpr(f.expr, ctx))
-
-    let argsHaveErrors = false
-    const orderedArgs = []
-    const missingFields = []
-    for (const fieldDef of variant.fieldDefs) {
-        const field = namedCall.fields.find(f => f.name.value === fieldDef.name.value)
-        if (!field) {
-            missingFields.push(fieldDef)
-            continue
-        }
-        orderedArgs.push(field)
-    }
-    if (missingFields.length > 0) {
-        const msg = `missing fields: ${missingFields.map(f => `\`${f.name.value}\``).join(', ')}`
-        addError(ctx, semanticError(ctx, namedCall, msg))
-        argsHaveErrors = true
-    }
-    for (const arg of namedCall.fields) {
-        if (!orderedArgs.includes(arg)) {
-            const msg = `unknown field: \`${arg.name.value}\``
-            addError(ctx, semanticError(ctx, arg.name, msg))
-            argsHaveErrors = true
-        }
-    }
-
-    if (argsHaveErrors) {
-        // TODO: set variant type
-        unaryExpr.type = unknownType
-        return
-    }
-
-    const args = orderedArgs.map(a => a?.expr)
-    unaryExpr.type = checkCall(namedCall, operand, args, ctx)
+    return <VirtualIdentifierMatch<VariantDef>>ref
 }
 
 export const checkListExpr = (listExpr: ListExpr, ctx: Context): void => {
