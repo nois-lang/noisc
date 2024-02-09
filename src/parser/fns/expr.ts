@@ -44,10 +44,10 @@ export const parseSubExpr = (parser: Parser): void => {
 
 /**
  * operand ::= if-expr | match-expr | closure-expr | O-PAREN expr C-PAREN | list-expr | STRING | CHAR | INT | FLOAT
- * | identifier | type
+ * TRUE | FALSE | identifier | type
  */
 export const parseOperand = (parser: Parser): void => {
-    const dynamicTokens: TokenKind[] = ['string', 'char', 'int', 'float']
+    const dynamicTokens: TokenKind[] = ['string', 'char', 'int', 'float', 'bool']
 
     const mark = parser.open()
     if (parser.at('if-keyword') && parser.nth(1) === 'let-keyword') {

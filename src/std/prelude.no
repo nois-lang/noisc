@@ -6,8 +6,7 @@ pub use std::{
     int::Int,
     string::String,
     char::Char,
-    // TODO: bool literals
-    bool::{Bool, true, false},
+    bool::Bool,
     eq::Eq,
     ord::{Ordering, Ord},
     iter::{Iterable, Iter, Collector},

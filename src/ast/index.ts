@@ -29,7 +29,7 @@ export const astExprKinds = <const>[
 
 export const astDefKinds = <const>['var-def', 'fn-def', 'trait-def', 'impl-def', 'type-def', 'field-def']
 
-export const astLiteralKinds = <const>['string-literal', 'char-literal', 'int-literal', 'float-literal']
+export const astLiteralKinds = <const>['string-literal', 'char-literal', 'int-literal', 'float-literal', 'bool-literal']
 
 export const astPrefixOpKinds = <const>['neg-op', 'not-op', 'spread-op']
 

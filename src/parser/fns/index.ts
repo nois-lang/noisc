@@ -36,6 +36,7 @@ export const exprFirstTokens: TokenKind[] = [
     'match-keyword',
     'int',
     'float',
+    'bool',
     'string',
     'o-paren',
     'o-bracket',

@@ -21,6 +21,7 @@ export type Operand =
     | CharLiteral
     | IntLiteral
     | FloatLiteral
+    | BoolLiteral
     | Identifier
 
 export const buildOperand = (node: ParseNode): Operand => {
@@ -50,6 +51,8 @@ export const buildOperand = (node: ParseNode): Operand => {
             return buildIntLiteral(n)
         case 'float':
             return buildFloatLiteral(n)
+        case 'bool':
+            return buildBoolLiteral(n)
         case 'identifier':
             return buildIdentifier(n)
     }
@@ -196,6 +199,14 @@ export interface FloatLiteral extends AstNode<'float-literal'>, Partial<Typed> {
 
 export const buildFloatLiteral = (node: ParseNode): FloatLiteral => {
     return { kind: 'float-literal', parseNode: node, value: (<LexerToken>node).value }
+}
+
+export interface BoolLiteral extends AstNode<'bool-literal'>, Partial<Typed> {
+    value: string
+}
+
+export const buildBoolLiteral = (node: ParseNode): BoolLiteral => {
+    return { kind: 'bool-literal', parseNode: node, value: (<LexerToken>node).value }
 }
 
 export interface Identifier extends AstNode<'identifier'>, Partial<Typed> {

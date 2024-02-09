@@ -119,6 +119,13 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
                 typeArgs: []
             }
             break
+        case 'bool-literal':
+            operand.type = {
+                kind: 'vid-type',
+                identifier: vidFromString('std::bool::Bool'),
+                typeArgs: []
+            }
+            break
         case 'identifier':
             checkIdentifier(operand, ctx)
             if (operand.type!.kind === 'unknown-type') {

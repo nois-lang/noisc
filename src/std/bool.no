@@ -5,10 +5,6 @@ pub type Bool {
     False
 }
 
-pub let true: Bool = Bool::True()
-
-pub let false: Bool = Bool::False()
-
 impl Bool {
     pub fn and(self, other: Self): Self {
         andBool(self, other)

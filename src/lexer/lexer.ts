@@ -48,7 +48,7 @@ export const lexerKeywordKinds = <const>[
     'pub-keyword'
 ]
 
-export const lexerDynamicKinds = <const>['name', 'string', 'char', 'int', 'float']
+export const lexerDynamicKinds = <const>['name', 'string', 'char', 'int', 'float', 'bool']
 
 const lexerParseIndependentKinds = <const>['comment']
 
@@ -117,6 +117,7 @@ export const lexerKeywordMap: Map<TokenKind, string> = new Map([
     ['at', '@']
 ])
 
+const boolRegex = /^(true|false)/
 const floatRegex = /^((\d+(\.\d*)?e[+-]?\d+)|(\d+\.\d*)|(\d*\.\d+))/
 const escapeCharReg = /(\\[btnvfr\\'"])/
 const unicodeCharReg = /(\\u{[0-9a-fA-F]{1,4}})/
@@ -159,6 +160,7 @@ export const tokenize = (code: string): LexerToken[] => {
         }
 
         const fns = [
+            parseBool,
             parseFloat,
             parseInt,
             parseComment,
@@ -245,6 +247,18 @@ const parseName = (chars: string[], tokens: LexerToken[], pos: { pos: number }):
         return true
     }
     return false
+}
+
+const parseBool = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
+    const leftCode = chars.slice(pos.pos).join('')
+    const match = leftCode.match(boolRegex)
+    if (!match) return false
+
+    const bool = match[0]
+    const start = pos.pos
+    pos.pos += bool.length
+    tokens.push(createToken('bool', bool, pos, start))
+    return true
 }
 
 const parseFloat = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
