@@ -124,8 +124,6 @@ export const genericToVirtual = (generic: Generic, ctx: Context): VirtualGeneric
 }
 
 export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context): boolean => {
-    if (!ctx.config.typeCheck) return true
-
     if (t.kind === 'unknown-type' || target.kind === 'unknown-type') return true
     if (t.kind === 'hole-type' || target.kind === 'hole-type') return true
     if (t.kind === 'vid-type' && vidToString(t.identifier) === 'std::never::Never') return true
