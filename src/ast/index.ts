@@ -2,6 +2,7 @@ import { ParseNode, filterNonAstNodes } from '../parser'
 import { Scope } from '../scope'
 import { VirtualIdentifier } from '../scope/vid'
 import { Typed } from '../semantic'
+import { VirtualUseExpr } from '../semantic/use-expr'
 import { Source } from '../source'
 import { Expr, buildExpr } from './expr'
 import { Pattern, buildPattern } from './match'
@@ -109,11 +110,11 @@ export interface Module extends AstNode<'module'> {
     /**
      * All vids accessible from the current module, based on {@link useExprs}
      */
-    references?: VirtualIdentifier[]
+    references?: VirtualUseExpr[]
     /**
      * All vids that are "re-exported" from other modules, based on {@link useExprs}
      */
-    reExports?: VirtualIdentifier[]
+    reExports?: VirtualUseExpr[]
     /**
      * Persistent top level scope.
      * Different from scopeStack[0] because it is always available

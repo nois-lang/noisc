@@ -136,9 +136,11 @@ export const resolveVid = (
         .find(p => p.name === 'std')!
         .modules.find(m => m.identifier.names.at(-1)! === 'prelude')
     assert(!!prelude, 'prelude not found')
-    const matchedUseExpr = [...module.references!, ...prelude!.reExports!].find(r => r.names.at(-1)! === vid.names[0])
+    const matchedUseExpr = [...module.references!, ...prelude!.reExports!].find(
+        r => r.vid.names.at(-1)! === vid.names[0]
+    )
     if (matchedUseExpr) {
-        const qualifiedVid = { names: [...matchedUseExpr.names.slice(0, -1), ...vid.names] }
+        const qualifiedVid = { names: [...matchedUseExpr.vid.names.slice(0, -1), ...vid.names] }
         const matchedRef = resolveMatchedVid(qualifiedVid, ctx, ofKind)
         if (matchedRef) {
             return matchedRef
@@ -278,8 +280,8 @@ export const resolveMatchedVid = (
 
         // check re-exports
         for (const reExp of module.reExports!) {
-            if (moduleLocalVid.names[0] === reExp.names.at(-1)!) {
-                const reExportVid = { names: [...reExp.names.slice(0, -1), ...vid.names.slice(-1)] }
+            if (moduleLocalVid.names[0] === reExp.vid.names.at(-1)!) {
+                const reExportVid = { names: [...reExp.vid.names.slice(0, -1), ...vid.names.slice(-1)] }
                 const ref = resolveMatchedVid(reExportVid, ctx, ofKind)
                 if (ref) {
                     return ref
@@ -303,8 +305,8 @@ export const resolveMatchedVid = (
 
         // check re-exports
         for (const reExp of module.reExports!) {
-            if (moduleLocalVid.names[0] === reExp.names.at(-1)!) {
-                const reExportVid = { names: [...reExp.names.slice(0, -1), ...vid.names.slice(-2)] }
+            if (moduleLocalVid.names[0] === reExp.vid.names.at(-1)!) {
+                const reExportVid = { names: [...reExp.vid.names.slice(0, -1), ...vid.names.slice(-2)] }
                 const ref = resolveMatchedVid(reExportVid, ctx, ofKind)
                 if (ref) {
                     return ref

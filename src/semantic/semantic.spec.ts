@@ -83,20 +83,28 @@ fn main() {
 
     describe('use expr', () => {
         it('ok', () => {
-            const code = `use std::iter::{self, Iter, Iterator}`
+            const code = `use std::iter::{self, Iter, Iterable}`
             const ctx = check(code, false)
             expect(ctx.errors.map(e => e.message)).toEqual([])
             const module = ctx.packages.at(-1)!.modules[0]
             expect(module.reExports!.length).toEqual(0)
-            expect(module.references!.map(vidToString)).toEqual(['std::iter', 'std::iter::Iter', 'std::iter::Iterator'])
+            expect(module.references!.map(r => r.vid).map(vidToString)).toEqual([
+                'std::iter',
+                'std::iter::Iter',
+                'std::iter::Iterable'
+            ])
         })
 
         it('re-export', () => {
-            const code = `pub use std::iter::{self, Iter, Iterator}`
+            const code = `pub use std::iter::{self, Iter, Iterable}`
             const ctx = check(code, false)
             expect(ctx.errors.map(e => e.message)).toEqual([])
             const module = ctx.packages.at(-1)!.modules[0]
-            expect(module.reExports!.map(vidToString)).toEqual(['std::iter', 'std::iter::Iter', 'std::iter::Iterator'])
+            expect(module.reExports!.map(r => r.vid).map(vidToString)).toEqual([
+                'std::iter',
+                'std::iter::Iter',
+                'std::iter::Iterable'
+            ])
             expect(module.references!.length).toEqual(0)
         })
     })

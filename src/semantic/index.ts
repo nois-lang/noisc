@@ -1,5 +1,5 @@
 import { AstNode, Module, Param } from '../ast'
-import { Identifier, Operand } from '../ast/operand'
+import { Identifier, Name, Operand } from '../ast/operand'
 import { Block, BreakStmt, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '../ast/statement'
 import { Generic, Type } from '../ast/type'
 import { TypeDef, Variant } from '../ast/type-def'
@@ -69,9 +69,6 @@ export const prepareModule = (module: Module): void => {
     })
     module.topScope = { kind: 'module', definitions: defMap }
 
-    // TODO: check duplicate useExprs
-    // TODO: check self references
-    // TODO: validate paths
     module.references = module.useExprs.filter(e => !e.pub).flatMap(e => useExprToVids(e))
     module.reExports = module.useExprs.filter(e => e.pub).flatMap(e => useExprToVids(e))
 }
@@ -86,6 +83,18 @@ export const checkModule = (module: Module, ctx: Context): void => {
         return
     }
     ctx.moduleStack.push(module)
+
+    // TODO: check duplicate useExprs
+    // TODO: check self references
+    // TODO: support `self` package reference
+    for (const useRef of module.references!) {
+        const ref = resolveVid(useRef.vid, ctx)
+        if (!ref) {
+            const name = <Name>useRef.useExpr.expr
+            addError(ctx, notFoundError(ctx, name, vidToString(useRef.vid)))
+        }
+    }
+
     checkBlock(module.block, ctx)
     ctx.moduleStack.pop()
 }
