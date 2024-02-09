@@ -5,7 +5,7 @@ import { Generic } from '../ast/type'
 import { TypeDef, Variant } from '../ast/type-def'
 import { checkTopLevelDefiniton } from '../semantic'
 import { selfType } from '../typecheck/type'
-import { assert, unreachable } from '../util/todo'
+import { unreachable } from '../util/todo'
 import { Context, Scope, instanceScope } from './index'
 import { findSuperRelChains } from './trait'
 import { concatVid, idToVid, vidEq, vidToString } from './util'
@@ -131,12 +131,7 @@ export const resolveVid = (
     if (ref) return ref
 
     // check if vid is partially qualified with use exprs
-    // TODO: move
-    const prelude = ctx.packages
-        .find(p => p.name === 'std')!
-        .modules.find(m => m.identifier.names.at(-1)! === 'prelude')
-    assert(!!prelude, 'prelude not found')
-    const matchedUseExpr = [...module.references!, ...prelude!.reExports!].find(
+    const matchedUseExpr = [...module.references!, ...ctx.prelude!.reExports!].find(
         r => r.vid.names.at(-1)! === vid.names[0]
     )
     if (matchedUseExpr) {
@@ -244,7 +239,7 @@ export const resolveScopeVid = (
 }
 
 /**
- * Resolve fully qualified vid
+ * Resolve fully qualified vid, e.g. std::iter::Iter or self::foo::Foo
  */
 export const resolveMatchedVid = (
     vid: VirtualIdentifier,
@@ -253,7 +248,12 @@ export const resolveMatchedVid = (
 ): VirtualIdentifierMatch | undefined => {
     let module: Module | undefined
 
-    const pkg = ctx.packages.find(p => p.name === vid.names[0])
+    let pkg = undefined
+    if (vid.names[0] === 'self') {
+        vid.names[0] = ctx.moduleStack.at(-1)!.identifier.names[0]
+    }
+    pkg = ctx.packages.find(p => p.name === vid.names[0])
+
     if (!pkg) return undefined
 
     // if vid is module, e.g. std::option

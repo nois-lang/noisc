@@ -29,6 +29,7 @@ describe('semantic', () => {
             config,
             moduleStack: [],
             packages,
+            prelude: std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!,
             impls: [],
             errors: [],
             warnings: [],

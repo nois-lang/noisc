@@ -15,6 +15,10 @@ export interface Context {
     // TODO: store reference chain instead of plain modules
     moduleStack: Module[]
     packages: Package[]
+    /**
+     * `std::prelude` module
+     */
+    prelude: Module
     impls: InstanceRelation[]
     errors: SemanticError[]
     warnings: SemanticError[]

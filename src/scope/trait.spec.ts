@@ -17,6 +17,7 @@ describe('trait', () => {
             config,
             moduleStack: [],
             packages: [std],
+            prelude: std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!,
             impls: [],
             errors: [],
             warnings: [],

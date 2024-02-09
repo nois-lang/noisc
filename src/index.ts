@@ -56,12 +56,11 @@ if (!std) {
     process.exit(1)
 }
 
-const packages = [std, pkg]
-const config = fromCmdFlags(process.argv)
 const ctx: Context = {
-    config,
+    config: fromCmdFlags(process.argv),
     moduleStack: [],
-    packages,
+    packages: [std, pkg],
+    prelude: std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!,
     impls: [],
     errors: [],
     warnings: [],
