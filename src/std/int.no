@@ -1,4 +1,3 @@
-use std::eq::Eq
 use std::io::Display
 
 pub type Int

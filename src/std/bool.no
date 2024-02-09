@@ -1,5 +1,4 @@
 use std::io::Display
-use std::eq::Eq
 
 pub type Bool {
     True,

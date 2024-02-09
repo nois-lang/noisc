@@ -1,5 +1,3 @@
-use std::eq::Eq
-
 pub type Ordering {
     Less,
     Equal,

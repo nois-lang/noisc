@@ -1,5 +1,3 @@
-use std::iter::Iter
-
 pub type PeekableIter<T>(
     iter: Iter<T>,
     peeked: Option<Option<T>>,
