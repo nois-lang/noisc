@@ -5,9 +5,8 @@ import { Generic } from '../ast/type'
 import { TypeDef, Variant } from '../ast/type-def'
 import { checkTopLevelDefiniton } from '../semantic'
 import { selfType } from '../typecheck/type'
-import { unreachable } from '../util/todo'
+import { assert, unreachable } from '../util/todo'
 import { Context, Scope, instanceScope } from './index'
-import { defaultImportedVids } from './std'
 import { findSuperRelChains } from './trait'
 import { concatVid, idToVid, vidEq, vidToString } from './util'
 
@@ -25,8 +24,7 @@ export const defKinds = <const>[
     'generic',
     'type-def',
     'trait-def',
-    'method-def',
-    'impl-def'
+    'method-def'
 ]
 
 export type DefinitionKind = (typeof defKinds)[number]
@@ -87,19 +85,7 @@ export interface VirtualIdentifierMatch<D = Definition> {
 export const resolveVid = (
     vid: VirtualIdentifier,
     ctx: Context,
-    // exclude impl-def since it cannot be requested by vid
-    ofKind: DefinitionKind[] = [
-        'module',
-        'name',
-        'name-def',
-        'self',
-        'variant',
-        'fn-def',
-        'generic',
-        'type-def',
-        'trait-def',
-        'method-def'
-    ]
+    ofKind: DefinitionKind[] = [...defKinds]
 ): VirtualIdentifierMatch | undefined => {
     const module = ctx.moduleStack.at(-1)!
     let ref: VirtualIdentifierMatch | undefined
@@ -145,7 +131,12 @@ export const resolveVid = (
     if (ref) return ref
 
     // check if vid is partially qualified with use exprs
-    const matchedUseExpr = [...module.references!, ...defaultImportedVids].find(r => r.names.at(-1)! === vid.names[0])
+    // TODO: move
+    const prelude = ctx.packages
+        .find(p => p.name === 'std')!
+        .modules.find(m => m.identifier.names.at(-1)! === 'prelude')
+    assert(!!prelude, 'prelude not found')
+    const matchedUseExpr = [...module.references!, ...prelude!.reExports!].find(r => r.names.at(-1)! === vid.names[0])
     if (matchedUseExpr) {
         const qualifiedVid = { names: [...matchedUseExpr.names.slice(0, -1), ...vid.names] }
         const matchedRef = resolveMatchedVid(qualifiedVid, ctx, ofKind)
@@ -157,7 +148,7 @@ export const resolveVid = (
     return undefined
 }
 
-const resolveScopeVid = (
+export const resolveScopeVid = (
     vid: VirtualIdentifier,
     scope: Scope,
     ctx: Context,
@@ -284,6 +275,17 @@ export const resolveMatchedVid = (
             return match
         }
         ctx.moduleStack.pop()
+
+        // check re-exports
+        for (const reExp of module.reExports!) {
+            if (moduleLocalVid.names[0] === reExp.names.at(-1)!) {
+                const reExportVid = { names: [...reExp.names.slice(0, -1), ...vid.names.slice(-1)] }
+                const ref = resolveMatchedVid(reExportVid, ctx, ofKind)
+                if (ref) {
+                    return ref
+                }
+            }
+        }
     }
 
     // if vid is a variant or a traitFn, e.g. std::option::Option::Some
@@ -298,6 +300,17 @@ export const resolveMatchedVid = (
             return match
         }
         ctx.moduleStack.pop()
+
+        // check re-exports
+        for (const reExp of module.reExports!) {
+            if (moduleLocalVid.names[0] === reExp.names.at(-1)!) {
+                const reExportVid = { names: [...reExp.names.slice(0, -1), ...vid.names.slice(-2)] }
+                const ref = resolveMatchedVid(reExportVid, ctx, ofKind)
+                if (ref) {
+                    return ref
+                }
+            }
+        }
     }
 
     return undefined

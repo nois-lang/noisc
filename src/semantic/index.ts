@@ -86,9 +86,7 @@ export const checkModule = (module: Module, ctx: Context): void => {
         return
     }
     ctx.moduleStack.push(module)
-
     checkBlock(module.block, ctx)
-
     ctx.moduleStack.pop()
 }
 
@@ -452,6 +450,9 @@ const checkVariant = (variant: Variant, ctx: Context) => {
     }
 }
 
+/**
+ * TODO: resolve hole types in varDef.varType
+ */
 const checkVarDef = (varDef: VarDef, ctx: Context): void => {
     if (varDef.checked) return
     varDef.checked = true
@@ -560,11 +561,7 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
             case 'fn-def':
                 identifier.type = ref.def.type
                 break
-            case 'impl-def':
-            case 'trait-def':
-            case 'type-def':
-            case 'generic':
-            case 'module':
+            default:
                 identifier.type = unknownType
                 break
         }

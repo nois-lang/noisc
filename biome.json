@@ -30,7 +30,10 @@
                 "noInferrableTypes": "off",
                 "noUselessElse": "off",
                 "useTemplate": "off",
-                "noParameterAssign": "off"
+                "noParameterAssign": "off",
+                "noDefaultExport": "warn",
+                "noNamespace": "warn",
+                "useNamingConvention": "warn"
             }
         }
     },
