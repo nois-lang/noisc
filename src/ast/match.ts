@@ -24,7 +24,7 @@ export const buildMatchExpr = (node: ParseNode): MatchExpr => {
 }
 
 export interface MatchClause extends AstNode<'match-clause'> {
-    pattern: Pattern
+    patterns: Pattern[]
     block: Block
     guard?: Expr
 }
@@ -32,10 +32,10 @@ export interface MatchClause extends AstNode<'match-clause'> {
 export const buildMatchClause = (node: ParseNode): MatchClause => {
     const nodes = filterNonAstNodes(node)
     let idx = 0
-    const pattern = buildPattern(nodes[idx++])
+    const patterns = filterNonAstNodes(nodes[idx++]).map(c => buildPattern(c))
     const guard = nodes[idx].kind === 'guard' ? buildExpr(filterNonAstNodes(nodes[idx++])[1]) : undefined
     const block = buildBlock(nodes[idx++])
-    return { kind: 'match-clause', parseNode: node, pattern, guard, block }
+    return { kind: 'match-clause', parseNode: node, patterns, guard, block }
 }
 
 export interface Pattern extends AstNode<'pattern'> {

@@ -60,9 +60,15 @@ export const checkExhaustion = (matchExpr: MatchExpr, ctx: Context): MatchTree =
     const tree: MatchTree = { node: { kind: 'unmatched' } }
 
     for (const clause of matchExpr.clauses) {
-        const nodeAffected = matchPattern(clause.pattern.expr, tree, ctx)
-        if (!nodeAffected) {
-            addWarning(ctx, semanticError(ctx, clause, `unreachable pattern`))
+        let clauseAffected = false
+        for (const p of clause.patterns) {
+            const nodeAffected = matchPattern(p.expr, tree, ctx)
+            if (nodeAffected) {
+                clauseAffected = true
+            }
+        }
+        if (!clauseAffected) {
+            addWarning(ctx, semanticError(ctx, clause, `unreachable match clause`))
         }
     }
 

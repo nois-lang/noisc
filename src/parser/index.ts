@@ -73,6 +73,7 @@ export const treeKinds = <const>[
     'match-clauses',
     'match-clause',
     'guard',
+    'patterns',
     'pattern',
     'pattern-bind',
     'pattern-expr',

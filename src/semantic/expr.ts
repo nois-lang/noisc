@@ -331,10 +331,10 @@ export const checkMatchExpr = (matchExpr: MatchExpr, ctx: Context): void => {
     checkExpr(matchExpr.expr, ctx)
     let abr = true
     matchExpr.clauses.forEach(clause => {
-        checkPattern(clause.pattern, matchExpr.expr.type ?? unknownType, ctx)
+        clause.patterns.forEach(p => checkPattern(p, matchExpr.expr.type!, ctx))
         if (clause.guard) {
             checkExpr(clause.guard, ctx)
-            const guardType = clause.guard.type ?? unknownType
+            const guardType = clause.guard.type!
             if (guardType.kind !== 'vid-type' || !isAssignable(guardType, bool, ctx)) {
                 addError(ctx, typeError(clause.guard, guardType, bool, ctx))
             }

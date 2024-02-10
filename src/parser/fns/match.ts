@@ -1,4 +1,5 @@
 import { syntaxError } from '../../error'
+import { unreachable } from '../../util/todo'
 import { Parser } from '../parser'
 import { parseExpr, parseIdentifier } from './expr'
 import { fieldPatternFirstTokens, nameLikeTokens, patternFollowTokens, prefixOpFirstTokens } from './index'
@@ -30,11 +31,11 @@ export const parseMatchClauses = (parser: Parser): void => {
 }
 
 /**
- * match-clause ::= pattern guard? block
+ * match-clause ::= patterns guard? block
  */
 export const parseMatchClause = (parser: Parser): void => {
     const mark = parser.open()
-    parsePattern(parser)
+    parsePatterns(parser)
     if (parser.at('if-keyword')) {
         parseGuard(parser)
     }
@@ -43,13 +44,16 @@ export const parseMatchClause = (parser: Parser): void => {
 }
 
 /**
- * guard ::= IF-KEYWORD expr
+ * patterns ::= pattern (PIPE pattern)*
  */
-export const parseGuard = (parser: Parser): void => {
+export const parsePatterns = (parser: Parser): void => {
     const mark = parser.open()
-    parser.expect('if-keyword')
-    parseExpr(parser)
-    parser.close(mark, 'guard')
+    parsePattern(parser)
+    while (parser.at('pipe')) {
+        parser.expect('pipe')
+        parsePattern(parser)
+    }
+    parser.close(mark, 'patterns')
 }
 
 /**
@@ -137,6 +141,16 @@ export const parseFieldPattern = (parser: Parser): void => {
         parsePattern(parser)
     }
     parser.close(mark, 'field-pattern')
+}
+
+/**
+ * guard ::= IF-KEYWORD expr
+ */
+export const parseGuard = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('if-keyword')
+    parseExpr(parser)
+    parser.close(mark, 'guard')
 }
 
 /**

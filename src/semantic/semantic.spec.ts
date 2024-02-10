@@ -474,7 +474,24 @@ fn main() {
             ])
         })
 
-        it('unreachable pattern', () => {
+        it('union', () => {
+            const code = `\
+type Expr {
+    Add(l: Expr, r: Expr),
+    Const(v: Int)
+}
+
+fn main() {
+    let expr = Expr::Const(v: 4)
+    match expr {
+        Expr::Add() | Expr::Const() {}
+    }
+}`
+            const ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual([])
+        })
+
+        it('unreachable match clause', () => {
             const code = `\
 type Expr {
     Add(l: Expr, r: Expr),
@@ -492,7 +509,7 @@ fn main() {
             const ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual([])
 
-            expect(ctx.warnings.map(e => e.message)).toEqual(['unreachable pattern'])
+            expect(ctx.warnings.map(e => e.message)).toEqual(['unreachable match clause'])
         })
 
         it('clauses type mismatch', () => {
