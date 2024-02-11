@@ -14,7 +14,7 @@ impl <T> List<T> {
 
 impl <T> Iterable<T> for List<T> {
     fn iter(self): ListIter<T> {
-        ListIter::ListIter(list: self, index: 0)
+        ListIter(list: self, index: 0)
     }
 }
 
@@ -23,8 +23,8 @@ impl <T> Collector<T> for List<T> {
         let list = []
         while true {
             match iter.next() {
-                Option::Some(value) { list.add(value) }
-                Option::None() { break }
+                Some(value) { list.add(value) }
+                None() { break }
             }
         }
         list
@@ -58,11 +58,11 @@ pub type ListIter<T>(
 impl <T> Iter<T> for ListIter<T> {
     fn next(self): Option<T> {
         match self.list.at(self.index) {
-            Option::Some(value) {
+            Some(value) {
                 self.index = self.index + 1
-                Option::Some(value)
+                Some(value)
             }
-            _ { Option::None() }
+            _ { None() }
         }
     }
 }

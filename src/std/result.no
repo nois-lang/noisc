@@ -6,13 +6,13 @@ pub type Result<T, E> {
 impl <T, E> Result<T, E> {
     pub fn isOk(self): Bool {
         match self {
-            Result::Ok() { true }
+            Ok() { true }
             _ { false }
         }
     }
     pub fn isError(self): Bool {
         match self {
-            Result::Error() { true }
+            Error() { true }
             _ { false }
         }
     }

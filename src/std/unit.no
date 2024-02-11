@@ -1,4 +1,4 @@
 pub type Unit()
 
-pub let unit: Unit = Unit::Unit()
+pub let unit: Unit = Unit()
 
