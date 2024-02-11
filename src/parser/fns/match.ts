@@ -1,8 +1,7 @@
 import { syntaxError } from '../../error'
-import { unreachable } from '../../util/todo'
 import { Parser } from '../parser'
 import { parseExpr, parseIdentifier } from './expr'
-import { fieldPatternFirstTokens, nameLikeTokens, patternFollowTokens, prefixOpFirstTokens } from './index'
+import { fieldPatternFirstTokens, nameLikeTokens, prefixOpFirstTokens } from './index'
 import { parsePrefixOp } from './op'
 import { parseBlock } from './statement'
 
@@ -77,13 +76,11 @@ export const parsePatternBind = (parser: Parser): void => {
 
 export const parsePatternExpr = (parser: Parser): void => {
     const mark = parser.open()
-    // tough case to decide it is a name or a con-pattern, name should be followed by pattern follow tokens
-    // because COLON is a follow token, we should check if it is a part of scope resolution
-    const isFollowedByScopeRes = parser.nth(1) === 'colon' && parser.nth(2) === 'colon'
-    if (parser.atAny(nameLikeTokens) && patternFollowTokens.includes(parser.nth(1)) && !isFollowedByScopeRes) {
-        parser.expectAny(nameLikeTokens)
-    } else if (parser.atAny(nameLikeTokens)) {
+    const isCon = (parser.nth(1) === 'colon' && parser.nth(2) === 'colon') || parser.nth(1) === 'o-paren'
+    if (parser.atAny(nameLikeTokens) && isCon) {
         parseConPattern(parser)
+    } else if (parser.atAny(nameLikeTokens)) {
+        parser.expectAny(nameLikeTokens)
     } else if (parser.consume('string')) {
     } else if (parser.consume('char')) {
     } else if (parser.atAny(prefixOpFirstTokens) || parser.at('int') || parser.at('float')) {

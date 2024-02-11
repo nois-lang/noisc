@@ -47,15 +47,6 @@ export const exprFirstTokens: TokenKind[] = [
 export const paramFirstTokens: TokenKind[] = [...nameLikeTokens, 'underscore', 'pub-keyword']
 export const useExprFirstTokens: TokenKind[] = [...nameLikeTokens, 'o-brace']
 export const fieldPatternFirstTokens: TokenKind[] = [...nameLikeTokens, 'period']
-export const patternFollowTokens: TokenKind[] = [
-    'c-paren',
-    'colon',
-    'comma',
-    'equals',
-    'if-keyword',
-    'in-keyword',
-    'pipe'
-]
 
 /**
  * module ::= use-stmt* statement*
