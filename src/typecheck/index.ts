@@ -3,7 +3,7 @@ import { Generic, Type } from '../ast/type'
 import { Context, addError } from '../scope'
 import { findSuperRelChains, getConcreteTrait } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
-import { VirtualIdentifier, resolveVid } from '../scope/vid'
+import { VirtualIdentifier, resolveVid, typeKinds } from '../scope/vid'
 import { notFoundError, semanticError } from '../semantic/error'
 import { todo } from '../util/todo'
 import { holeType, selfType, unknownType } from './type'
@@ -82,7 +82,7 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
     switch (type.kind) {
         case 'identifier':
             const vid = idToVid(type)
-            const ref = resolveVid(vid, ctx)
+            const ref = resolveVid(vid, ctx, typeKinds)
             if (!ref) {
                 addError(ctx, notFoundError(ctx, type, vidToString(vid)))
                 return unknownType

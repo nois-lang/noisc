@@ -29,6 +29,8 @@ export const defKinds = <const>[
 
 export type DefinitionKind = (typeof defKinds)[number]
 
+export const typeKinds: DefinitionKind[] = ['type-def', 'trait-def', 'generic', 'self']
+
 export type Definition =
     | Module
     | NameDef

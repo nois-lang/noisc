@@ -18,7 +18,7 @@ import {
 } from '../scope'
 import { findSuperRelChains, traitDefToVirtualType } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
-import { Definition, NameDef, resolveVid } from '../scope/vid'
+import { Definition, NameDef, resolveVid, typeKinds } from '../scope/vid'
 import { VirtualType, genericToVirtual, isAssignable, typeToVirtual } from '../typecheck'
 import { instanceGenericMap, resolveType } from '../typecheck/generic'
 import { holeType, neverType, selfType, unitType, unknownType } from '../typecheck/type'
@@ -205,6 +205,10 @@ const checkStatement = (statement: Statement, ctx: Context): void => {
         case 'type-def':
             checkTypeDef(statement, ctx)
             pushDefToStack(statement)
+            // variants are accessible from the module scope
+            statement.variants.forEach(v => {
+                pushDefToStack({ kind: 'variant', variant: v, typeDef: statement })
+            })
             break
         case 'operand-expr':
         case 'unary-expr':
@@ -363,7 +367,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
         checkType(implDef.forTrait, ctx)
 
         const vid = idToVid(implDef.identifier)
-        const ref = resolveVid(vid, ctx)
+        const ref = resolveVid(vid, ctx, ['type-def', 'trait-def'])
         if (ref) {
             if (ref.def.kind === 'trait-def') {
                 // TODO: calculate super relation chains once at ctx creation
@@ -587,16 +591,12 @@ export const checkType = (type: Type, ctx: Context) => {
     switch (type.kind) {
         case 'identifier':
             const vid = idToVid(type)
-            const ref = resolveVid(vid, ctx)
+            const ref = resolveVid(vid, ctx, typeKinds)
             if (!ref) {
                 addError(ctx, notFoundError(ctx, type, vidToString(vid)))
                 return
             }
             const k = ref.def.kind
-            if (!['type-def', 'trait-def', 'generic', 'self'].includes(k)) {
-                addError(ctx, semanticError(ctx, type.name, `expected type, got \`${ref.def.kind}\``))
-                return
-            }
             if (type.typeArgs.length > 0 && (k === 'generic' || k === 'self')) {
                 addError(ctx, semanticError(ctx, type.name, `\`${ref.def.kind}\` does not accept type arguments`))
                 return
