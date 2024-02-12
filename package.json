@@ -9,6 +9,9 @@
         "build:compile": "tsc",
         "build:std": "bun --target=node build-std-index.ts && cp -r src/std dist",
         "build:prepublish": "cp package.json dist && find dist -name \"*.spec.*\" -delete",
+        "build:node": "npm run build && npm run build:node:imports",
+        "build:node:imports": "bun --target=node node-import-transform.ts",
+        "run:node": "node dist",
         "test": "bun test",
         "ci": "npm run test",
         "clean": "rm -r dist"
