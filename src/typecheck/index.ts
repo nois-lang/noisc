@@ -169,7 +169,7 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
                 return false
             }
         }
-        return isAssignable(target.returnType, t.returnType, ctx)
+        return isAssignable(t.returnType, target.returnType, ctx)
     }
     return false
 }
