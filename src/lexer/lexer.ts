@@ -225,9 +225,9 @@ const parseConstToken =
     (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
         for (const [kind, value] of constMap) {
             if (chars[pos.pos] !== value[0]) continue
-            const codeLeft = chars.slice(pos.pos).join('')
-            const trailingChar = codeLeft.at(value.length)
-            if (codeLeft.startsWith(value) && (!isAlpha(value[0]) || !trailingChar || !isAlpha(trailingChar))) {
+            const actual = chars.slice(pos.pos, pos.pos + value.length).join('')
+            const trailing = chars.at(pos.pos + value.length)
+            if (actual === value && (!isAlpha(value[0]) || !trailing || !isAlpha(trailing))) {
                 const start = pos.pos
                 pos.pos += value.length
                 tokens.push(createToken(kind, value, pos, start))
