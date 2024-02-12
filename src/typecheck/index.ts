@@ -97,7 +97,7 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
                     identifier: ref.vid,
                     typeArgs: type.typeArgs
                         // self args are for bounds and should be excluded from virtual types
-                        .filter(a => a.kind === 'identifier' && a.names.at(-1)!.value !== 'Self')
+                        .filter(a => a.kind !== 'identifier' || a.names.at(-1)!.value !== 'Self')
                         .map(arg => typeToVirtual(arg, ctx))
                 }
             } else {
@@ -143,7 +143,7 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
             for (let i = 0; i < t.typeArgs.length; i++) {
                 const tArg = t.typeArgs[i]
                 const targetArg = target.typeArgs[i]
-                if (!isAssignable(tArg, targetArg, ctx)) {
+                if (!isAssignable(targetArg, tArg, ctx)) {
                     return false
                 }
             }
