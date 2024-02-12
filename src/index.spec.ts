@@ -15,7 +15,7 @@ describe('nois', () => {
         const parser = new Parser(tokens)
         parseModule(parser)
 
-        expect(parser.errors.length).toEqual(0)
+        expect(parser.errors).toEqual([])
 
         const root = parser.buildTree()
 

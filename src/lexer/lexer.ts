@@ -73,7 +73,7 @@ export interface LexerToken {
     span: Span
 }
 
-export const lexerKeywordMap: Map<TokenKind, string> = new Map([
+export const lexerKeywordMap: [TokenKind, string][] = [
     ['use-keyword', 'use'],
     ['type-keyword', 'type'],
     ['trait-keyword', 'trait'],
@@ -115,9 +115,13 @@ export const lexerKeywordMap: Map<TokenKind, string> = new Map([
     ['equals', '='],
     ['underscore', '_'],
     ['at', '@']
-])
+]
 
-const boolRegex = /^(true|false)/
+export const boolMap: [TokenKind, string][] = [
+    ['bool', 'true'],
+    ['bool', 'false']
+]
+
 const floatRegex = /^((\d+(\.\d*)?e[+-]?\d+)|(\d+\.\d*)|(\d*\.\d+))/
 const escapeCharReg = /(\\[btnvfr\\'"])/
 const unicodeCharReg = /(\\u{[0-9a-fA-F]{1,4}})/
@@ -160,11 +164,11 @@ export const tokenize = (code: string): LexerToken[] => {
         }
 
         const fns = [
-            parseBool,
             parseFloat,
             parseInt,
             parseComment,
-            parseConstToken,
+            parseConstToken(lexerKeywordMap),
+            parseConstToken(boolMap),
             parseName,
             parseCharLiteral,
             parseStringLiteral
@@ -202,6 +206,7 @@ export const tokenize = (code: string): LexerToken[] => {
 }
 
 const parseComment = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
+    if (chars[pos.pos] !== '/') return false
     if (chars.slice(pos.pos, pos.pos + 2).join('') === '//') {
         const start = pos.pos
         const buffer: string[] = []
@@ -215,49 +220,32 @@ const parseComment = (chars: string[], tokens: LexerToken[], pos: { pos: number 
     return false
 }
 
-const parseConstToken = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
-    const codeLeft = chars.slice(pos.pos).join('')
-    const pair = [...lexerKeywordMap.entries()].find(([, v]) => {
-        if (!isAlpha(v[0])) {
-            return codeLeft.startsWith(v)
-        } else {
-            const trailingChar = codeLeft.at(v.length)
-            return codeLeft.startsWith(v) && (!trailingChar || !isAlpha(trailingChar))
+const parseConstToken =
+    (constMap: [TokenKind, string][]) =>
+    (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
+        for (const [kind, value] of constMap) {
+            if (chars[pos.pos] !== value[0]) continue
+            const codeLeft = chars.slice(pos.pos).join('')
+            const trailingChar = codeLeft.at(value.length)
+            if (codeLeft.startsWith(value) && (!isAlpha(value[0]) || !trailingChar || !isAlpha(trailingChar))) {
+                const start = pos.pos
+                pos.pos += value.length
+                tokens.push(createToken(kind, value, pos, start))
+                return true
+            }
         }
-    })
-    if (pair) {
-        const [kind, value] = pair
-        const start = pos.pos
-        pos.pos += value.length
-        tokens.push(createToken(kind, value, pos, start))
-        return true
+        return false
     }
-    return false
-}
 
 const parseName = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
-    if (isAlpha(chars[pos.pos])) {
-        const start = pos.pos
-        const name: string[] = []
-        while (isAlpha(chars[pos.pos]) || isNumeric(chars[pos.pos])) {
-            name.push(chars[pos.pos])
-            pos.pos++
-        }
-        tokens.push(createToken('name', name.join(''), pos, start))
-        return true
-    }
-    return false
-}
-
-const parseBool = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
-    const leftCode = chars.slice(pos.pos).join('')
-    const match = leftCode.match(boolRegex)
-    if (!match) return false
-
-    const bool = match[0]
+    if (!isAlpha(chars[pos.pos])) return false
     const start = pos.pos
-    pos.pos += bool.length
-    tokens.push(createToken('bool', bool, pos, start))
+    const name: string[] = []
+    while (isAlpha(chars[pos.pos]) || isNumeric(chars[pos.pos])) {
+        name.push(chars[pos.pos])
+        pos.pos++
+    }
+    tokens.push(createToken('name', name.join(''), pos, start))
     return true
 }
 
@@ -275,6 +263,7 @@ const parseFloat = (chars: string[], tokens: LexerToken[], pos: { pos: number })
 }
 
 const parseInt = (chars: string[], tokens: LexerToken[], pos: { pos: number }): boolean => {
+    if (!isNumeric(chars[pos.pos])) return false
     const start = pos.pos
     let int = ''
     while (isNumeric(chars[pos.pos])) {
@@ -351,7 +340,7 @@ const parseUnterminatedString = (chars: string[], tokens: LexerToken[], pos: { p
     return
 }
 
-const createToken = (name: TokenKind, value: string, pos: { pos: number }, start: number = pos.pos): LexerToken => {
+const createToken = (name: TokenKind, value: string, pos: { pos: number }, start: number): LexerToken => {
     return { kind: name, value, span: { start, end: pos.pos } }
 }
 
