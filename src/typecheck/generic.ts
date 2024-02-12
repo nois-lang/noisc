@@ -60,11 +60,13 @@ export const makeGenericMapOverStructure = (arg: VirtualType, param: VirtualType
     } else {
         const paramTypeArgs = getTypeParams(param)
         const argTypeArgs = getTypeParams(arg)
-        for (let i = 0; i < paramTypeArgs.length; i++) {
-            const implTypeArg = paramTypeArgs[i]
-            const argTypeArg = argTypeArgs.at(i)
-            if (argTypeArg) {
-                makeGenericMapOverStructure(argTypeArg, implTypeArg).forEach((v, k) => map.set(k, v))
+        if (paramTypeArgs.length === argTypeArgs.length) {
+            for (let i = 0; i < paramTypeArgs.length; i++) {
+                const implTypeArg = paramTypeArgs[i]
+                const argTypeArg = argTypeArgs.at(i)
+                if (argTypeArg) {
+                    makeGenericMapOverStructure(argTypeArg, implTypeArg).forEach((v, k) => map.set(k, v))
+                }
             }
         }
     }
