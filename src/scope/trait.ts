@@ -74,7 +74,8 @@ const getTraitImplRel = (instance: TraitDef, module: Module, ctx: Context): Inst
     const traitType: VirtualType = {
         kind: 'vid-type',
         identifier: { names: [...module.identifier.names, instance.name.value] },
-        typeArgs: instance.generics.map(g => genericToVirtual(g, ctx))
+        // self args are for bounds and should be excluded from virtual types
+        typeArgs: instance.generics.filter(g => g.name.value !== 'Self').map(g => genericToVirtual(g, ctx))
     }
     const ref = resolveVid(traitType.identifier, ctx, ['trait-def'])
     assert(!!ref, 'traitDef did not find itself by name')
@@ -109,10 +110,11 @@ const getImplImplRel = (instance: ImplDef, module: Module, ctx: Context): Instan
     }
 
     const implType = typeToVirtual(instance.identifier, ctx)
+    const forType = instance.forTrait ? typeToVirtual(instance.forTrait, ctx) : implType
     return {
         module,
-        implType: implType,
-        forType: instance.forTrait ? typeToVirtual(instance.forTrait, ctx) : implType,
+        implType,
+        forType,
         implDef: <VirtualIdentifierMatch<TypeDef | TraitDef>>ref,
         forDef: forDef,
         instanceDef: instance

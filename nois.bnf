@@ -123,7 +123,6 @@ match-expr            ::= MATCH-KEYWORD expr match-clauses
                       ;
   match-clauses       ::= O-BRACE match-clause* C-BRACE
                       ;
-                      // TODO: union clauses
     match-clause      ::= patterns guard? block
                       ;
       patterns        ::= pattern (PIPE pattern)*

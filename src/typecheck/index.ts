@@ -95,7 +95,10 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
                 return {
                     kind: 'vid-type',
                     identifier: ref.vid,
-                    typeArgs: type.typeArgs.map(arg => typeToVirtual(arg, ctx))
+                    typeArgs: type.typeArgs
+                        // self args are for bounds and should be excluded from virtual types
+                        .filter(a => a.kind === 'identifier' && a.name.value !== 'Self')
+                        .map(arg => typeToVirtual(arg, ctx))
                 }
             } else {
                 addError(ctx, semanticError(ctx, type, `expected type, got \`${ref.def.kind}\``))
@@ -147,14 +150,16 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
             return true
         }
         const superRelChains = findSuperRelChains(t.identifier, ctx)
-        return superRelChains.some(chain => {
-            if (vidEq(chain.at(-1)!.implDef.vid, target.identifier)) {
-                const supertype = extractConcreteSupertype(t, target.identifier, ctx)
-                if (!supertype) return false
-                return isAssignable(supertype, target, ctx)
-            }
-            return false
-        })
+        return superRelChains
+            .map(c => c.at(-1)!)
+            .some(superRel => {
+                if (vidEq(superRel.implDef.vid, target.identifier)) {
+                    const supertype = extractConcreteSupertype(t, target.identifier, ctx)
+                    if (!supertype) return false
+                    return isAssignable(supertype, target, ctx)
+                }
+                return false
+            })
     }
     if (t.kind === 'fn-type' && target.kind === 'fn-type') {
         for (let i = 0; i < target.paramTypes.length; i++) {

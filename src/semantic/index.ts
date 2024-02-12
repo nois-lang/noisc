@@ -20,7 +20,7 @@ import { findSuperRelChains, traitDefToVirtualType } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
 import { Definition, NameDef, resolveVid, typeKinds } from '../scope/vid'
 import { VirtualType, genericToVirtual, isAssignable, typeToVirtual } from '../typecheck'
-import { instanceGenericMap, resolveType } from '../typecheck/generic'
+import { instanceGenericMap, resolveType, traitGenericMap } from '../typecheck/generic'
 import { holeType, neverType, selfType, unitType, unknownType } from '../typecheck/type'
 import { assert, todo } from '../util/todo'
 import { notFoundError, semanticError, typeError, unknownTypeError } from './error'
@@ -362,7 +362,10 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
     }
     module.scopeStack.push(scope)
 
+    checkBlock(implDef.block, ctx)
+
     checkType(implDef.identifier, ctx)
+
     if (implDef.forTrait) {
         checkType(implDef.forTrait, ctx)
 
@@ -370,23 +373,21 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
         const ref = resolveVid(vid, ctx, ['type-def', 'trait-def'])
         if (ref) {
             if (ref.def.kind === 'trait-def') {
-                // TODO: calculate super relation chains once at ctx creation
-                const type: VirtualType = {
-                    kind: 'vid-type',
-                    identifier: ref.vid,
-                    typeArgs: ref.def.generics.map(g => genericToVirtual(g, ctx))
-                }
-                const traits = [
-                    ref.def,
-                    ...findSuperRelChains(type.identifier, ctx).flatMap(chain => chain.map(i => i.instanceDef))
+                const traitRels = [
+                    ctx.impls.find(rel => rel.instanceDef === ref.def)!,
+                    ...findSuperRelChains(ref.vid, ctx).flatMap(chain => chain)
                 ]
-                const traitMethods = traits.flatMap(t =>
-                    t.block.statements.filter(s => s.kind === 'fn-def').map(s => <FnDef>s)
-                )
-                const requiredImplMethods = traitMethods.filter(f => !f.block)
+                // TODO: only include traits that are in scope
+                const traitMethods = traitRels
+                    .map(t => {
+                        const methods = <FnDef[]>t.instanceDef.block.statements.filter(s => s.kind === 'fn-def')
+                        return { rel: t, methods }
+                    })
+                    .flatMap(({ rel, methods }) => methods.map(m => ({ rel, method: m })))
+                const requiredImplMethods = traitMethods.filter(f => !f.method.block)
                 const implMethods = implDef.block.statements.filter(s => s.kind === 'fn-def').map(s => <FnDef>s)
                 for (const m of requiredImplMethods) {
-                    const mName = m.name.value
+                    const mName = m.method.name.value
                     if (!implMethods.find(im => im.name.value === mName)) {
                         const msg = `missing method implementation \`${vidToString(ref.vid)}::${mName}\``
                         addError(ctx, semanticError(ctx, implDef.identifier.name, msg))
@@ -394,9 +395,20 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                 }
                 for (const m of implMethods) {
                     const mName = m.name.value
-                    if (!traitMethods.find(im => im.name.value === mName)) {
+                    const traitMethod = traitMethods.find(im => im.method.name.value === mName)
+                    if (!traitMethod) {
                         const msg = `method \`${vidToString(ref.vid)}::${mName}\` is not defined by implemented trait`
                         addError(ctx, semanticError(ctx, m.name, msg))
+                        continue
+                    }
+                    checkTopLevelDefiniton(traitMethod.rel.module, traitMethod.rel.instanceDef, ctx)
+
+                    checkFnDef(traitMethod.method, ctx)
+                    const traitMap = traitGenericMap(traitMethod.rel, rel)
+                    const mResolvedType = resolveType(m.type!, [traitMap], ctx)
+                    if (!isAssignable(mResolvedType, traitMethod.method.type!, ctx)) {
+                        addError(ctx, typeError(m.name, m.type!, traitMethod.method.type!, ctx))
+                        todo()
                     }
                 }
             } else {
@@ -409,9 +421,6 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
         // TODO: check bounded traits are implemented by type,
         // e.g. `impl Ord for Foo` equires `impl Eq for Foo` since `trait Ord<Self: Eq>`
     }
-
-    checkBlock(implDef.block, ctx)
-    // TODO: make sure method signature matches with its trait
 
     module.scopeStack.pop()
 }
