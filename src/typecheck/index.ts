@@ -131,11 +131,14 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
     if (t.kind === 'hole-type' || target.kind === 'hole-type') return true
     if (t.kind === 'vid-type' && vidToString(t.identifier) === 'std::never::Never') return true
 
+    if (target.kind === 'generic' && t.kind === 'generic') {
+        return t.name === target.name
+    }
     if (target.kind === 'generic') {
-        if (t.kind === 'generic') {
-            return t.name === target.name
-        }
-        return target.bounds.every(b => isAssignable(t, b, ctx))
+        return target.bounds.every(b => isAssignable(b, t, ctx))
+    }
+    if (t.kind === 'generic') {
+        return t.bounds.some(b => isAssignable(b, target, ctx))
     }
 
     if (t.kind === 'vid-type' && target.kind === 'vid-type') {
@@ -163,9 +166,9 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
     }
     if (t.kind === 'fn-type' && target.kind === 'fn-type') {
         for (let i = 0; i < target.paramTypes.length; i++) {
-            const targetP = target.paramTypes[i]
             const tp = t.paramTypes.at(i)
-            if (!tp || !isAssignable(tp, targetP, ctx)) {
+            const targetP = target.paramTypes[i]
+            if (!tp || !isAssignable(targetP, tp, ctx)) {
                 return false
             }
         }

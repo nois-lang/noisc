@@ -412,7 +412,6 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                     const mResolvedType = resolveType(m.type!, [traitMap], ctx)
                     if (!isAssignable(mResolvedType, traitMethod.method.type!, ctx)) {
                         addError(ctx, typeError(m.name, m.type!, traitMethod.method.type!, ctx))
-                        todo()
                     }
                 }
             } else {
