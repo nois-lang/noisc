@@ -18,7 +18,7 @@ export const fromCmdFlags = (args: string[]): Config => {
 
 export const parseCmdFlag = (name: string, args: string[]): string | undefined => {
     return args
-        .find(a => a.startsWith(`${name}=`))
+        .find(a => a.startsWith(`--${name}=`))
         ?.split('=')
         .at(-1)
 }
