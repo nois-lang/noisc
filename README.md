@@ -11,6 +11,8 @@
 ## Taste of Nois
 
 ```rust
+use std::math::pi
+
 trait Area {
     fn area(self): Float
 }
@@ -24,7 +26,7 @@ impl Area for Shape {
     fn area(self): Float {
         match self {
             Shape::Rect(width, height) { width * height }
-            Shape::Circle(radius) { math::pi * radius ^ 2. }
+            Shape::Circle(radius) { pi * radius ^ 2. }
         }
     }
 }
@@ -34,7 +36,7 @@ fn main() {
         Shape::Rect(width: 4., height: 2.),
         Shape::Circle(radius: 12.34),
     ]
-    println(shapes.iter().map(Area::area).collect<List>())
+    println(shapes.iter().map(Area::area).collect<List<_>>())
 }
 ```
 
