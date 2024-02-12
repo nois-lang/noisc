@@ -9,7 +9,7 @@ impl <T, U> Iter<U> for MapIter<T, U> {
     }
 }
 
-pub trait MapAdapter<Self: Iter<T>, T> {
+pub trait MapAdapter<T> {
     fn map<U>(self, f: |T|: U): MapIter<T, U>
 }
 

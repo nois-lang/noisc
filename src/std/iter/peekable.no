@@ -3,14 +3,7 @@ pub type PeekableIter<T>(
     peeked: Option<Option<T>>,
 )
 
-impl <T> Iter<T> for PeekableIter<T> {
-    fn next(self): Option<T> {
-        match self.peeked.take() {
-            Some(value) { value }
-            None() { self.iter.next() }
-        }
-    }
-
+impl <T> PeekableIter<T> {
     fn peek(self): Option<T> {
         match self.peeked {
             Some(value) { value }
@@ -22,12 +15,21 @@ impl <T> Iter<T> for PeekableIter<T> {
     }
 }
 
-pub trait PeekableAdapter<Self: Iter<T>, T> {
-    fn peek(self): Option<T>
+impl <T> Iter<T> for PeekableIter<T> {
+    fn next(self): Option<T> {
+        match self.peeked.take() {
+            Some(value) { value }
+            None() { self.iter.next() }
+        }
+    }
+}
+
+pub trait PeekableAdapter<T> {
+    fn peekable(self): PeekableIter<T>
 }
 
 impl <T> PeekableAdapter<T> for Iter<T> {
-    fn peek<U>(self): PeekableIter<T> {
+    fn peekable(self): PeekableIter<T> {
         PeekableIter(iter: self, peeked: None())
     }
 }
