@@ -97,7 +97,7 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
                     identifier: ref.vid,
                     typeArgs: type.typeArgs
                         // self args are for bounds and should be excluded from virtual types
-                        .filter(a => a.kind === 'identifier' && a.name.value !== 'Self')
+                        .filter(a => a.kind === 'identifier' && a.names.at(-1)!.value !== 'Self')
                         .map(arg => typeToVirtual(arg, ctx))
                 }
             } else {

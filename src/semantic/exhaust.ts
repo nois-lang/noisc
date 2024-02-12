@@ -114,7 +114,7 @@ const matchPattern = (pattern: PatternExpr, tree: MatchTree, ctx: Context): bool
                 )
                 tree.node = { kind: 'type', def, variants }
             }
-            const conName = pattern.identifier.name.value
+            const conName = pattern.identifier.names.at(-1)!.value
             const variantTree = tree.node.variants.get(vidToString(vid))
             if (!variantTree) throw Error()
             // if this variant hasn't been explored yet, populate fields as unmatched

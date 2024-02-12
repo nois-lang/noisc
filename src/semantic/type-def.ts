@@ -3,7 +3,7 @@ import { Type } from '../ast/type'
 export const typeNames = (type: Type): string[] => {
     switch (type.kind) {
         case 'identifier': {
-            return [type.name.value, ...type.typeArgs.flatMap(t => typeNames(t))]
+            return [type.names.at(-1)!.value, ...type.typeArgs.flatMap(t => typeNames(t))]
         }
         case 'fn-type': {
             return [

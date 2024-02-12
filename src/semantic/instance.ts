@@ -35,7 +35,7 @@ export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
 const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): VirtualType | undefined => {
     checkOperand(lOp, ctx)
     // TODO: make sure no type args specified; check other identifier uses also
-    if (field.scope.length > 0) {
+    if (field.names.length > 1) {
         addError(ctx, semanticError(ctx, field, `expected field name`))
         return
     }
@@ -51,7 +51,7 @@ const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): Vi
         return
     }
     const typeDef = typeRef.def
-    const fieldName = field.name.value
+    const fieldName = field.names.at(-1)!.value
     // check that every type variant has such field
     const matchedCount = typeDef.variants.filter(v => v.fieldDefs.find(f => f.name.value === fieldName)).length
     if (matchedCount === 0) {
@@ -116,11 +116,11 @@ const checkMethodCallExpr = (
     })
 
     const identifier = identifierFromOperand(rOperand)
-    if (!identifier || identifier.scope.length !== 0) {
+    if (!identifier || identifier.names.length > 1) {
         addError(ctx, semanticError(ctx, rOperand, `expected method name, got \`${rOperand.kind}\``))
         return
     }
-    const methodName = identifier.name.value
+    const methodName = identifier.names.at(-1)!.value
     const instScope = instanceScope(ctx)
     if (instScope) {
         const instanceMap = instScope ? instanceGenericMap(instScope, ctx) : new Map()

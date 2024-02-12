@@ -11,9 +11,7 @@ export const vidScopeToString = (vid: VirtualIdentifier) => vidToString(vidFromS
 
 export const vidFromScope = (vid: VirtualIdentifier): VirtualIdentifier => ({ names: vid.names.slice(0, -1) })
 
-export const idToVid = (id: Identifier): VirtualIdentifier => ({
-    names: [...id.scope.map(s => s.value), id.name.value]
-})
+export const idToVid = (id: Identifier): VirtualIdentifier => ({ names: id.names.map(s => s.value) })
 
 export const concatVid = (a: VirtualIdentifier, b: VirtualIdentifier): VirtualIdentifier => ({
     names: [...a.names, ...b.names]

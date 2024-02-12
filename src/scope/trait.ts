@@ -160,7 +160,7 @@ export const getInstanceForType = (implDef: TraitDef | ImplDef, ctx: Context): V
  */
 export const traitDefToVirtualType = (traitDef: TraitDef | ImplDef, ctx: Context): VirtualType => {
     const module = ctx.moduleStack.at(-1)!
-    const name = traitDef.kind === 'trait-def' ? traitDef.name.value : traitDef.identifier.name.value
+    const name = traitDef.kind === 'trait-def' ? traitDef.name.value : traitDef.identifier.names.at(-1)!.value
     return {
         kind: 'vid-type',
         identifier: concatVid(module.identifier, vidFromString(name)),

@@ -210,18 +210,15 @@ export const buildBoolLiteral = (node: ParseNode): BoolLiteral => {
 }
 
 export interface Identifier extends AstNode<'identifier'>, Partial<Typed> {
-    scope: Name[]
-    name: Name
+    names: Name[]
     typeArgs: Type[]
 }
 
 export const buildIdentifier = (node: ParseNode): Identifier => {
     const names = (<ParseTree>node).nodes.filter(n => nameLikeTokens.includes((<LexerToken>n).kind)).map(buildName)
-    const scope = names.slice(0, -1)
-    const name = names.at(-1)!
     const typeArgsNode = filterNonAstNodes(node).find(n => n.kind === 'type-args')
     const typeArgs = typeArgsNode ? filterNonAstNodes(typeArgsNode).map(buildType) : []
-    return { kind: 'identifier', parseNode: node, scope, name, typeArgs: typeArgs }
+    return { kind: 'identifier', parseNode: node, names, typeArgs: typeArgs }
 }
 
 export interface Name extends AstNode<'name'>, Partial<Typed> {

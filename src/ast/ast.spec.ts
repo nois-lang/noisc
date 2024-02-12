@@ -1,6 +1,6 @@
 import { tokenize } from '../lexer/lexer'
-import { parseModule } from '../parser/fns'
 import { Parser } from '../parser'
+import { parseModule } from '../parser/fns'
 import { vidFromString } from '../scope/util'
 import { Module, buildModuleAst, compactAstNode } from './index'
 
@@ -55,8 +55,7 @@ describe('ast', () => {
                                         name: { kind: 'name', value: 'value' },
                                         fieldType: {
                                             kind: 'identifier',
-                                            scope: [],
-                                            name: { kind: 'name', value: 'T' },
+                                            names: [{ kind: 'name', value: 'T' }],
                                             typeArgs: []
                                         },
                                         pub: false
@@ -108,8 +107,8 @@ describe('ast', () => {
   statements:
    [ { kind: 'binary-expr',
        binaryOp: { kind: 'access-op' },
-       lOperand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'a' }, typeArgs: [] },
-       rOperand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'b' }, typeArgs: [] } } ] }
+       lOperand: { kind: 'identifier', names: [{ kind: 'name', value: 'a' }], typeArgs: [] },
+       rOperand: { kind: 'identifier', names: [{ kind: 'name', value: 'b' }], typeArgs: [] } } ] }
             )
         })
     })
@@ -156,11 +155,11 @@ describe('ast', () => {
        operand:
         { kind: 'binary-expr',
           binaryOp: { kind: 'access-op' },
-          lOperand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'a' }, typeArgs: [] },
+          lOperand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] },
           rOperand:
            { kind: 'unary-expr',
              call: { kind: 'call', args: [] },
-             operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'foo' }, typeArgs: [] } } } } ] }
+             operand: { kind: 'identifier', names: [ { kind: 'name', value: 'foo' } ], typeArgs: [] } } } } ] }
             )
         })
 
@@ -177,7 +176,7 @@ describe('ast', () => {
         { kind: 'unary-expr',
           prefixOp: { kind: 'not-op' },
           call: { kind: 'call', args: [] },
-          operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'foo' }, typeArgs: [] } },
+          operand: { kind: 'identifier', names: [ { kind: 'name', value: 'foo' } ], typeArgs: [] } },
           pub: false } ] }
             )
         })
@@ -190,11 +189,11 @@ describe('ast', () => {
   statements:
    [ { kind: 'binary-expr',
        binaryOp: { kind: 'access-op' },
-       lOperand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'a' }, typeArgs: [] },
+       lOperand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] },
        rOperand:
         { kind: 'unary-expr',
           call: { kind: 'call', args: [] },
-          operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'b' }, typeArgs: [] } } } ] }
+          operand: { kind: 'identifier', names: [ { kind: 'name', value: 'b' } ], typeArgs: [] } } } ] }
             )
         })
 
@@ -212,19 +211,19 @@ describe('ast', () => {
           lOperand:
            { kind: 'binary-expr',
              binaryOp: { kind: 'access-op' },
-             lOperand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'a' }, typeArgs: [] },
+             lOperand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] },
              rOperand:
               { kind: 'unary-expr',
                 call: { kind: 'call', args: [] },
-                operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'b' }, typeArgs: [] } } },
+                operand: { kind: 'identifier', names: [ { kind: 'name', value: 'b' } ], typeArgs: [] } } },
           rOperand:
            { kind: 'unary-expr',
              call: { kind: 'call', args: [] },
-             operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'c' }, typeArgs: [] } } },
+             operand: { kind: 'identifier', names: [ { kind: 'name', value: 'c' } ], typeArgs: [] } } },
        rOperand:
         { kind: 'unary-expr',
           call: { kind: 'call', args: [] },
-          operand: { kind: 'identifier', scope: [], name: { kind: 'name', value: 'd' }, typeArgs: [] } } } ] }
+          operand: { kind: 'identifier', names: [ { kind: 'name', value: 'd' } ], typeArgs: [] } } } ] }
             )
         })
     })

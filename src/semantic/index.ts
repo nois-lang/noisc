@@ -294,7 +294,11 @@ export const checkParam = (param: Param, index: number, ctx: Context): void => {
         }
     } else {
         checkType(param.paramType, ctx)
-        if (instScope && param.paramType.kind === 'identifier' && param.paramType.name.value === selfType.name) {
+        if (
+            instScope &&
+            param.paramType.kind === 'identifier' &&
+            param.paramType.names.at(-1)!.value === selfType.name
+        ) {
             param.type = selfType
         } else {
             param.type = typeToVirtual(param.paramType, ctx)
@@ -390,7 +394,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                     const mName = m.method.name.value
                     if (!implMethods.find(im => im.name.value === mName)) {
                         const msg = `missing method implementation \`${vidToString(ref.vid)}::${mName}\``
-                        addError(ctx, semanticError(ctx, implDef.identifier.name, msg))
+                        addError(ctx, semanticError(ctx, implDef.identifier.names.at(-1)!, msg))
                     }
                 }
                 for (const m of implMethods) {
@@ -607,7 +611,8 @@ export const checkType = (type: Type, ctx: Context) => {
             }
             const k = ref.def.kind
             if (type.typeArgs.length > 0 && (k === 'generic' || k === 'self')) {
-                addError(ctx, semanticError(ctx, type.name, `\`${ref.def.kind}\` does not accept type arguments`))
+                const msg = `\`${ref.def.kind}\` does not accept type arguments`
+                addError(ctx, semanticError(ctx, type.names.at(-1)!, msg))
                 return
             }
             if (k === 'type-def' || k === 'trait-def') {

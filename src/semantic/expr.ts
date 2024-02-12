@@ -464,7 +464,7 @@ export const checkVariantCall = (
         if (!arg.name) {
             const id = identifierFromOperand(arg.expr)
             if (id) {
-                arg.name = id.name
+                arg.name = id.names.at(-1)!
             }
         }
     }

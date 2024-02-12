@@ -90,7 +90,7 @@ export const defKey = (def: Definition): string => {
         case 'method-def':
             return 'fn-def' + def.fn.name.value
         case 'impl-def':
-            return def.kind + def.identifier.name.value
+            return def.kind + def.identifier.names.at(-1)!.value
         case 'variant':
             return def.kind + def.variant.name.value
     }
