@@ -5,7 +5,13 @@ export const vidFromString = (str: string): VirtualIdentifier => ({ names: str.s
 
 export const vidToString = (vid: VirtualIdentifier): string => vid.names.join('::')
 
-export const vidEq = (a: VirtualIdentifier, b: VirtualIdentifier): boolean => vidToString(a) === vidToString(b)
+export const vidEq = (a: VirtualIdentifier, b: VirtualIdentifier): boolean => {
+    if (a.names.length !== b.names.length) return false
+    for (let i = 0; i < a.names.length; i++) {
+        if (a.names[i] !== b.names[i]) return false
+    }
+    return true
+}
 
 export const vidScopeToString = (vid: VirtualIdentifier) => vidToString(vidFromScope(vid))
 
