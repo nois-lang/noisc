@@ -1,4 +1,4 @@
-import { Parser } from '../parser'
+import { Parser } from '..'
 import { nameLikeTokens, paramFirstTokens } from './index'
 import { parseGenerics } from './statement'
 import { parseTypeAnnot } from './type'

@@ -1,7 +1,7 @@
 import { LexerToken, TokenKind } from './lexer/lexer'
 import { Span, indexToLocation, locationToString, prettyLineAt } from './location'
 import { red, yellow } from './output'
-import { Parser } from './parser/parser'
+import { Parser } from './parser'
 import { Source } from './source'
 
 export interface SyntaxError {

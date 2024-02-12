@@ -1,6 +1,6 @@
+import { Parser } from '..'
 import { syntaxError } from '../../error'
 import { TokenKind, lexerKeywordKinds } from '../../lexer/lexer'
-import { Parser } from '../parser'
 import { parseExpr } from './expr'
 import { parseBlock, parseParam, parseStatement, parseUseStmt } from './statement'
 import { parseTypeAnnot } from './type'

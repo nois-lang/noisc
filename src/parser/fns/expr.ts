@@ -1,6 +1,6 @@
+import { Parser } from '..'
 import { syntaxError } from '../../error'
 import { TokenKind } from '../../lexer/lexer'
-import { Parser } from '../parser'
 import {
     exprFirstTokens,
     infixOpFirstTokens,

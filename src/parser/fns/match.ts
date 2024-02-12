@@ -1,5 +1,5 @@
+import { Parser } from '..'
 import { syntaxError } from '../../error'
-import { Parser } from '../parser'
 import { parseExpr, parseIdentifier } from './expr'
 import { fieldPatternFirstTokens, nameLikeTokens, prefixOpFirstTokens } from './index'
 import { parsePrefixOp } from './op'

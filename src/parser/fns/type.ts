@@ -1,6 +1,6 @@
 import { nameLikeTokens } from '.'
+import { Parser } from '..'
 import { syntaxError } from '../../error'
-import { Parser } from '../parser'
 import { parseIdentifier } from './expr'
 import { parseHole } from './match'
 import { parseGenerics } from './statement'

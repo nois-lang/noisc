@@ -1,6 +1,6 @@
 import { tokenize } from '../lexer/lexer'
 import { parseModule } from '../parser/fns'
-import { Parser } from '../parser/parser'
+import { Parser } from '../parser'
 import { vidFromString } from '../scope/util'
 import { Module, buildModuleAst, compactAstNode } from './index'
 

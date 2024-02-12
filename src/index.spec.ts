@@ -1,8 +1,8 @@
 import { readFileSync } from 'fs'
 import { buildModuleAst } from './ast'
 import { tokenize } from './lexer/lexer'
+import { Parser } from './parser'
 import { parseModule } from './parser/fns'
-import { Parser } from './parser/parser'
 
 describe('nois', () => {
     it('parse features', () => {

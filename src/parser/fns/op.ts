@@ -1,5 +1,5 @@
+import { Parser } from '..'
 import { syntaxError } from '../../error'
-import { Parser } from '../parser'
 
 /**
  * infix-op ::= add-op | sub-op | mult-op | div-op | exp-op | mod-op | access-op | eq-op | ne-op | ge-op | le-op | gt-op
