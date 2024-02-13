@@ -272,7 +272,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
                 }
             })
         } else {
-            if (instanceScope(ctx)?.def.kind !== 'trait-def') {
+            if (instanceScope(ctx)?.rel.instanceDef.kind !== 'trait-def') {
                 const msg = `fn \`${fnDef.name.value}\` has no body -> must be native`
                 addWarning(ctx, semanticError(ctx, fnDef.name, msg))
             }
@@ -335,7 +335,7 @@ const checkTraitDef = (traitDef: TraitDef, ctx: Context) => {
     const scope: InstanceScope = {
         kind: 'instance',
         selfType: rel.forType,
-        def: traitDef,
+        rel,
         definitions: new Map(traitDef.generics.map(g => [defKey(g), g]))
     }
     module.scopeStack.push(scope)
@@ -361,7 +361,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
     const scope: InstanceScope = {
         kind: 'instance',
         selfType: rel.forType,
-        def: implDef,
+        rel,
         definitions: new Map(implDef.generics.map(g => [defKey(g), g]))
     }
     module.scopeStack.push(scope)
@@ -381,7 +381,6 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                     ctx.impls.find(rel => rel.instanceDef === ref.def)!,
                     ...findSuperRelChains(ref.vid, ctx).flatMap(chain => chain)
                 ]
-                // TODO: only include traits that are in scope
                 const traitMethods = traitRels
                     .map(t => {
                         const methods = <FnDef[]>t.instanceDef.block.statements.filter(s => s.kind === 'fn-def')
@@ -435,12 +434,8 @@ export const checkTypeDef = (typeDef: TypeDef, ctx: Context) => {
     const module = ctx.moduleStack.at(-1)!
 
     const vid = { names: [...module.identifier.names, typeDef.name.value] }
-    module.scopeStack.push({
-        kind: 'type',
-        def: typeDef,
-        vid,
-        definitions: new Map(typeDef.generics.map(g => [defKey(g), g]))
-    })
+    const definitions = new Map(typeDef.generics.map(g => [defKey(g), g]))
+    module.scopeStack.push({ kind: 'type', def: typeDef, vid, definitions })
 
     typeDef.variants.forEach(v => checkVariant(v, ctx))
     // TODO: check duplicate variants
@@ -572,11 +567,11 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
                 const instScope: InstanceScope = {
                     kind: 'instance',
                     selfType: unknownType,
-                    def: ref.def.instance,
-                    definitions: new Map(ref.def.instance.generics.map(g => [defKey(g), g]))
+                    rel: ref.def.rel,
+                    definitions: new Map(ref.def.rel.instanceDef.generics.map(g => [defKey(g), g]))
                 }
                 // must be set afterwards since impl generics cannot be resolved
-                instScope.selfType = traitDefToVirtualType(ref.def.instance, ctx)
+                instScope.selfType = traitDefToVirtualType(ref.def.rel.instanceDef, ctx)
 
                 identifier.type = resolveType(ref.def.fn.type!, [instanceGenericMap(instScope, ctx)], ctx)
                 break

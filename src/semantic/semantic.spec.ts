@@ -604,7 +604,7 @@ impl Foo {
 
             ctx = check(code('x: Int', '5'))
             expect(ctx.errors.map(e => e.message)).toEqual([
-                'method `x` not found\n    to call a method, surround operand in parentheses'
+                'method `x` not found\n    to access field `x`, surround operand in parentheses'
             ])
         })
 

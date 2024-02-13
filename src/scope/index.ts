@@ -46,7 +46,7 @@ export interface InstanceScope {
     kind: 'instance'
     definitions: DefinitionMap
     selfType: VirtualType
-    def: TraitDef | ImplDef
+    rel: InstanceRelation
 }
 
 export interface TypeDefScope {

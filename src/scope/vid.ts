@@ -7,8 +7,8 @@ import { checkTopLevelDefiniton } from '../semantic'
 import { selfType } from '../typecheck/type'
 import { unreachable } from '../util/todo'
 import { Context, Scope, instanceScope } from './index'
-import { findSuperRelChains } from './trait'
-import { concatVid, idToVid, vidEq, vidToString } from './util'
+import { InstanceRelation, findSuperRelChains } from './trait'
+import { concatVid, idToVid, vidEq, vidFromString, vidToString } from './util'
 
 export interface VirtualIdentifier {
     names: string[]
@@ -62,7 +62,7 @@ export interface VariantDef {
 export interface MethodDef {
     kind: 'method-def'
     fn: FnDef
-    instance: ImplDef | TraitDef
+    rel: InstanceRelation
 }
 
 export interface VirtualIdentifierMatch<D = Definition> {
@@ -191,11 +191,8 @@ export const resolveScopeVid = (
                     // if matched, try to find fn with matching name in specified trait
                     const fn = traitDef.block.statements.find(s => s.kind === 'fn-def' && s.name.value === fnName)
                     if (fn && fn.kind === 'fn-def') {
-                        return {
-                            vid,
-                            module,
-                            def: { kind: 'method-def', fn, instance: traitDef }
-                        }
+                        const rel = ctx.impls.find(i => i.instanceDef === traitDef)!
+                        return { vid, module, def: { kind: 'method-def', fn, rel: rel } }
                     }
                 }
                 if (traitDef && checkSuper) {
@@ -205,18 +202,35 @@ export const resolveScopeVid = (
                     if (!typeRef || (typeRef.def.kind !== 'type-def' && typeRef.def.kind !== 'trait-def')) {
                         return unreachable()
                     }
+                    // TODO: only include traits that are in scope
                     const superRels = findSuperRelChains(typeRef.vid, ctx).map(c => c.at(-1)!)
-                    for (const superRel of superRels) {
-                        // don't check itself
-                        if (vidEq(fullTypeVid, superRel.implDef.vid)) continue
+                    // TODO: sometimes there are duplicates
+                    const methodCandidates = superRels.flatMap(superRel => {
                         const fullMethodVid = { names: [...superRel.implDef.vid.names, fnName] }
                         const methodRef = resolveVid(fullMethodVid, ctx, ['method-def'])
                         if (methodRef && methodRef.def.kind === 'method-def') {
                             const module = resolveVid(methodRef.module.identifier, ctx, ['module'])
                             if (!module || module.def.kind !== 'module') return unreachable()
                             checkTopLevelDefiniton(module.def, methodRef.def, ctx)
-                            return methodRef
+                            return [<VirtualIdentifierMatch<MethodDef>>methodRef]
                         }
+                        return []
+                    })
+                    const methodsInScope = methodCandidates.filter(m => {
+                        // unqualified trait name must be in scope
+                        const traitName = vidFromString(m.def.rel.implDef.vid.names.at(-1)!)
+                        const resolved = resolveVid(traitName, ctx, ['trait-def'])
+                        return resolved && resolved.def === m.def.rel.instanceDef
+                    })
+                    if (methodsInScope.length === 1) {
+                        return methodsInScope[0]
+                    }
+                    if (methodsInScope.length > 1) {
+                        // TODO: report
+                        return methodsInScope[0]
+                    }
+                    if (methodCandidates.length > 0) {
+                        // TODO: report candidates
                     }
                 }
                 // resolve generic refd fn
@@ -267,18 +281,14 @@ export const resolveMatchedVid = (
     // if vid is varDef, typeDef, trait or impl, e.g. std::option::Option
     module = pkg.modules.find(m => vidEq(m.identifier, { names: vid.names.slice(0, -1) }))
     if (module) {
-        ctx.moduleStack.push(module)
         const moduleLocalVid = { names: vid.names.slice(-1) }
         const ref = resolveScopeVid(moduleLocalVid, module.topScope!, ctx, ofKind, module)
         if (ref) {
             const defModule = resolveVid(ref.module.identifier, ctx, ['module'])
             if (!defModule || defModule.def.kind !== 'module') return unreachable()
             checkTopLevelDefiniton(defModule.def, ref.def, ctx)
-            const match = { vid, module, def: ref.def }
-            ctx.moduleStack.pop()
-            return match
+            return { vid, module, def: ref.def }
         }
-        ctx.moduleStack.pop()
 
         // check re-exports
         for (const reExp of module.reExports!) {
@@ -295,15 +305,11 @@ export const resolveMatchedVid = (
     // if vid is a variant or a traitFn, e.g. std::option::Option::Some
     module = pkg.modules.find(m => vidEq(m.identifier, { names: vid.names.slice(0, -2) }))
     if (module) {
-        ctx.moduleStack.push(module)
         const moduleLocalVid = { names: vid.names.slice(-2) }
         const ref = resolveScopeVid(moduleLocalVid, module.topScope!, ctx, ofKind, module)
         if (ref) {
-            const match = { vid, module, def: ref.def }
-            ctx.moduleStack.pop()
-            return match
+            return { vid, module, def: ref.def }
         }
-        ctx.moduleStack.pop()
 
         // check re-exports
         for (const reExp of module.reExports!) {

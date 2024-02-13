@@ -14,7 +14,6 @@ import {
 } from '../ast/operand'
 import { Context, Scope, addError, instanceScope } from '../scope'
 import { bool, iter, iterable } from '../scope/std'
-import { getInstanceForType } from '../scope/trait'
 import { idToVid, vidFromString, vidToString } from '../scope/util'
 import { MethodDef, VariantDef, VirtualIdentifierMatch, resolveVid } from '../scope/vid'
 import {
@@ -158,7 +157,7 @@ export const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     assert(!!methodDef.fn.type, `untyped impl fn ${vidToString(methodRef!.vid)}`)
     assert(methodDef.fn.type!.kind === 'fn-type', 'impl fn type in not fn')
 
-    const implTargetType = getInstanceForType(methodDef.instance, ctx)
+    const implTargetType = methodDef.rel.forType
     const fnType = <VirtualFnType>methodDef.fn.type
     if (isAssignable(unaryExpr.operand.type!, implTargetType, ctx)) {
         const genericMaps = makeUnaryExprGenericMaps(unaryExpr.operand.type!, fnType, implTargetType)
@@ -192,7 +191,7 @@ export const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     assert(!!methodRef.fn.type, 'untyped impl fn')
     assert(methodRef.fn.type!.kind === 'fn-type', 'impl fn type in not fn')
 
-    const implTargetType = getInstanceForType(methodRef.instance, ctx)
+    const implTargetType = methodRef.rel.forType
     const fnType = <VirtualFnType>methodRef.fn.type
     if (isAssignable(binaryExpr.lOperand.type!, implTargetType, ctx)) {
         const genericMaps = makeBinaryExprGenericMaps(binaryExpr, fnType, implTargetType)

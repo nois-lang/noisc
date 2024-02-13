@@ -1,3 +1,9 @@
+pub use std::iter::{
+    intersperseIter::{IntersperseIter, IntersperseAdapter},
+    mapIter::{MapIter, MapAdapter},
+    peekableIter::{PeekableIter, PeekableAdapter},
+}
+
 pub trait Iterable<T> {
     fn iter(self): Iter<T>
 }

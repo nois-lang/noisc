@@ -147,7 +147,8 @@ export const getTypeParams = (virtualType: VirtualType): VirtualType[] => {
 }
 
 export const instanceGenericMap = (instScope: InstanceScope, ctx: Context): Map<string, VirtualType> => {
-    const generics = instScope.def.generics.map(g => {
+    // TODO: virtual generics should already be contained in InstanceRelation, check in other places too
+    const generics = instScope.rel.instanceDef.generics.map(g => {
         const vg = genericToVirtual(g, ctx)
         return <const>[vg.name, vg]
     })

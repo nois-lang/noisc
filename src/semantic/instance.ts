@@ -2,7 +2,7 @@ import { checkCallArgs, checkType } from '.'
 import { BinaryExpr } from '../ast/expr'
 import { Call } from '../ast/op'
 import { Identifier, Operand, identifierFromOperand } from '../ast/operand'
-import { Context, addError, instanceRelation, instanceScope } from '../scope'
+import { Context, addError, instanceScope } from '../scope'
 import { getInstanceForType } from '../scope/trait'
 import { vidEq, vidToString } from '../scope/util'
 import { MethodDef, resolveVid } from '../scope/vid'
@@ -80,8 +80,7 @@ const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): Vi
         return
     }
 
-    const instanceDef = instanceScope(ctx)?.def
-    const rel = instanceDef ? instanceRelation(instanceDef, ctx) : undefined
+    const rel = instanceScope(ctx)?.rel
     const inInherentImpl = rel ? vidEq(rel.forDef.vid, typeVid) : undefined
     if (!inInherentImpl && !typeCandidates.every(f => f.pub)) {
         const msg =
@@ -127,14 +126,8 @@ const checkMethodCallExpr = (
         lOperand.type = resolveType(lOperand.type!, [instanceMap], ctx)
     }
     if (lOperand.type!.kind !== 'vid-type') {
-        addError(
-            ctx,
-            semanticError(
-                ctx,
-                identifier,
-                `expected instance type, got \`${virtualTypeToString(lOperand.type ?? unknownType)}\``
-            )
-        )
+        const msg = `expected instance type, got \`${virtualTypeToString(lOperand.type ?? unknownType)}\``
+        addError(ctx, semanticError(ctx, identifier, msg))
         return
     }
     const traitFnVid = { names: [...lOperand.type!.identifier.names, methodName] }
@@ -145,7 +138,7 @@ const checkMethodCallExpr = (
         const fieldType = checkFieldAccessExpr(lOperand, identifier, ctx)
         ctx.silent = false
         if (fieldType) {
-            const msg = `method \`${methodName}\` not found\n    to call a method, surround operand in parentheses`
+            const msg = `method \`${methodName}\` not found\n    to access field \`${methodName}\`, surround operand in parentheses`
             addError(ctx, semanticError(ctx, identifier, msg))
         } else {
             addError(ctx, notFoundError(ctx, identifier, methodName, 'method'))
@@ -179,7 +172,7 @@ const makeMethodGenericMaps = (
     call: Call,
     ctx: Context
 ): Map<string, VirtualType>[] => {
-    const implForType = getInstanceForType(methodDef.instance, ctx)
+    const implForType = getInstanceForType(methodDef.rel.instanceDef, ctx)
     const implGenericMap = makeGenericMapOverStructure(lOperand.type!, implForType)
     // if Self type param is explicit, `resolveGenericsOverStructure` treats it as regular generic and interrupts
     // further mapping in `fnGenericMap`, thus should be removed
