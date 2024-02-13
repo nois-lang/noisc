@@ -78,7 +78,7 @@ export interface VirtualIdentifierMatch<D = Definition> {
  *
  * Vid could be:
  *  - Definition ref, e.g. Foo
- *  - variant or TraitFn ref, e.g. Option::Some or Option::map
+ *  - variant or method, e.g. Option::Some or Option::map
  *  - Mix of above with partial or full qualification, e,g. std::option::Option::Some or option::Option::Some
  *  - Module ref, e.g. std::string
  *  - generic ref, e.g. C::fromIter, where C is bounded generic in scope
@@ -181,21 +181,30 @@ export const resolveScopeVid = (
             // resolve trait/impl fn
             if (k === 'method-def') {
                 const [traitName, fnName] = vid.names
-                // match trait/impl def by first vid name
-                const traitDef =
-                    scope.definitions.get('trait-def' + traitName) ??
-                    scope.definitions.get('impl-def' + traitName) ??
-                    scope.definitions.get('type-def' + traitName)
-                if (traitDef && (traitDef.kind === 'trait-def' || traitDef.kind === 'impl-def')) {
-                    checkTopLevelDefiniton(module, traitDef, ctx)
-                    // if matched, try to find fn with matching name in specified trait
-                    const fn = traitDef.block.statements.find(s => s.kind === 'fn-def' && s.name.value === fnName)
+                // match trait def by first vid name
+                const def =
+                    scope.definitions.get('trait-def' + traitName) ?? scope.definitions.get('type-def' + traitName)
+                // if matched, try to find fn with matching name in specified trait
+                if (def && def.kind === 'trait-def') {
+                    checkTopLevelDefiniton(module, def, ctx)
+                    const fn = def.block.statements.find(s => s.kind === 'fn-def' && s.name.value === fnName)
                     if (fn && fn.kind === 'fn-def') {
-                        const rel = ctx.impls.find(i => i.instanceDef === traitDef)!
+                        const rel = ctx.impls.find(i => i.instanceDef === def)!
                         return { vid, module, def: { kind: 'method-def', fn, rel: rel } }
                     }
                 }
-                if (traitDef && checkSuper) {
+                // if matched, try to find fn with matching name in type's inherent impl
+                if (def && def.kind === 'type-def') {
+                    checkTopLevelDefiniton(module, def, ctx)
+                    const rel = ctx.impls.find(i => i.inherent && i.implDef.def === def)
+                    const fn = rel?.instanceDef.block.statements.find(
+                        s => s.kind === 'fn-def' && s.name.value === fnName
+                    )
+                    if (fn && fn.kind === 'fn-def') {
+                        return { vid, module, def: { kind: 'method-def', fn, rel: rel! } }
+                    }
+                }
+                if (def && checkSuper) {
                     // lookup supertypes' traits/impls that might contain that function
                     const fullTypeVid = { names: [...(module.identifier.names ?? []), traitName] }
                     const typeRef = resolveVid(fullTypeVid, ctx, ['type-def', 'trait-def'])

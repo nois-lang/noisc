@@ -37,6 +37,12 @@ export interface InstanceRelation {
      * Instance def
      */
     instanceDef: TraitDef | ImplDef
+    /**
+     * There are two types of implementations:
+     *   - trait impl: implementing trait for some type
+     *   - inherent impl: attaching methods to some type
+     */
+    inherent: boolean
 }
 
 export const buildInstanceRelations = (ctx: Context): InstanceRelation[] => {
@@ -86,7 +92,8 @@ const getTraitImplRel = (instance: TraitDef, module: Module, ctx: Context): Inst
         forType: traitType,
         implDef: traitRef,
         forDef: traitRef,
-        instanceDef: instance
+        instanceDef: instance,
+        inherent: false
     }
 }
 
@@ -117,7 +124,8 @@ const getImplImplRel = (instance: ImplDef, module: Module, ctx: Context): Instan
         forType,
         implDef: <VirtualIdentifierMatch<TypeDef | TraitDef>>ref,
         forDef: forDef,
-        instanceDef: instance
+        instanceDef: instance,
+        inherent: !instance.forTrait
     }
 }
 

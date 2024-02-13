@@ -8,7 +8,7 @@ import { Context, pathToVid } from '../scope'
 import { buildInstanceRelations } from '../scope/trait'
 import { vidToString } from '../scope/util'
 import { Source } from '../source'
-import { checkModule, prepareModule } from './index'
+import { checkModule, checkTopLevelDefiniton, prepareModule } from './index'
 
 describe('semantic', () => {
     const check = (code: string, checkStd: boolean = false): Context => {
@@ -43,6 +43,7 @@ describe('semantic', () => {
             })
         })
         ctx.impls = buildInstanceRelations(ctx)
+        ctx.impls.forEach(impl => checkTopLevelDefiniton(impl.module, impl.instanceDef, ctx))
         ctx.check = true
         if (checkStd) {
             ctx.packages.flatMap(p => p.modules).forEach(m => checkModule(m, ctx))
