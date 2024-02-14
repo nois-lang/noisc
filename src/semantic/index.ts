@@ -92,12 +92,13 @@ export const checkModule = (module: Module, ctx: Context): void => {
             addError(ctx, notFoundError(ctx, name, vidToString(useRef.vid)))
             continue
         }
-        if (ref.module === module) {
-            // TODO: check self references
-        }
         if (resolvedRefs.filter(e => vidEq(e.vid, ref.vid)).length > 0) {
             // TODO: reference first occurence
             addWarning(ctx, semanticError(ctx, name, `duplicate import`))
+            continue
+        }
+        if (ref.module === module) {
+            addWarning(ctx, semanticError(ctx, name, `unnecessary self import`))
             continue
         }
         resolvedRefs.push({ vid: ref.vid, useExpr: useRef.useExpr })
