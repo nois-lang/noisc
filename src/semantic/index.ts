@@ -84,16 +84,25 @@ export const checkModule = (module: Module, ctx: Context): void => {
     }
     ctx.moduleStack.push(module)
 
-    // TODO: check duplicate useExprs
-    // TODO: check self references
-    // TODO: support `self` package reference
+    const resolvedRefs = []
     for (const useRef of module.references!) {
+        const name = <Name>useRef.useExpr.expr
         const ref = resolveVid(useRef.vid, ctx)
         if (!ref) {
-            const name = <Name>useRef.useExpr.expr
             addError(ctx, notFoundError(ctx, name, vidToString(useRef.vid)))
+            continue
         }
+        if (ref.module === module) {
+            // TODO: check self references
+        }
+        if (resolvedRefs.filter(e => vidEq(e.vid, ref.vid)).length > 0) {
+            // TODO: reference first occurence
+            addWarning(ctx, semanticError(ctx, name, `duplicate import`))
+            continue
+        }
+        resolvedRefs.push({ vid: ref.vid, useExpr: useRef.useExpr })
     }
+    module.references = resolvedRefs
 
     checkBlock(module.block, ctx)
     ctx.moduleStack.pop()
