@@ -30,9 +30,12 @@ export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
         if (rOperand.op.kind === 'call-op') {
             binaryExpr.type = checkMethodCallExpr(lOperand, rOperand.operand, rOperand.op, ctx) ?? unknownType
             return
+        } else {
+            checkOperand(rOperand, ctx)
         }
     }
     addError(ctx, semanticError(ctx, rOperand, `expected field access or method call, got ${rOperand.kind}`))
+    binaryExpr.type = unknownType
 }
 
 const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): VirtualType | undefined => {

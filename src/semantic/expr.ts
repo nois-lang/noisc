@@ -144,10 +144,10 @@ export const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
             checkCall(unaryExpr, ctx)
             return
         case 'unwrap-op':
-            todo()
+            todo('unwrap-op')
             return
         case 'bind-op':
-            todo()
+            todo('bind-op')
             return
     }
 }
