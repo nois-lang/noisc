@@ -31,8 +31,6 @@ export const astDefKinds = <const>['var-def', 'fn-def', 'trait-def', 'impl-def',
 
 export const astLiteralKinds = <const>['string-literal', 'char-literal', 'int-literal', 'float-literal', 'bool-literal']
 
-export const astPrefixOpKinds = <const>['neg-op', 'not-op', 'spread-op']
-
 export const astInfixOpKinds = <const>[
     'add-op',
     'sub-op',
@@ -51,6 +49,8 @@ export const astInfixOpKinds = <const>[
     'or-op',
     'assign-op'
 ]
+
+export const astPostfixOpKinds = <const>['call-op', 'unwrap-op', 'bind-op']
 
 export const astKinds = <const>[
     'module',
@@ -76,8 +76,8 @@ export const astKinds = <const>[
     ...astExprKinds,
     ...astDefKinds,
     ...astLiteralKinds,
-    ...astPrefixOpKinds,
-    ...astInfixOpKinds
+    ...astInfixOpKinds,
+    ...astPostfixOpKinds
 ]
 
 export type AstNodeKind = (typeof astKinds)[number]

@@ -5,12 +5,12 @@ import {
     exprFirstTokens,
     infixOpFirstTokens,
     nameLikeTokens,
-    parseCall,
+    numberFirstTokens,
     parseClosureExpr,
-    prefixOpFirstTokens
+    postfixOpFirstTokens
 } from './index'
 import { parseMatchExpr, parsePattern } from './match'
-import { parseInfixOp, parsePrefixOp } from './op'
+import { parseInfixOp, parsePostfixOp } from './op'
 import { parseBlock } from './statement'
 import { parseType } from './type'
 
@@ -28,23 +28,20 @@ export const parseExpr = (parser: Parser): void => {
 }
 
 /**
- * sub-expr ::= prefix-op? operand postfix-op?
+ * sub-expr ::= operand postfix-op*
  */
 export const parseSubExpr = (parser: Parser): void => {
     const mark = parser.open()
-    if (parser.atAny(prefixOpFirstTokens)) {
-        parsePrefixOp(parser)
-    }
     parseOperand(parser)
-    if (parser.at('o-paren')) {
-        parseCall(parser)
+    while (parser.atAny(postfixOpFirstTokens)) {
+        parsePostfixOp(parser)
     }
     parser.close(mark, 'sub-expr')
 }
 
 /**
- * operand ::= if-expr | match-expr | closure-expr | O-PAREN expr C-PAREN | list-expr | STRING | CHAR | INT | FLOAT
- * TRUE | FALSE | identifier | type
+ * operand ::= if-expr | match-expr | closure-expr | O-PAREN expr C-PAREN | list-expr | STRING | CHAR | number | TRUE
+ * | FALSE | identifier | type
  */
 export const parseOperand = (parser: Parser): void => {
     const dynamicTokens: TokenKind[] = ['string', 'char', 'int', 'float', 'bool']
@@ -70,6 +67,8 @@ export const parseOperand = (parser: Parser): void => {
         parseListExpr(parser)
     } else if (parser.atAny(nameLikeTokens)) {
         parseIdentifier(parser)
+    } else if (parser.atAny(numberFirstTokens)) {
+        parseNumber(parser)
     } else if (parser.atAny(dynamicTokens)) {
         parser.expectAny(dynamicTokens)
     } else {
@@ -170,6 +169,20 @@ export const parseIdentifier = (parser: Parser): void => {
         parseTypeArgs(parser)
     }
     parser.close(mark, 'identifier')
+}
+
+/**
+ * number ::= MINUS? (INT | FLOAT)
+ */
+export const parseNumber = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.consume('minus')
+    if (parser.consume('int')) {
+    } else if (parser.consume('float')) {
+    } else {
+        parser.advanceWithError(syntaxError(parser, 'expected number'))
+    }
+    parser.close(mark, 'number')
 }
 
 /**

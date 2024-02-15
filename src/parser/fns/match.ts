@@ -1,8 +1,7 @@
 import { Parser } from '..'
 import { syntaxError } from '../../error'
-import { parseExpr, parseIdentifier } from './expr'
-import { fieldPatternFirstTokens, nameLikeTokens, prefixOpFirstTokens } from './index'
-import { parsePrefixOp } from './op'
+import { parseExpr, parseIdentifier, parseNumber } from './expr'
+import { fieldPatternFirstTokens, nameLikeTokens, numberFirstTokens } from './index'
 import { parseBlock } from './statement'
 
 /**
@@ -67,6 +66,9 @@ export const parsePattern = (parser: Parser): void => {
     parser.close(mark, 'pattern')
 }
 
+/**
+ * pattern-bind ::= NAME AT
+ */
 export const parsePatternBind = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('name')
@@ -74,6 +76,9 @@ export const parsePatternBind = (parser: Parser): void => {
     parser.close(mark, 'pattern-bind')
 }
 
+/**
+ * pattern-expr ::= NAME | con-pattern | STRING | CHAR | number | hole
+ */
 export const parsePatternExpr = (parser: Parser): void => {
     const mark = parser.open()
     const isCon = (parser.nth(1) === 'colon' && parser.nth(2) === 'colon') || parser.nth(1) === 'o-paren'
@@ -83,17 +88,8 @@ export const parsePatternExpr = (parser: Parser): void => {
         parser.expectAny(nameLikeTokens)
     } else if (parser.consume('string')) {
     } else if (parser.consume('char')) {
-    } else if (parser.atAny(prefixOpFirstTokens) || parser.at('int') || parser.at('float')) {
-        if (parser.atAny(prefixOpFirstTokens)) {
-            parsePrefixOp(parser)
-        }
-        if (parser.at('int')) {
-            parser.expect('int')
-        } else if (parser.at('float')) {
-            parser.expect('float')
-        } else {
-            parser.advanceWithError(syntaxError(parser, 'expected int or float'))
-        }
+    } else if (parser.atAny(numberFirstTokens)) {
+        parseNumber(parser)
     } else if (parser.at('underscore')) {
         parseHole(parser)
     } else {

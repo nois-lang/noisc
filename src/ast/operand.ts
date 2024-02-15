@@ -4,7 +4,7 @@ import { nameLikeTokens } from '../parser/fns'
 import { Typed } from '../semantic'
 import { Expr, buildExpr } from './expr'
 import { AstNode, Param, buildParam } from './index'
-import { MatchExpr, Pattern, buildMatchExpr, buildPattern } from './match'
+import { MatchExpr, Pattern, buildMatchExpr, buildNumber, buildPattern } from './match'
 import { Block, buildBlock } from './statement'
 import { Type, buildType } from './type'
 
@@ -47,10 +47,8 @@ export const buildOperand = (node: ParseNode): Operand => {
             return buildStringLiteral(n)
         case 'char':
             return buildCharLiteral(n)
-        case 'int':
-            return buildIntLiteral(n)
-        case 'float':
-            return buildFloatLiteral(n)
+        case 'number':
+            return buildNumber(n)
         case 'bool':
             return buildBoolLiteral(n)
         case 'identifier':

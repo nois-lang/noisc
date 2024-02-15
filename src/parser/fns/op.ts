@@ -1,5 +1,7 @@
+import { nameLikeTokens } from '.'
 import { Parser } from '..'
 import { syntaxError } from '../../error'
+import { parseExpr } from './expr'
 
 /**
  * infix-op ::= add-op | sub-op | mult-op | div-op | exp-op | mod-op | access-op | eq-op | ne-op | ge-op | le-op | gt-op
@@ -82,31 +84,51 @@ export const parseInfixOp = (parser: Parser): void => {
 }
 
 /**
- * prefix-op ::= sub-op | not-op | spread-op
+ * postfix-op ::= call-op | unwrap-op | bind-op
  */
-export const parsePrefixOp = (parser: Parser): void => {
-    const mark = parser.open()
-    const m = parser.open()
-
-    if (parser.consume('minus')) {
-        parser.close(m, 'neg-op')
-    } else if (parser.consume('excl')) {
-        parser.close(m, 'not-op')
-    } else if (parser.at('period') && parser.nth(1) === 'period') {
-        parser.advance()
-        parser.advance()
-        parser.close(m, 'spread-op')
-    } else {
-        parser.advanceWithError(syntaxError(parser, 'expected prefix operator'))
-        parser.close(m, 'error')
+export const parsePostfixOp = (parser: Parser): void => {
+    if (parser.at('o-paren')) {
+        parseCallOp(parser)
+        return
     }
-
-    parser.close(mark, 'prefix-op')
+    const mark = parser.open()
+    if (parser.consume('excl')) {
+        parser.close(mark, 'unwrap-op')
+        return
+    }
+    if (parser.consume('qmark')) {
+        parser.close(mark, 'bind-op')
+        return
+    }
+    parser.advanceWithError(syntaxError(parser, 'expected postfix operator'), mark)
 }
 
-export const parseSpreadOp = (parser: Parser): void => {
+/**
+ * call-op ::= O-PAREN (arg (COMMA arg)*)? COMMA? C-PAREN
+ */
+export const parseCallOp = (parser: Parser): void => {
     const mark = parser.open()
-    parser.expect('period')
-    parser.expect('period')
-    parser.close(mark, 'spread-op')
+    parser.expect('o-paren')
+    while (!parser.at('c-paren') && !parser.eof()) {
+        parseArg(parser)
+        if (!parser.at('c-paren')) {
+            parser.expect('comma')
+        }
+    }
+    parser.expect('c-paren')
+    parser.close(mark, 'call-op')
+}
+
+/**
+ * arg ::= (NAME COLON)? expr
+ */
+export const parseArg = (parser: Parser): void => {
+    const mark = parser.open()
+    // avoid parsing qualified ids as named args
+    if (parser.nth(1) === 'colon' && parser.nth(2) !== 'colon') {
+        parser.expectAny(nameLikeTokens)
+        parser.expect('colon')
+    }
+    parseExpr(parser)
+    parser.close(mark, 'arg')
 }

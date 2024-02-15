@@ -11,6 +11,7 @@ export const lexerOperatorKinds = <const>[
     'ampersand',
     'pipe',
     'excl',
+    'qmark',
     'period'
 ]
 
@@ -108,6 +109,7 @@ export const lexerKeywordMap: [TokenKind, string][] = [
     ['ampersand', '&'],
     ['pipe', '|'],
     ['excl', '!'],
+    ['qmark', '?'],
     ['period', '.'],
 
     ['colon', ':'],

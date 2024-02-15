@@ -146,13 +146,16 @@ describe('parser', () => {
         [ { expr:
              [ { 'sub-expr':
                   [ { operand: [ { identifier: [ { name: 'a' } ] } ] },
-                    { call:
+                    { 'call-op':
                        [ { 'o-paren': '(' },
                          { arg:
                             [ { expr:
                                  [ { 'sub-expr':
                                       [ { operand: [ { identifier: [ { name: 'B' }, { colon: ':' }, { colon: ':' }, { name: 'b' } ] } ] },
-                                        { call: [ { 'o-paren': '(' }, { arg: [ { expr: [ { 'sub-expr': [ { operand: [ { int: '4' } ] } ] } ] } ] }, { 'c-paren': ')' } ] } ] } ] } ] },
+                                        { 'call-op':
+                                           [ { 'o-paren': '(' },
+                                             { arg: [ { expr: [ { 'sub-expr': [ { operand: [ { number: [ { int: '4' } ] } ] } ] } ] } ] },
+                                             { 'c-paren': ')' } ] } ] } ] } ] },
                          { 'c-paren': ')' } ] } ] } ] } ] } ] }
             )
         })

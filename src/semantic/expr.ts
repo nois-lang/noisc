@@ -2,6 +2,7 @@ import { checkBlock, checkCallArgs, checkIdentifier, checkParam, checkType } fro
 import { AstNode } from '../ast'
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { MatchExpr } from '../ast/match'
+import { CallOp } from '../ast/op'
 import {
     ClosureExpr,
     ForExpr,
@@ -138,36 +139,16 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
 }
 
 export const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
-    if (unaryExpr.call) {
-        checkCall(unaryExpr, ctx)
-        return
-    }
-    if (unaryExpr.prefixOp?.kind === 'spread-op') {
-        todo()
-        return
-    }
-    const op = unaryExpr.prefixOp!
-    checkOperand(unaryExpr.operand, ctx)
-    const opImplFnVid = operatorImplMap.get(op.kind)
-    assert(!!opImplFnVid, `operator ${op.kind} without impl function`)
-
-    const methodRef = resolveVid(opImplFnVid!, ctx, ['method-def'])
-    assert(!!methodRef, `impl fn \`${vidToString(opImplFnVid!)}\` not found`)
-    const methodDef = <MethodDef>methodRef!.def
-    assert(!!methodDef.fn.type, `untyped impl fn ${vidToString(methodRef!.vid)}`)
-    assert(methodDef.fn.type!.kind === 'fn-type', 'impl fn type in not fn')
-
-    const implTargetType = methodDef.rel.forType
-    const fnType = <VirtualFnType>methodDef.fn.type
-    if (isAssignable(unaryExpr.operand.type!, implTargetType, ctx)) {
-        const genericMaps = makeUnaryExprGenericMaps(unaryExpr.operand.type!, fnType, implTargetType)
-        const args = [unaryExpr.operand]
-        const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
-        checkCallArgs(unaryExpr, args, paramTypes, ctx)
-        unaryExpr.type = resolveType(fnType.returnType, genericMaps, ctx)
-    } else {
-        addError(ctx, typeError(unaryExpr, unaryExpr.operand.type!, implTargetType, ctx))
-        unaryExpr.type = unknownType
+    switch (unaryExpr.op.kind) {
+        case 'call-op':
+            checkCall(unaryExpr, ctx)
+            return
+        case 'unwrap-op':
+            todo()
+            return
+        case 'bind-op':
+            todo()
+            return
     }
 }
 
@@ -436,7 +417,7 @@ export const checkClosureExpr = (
 }
 
 export const checkCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
-    const call = unaryExpr.call!
+    const call = <CallOp>unaryExpr.op
     const operand = unaryExpr.operand
     checkOperand(operand, ctx)
     const args = call.args.map(a => a.expr)
@@ -456,7 +437,7 @@ export const checkVariantCall = (
     ref: VirtualIdentifierMatch<VariantDef>,
     ctx: Context
 ): VirtualType | undefined => {
-    const call = unaryExpr.call!
+    const call = <CallOp>unaryExpr.op
     call.args.forEach(a => checkExpr(a.expr, ctx))
 
     for (const arg of call.args) {

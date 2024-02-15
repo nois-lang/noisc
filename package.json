@@ -13,7 +13,7 @@
         "publish:prepare": "cp package.json dist && find dist -name \"*.spec.*\" -delete",
         "publish": "npm run build && npm run publish:prepare",
         "run:node": "node dist",
-        "test": "bun test",
+        "test": "bun test src",
         "ci": "npm run test",
         "clean": "rm -rf dist"
     },

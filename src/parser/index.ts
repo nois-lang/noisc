@@ -49,11 +49,9 @@ export const treeKinds = <const>[
     'and-op',
     'or-op',
     'assign-op',
-    'prefix-op',
-    'not-op',
-    'neg-op',
-    'spread-op',
-    'call',
+    'call-op',
+    'unwrap-op',
+    'bind-op',
     'arg',
     'closure-expr',
     'closure-params',
@@ -81,7 +79,8 @@ export const treeKinds = <const>[
     'con-pattern',
     'con-pattern-params',
     'field-pattern',
-    'hole'
+    'hole',
+    'number'
 ]
 export type TreeKind = (typeof treeKinds)[number]
 

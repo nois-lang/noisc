@@ -1,18 +1,20 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { Arg, AstNode, AstNodeKind, buildArg } from './index'
 
-export type PrefixOp = NegOp | NotOp | SpreadOp
+export type PostfixOp = CallOp | UnwrapOp | BindOp
 
-export const isPrefixOp = (op: AstNode<AstNodeKind>): op is PrefixOp => {
-    return op.kind === 'neg-op' || op.kind === 'not-op' || op.kind === 'spread-op'
+export const isPostfixOp = (op: AstNode<AstNodeKind>): op is PostfixOp => {
+    return op.kind === 'call-op' || op.kind === 'unwrap-op' || op.kind === 'bind-op'
 }
 
-export const buildPrefixOp = (node: ParseNode): PrefixOp => {
-    const n = filterNonAstNodes(node)[0]
-    if (!['neg-op', 'not-op', 'spread-op'].includes(n.kind)) {
-        throw Error(`expected prefix-op, got ${node.kind}`)
+export const buildPostfixOp = (node: ParseNode): PostfixOp => {
+    if (node.kind === 'call-op') {
+        return buildCallOp(node)
     }
-    return { kind: <any>n.kind, parseNode: node }
+    if (node.kind === 'unwrap-op' || node.kind === 'bind-op') {
+        return { kind: node.kind, parseNode: node }
+    }
+    throw Error(`expected prefix-op, got ${node.kind}`)
 }
 
 export type BinaryOp =
@@ -36,9 +38,6 @@ export type BinaryOp =
 export type Associativity = 'left' | 'right' | 'none'
 
 export const associativityMap: Map<AstNodeKind, Associativity> = new Map([
-    ['call', 'none'],
-    ['neg-op', 'none'],
-    ['not-op', 'none'],
     ['add-op', 'left'],
     ['sub-op', 'left'],
     ['mult-op', 'left'],
@@ -62,9 +61,6 @@ export const associativityMap: Map<AstNodeKind, Associativity> = new Map([
  * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_precedence#table
  */
 export const precedenceMap: Map<AstNodeKind, number> = new Map([
-    ['call', 17],
-    ['neg-op', 14],
-    ['not-op', 14],
     ['add-op', 11],
     ['sub-op', 11],
     ['mult-op', 12],
@@ -109,20 +105,18 @@ export const buildBinaryOp = (node: ParseNode): BinaryOp => {
     return { kind: <any>node.kind, parseNode: node }
 }
 
-export interface Call extends AstNode<'call'> {
+export interface CallOp extends AstNode<'call-op'> {
     args: Arg[]
 }
 
-export const buildCall = (node: ParseNode): Call => {
+export const buildCallOp = (node: ParseNode): CallOp => {
     const args = filterNonAstNodes(node).map(n => buildArg(n))
-    return { kind: 'call', parseNode: node, args }
+    return { kind: 'call-op', parseNode: node, args }
 }
 
-export interface NegOp extends AstNode<'neg-op'> {}
+export interface UnwrapOp extends AstNode<'unwrap-op'> {}
 
-export interface NotOp extends AstNode<'not-op'> {}
-
-export interface SpreadOp extends AstNode<'spread-op'> {}
+export interface BindOp extends AstNode<'bind-op'> {}
 
 export interface AddOp extends AstNode<'add-op'> {}
 

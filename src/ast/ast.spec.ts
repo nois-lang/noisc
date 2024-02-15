@@ -1,3 +1,4 @@
+import { inspect } from 'util'
 import { tokenize } from '../lexer/lexer'
 import { Parser } from '../parser'
 import { parseModule } from '../parser/fns'
@@ -131,56 +132,6 @@ describe('ast', () => {
             )
         })
 
-        it('prefix and infix', () => {
-            const ast = buildAst('-1 + 2')
-            // biome-ignore format: compact
-            expect(compactAstNode(ast.block)).toEqual(
-{ kind: 'block',
-  statements:
-   [ { kind: 'binary-expr',
-       binaryOp: { kind: 'add-op' },
-       lOperand: { kind: 'unary-expr', prefixOp: { kind: 'neg-op' }, operand: { kind: 'int-literal', value: '1' } },
-       rOperand: { kind: 'int-literal', value: '2' } } ] }
-            )
-        })
-
-        it('prefix and method call', () => {
-            const ast = buildAst('-a.foo()')
-            // biome-ignore format: compact
-            expect(compactAstNode(ast.block)).toEqual(
-{ kind: 'block',
-  statements:
-   [ { kind: 'unary-expr',
-       prefixOp: { kind: 'neg-op' },
-       operand:
-        { kind: 'binary-expr',
-          binaryOp: { kind: 'access-op' },
-          lOperand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] },
-          rOperand:
-           { kind: 'unary-expr',
-             call: { kind: 'call', args: [] },
-             operand: { kind: 'identifier', names: [ { kind: 'name', value: 'foo' } ], typeArgs: [] } } } } ] }
-            )
-        })
-
-        it('prefix and postfix on unary-expr', () => {
-            const ast = buildAst('let a = !foo()')
-            // biome-ignore format: compact
-            expect(compactAstNode(ast.block)).toEqual(
-{ kind: 'block',
-  statements:
-   [ { kind: 'var-def',
-       pattern: { kind: 'pattern', name: undefined, expr: { kind: 'name', value: 'a' } },
-       varType: undefined,
-       expr:
-        { kind: 'unary-expr',
-          prefixOp: { kind: 'not-op' },
-          call: { kind: 'call', args: [] },
-          operand: { kind: 'identifier', names: [ { kind: 'name', value: 'foo' } ], typeArgs: [] } },
-          pub: false } ] }
-            )
-        })
-
         it('method call', () => {
             const ast = buildAst('a.b()')
             // biome-ignore format: compact
@@ -192,7 +143,7 @@ describe('ast', () => {
        lOperand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] },
        rOperand:
         { kind: 'unary-expr',
-          call: { kind: 'call', args: [] },
+          op: { kind: 'call-op', args: [] },
           operand: { kind: 'identifier', names: [ { kind: 'name', value: 'b' } ], typeArgs: [] } } } ] }
             )
         })
@@ -214,16 +165,16 @@ describe('ast', () => {
              lOperand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] },
              rOperand:
               { kind: 'unary-expr',
-                call: { kind: 'call', args: [] },
-                operand: { kind: 'identifier', names: [ { kind: 'name', value: 'b' } ], typeArgs: [] } } },
+                operand: { kind: 'identifier', names: [ { kind: 'name', value: 'b' } ], typeArgs: [] },
+                op: { kind: 'call-op', args: [] } } },
           rOperand:
            { kind: 'unary-expr',
-             call: { kind: 'call', args: [] },
-             operand: { kind: 'identifier', names: [ { kind: 'name', value: 'c' } ], typeArgs: [] } } },
+             operand: { kind: 'identifier', names: [ { kind: 'name', value: 'c' } ], typeArgs: [] },
+             op: { kind: 'call-op', args: [] } } },
        rOperand:
         { kind: 'unary-expr',
-          call: { kind: 'call', args: [] },
-          operand: { kind: 'identifier', names: [ { kind: 'name', value: 'd' } ], typeArgs: [] } } } ] }
+          operand: { kind: 'identifier', names: [ { kind: 'name', value: 'd' } ], typeArgs: [] },
+          op: { kind: 'call-op', args: [] } } } ] }
             )
         })
     })

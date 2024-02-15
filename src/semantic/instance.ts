@@ -1,6 +1,6 @@
 import { checkCallArgs, checkType } from '.'
 import { BinaryExpr } from '../ast/expr'
-import { Call } from '../ast/op'
+import { CallOp } from '../ast/op'
 import { Identifier, Operand, identifierFromOperand } from '../ast/operand'
 import { Context, addError, instanceScope } from '../scope'
 import { getInstanceForType } from '../scope/trait'
@@ -20,16 +20,19 @@ import { notFoundError, semanticError } from './error'
 import { checkExpr, checkOperand } from './expr'
 
 export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
-    const rOp = binaryExpr.rOperand
-    if (rOp.kind === 'identifier') {
-        binaryExpr.type = checkFieldAccessExpr(binaryExpr.lOperand, rOp, ctx) ?? unknownType
+    const lOperand = binaryExpr.lOperand
+    const rOperand = binaryExpr.rOperand
+    if (rOperand.kind === 'identifier') {
+        binaryExpr.type = checkFieldAccessExpr(lOperand, rOperand, ctx) ?? unknownType
         return
     }
-    if (rOp.kind === 'unary-expr' && rOp.call) {
-        binaryExpr.type = checkMethodCallExpr(binaryExpr.lOperand, rOp.operand, rOp.call, ctx) ?? unknownType
-        return
+    if (rOperand.kind === 'unary-expr') {
+        if (rOperand.op.kind === 'call-op') {
+            binaryExpr.type = checkMethodCallExpr(lOperand, rOperand.operand, rOperand.op, ctx) ?? unknownType
+            return
+        }
     }
-    addError(ctx, semanticError(ctx, rOp, `expected field access or method call, got ${rOp.kind}`))
+    addError(ctx, semanticError(ctx, rOperand, `expected field access or method call, got ${rOperand.kind}`))
 }
 
 const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): VirtualType | undefined => {
@@ -102,7 +105,7 @@ const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): Vi
 const checkMethodCallExpr = (
     lOperand: Operand,
     rOperand: Operand,
-    call: Call,
+    call: CallOp,
     ctx: Context
 ): VirtualType | undefined => {
     checkOperand(lOperand, ctx)
@@ -169,7 +172,7 @@ const makeMethodGenericMaps = (
     lOperand: Operand,
     rOperand: Identifier,
     methodDef: MethodDef,
-    call: Call,
+    call: CallOp,
     ctx: Context
 ): Map<string, VirtualType>[] => {
     const implForType = getInstanceForType(methodDef.rel.instanceDef, ctx)

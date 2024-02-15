@@ -42,7 +42,7 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
                       ;
   expr                ::= sub-expr (infix-op sub-expr)*
                       ;
-    sub-expr          ::= prefix-op? operand call?
+    sub-expr          ::= operand postfix-op*
                       ;
       operand         ::= if-expr
                       | if-let-expr
@@ -54,8 +54,7 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
                       | list-expr
                       | STRING
                       | CHAR
-                      | INT
-                      | FLOAT
+                      | number
                       | TRUE
                       | FALSE
                       | identifier
@@ -79,15 +78,15 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
       or-op           ::= PIPE PIPE;
       assign-op       ::= EQUALS;
 
-    prefix-op         ::= sub-op | not-op | spread-op
+    postfix-op        ::= call-op | unwrap-op | bind-op
                       ;
-      not-op          ::= EXCL
+      call-op         ::= O-PAREN (arg (COMMA arg)*)? COMMA? C-PAREN
                       ;
-      spread-op       ::= PERIOD PERIOD
+        arg           ::= (NAME COLON)? expr
                       ;
-    call              ::= O-PAREN (arg (COMMA arg)*)? COMMA? C-PAREN
+      unwrap-op       ::= EXCL
                       ;
-      arg             ::= (NAME COLON)? expr
+      bind-op         ::= QMARK
                       ;
 identifier            ::= (NAME COLON COLON)* NAME type-args?
                       ;
@@ -133,7 +132,7 @@ pattern               ::= pattern-bind? pattern-expr
                       ;
   pattern-bind        ::= NAME AT
                       ;
-  pattern-expr        ::= NAME | con-pattern | STRING | CHAR | prefix-op? (INT | FLOAT) | hole
+  pattern-expr        ::= NAME | con-pattern | STRING | CHAR | number | hole
                       ;
     con-pattern       ::= identifier con-pattern-params
                       ;
@@ -142,4 +141,6 @@ pattern               ::= pattern-bind? pattern-expr
       field-pattern   ::= NAME (COLON pattern)?
                       ;
     hole              ::= UNDERSCORE
+                      ;
+number                ::= MINUS? (INT | FLOAT)
                       ;

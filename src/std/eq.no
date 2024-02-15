@@ -2,6 +2,6 @@ pub trait Eq {
     fn eq(self, other: Self): Bool
 
     fn ne(self, other: Self): Bool {
-        !self.eq(other)
+        self.eq(other).not()
     }
 }

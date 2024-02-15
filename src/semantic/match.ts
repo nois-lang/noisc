@@ -23,16 +23,6 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
             // TODO: typed hole reporting, Haskell style: https://wiki.haskell.org/GHC/Typed_holes
             expr.type = expectedType
             break
-        case 'unary-expr':
-            if (expr.prefixOp && expr.prefixOp?.kind !== 'neg-op') {
-                addError(ctx, semanticError(ctx, expr.prefixOp, `unexpected operator \`${expr.prefixOp.kind}\``))
-            }
-            if (expr.call) {
-                addError(ctx, semanticError(ctx, expr.call, `unexpected operator`))
-            }
-            checkOperand(expr.operand, ctx)
-            expr.type = expr.operand.type
-            break
         case 'operand-expr':
             checkOperand(expr.operand, ctx)
             expr.type = expr.operand.type

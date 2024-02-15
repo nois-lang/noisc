@@ -3,9 +3,6 @@ import { vidFromString } from '../scope/util'
 import { VirtualIdentifier } from '../scope/vid'
 
 export const operatorImplMap: Map<AstNodeKind, VirtualIdentifier> = new Map([
-    ['neg-op', vidFromString('std::num::Num::neg')],
-    ['not-op', vidFromString('std::bool::Bool::not')],
-
     ['add-op', vidFromString('std::num::Num::add')],
     ['sub-op', vidFromString('std::num::Num::sub')],
     ['mult-op', vidFromString('std::num::Num::mult')],

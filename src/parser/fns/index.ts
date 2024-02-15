@@ -1,7 +1,6 @@
 import { Parser } from '..'
 import { syntaxError } from '../../error'
 import { TokenKind, lexerKeywordKinds } from '../../lexer/lexer'
-import { parseExpr } from './expr'
 import { parseBlock, parseParam, parseStatement, parseUseStmt } from './statement'
 import { parseTypeAnnot } from './type'
 
@@ -11,7 +10,7 @@ import { parseTypeAnnot } from './type'
  */
 export const nameLikeTokens: TokenKind[] = ['name', ...lexerKeywordKinds]
 
-export const prefixOpFirstTokens: TokenKind[] = ['excl', 'minus', 'period']
+export const postfixOpFirstTokens: TokenKind[] = ['o-paren', 'excl', 'qmark']
 export const infixOpFirstTokens: TokenKind[] = [
     'ampersand',
     'asterisk',
@@ -27,22 +26,21 @@ export const infixOpFirstTokens: TokenKind[] = [
     'plus',
     'slash'
 ]
+export const numberFirstTokens: TokenKind[] = ['minus', 'int', 'float']
 export const exprFirstTokens: TokenKind[] = [
-    'char',
     ...nameLikeTokens,
+    'char',
     'if-keyword',
     'while-keyword',
     'for-keyword',
     'match-keyword',
-    'int',
-    'float',
+    ...numberFirstTokens,
     'bool',
     'string',
     'o-paren',
     'o-bracket',
     'o-angle',
-    'pipe',
-    ...prefixOpFirstTokens
+    'pipe'
 ]
 export const paramFirstTokens: TokenKind[] = [...nameLikeTokens, 'underscore', 'pub-keyword']
 export const useExprFirstTokens: TokenKind[] = [...nameLikeTokens, 'o-brace']
@@ -94,34 +92,4 @@ export const parseClosureParams = (parser: Parser): void => {
     }
     parser.expect('pipe')
     parser.close(mark, 'closure-params')
-}
-
-/**
- * call ::= O-PAREN (arg (COMMA arg)*)? COMMA? C-PAREN
- */
-export const parseCall = (parser: Parser): void => {
-    const mark = parser.open()
-    parser.expect('o-paren')
-    while (!parser.at('c-paren') && !parser.eof()) {
-        parseArg(parser)
-        if (!parser.at('c-paren')) {
-            parser.expect('comma')
-        }
-    }
-    parser.expect('c-paren')
-    parser.close(mark, 'call')
-}
-
-/**
- * arg ::= (NAME COLON)? expr
- */
-export const parseArg = (parser: Parser): void => {
-    const mark = parser.open()
-    // avoid parsing qualified ids as named args
-    if (parser.nth(1) === 'colon' && parser.nth(2) !== 'colon') {
-        parser.expectAny(nameLikeTokens)
-        parser.expect('colon')
-    }
-    parseExpr(parser)
-    parser.close(mark, 'arg')
 }

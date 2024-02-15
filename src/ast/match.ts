@@ -2,10 +2,9 @@ import { LexerToken } from '../lexer/lexer'
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
 import { Typed } from '../semantic'
-import { Expr, UnaryExpr, buildExpr, buildOperandExpr } from './expr'
+import { Expr, buildExpr, buildOperandExpr } from './expr'
 import { AstNode } from './index'
-import { buildPrefixOp } from './op'
-import { Identifier, Name, Operand, buildIdentifier, buildName, buildOperand } from './operand'
+import { FloatLiteral, Identifier, IntLiteral, Name, Operand, buildIdentifier, buildName } from './operand'
 import { Block, buildBlock } from './statement'
 
 export interface MatchExpr extends AstNode<'match-expr'>, Partial<Typed> {
@@ -51,23 +50,21 @@ export const buildPattern = (node: ParseNode): Pattern => {
     return { kind: 'pattern', parseNode: node, name, expr }
 }
 
-export type PatternExpr = Name | ConPattern | Operand | UnaryExpr | Hole
+export type PatternExpr = Name | ConPattern | Operand | Hole
 
 export const buildPatternExpr = (node: ParseNode): PatternExpr => {
-    const nodes = filterNonAstNodes(node)
-    if (nameLikeTokens.includes((<LexerToken>nodes[0]).kind)) {
-        return buildName(nodes[0])
+    const n = filterNonAstNodes(node)[0]
+    if (nameLikeTokens.includes((<LexerToken>n).kind)) {
+        return buildName(n)
     }
-    if (nodes[0].kind === 'con-pattern') {
-        return buildConPattern(nodes[0])
+    if (n.kind === 'con-pattern') {
+        return buildConPattern(n)
     }
-    if (nodes[0].kind === 'hole') {
-        return buildHole(nodes[0])
+    if (n.kind === 'hole') {
+        return buildHole(n)
     }
-    if (nodes[0].kind === 'prefix-op') {
-        const prefixOp = buildPrefixOp(nodes[0])
-        const operand = buildOperand(nodes[1])
-        return { kind: 'unary-expr', parseNode: node, prefixOp, operand }
+    if (n.kind === 'number') {
+        return buildNumber(n)
     }
     return buildOperandExpr(node)
 }
@@ -100,4 +97,17 @@ export interface Hole extends AstNode<'hole'>, Partial<Typed> {}
 
 export const buildHole = (node: ParseNode): Hole => {
     return { kind: 'hole', parseNode: node }
+}
+
+export const buildNumber = (node: ParseNode): IntLiteral | FloatLiteral => {
+    const nodes = filterNonAstNodes(node)
+    const n = nodes.at(-1)!
+    const sign = nodes[0].kind === 'minus' ? '-' : ''
+    if (n.kind === 'int') {
+        return { kind: 'int-literal', parseNode: node, value: sign + n.value }
+    }
+    if (n.kind === 'float') {
+        return { kind: 'float-literal', parseNode: node, value: sign + n.value }
+    }
+    throw Error(`expected number, got ${node.kind}`)
 }
