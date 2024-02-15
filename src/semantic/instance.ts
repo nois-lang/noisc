@@ -32,9 +32,11 @@ export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
             return
         } else {
             checkOperand(rOperand, ctx)
+            binaryExpr.type = rOperand.type
+            return
         }
     }
-    addError(ctx, semanticError(ctx, rOperand, `expected field access or method call, got ${rOperand.kind}`))
+    addError(ctx, semanticError(ctx, rOperand, `unexpected operand \`${rOperand.kind}\``))
     binaryExpr.type = unknownType
 }
 

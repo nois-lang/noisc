@@ -11,6 +11,7 @@ fn foo<T: std::io::Display + U, U>(b: T): Option<U> {
     let a = [1, "str", 'c', true, Option::None(), Option::Some(value: 1), Option::Some(2)]
     let Foo::Foo(x) = Foo::Foo(4)
     let b = if a.next().isSome() { a } else { [] }
+    let b2 = a.next()!.await?
     let c = if let Option::Some(value) = a.next { value } else { panic("err") }
     while a.count() < 5 + 3 { List::add(a, 8) }
     for Option::Some(value: v) in a { println(a.x) }
