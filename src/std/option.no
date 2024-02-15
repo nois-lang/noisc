@@ -1,16 +1,35 @@
+use std::unwrap::Unwrap
+
 pub type Option<T> {
     Some(pub value: T),
     None
 }
 
 impl <T> Option<T> {
-    fn map<U>(self, f: |T|: U): Option<U> {
-        todo("Option::map")
+    pub fn map<U>(self, f: |T|: U): Option<U> {
+        match self {
+            Some(value) { Some(f(value)) }
+            None() { self }
+        }
     }
-    fn take(self): Option<T> {
-        todo("Option::take")
+
+    pub fn isSome(self): Bool {
+        match self {
+            Some() { true }
+            None() { false }
+        }
     }
-    fn isSome(self): Bool {
-        todo("Option::isSome")
+
+    pub fn unwrap(self): T {
+        match self {
+            Some(value) { value }
+            None() { panic("no value") }
+        }
+    }
+}
+
+impl <T> Unwrap<T> for Option<T> {
+    fn bind(self): Option<T> {
+        self
     }
 }

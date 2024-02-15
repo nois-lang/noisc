@@ -1,3 +1,5 @@
+use std::unwrap::Unwrap
+
 pub type Result<T, E> {
     Ok(pub value: T),
     Error(pub error: E)
@@ -7,13 +9,31 @@ impl <T, E> Result<T, E> {
     pub fn isOk(self): Bool {
         match self {
             Ok() { true }
-            _ { false }
+            Error() { false }
         }
     }
     pub fn isError(self): Bool {
         match self {
+            Ok() { false }
             Error() { true }
-            _ { false }
         }
+    }
+    pub fn ok(self): Option<T> {
+        match self {
+            Ok(value) { Some(value: value) }
+            Error() { None() }
+        }
+    }
+    pub fn error(self): Option<E> {
+        match self {
+            Ok() { None() }
+            Error(error) { Some(value: error) }
+        }
+    }
+}
+
+impl <T> Unwrap<T> for Result<T, _> {
+    fn bind(self): Option<T> {
+        self.ok()
     }
 }

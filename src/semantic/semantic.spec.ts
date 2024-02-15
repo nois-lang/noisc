@@ -237,14 +237,14 @@ fn main() {
             const code = (arg: string): string => `\
 fn foo<T>(): ${arg} {
     let a: Option<T> = Option::None()
-    a.take()
+    a.unwrap()
 }`
             let ctx = check(code('Unit'))
             expect(ctx.errors.map(e => e.message)).toEqual([
-                'type error: expected std::unit::Unit\n            got      std::option::Option<T>'
+                'type error: expected std::unit::Unit\n            got      T'
             ])
 
-            ctx = check(code('Option<T>'))
+            ctx = check(code('T'))
             expect(ctx.errors.map(e => e.message)).toEqual([])
         })
 

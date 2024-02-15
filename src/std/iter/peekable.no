@@ -17,9 +17,14 @@ impl <T> PeekableIter<T> {
 
 impl <T> Iter<T> for PeekableIter<T> {
     fn next(self): Option<T> {
-        match self.peeked.take() {
-            Some(value) { value }
-            None() { self.iter.next() }
+        match self.peeked {
+            Some(value) { 
+                self.peeked = None()
+                value 
+            }
+            None() {
+                self.iter.next()
+            }
         }
     }
 }
