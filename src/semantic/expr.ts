@@ -13,9 +13,10 @@ import {
     WhileExpr,
     identifierFromOperand
 } from '../ast/operand'
-import { Context, Scope, addError, instanceScope } from '../scope'
-import { bool, iter, iterable } from '../scope/std'
-import { idToVid, vidFromString, vidToString } from '../scope/util'
+import { Context, Scope, addError, fnDefScope, instanceScope } from '../scope'
+import { bool, iter, iterable, unwrap } from '../scope/std'
+import { getConcreteTrait } from '../scope/trait'
+import { idToVid, vidEq, vidFromString, vidToString } from '../scope/util'
 import { MethodDef, VariantDef, VirtualIdentifierMatch, resolveVid } from '../scope/vid'
 import {
     VidType,
@@ -36,7 +37,7 @@ import {
     resolveType
 } from '../typecheck/generic'
 import { holeType, unitType, unknownType } from '../typecheck/type'
-import { assert, todo } from '../util/todo'
+import { assert } from '../util/todo'
 import { semanticError, typeError, unknownTypeError } from './error'
 import { checkExhaustion } from './exhaust'
 import { checkAccessExpr } from './instance'
@@ -144,10 +145,10 @@ export const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
             checkCall(unaryExpr, ctx)
             return
         case 'unwrap-op':
-            todo('unwrap-op')
+            checkUnwrap(unaryExpr, ctx)
             return
         case 'bind-op':
-            todo('bind-op')
+            checkBind(unaryExpr, ctx)
             return
     }
 }
@@ -521,6 +522,52 @@ export const checkCall_ = (call: AstNode<any>, operand: Operand, args: Expr[], c
     checkCallArgs(call, args, paramTypes, ctx)
 
     return replaceGenericsWithHoles(resolveType(fnType.returnType, genericMaps, ctx))
+}
+
+export const checkUnwrap = (unaryExpr: UnaryExpr, ctx: Context): void => {
+    const operand = unaryExpr.operand
+    checkOperand(operand, ctx)
+    const unwrapType = findUnwrapInnerType(operand.type!, ctx)
+    if (!unwrapType) {
+        addError(ctx, typeError(unaryExpr, operand.type!, unwrap, ctx))
+        unaryExpr.type = unknownType
+        return
+    }
+    const innerType = (<VidType>unwrapType).typeArgs[0]
+    unaryExpr.type = innerType
+}
+
+export const checkBind = (unaryExpr: UnaryExpr, ctx: Context): void => {
+    const operand = unaryExpr.operand
+    checkOperand(operand, ctx)
+    const unwrapType = findUnwrapInnerType(operand.type!, ctx)
+    if (!unwrapType) {
+        addError(ctx, typeError(unaryExpr, operand.type!, unwrap, ctx))
+        unaryExpr.type = unknownType
+        return
+    }
+    const innerType = (<VidType>unwrapType).typeArgs[0]
+    unaryExpr.type = innerType
+
+    const scope = fnDefScope(ctx)
+    if (!scope) {
+        addError(ctx, semanticError(ctx, unaryExpr.op, `\`${unaryExpr.op.kind}\` outside of the function scope`))
+        return
+    }
+    scope.returnStatements.push(operand)
+}
+
+export const findUnwrapInnerType = (type: VirtualType, ctx: Context): VirtualType | undefined => {
+    const unwrapRel = ctx.impls.find(
+        i =>
+            vidEq(i.implDef.vid, unwrap.identifier) &&
+            // TODO: properly handle generics
+            isAssignable(type, replaceGenericsWithHoles(i.forType), ctx)
+    )
+    if (!unwrapRel) {
+        return undefined
+    }
+    return getConcreteTrait(type, unwrapRel, ctx)
 }
 
 export const variantCallRef = (operand: Operand, ctx: Context): VirtualIdentifierMatch<VariantDef> | undefined => {

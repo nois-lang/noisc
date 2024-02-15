@@ -1,5 +1,5 @@
 import { VidType } from '../typecheck'
-import { unknownType } from '../typecheck/type'
+import { holeType, unknownType } from '../typecheck/type'
 import { vidFromString } from './util'
 
 export const preludeVid = vidFromString('std::prelude')
@@ -9,5 +9,10 @@ export const iter: VidType = { kind: 'vid-type', identifier: vidFromString('std:
 export const iterable: VidType = {
     kind: 'vid-type',
     identifier: vidFromString('std::iter::Iterable'),
-    typeArgs: [unknownType]
+    typeArgs: [holeType]
+}
+export const unwrap: VidType = {
+    kind: 'vid-type',
+    identifier: vidFromString('std::unwrap::Unwrap'),
+    typeArgs: [holeType]
 }

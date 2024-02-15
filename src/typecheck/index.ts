@@ -142,7 +142,9 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
     }
 
     if (t.kind === 'vid-type' && target.kind === 'vid-type') {
-        if (vidEq(t.identifier, target.identifier) && t.typeArgs.length === target.typeArgs.length) {
+        if (vidEq(t.identifier, target.identifier)) {
+            if (t.typeArgs.length !== target.typeArgs.length) return false
+
             for (let i = 0; i < t.typeArgs.length; i++) {
                 const tArg = t.typeArgs[i]
                 const targetArg = target.typeArgs[i]

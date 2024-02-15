@@ -1,9 +1,10 @@
-import { Module } from '../ast'
+import { AstNode, Module } from '../ast'
 import { ClosureExpr } from '../ast/operand'
-import { FnDef, ImplDef, ReturnStmt, TraitDef } from '../ast/statement'
+import { FnDef, ImplDef, TraitDef } from '../ast/statement'
 import { TypeDef } from '../ast/type-def'
 import { Config } from '../config'
 import { Package } from '../package'
+import { Typed } from '../semantic'
 import { SemanticError } from '../semantic/error'
 import { VirtualType } from '../typecheck'
 import { InstanceRelation } from './trait'
@@ -60,7 +61,7 @@ export interface FnDefScope {
     kind: 'fn'
     definitions: DefinitionMap
     def: FnDef | ClosureExpr
-    returnStatements: ReturnStmt[]
+    returnStatements: (AstNode<any> & Partial<Typed>)[]
 }
 
 export interface BlockScope {
