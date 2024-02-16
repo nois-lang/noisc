@@ -1,7 +1,7 @@
 // comment
 use pkg
 use std::io::Display
-use std::iter::{Iter, peekableIter::PeekableIter}
+use std::iter::{ Iter, peekableIter::PeekableIter }
 type Foo
 type Bar<T>(v: T)
 type V<T>{ A(), B(v: T) }

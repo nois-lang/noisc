@@ -43,7 +43,6 @@ export const prepareModule = (module: Module): void => {
         switch (s.kind) {
             case 'fn-def':
             case 'trait-def':
-            case 'impl-def':
             case 'type-def':
                 defMap.set(defKey(s), s)
                 break
@@ -60,6 +59,7 @@ export const prepareModule = (module: Module): void => {
                         break
                 }
                 break
+            case 'impl-def':
             case 'operand-expr':
             case 'unary-expr':
             case 'binary-expr':
@@ -112,7 +112,7 @@ export const checkModule = (module: Module, ctx: Context): void => {
 /*
  * Can be called outside of scope, module's own scope stack is preserved
  */
-export const checkTopLevelDefiniton = (module: Module, definition: Definition, ctx: Context): void => {
+export const checkTopLevelDefinition = (module: Module, definition: Definition, ctx: Context): void => {
     assert(!!module.topScope, 'module top scope is not set')
     ctx.moduleStack.push(module)
     // since this can be called while module is still being checked and has state, it should be preserved
@@ -414,7 +414,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                         addError(ctx, semanticError(ctx, m.name, msg))
                         continue
                     }
-                    checkTopLevelDefiniton(traitMethod.rel.module, traitMethod.rel.instanceDef, ctx)
+                    checkTopLevelDefinition(traitMethod.rel.module, traitMethod.rel.instanceDef, ctx)
 
                     checkFnDef(traitMethod.method, ctx)
                     const traitMap = traitGenericMap(traitMethod.rel, rel)

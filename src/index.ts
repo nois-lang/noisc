@@ -9,7 +9,7 @@ import { buildPackage } from './package/io'
 import { getSpan } from './parser'
 import { Context, pathToVid } from './scope'
 import { buildInstanceRelations } from './scope/trait'
-import { checkModule, checkTopLevelDefiniton, prepareModule } from './semantic'
+import { checkModule, checkTopLevelDefinition, prepareModule } from './semantic'
 import { Source } from './source'
 
 const dir = dirname(fileURLToPath(import.meta.url))
@@ -68,13 +68,9 @@ const ctx: Context = {
     silent: false
 }
 
-ctx.packages.forEach(p => {
-    p.modules.forEach(m => {
-        prepareModule(m)
-    })
-})
+ctx.packages.forEach(p => p.modules.forEach(m => prepareModule(m)))
 ctx.impls = buildInstanceRelations(ctx)
-ctx.impls.forEach(impl => checkTopLevelDefiniton(impl.module, impl.instanceDef, ctx))
+ctx.impls.forEach(impl => checkTopLevelDefinition(impl.module, impl.instanceDef, ctx))
 ctx.check = true
 if (ctx.config.libCheck) {
     ctx.packages.flatMap(p => p.modules).forEach(m => checkModule(m, ctx))
