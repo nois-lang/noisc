@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, statSync } from 'fs'
 import { basename, dirname, join, resolve } from 'path'
 import { fileURLToPath } from 'url'
+import { parseOption } from './cli'
 import { fromCmdFlags } from './config'
 import { colorError, colorWarning, prettySourceMessage } from './error'
 import { Package } from './package'
@@ -16,17 +17,22 @@ const dir = dirname(fileURLToPath(import.meta.url))
 const version = JSON.parse(readFileSync(join(dir, '..', 'package.json')).toString()).version
 
 export const usage = `\
-Nois transpiler - v${version}
+Nois compiler v${version}
 
 Usage: nois [OPTIONS] file
 Options:
-    -h, --help                  Display this message
-    --libCheck==[true|false]    Perform semantic checking on every source file. If \`false\`, only definitions required
+    --help                      Display this message
+    --libCheck=<true|false>     Perform semantic checking on every source file. If \`false\`, only definitions required
                                 by the main file will be checked (default \`false\`)
+    --name=<name>               Compile package with this name
+    --src=<path>                Source directory, relative to \`file\`
+    --out=<path>                Compile directory, relative to \`file\`. Also used to lookup \`deps\`
+    --deps=<pkg1,pkg2,..>       Comma separated list of dependency package names (including transitive), present in
+                                compile directory
 `
 
 const pathArg = process.argv.at(-1)!
-if (!pathArg || process.argv.includes('--help') || process.argv.includes('-h')) {
+if (!pathArg || parseOption('help') !== undefined) {
     console.info(usage)
     process.exit()
 }
@@ -44,23 +50,25 @@ if (statSync(path).isDirectory()) {
         console.error(`no such file \`${pkgJsonPath}\``)
         process.exit(1)
     }
-    // TODO: proper package config parsing and validation
-    const pkgConfig = JSON.parse(readFileSync(pkgJsonPath).toString())
-    if (!('name' in pkgConfig)) {
-        console.error(`no \`name\` property in \`${pkgConfig}\``)
-        process.exit(1)
-    }
-    const srcPath = join(path, pkgConfig.src ?? 'src')
+    const src = parseOption('src') ?? 'src'
+    const srcPath = join(path, src)
     if (!existsSync(srcPath)) {
         console.error(`no such file \`${srcPath}\``)
         process.exit(1)
     }
-    const res = buildPackage(srcPath, pkgConfig.name)
+    const name = parseOption('name')
+    if (name === undefined) {
+        console.error(`missing required option \`--name=\``)
+        process.exit(1)
+    }
+    const res = buildPackage(srcPath, name)
     if (!res) process.exit(1)
     pkg = res
 
-    const outPath = join(path, pkgConfig.out ?? 'dist')
-    const deps: string[] = pkgConfig.dependencies ? Object.keys(pkgConfig.dependencies) : []
+    const out = parseOption('out') ?? 'dist'
+    const outPath = join(path, out)
+    const depsArg = parseOption('deps')
+    const deps: string[] = depsArg !== undefined ? depsArg.split(',') : []
     lib = deps.map(depName => {
         const depPath = join(outPath, depName)
         if (!existsSync(depPath)) {
@@ -92,7 +100,7 @@ if (!std) {
 }
 
 const ctx: Context = {
-    config: fromCmdFlags(process.argv),
+    config: fromCmdFlags(),
     moduleStack: [],
     packages: [std, ...lib, pkg],
     prelude: std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!,
