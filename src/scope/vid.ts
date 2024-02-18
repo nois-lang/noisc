@@ -128,10 +128,6 @@ export const resolveVid = (
         }
     }
 
-    // check if fully qualified
-    ref = resolveMatchedVid(vid, ctx, ofKind)
-    if (ref) return ref
-
     // check if vid is partially qualified with use exprs
     const matchedUseExpr = [...module.references!, ...ctx.prelude!.reExports!].find(
         r => r.vid.names.at(-1)! === vid.names[0]
@@ -143,6 +139,10 @@ export const resolveVid = (
             return matchedRef
         }
     }
+
+    // check if fully qualified
+    ref = resolveMatchedVid(vid, ctx, ofKind)
+    if (ref) return ref
 
     return undefined
 }
