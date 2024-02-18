@@ -34,6 +34,6 @@ export const colorWarning = (message: string): string => {
 export const prettySourceMessage = (message: string, span: Span, source: Source): string => {
     const start = indexToLocation(span.start, source)!
     const locationStr = `${source.filepath}:${locationToString(start)}`
-    const locationMsg = `${' '.repeat(2)}at ${locationStr}`
+    const locationMsg = `  at ${locationStr}`
     return [message, locationMsg, prettyLineAt(span, source)].join('\n')
 }

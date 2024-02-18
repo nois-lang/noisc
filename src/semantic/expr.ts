@@ -129,9 +129,6 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
             break
         case 'identifier':
             checkIdentifier(operand, ctx)
-            if (operand.type!.kind === 'unknown-type') {
-                unknownTypeError(operand, operand.type!, ctx)
-            }
             break
     }
     if (!operand.type) {
@@ -499,7 +496,6 @@ export const checkCall_ = (call: AstNode<any>, operand: Operand, args: Expr[], c
         checkClosureExpr(closure, ctx, operand, closureType)
         operand.type = closure.type
     }
-
     if (operand.type?.kind === 'unknown-type') {
         addError(ctx, unknownTypeError(operand, operand.type, ctx))
         return unknownType
