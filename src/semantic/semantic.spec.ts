@@ -18,7 +18,8 @@ describe('semantic', () => {
         const pkg: Package = {
             path: source.filepath,
             name: moduleAst?.identifier.names.at(-1)!,
-            modules: [moduleAst]
+            modules: [moduleAst],
+            compiled: false
         }
 
         const std = buildPackage(join(dirname(fileURLToPath(import.meta.url)), '..', 'std'), 'std')!

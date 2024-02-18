@@ -86,6 +86,11 @@ export const checkModule = (module: Module, ctx: Context): void => {
 
     const resolvedRefs = []
     for (const useRef of module.references!) {
+        const pkgName = useRef.vid.names[0]
+        if (!ctx.packages.some(pkg => pkg.name === pkgName)) {
+            addError(ctx, notFoundError(ctx, useRef.useExpr.scope[0], pkgName, 'package'))
+            continue
+        }
         const name = <Name>useRef.useExpr.expr
         const ref = resolveVid(useRef.vid, ctx)
         if (!ref) {
@@ -590,6 +595,10 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
                 break
             case 'fn-def':
                 identifier.type = ref.def.type
+                break
+            case 'module':
+                addError(ctx, semanticError(ctx, identifier, `\`${vidToString(vid)}\` is a module`))
+                identifier.type = unknownType
                 break
             default:
                 identifier.type = unknownType
