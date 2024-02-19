@@ -1,7 +1,8 @@
-import { existsSync, readFileSync, statSync } from 'fs'
-import { basename, dirname, join } from 'path'
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'fs'
+import { basename, dirname, join, relative } from 'path'
 import { fileURLToPath } from 'url'
 import { parseOption } from './cli'
+import { emitDeclaration } from './codegen/declaration'
 import { fromCmd } from './config'
 import { colorError, colorWarning, prettySourceMessage } from './error'
 import { Package } from './package'
@@ -26,7 +27,8 @@ If FILE is a source file, compile it into <out> directory
 Options:
     --name=<name>               Compile package with this name
     --src=<path>                Source directory, relative to FILE (default \`src\`)
-    --out=<path>                Compile directory, relative to FILE. Also used to lookup \`deps\` (default \`dist\`)
+    --lib=<path>                Library directory containing compiled dependencies, relative to FILE (default \`dist\`)
+    --out=<path>                Package compile directory, relative to FILE (default \`<lib>/<name>\`)
     --deps=<pkg1,pkg2,..>       Comma separated list of dependency package names (including transitive), present in
                                 compile directory (default \`\`)
     --libCheck=<true|false>     Perform semantic checking on every source file. If \`false\`, only definitions required
@@ -65,9 +67,9 @@ if (statSync(config.pkgPath).isDirectory()) {
     if (!res) process.exit(1)
     pkg = res
 
-    const outPath = join(config.pkgPath, config.outPath)
+    const libPath = join(config.pkgPath, config.libPath)
     lib = config.deps.map(depName => {
-        const depPath = join(outPath, depName)
+        const depPath = join(libPath, depName)
         if (!existsSync(depPath)) {
             console.error(`no such file \`${depPath}\``)
             process.exit(1)
@@ -132,3 +134,16 @@ for (const warning of ctx.warnings) {
         prettySourceMessage(colorWarning(warning.message), getSpan(warning.node.parseNode), warning.module.source)
     )
 }
+
+const srcPath = join(config.pkgPath, config.srcPath)
+const outPath = join(config.pkgPath, config.outPath)
+if (!existsSync(outPath)) mkdirSync(outPath, { recursive: true })
+pkg.modules.forEach(m => {
+    const content = emitDeclaration(m)
+    const modulePath = relative(srcPath, m.source.filepath)
+    const moduleOutPath = join(outPath, modulePath)
+    const parentDir = dirname(moduleOutPath)
+    if (!existsSync(parentDir)) mkdirSync(parentDir)
+
+    writeFileSync(moduleOutPath, content)
+})
