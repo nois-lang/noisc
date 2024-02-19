@@ -1,7 +1,7 @@
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 import { Context } from '.'
-import { defaultConfig } from '../config'
+import { makeConfig } from '../config'
 import { buildPackage } from '../package/io'
 import { prepareModule } from '../semantic'
 import { virtualTypeToString } from '../typecheck'
@@ -12,7 +12,7 @@ describe('trait', () => {
     const makeCtx = (): Context => {
         const std = buildPackage(join(dirname(fileURLToPath(import.meta.url)), '..', 'std'), 'std')!
 
-        const config = defaultConfig()
+        const config = makeConfig('test', 'test.no')
         const ctx: Context = {
             config,
             moduleStack: [],

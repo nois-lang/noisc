@@ -1,6 +1,6 @@
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
-import { defaultConfig } from '../config'
+import { makeConfig } from '../config'
 import { Package } from '../package'
 import { buildModule } from '../package/build'
 import { buildPackage } from '../package/io'
@@ -24,12 +24,10 @@ describe('semantic', () => {
 
         const std = buildPackage(join(dirname(fileURLToPath(import.meta.url)), '..', 'std'), 'std')!
 
-        const config = defaultConfig()
-        const packages = [std, pkg]
         const ctx: Context = {
-            config,
+            config: makeConfig('test', 'test.no'),
             moduleStack: [],
-            packages,
+            packages: [std, pkg],
             prelude: std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!,
             impls: [],
             errors: [],

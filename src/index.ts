@@ -1,8 +1,8 @@
 import { existsSync, readFileSync, statSync } from 'fs'
-import { basename, dirname, join, resolve } from 'path'
+import { basename, dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 import { parseOption } from './cli'
-import { fromCmdFlags } from './config'
+import { fromCmd } from './config'
 import { colorError, colorWarning, prettySourceMessage } from './error'
 import { Package } from './package'
 import { buildModule } from './package/build'
@@ -16,60 +16,57 @@ import { Source } from './source'
 const dir = dirname(fileURLToPath(import.meta.url))
 const version = JSON.parse(readFileSync(join(dir, '..', 'package.json')).toString()).version
 
+export const usageHeader = `Nois compiler v${version}`
 export const usage = `\
-Nois compiler v${version}
+${usageHeader}
 
-Usage: nois [OPTIONS] file
+Usage: noisc [OPTIONS] FILE
+If FILE is a directory, compile files at FILE/<src> into FILE/<out> directory with <deps> in scope
+If FILE is a source file, compile it into <out> directory
 Options:
-    --help                      Display this message
+    --name=<name>               Compile package with this name
+    --src=<path>                Source directory, relative to FILE (default \`src\`)
+    --out=<path>                Compile directory, relative to FILE. Also used to lookup \`deps\` (default \`dist\`)
+    --deps=<pkg1,pkg2,..>       Comma separated list of dependency package names (including transitive), present in
+                                compile directory (default \`\`)
     --libCheck=<true|false>     Perform semantic checking on every source file. If \`false\`, only definitions required
                                 by the main file will be checked (default \`false\`)
-    --name=<name>               Compile package with this name
-    --src=<path>                Source directory, relative to \`file\`
-    --out=<path>                Compile directory, relative to \`file\`. Also used to lookup \`deps\`
-    --deps=<pkg1,pkg2,..>       Comma separated list of dependency package names (including transitive), present in
-                                compile directory
+    --help                      Display this message
+    --version                   Display version information
 `
 
-const pathArg = process.argv.at(-1)!
-if (!pathArg || parseOption('help') !== undefined) {
+if (parseOption('help') !== undefined) {
     console.info(usage)
     process.exit()
 }
-const path = resolve(pathArg)
+if (parseOption('version') !== undefined) {
+    console.info(usageHeader)
+    process.exit()
+}
+const config = fromCmd()
 
 let pkg: Package
 let lib: Package[]
-if (!existsSync(path)) {
-    console.error(`no such file \`${pathArg}\``)
+if (!existsSync(config.pkgPath)) {
+    console.error(`no such file \`${config.pkgPath}\``)
     process.exit(1)
 }
-if (statSync(path).isDirectory()) {
-    const pkgJsonPath = join(path, 'package.json')
-    if (!existsSync(pkgJsonPath)) {
-        console.error(`no such file \`${pkgJsonPath}\``)
-        process.exit(1)
-    }
-    const src = parseOption('src') ?? 'src'
-    const srcPath = join(path, src)
+if (statSync(config.pkgPath).isDirectory()) {
+    const srcPath = join(config.pkgPath, config.srcPath)
     if (!existsSync(srcPath)) {
         console.error(`no such file \`${srcPath}\``)
         process.exit(1)
     }
-    const name = parseOption('name')
-    if (name === undefined) {
+    if (config.pkgName === undefined) {
         console.error(`missing required option \`--name=\``)
         process.exit(1)
     }
-    const res = buildPackage(srcPath, name)
+    const res = buildPackage(srcPath, config.pkgName)
     if (!res) process.exit(1)
     pkg = res
 
-    const out = parseOption('out') ?? 'dist'
-    const outPath = join(path, out)
-    const depsArg = parseOption('deps')
-    const deps: string[] = depsArg !== undefined ? depsArg.split(',') : []
-    lib = deps.map(depName => {
+    const outPath = join(config.pkgPath, config.outPath)
+    lib = config.deps.map(depName => {
         const depPath = join(outPath, depName)
         if (!existsSync(depPath)) {
             console.error(`no such file \`${depPath}\``)
@@ -80,8 +77,8 @@ if (statSync(path).isDirectory()) {
         return p
     })
 } else {
-    const source: Source = { code: readFileSync(path).toString(), filepath: path }
-    const moduleAst = buildModule(source, pathToVid(basename(path)))
+    const source: Source = { code: readFileSync(config.pkgPath).toString(), filepath: config.pkgPath }
+    const moduleAst = buildModule(source, pathToVid(basename(config.pkgPath)))
     if (!moduleAst) {
         process.exit(1)
     }
@@ -100,7 +97,7 @@ if (!std) {
 }
 
 const ctx: Context = {
-    config: fromCmdFlags(),
+    config,
     moduleStack: [],
     packages: [std, ...lib, pkg],
     prelude: std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!,
