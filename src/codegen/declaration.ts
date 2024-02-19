@@ -1,4 +1,4 @@
-import { Module } from '../ast'
+import { Module, Param } from '../ast'
 import { Statement, UseExpr } from '../ast/statement'
 import { ParseNode } from '../parser'
 import { unreachable } from '../util/todo'
@@ -21,20 +21,29 @@ export const emitStatement = (statement: Statement): string | undefined => {
     switch (statement.kind) {
         case 'var-def':
             if (statement.pub) return undefined
-            return `pub ${emitParseNode(statement.pattern.parseNode)}`
-        case 'fn-def':
+            return `pub let ${emitParseNode(statement.pattern.parseNode)}`
+        case 'fn-def': {
             if (!statement.pub) return undefined
-            // TODO
-            const generics = ''
-            // TODO
-            const params = ''
-            // TODO
-            const returnType = ''
+            const generics =
+                statement.generics?.length > 0
+                    ? `<${statement.generics.map(g => emitParseNode(g.parseNode)).join(', ')}>`
+                    : ''
+            const params = statement.params.map(emitParam).join(', ')
+            const returnType = statement.returnType ? `: ${emitParseNode(statement.returnType.parseNode)}` : ''
             return `pub fn ${statement.name.value}${generics}(${params})${returnType}`
-        case 'trait-def':
+        }
+        case 'trait-def': {
             if (!statement.pub) return undefined
-            // TODO
-            return ``
+            const generics =
+                statement.generics?.length > 0
+                    ? `<${statement.generics.map(g => emitParseNode(g.parseNode)).join(', ')}>`
+                    : ''
+            const block = statement.block.statements
+                .map(emitStatement)
+                .map(s => ' '.repeat(4) + s)
+                .join('\n')
+            return `pub trait ${statement.name.value}${generics} {\n${block}\n}`
+        }
         case 'impl-def':
             // TODO
             return ``
@@ -48,6 +57,13 @@ export const emitStatement = (statement: Statement): string | undefined => {
         case 'binary-expr':
             return unreachable()
     }
+}
+
+export const emitParam = (param: Param): string => {
+    return (
+        emitParseNode(param.pattern.parseNode) +
+        (param.paramType ? `: ${emitParseNode(param.paramType.parseNode)}` : '')
+    )
 }
 
 export const emitParseNode = (node: ParseNode): string => {
