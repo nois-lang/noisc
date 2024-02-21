@@ -27,10 +27,10 @@ If FILE is a source file, compile it into <out> directory
 Options:
     --name=<name>               Compile package with this name
     --src=<path>                Source directory, relative to FILE (default \`src\`)
-    --lib=<path>                Library directory containing compiled dependencies, relative to FILE (default \`dist\`)
+    --lib=<path>                Library directory containing compiled dependencies (default \`FILE/dist\`)
     --out=<path>                Package compile directory, relative to FILE (default \`<lib>/<name>\`)
     --deps=<pkg1,pkg2,..>       Comma separated list of dependency package names (including transitive), present in
-                                compile directory (default \`\`)
+                                <lib> (default \`\`)
     --libCheck=<true|false>     Perform semantic checking on every source file. If \`false\`, only definitions required
                                 by the main file will be checked (default \`false\`)
     --help                      Display this message
