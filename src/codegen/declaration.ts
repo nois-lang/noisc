@@ -45,10 +45,24 @@ export const emitStatement = (statement: Statement): string | undefined => {
                 .join('\n')
             return `pub trait ${statement.name.value}${generics} {\n${block}\n}`
         }
-        case 'impl-def':
-            // TODO
-            return ``
-        case 'type-def':
+        case 'impl-def': {
+            const generics =
+                statement.generics?.length > 0
+                    ? `<${statement.generics.map(g => emitParseNode(g.parseNode)).join(', ')}> `
+                    : ''
+            if (statement.forTrait) {
+                const id = emitParseNode(statement.identifier.parseNode)
+                const forTrait = emitParseNode(statement.forTrait.parseNode)
+                return `impl ${generics}${id} for ${forTrait}`
+            }
+            const statements = statement.block.statements
+                .map(emitStatement)
+                .filter(s => !!s)
+                .map(s => s!)
+            const block = statements.length > 0 ? `{\n${statements.map(s => ' '.repeat(4) + s).join('\n')}\n}` : '{}'
+            return `impl ${generics}${emitParseNode(statement.identifier.parseNode)} ${block}`
+        }
+        case 'type-def': {
             if (!statement.pub) return undefined
             const generics =
                 statement.generics?.length > 0
@@ -66,12 +80,9 @@ export const emitStatement = (statement: Statement): string | undefined => {
                 .map(s => ' '.repeat(4) + s)
                 .join(',\n')
             return `pub type ${statement.name.value}${generics} {\n${variants}\n}`
-        case 'return-stmt':
-        case 'break-stmt':
-        case 'operand-expr':
-        case 'unary-expr':
-        case 'binary-expr':
-            return unreachable()
+        }
+        default:
+            return unreachable(statement.kind)
     }
 }
 
