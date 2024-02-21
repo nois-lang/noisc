@@ -1,5 +1,6 @@
 import { Module, Param } from '../ast'
 import { Statement, UseExpr } from '../ast/statement'
+import { FieldDef } from '../ast/type-def'
 import { ParseNode } from '../parser'
 import { unreachable } from '../util/todo'
 
@@ -48,8 +49,23 @@ export const emitStatement = (statement: Statement): string | undefined => {
             // TODO
             return ``
         case 'type-def':
-            // TODO
-            return undefined
+            if (!statement.pub) return undefined
+            const generics =
+                statement.generics?.length > 0
+                    ? `<${statement.generics.map(g => emitParseNode(g.parseNode)).join(', ')}>`
+                    : ''
+            const variants = statement.variants
+                .map(v => {
+                    const fields = v.fieldDefs
+                        .map(emitFieldDef)
+                        .filter(f => !!f)
+                        .map(f => f!)
+                    const fieldDefs = v.fieldDefs.length > 0 ? `(${fields})` : ''
+                    return `${v.name.value}${fieldDefs}`
+                })
+                .map(s => ' '.repeat(4) + s)
+                .join(',\n')
+            return `pub type ${statement.name.value}${generics} {\n${variants}\n}`
         case 'return-stmt':
         case 'break-stmt':
         case 'operand-expr':
@@ -64,6 +80,11 @@ export const emitParam = (param: Param): string => {
         emitParseNode(param.pattern.parseNode) +
         (param.paramType ? `: ${emitParseNode(param.paramType.parseNode)}` : '')
     )
+}
+
+export const emitFieldDef = (fieldDef: FieldDef): string | undefined => {
+    if (!fieldDef.pub) return undefined
+    return `pub ${fieldDef.name.value}: ${emitParseNode(fieldDef.fieldType.parseNode)}`
 }
 
 export const emitParseNode = (node: ParseNode): string => {
