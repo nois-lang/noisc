@@ -7,7 +7,7 @@ import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { assert } from '../util/todo'
 import { Context, addError, defKey } from './index'
 import { concatVid, idToVid, vidEq, vidFromString, vidToString } from './util'
-import { VirtualIdentifier, VirtualIdentifierMatch, resolveVid } from './vid'
+import { VirtualIdentifier, VirtualIdentifierMatch, resolveVid, typeKinds } from './vid'
 
 /**
  * Description of type/trait/impl relations
@@ -108,9 +108,10 @@ const getImplImplRel = (instance: ImplDef, module: Module, ctx: Context): Instan
 
     let forDef: VirtualIdentifierMatch<TypeDef | TraitDef> = implRef
     if (instance.forTrait) {
-        const ref = resolveVid(idToVid(instance.forTrait), ctx, ['type-def', 'trait-def'])
-        if (!ref || (ref.def.kind !== 'type-def' && ref.def.kind !== 'trait-def')) {
-            addError(ctx, notFoundError(ctx, instance.identifier, vidToString(implVid), 'trait'))
+        const forTraitVid = idToVid(instance.forTrait)
+        const ref = resolveVid(forTraitVid, ctx, typeKinds)
+        if (!ref) {
+            addError(ctx, notFoundError(ctx, instance.forTrait, vidToString(forTraitVid)))
             return undefined
         }
         forDef = <VirtualIdentifierMatch<TypeDef | TraitDef>>ref
