@@ -20,7 +20,7 @@ import { findSuperRelChains, traitDefToVirtualType } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
 import { Definition, NameDef, resolveVid, typeKinds } from '../scope/vid'
 import { VirtualType, genericToVirtual, isAssignable, typeToVirtual } from '../typecheck'
-import { instanceGenericMap, resolveType, traitGenericMap } from '../typecheck/generic'
+import { instanceGenericMap, makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { holeType, neverType, selfType, unitType, unknownType } from '../typecheck/type'
 import { assert, todo } from '../util/todo'
 import { notFoundError, semanticError, typeError, unknownTypeError } from './error'
@@ -421,11 +421,10 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                     }
                     checkTopLevelDefinition(traitMethod.rel.module, traitMethod.rel.instanceDef, ctx)
 
-                    checkFnDef(traitMethod.method, ctx)
-                    const traitMap = traitGenericMap(traitMethod.rel, rel)
-                    const mResolvedType = resolveType(m.type!, [traitMap], ctx)
-                    if (!isAssignable(mResolvedType, traitMethod.method.type!, ctx)) {
-                        addError(ctx, typeError(m.name, m.type!, traitMethod.method.type!, ctx))
+                    const traitMap = makeGenericMapOverStructure(rel.implType, traitMethod.rel.implType)
+                    const mResolvedType = resolveType(traitMethod.method.type!, [traitMap], ctx)
+                    if (!isAssignable(m.type!, mResolvedType, ctx)) {
+                        addError(ctx, typeError(m.name, m.type!, mResolvedType, ctx))
                     }
                 }
             } else {

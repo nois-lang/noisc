@@ -1,5 +1,4 @@
 import { Context, InstanceScope } from '../scope'
-import { InstanceRelation } from '../scope/trait'
 import { fold } from '../util/array'
 import { merge } from '../util/map'
 import { assert, unreachable } from '../util/todo'
@@ -153,10 +152,6 @@ export const instanceGenericMap = (instScope: InstanceScope, ctx: Context): Map<
         return <const>[vg.name, vg]
     })
     return new Map([[selfType.name, instScope.selfType], ...generics])
-}
-
-export const traitGenericMap = (traitRel: InstanceRelation, implRel: InstanceRelation): Map<string, VirtualType> => {
-    return makeGenericMapOverStructure(traitRel.implType, implRel.implType)
 }
 
 /**
