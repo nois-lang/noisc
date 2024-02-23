@@ -39,11 +39,12 @@ export const emitStatement = (statement: Statement): string | undefined => {
                 statement.generics?.length > 0
                     ? `<${statement.generics.map(g => emitParseNode(g.parseNode)).join(', ')}>`
                     : ''
-            const block = statement.block.statements
+            const statements = statement.block.statements
                 .map(emitStatement)
-                .map(s => ' '.repeat(4) + s)
-                .join('\n')
-            return `pub trait ${statement.name.value}${generics} {\n${block}\n}`
+                .filter(s => !!s)
+                .map(s => s!)
+            const block = statements.length > 0 ? `{\n${statements.map(s => ' '.repeat(4) + s).join('\n')}\n}` : '{}'
+            return `pub trait ${statement.name.value}${generics} ${block}`
         }
         case 'impl-def': {
             const generics =
@@ -68,18 +69,16 @@ export const emitStatement = (statement: Statement): string | undefined => {
                 statement.generics?.length > 0
                     ? `<${statement.generics.map(g => emitParseNode(g.parseNode)).join(', ')}>`
                     : ''
-            const variants = statement.variants
-                .map(v => {
-                    const fields = v.fieldDefs
-                        .map(emitFieldDef)
-                        .filter(f => !!f)
-                        .map(f => f!)
-                    const fieldDefs = v.fieldDefs.length > 0 ? `(${fields})` : ''
-                    return `${v.name.value}${fieldDefs}`
-                })
-                .map(s => ' '.repeat(4) + s)
-                .join(',\n')
-            return `pub type ${statement.name.value}${generics} {\n${variants}\n}`
+            const variants = statement.variants.map(v => {
+                const fields = v.fieldDefs
+                    .map(emitFieldDef)
+                    .filter(f => !!f)
+                    .map(f => f!)
+                const fieldDefs = v.fieldDefs.length > 0 ? `(${fields})` : ''
+                return `${v.name.value}${fieldDefs}`
+            })
+            const block = variants.length > 0 ? ` {\n${variants.map(s => ' '.repeat(4) + s).join(',\n')}\n}` : ''
+            return `pub type ${statement.name.value}${generics}${block}`
         }
         default:
             return unreachable(statement.kind)
