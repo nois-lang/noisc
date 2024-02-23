@@ -1,8 +1,8 @@
 import { Module, buildModuleAst } from '../ast'
 import { prettyLexerError, prettySourceMessage, prettySyntaxError } from '../error'
 import { erroneousTokenKinds, tokenize } from '../lexer/lexer'
-import { parseModule } from '../parser/fns'
 import { Parser } from '../parser'
+import { parseModule } from '../parser/fns'
 import { VirtualIdentifier } from '../scope/vid'
 import { Source } from '../source'
 

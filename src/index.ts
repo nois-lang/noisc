@@ -26,9 +26,9 @@ If FILE is a directory, compile files at FILE/<src> into FILE/<out> directory wi
 If FILE is a source file, compile it into <out> directory
 Options:
     --name=<name>               Compile package with this name
-    --src=<path>                Source directory, relative to FILE (default \`src\`)
+    --src=<path>                Source directory (default \`FILE/src\`)
     --lib=<path>                Library directory containing compiled dependencies (default \`FILE/dist\`)
-    --out=<path>                Package compile directory, relative to FILE (default \`<lib>/<name>\`)
+    --out=<path>                Package compile directory (default \`<lib>/<name>\`)
     --deps=<pkg1,pkg2,..>       Comma separated list of dependency package names (including transitive), present in
                                 <lib> (default \`\`)
     --libCheck=<true|false>     Perform semantic checking on every source file. If \`false\`, only definitions required
@@ -90,18 +90,25 @@ if (statSync(config.pkgPath).isDirectory()) {
         modules: [moduleAst],
         compiled: false
     }
-    lib = []
+    const std = buildPackage(join(dir, 'std'), 'std')
+    if (!std) {
+        process.exit(1)
+    }
+    lib = [std]
 }
 
-const std = buildPackage(join(dir, 'std'), 'std')
+const packages = [...lib, pkg]
+
+const std = packages.find(pkg => pkg.name === 'std')
 if (!std) {
+    console.error('module `std` not found')
     process.exit(1)
 }
 
 const ctx: Context = {
     config,
     moduleStack: [],
-    packages: [std, ...lib, pkg],
+    packages,
     prelude: std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!,
     impls: [],
     errors: [],
@@ -135,15 +142,14 @@ for (const warning of ctx.warnings) {
     )
 }
 
-const srcPath = join(config.pkgPath, config.srcPath)
-const outPath = join(config.pkgPath, config.outPath)
-if (!existsSync(outPath)) mkdirSync(outPath, { recursive: true })
+if (!existsSync(config.outPath)) mkdirSync(config.outPath, { recursive: true })
 pkg.modules.forEach(m => {
     const content = emitDeclaration(m)
-    const modulePath = relative(srcPath, m.source.filepath)
-    const moduleOutPath = join(outPath, modulePath)
+    const modulePath = relative(config.pkgPath, m.source.filepath)
+    const moduleOutPath = join(config.outPath, modulePath)
     const parentDir = dirname(moduleOutPath)
     if (!existsSync(parentDir)) mkdirSync(parentDir)
 
     writeFileSync(moduleOutPath, content)
+    console.info(`emit: module declaration ${moduleOutPath}`)
 })
