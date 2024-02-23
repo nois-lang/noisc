@@ -121,9 +121,10 @@ export interface Module extends AstNode<'module'> {
      * If module is accessed during its check, use scopeStack.at(0) instead
      */
     topScope?: Scope
+    compiled: boolean
 }
 
-export const buildModuleAst = (node: ParseNode, id: VirtualIdentifier, source: Source): Module => {
+export const buildModuleAst = (node: ParseNode, id: VirtualIdentifier, source: Source, compiled = false): Module => {
     const nodes = filterNonAstNodes(node)
     const useExprs = nodes.filter(n => n.kind === 'use-stmt').map(buildUseExpr)
     const statements = nodes.filter(n => n.kind === 'statement').map(buildStatement)
@@ -135,7 +136,8 @@ export const buildModuleAst = (node: ParseNode, id: VirtualIdentifier, source: S
         identifier: id,
         block,
         scopeStack: [],
-        useExprs
+        useExprs,
+        compiled
     }
 }
 

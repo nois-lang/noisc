@@ -6,7 +6,7 @@ import { parseModule } from '../parser/fns'
 import { VirtualIdentifier } from '../scope/vid'
 import { Source } from '../source'
 
-export const buildModule = (source: Source, vid: VirtualIdentifier): Module | undefined => {
+export const buildModule = (source: Source, vid: VirtualIdentifier, compiled = false): Module | undefined => {
     const tokens = tokenize(source.code)
     const errorTokens = tokens.filter(t => erroneousTokenKinds.includes(t.kind))
     if (errorTokens.length > 0) {
@@ -27,5 +27,5 @@ export const buildModule = (source: Source, vid: VirtualIdentifier): Module | un
         return undefined
     }
 
-    return buildModuleAst(root, vid, source)
+    return buildModuleAst(root, vid, source, compiled)
 }

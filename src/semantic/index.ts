@@ -287,7 +287,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
                 }
             })
         } else {
-            if (instanceScope(ctx)?.rel.instanceDef.kind !== 'trait-def') {
+            if (!module.compiled && instanceScope(ctx)?.rel.instanceDef.kind !== 'trait-def') {
                 const msg = `fn \`${fnDef.name.value}\` has no body -> must be native`
                 addWarning(ctx, semanticError(ctx, fnDef.name, msg))
             }
@@ -391,7 +391,8 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
         const vid = idToVid(implDef.identifier)
         const ref = resolveVid(vid, ctx, ['type-def', 'trait-def'])
         if (ref) {
-            if (ref.def.kind === 'trait-def') {
+            if (module.compiled) {
+            } else if (ref.def.kind === 'trait-def') {
                 const traitRels = [
                     ctx.impls.find(rel => rel.instanceDef === ref.def)!,
                     ...findSuperRelChains(ref.vid, ctx).flatMap(chain => chain)

@@ -151,5 +151,5 @@ pkg.modules.forEach(m => {
     if (!existsSync(parentDir)) mkdirSync(parentDir)
 
     writeFileSync(moduleOutPath, content)
-    console.info(`emit: module declaration ${moduleOutPath}`)
+    console.info(`emit: declaration ${moduleOutPath}`)
 })

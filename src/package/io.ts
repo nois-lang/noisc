@@ -7,7 +7,9 @@ import { buildModule } from './build'
 import { Package } from './index'
 
 export const buildPackage = (path: string, name: string, compiled: boolean = false): Package | undefined => {
-    const modules = getPackageModuleSources(path).map(s => buildModule(s, pathToVid(relative(path, s.filepath), name)))
+    const modules = getPackageModuleSources(path).map(s =>
+        buildModule(s, pathToVid(relative(path, s.filepath), name), compiled)
+    )
     if (modules.some(m => !m)) {
         return undefined
     }
