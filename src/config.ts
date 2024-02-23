@@ -16,7 +16,7 @@ export const makeConfig = (pkgName: string, pkgPath: string): Config => {
     return {
         pkgName,
         pkgPath,
-        srcPath: 'src',
+        srcPath: `${pkgPath}/src`,
         libPath,
         outPath: `${libPath}/${pkgName}`,
         deps: [],
@@ -31,7 +31,7 @@ export const fromCmd = (): Config => {
     return {
         pkgName,
         pkgPath,
-        srcPath: parseOption('src') ?? 'src',
+        srcPath: parseOption('src') ?? join(pkgPath, 'src'),
         libPath,
         outPath: parseOption('out') ?? join(libPath, pkgName ?? ''),
         deps: parseOption('deps')?.split(',') ?? [],

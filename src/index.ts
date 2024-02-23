@@ -145,7 +145,7 @@ for (const warning of ctx.warnings) {
 if (!existsSync(config.outPath)) mkdirSync(config.outPath, { recursive: true })
 pkg.modules.forEach(m => {
     const content = emitDeclaration(m)
-    const modulePath = relative(config.pkgPath, m.source.filepath)
+    const modulePath = relative(config.srcPath, m.source.filepath)
     const moduleOutPath = join(config.outPath, modulePath)
     const parentDir = dirname(moduleOutPath)
     if (!existsSync(parentDir)) mkdirSync(parentDir)
