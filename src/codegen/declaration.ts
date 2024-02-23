@@ -8,7 +8,7 @@ export const emitDeclaration = (module: Module): string => {
     return [
         ...module.useExprs.map(emitUseExpr),
         ...module.block.statements
-            .map(emitStatement)
+            .map(s => emitStatement(s))
             .filter(s => !!s)
             .map(s => s!)
     ].join('\n')
@@ -18,20 +18,20 @@ export const emitUseExpr = (useExpr: UseExpr): string => {
     return `${useExpr.pub ? 'pub ' : ''}use ${emitParseNode(useExpr.parseNode)}`
 }
 
-export const emitStatement = (statement: Statement): string | undefined => {
+export const emitStatement = (statement: Statement, pubOnly = true): string | undefined => {
     switch (statement.kind) {
         case 'var-def':
             if (statement.pub) return undefined
             return `pub let ${emitParseNode(statement.pattern.parseNode)}`
         case 'fn-def': {
-            if (!statement.pub) return undefined
+            if (pubOnly && !statement.pub) return undefined
             const generics =
                 statement.generics?.length > 0
                     ? `<${statement.generics.map(g => emitParseNode(g.parseNode)).join(', ')}>`
                     : ''
             const params = statement.params.map(emitParam).join(', ')
             const returnType = statement.returnType ? `: ${emitParseNode(statement.returnType.parseNode)}` : ''
-            return `pub fn ${statement.name.value}${generics}(${params})${returnType}`
+            return `${statement.pub ? 'pub' : ''} fn ${statement.name.value}${generics}(${params})${returnType}`
         }
         case 'trait-def': {
             if (!statement.pub) return undefined
@@ -40,7 +40,7 @@ export const emitStatement = (statement: Statement): string | undefined => {
                     ? `<${statement.generics.map(g => emitParseNode(g.parseNode)).join(', ')}>`
                     : ''
             const statements = statement.block.statements
-                .map(emitStatement)
+                .map(s => emitStatement(s, false))
                 .filter(s => !!s)
                 .map(s => s!)
             const block = statements.length > 0 ? `{\n${statements.map(s => ' '.repeat(4) + s).join('\n')}\n}` : '{}'
@@ -54,10 +54,10 @@ export const emitStatement = (statement: Statement): string | undefined => {
             if (statement.forTrait) {
                 const id = emitParseNode(statement.identifier.parseNode)
                 const forTrait = emitParseNode(statement.forTrait.parseNode)
-                return `impl ${generics}${id} for ${forTrait}`
+                return `impl ${generics}${id} for ${forTrait} {}`
             }
             const statements = statement.block.statements
-                .map(emitStatement)
+                .map(s => emitStatement(s))
                 .filter(s => !!s)
                 .map(s => s!)
             const block = statements.length > 0 ? `{\n${statements.map(s => ' '.repeat(4) + s).join('\n')}\n}` : '{}'
