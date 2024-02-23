@@ -287,8 +287,12 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
                 }
             })
         } else {
-            if (!module.compiled && instanceScope(ctx)?.rel.instanceDef.kind !== 'trait-def') {
+            if (!module.compiled && instScope?.rel.instanceDef.kind !== 'trait-def') {
                 const msg = `fn \`${fnDef.name.value}\` has no body -> must be native`
+                addWarning(ctx, semanticError(ctx, fnDef.name, msg))
+            }
+            if (instScope?.rel.instanceDef.kind === 'trait-def' && fnDef.pub) {
+                const msg = `trait method \`${fnDef.name.value}\` is always public`
                 addWarning(ctx, semanticError(ctx, fnDef.name, msg))
             }
         }
