@@ -8,6 +8,7 @@ export interface Config {
     outPath: string
     deps: string[]
     libCheck: boolean
+    emit: boolean
 }
 
 export const makeConfig = (pkgName: string, pkgPath: string): Config => {
@@ -19,7 +20,8 @@ export const makeConfig = (pkgName: string, pkgPath: string): Config => {
         libPath,
         outPath: `${libPath}/${pkgName}`,
         deps: [],
-        libCheck: false
+        libCheck: false,
+        emit: true
     }
 }
 
@@ -27,6 +29,7 @@ export const fromCmd = (): Config => {
     const pkgPath = process.argv.at(-1)!
     const pkgName = parseOption('name')
     const libPath = parseOption('lib') ?? `${pkgPath}/dist`
+    const emitOption = parseOption('emit')
     return {
         pkgName,
         pkgPath,
@@ -34,6 +37,7 @@ export const fromCmd = (): Config => {
         libPath,
         outPath: parseOption('out') ?? `${libPath}/${pkgName ?? ''}`,
         deps: parseOption('deps')?.split(',') ?? [],
-        libCheck: parseOption('libCheck') === 'true'
+        libCheck: parseOption('libCheck') === 'true',
+        emit: emitOption === 'true' || emitOption === undefined
     }
 }

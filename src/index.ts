@@ -34,6 +34,7 @@ Options:
                                 <lib> (default \`\`)
     --libCheck=<true|false>     Perform semantic checking on every source file. If \`false\`, only definitions required
                                 by the main file will be checked (default \`false\`)
+    --emit=<true|false>         Produce compiled files (default \`true\`)
     --help                      Display this message
     --version                   Display version information
 `
@@ -143,21 +144,23 @@ for (const warning of ctx.warnings) {
     )
 }
 
-if (!existsSync(config.outPath)) mkdirSync(config.outPath, { recursive: true })
-pkg.modules.forEach(m => {
-    const modulePath = relative(config.srcPath, m.source.filepath)
-    const moduleOutPath = parse(join(config.outPath, modulePath))
-    if (!existsSync(moduleOutPath.dir)) mkdirSync(moduleOutPath.dir)
+if (config.emit) {
+    if (!existsSync(config.outPath)) mkdirSync(config.outPath, { recursive: true })
+    pkg.modules.forEach(m => {
+        const modulePath = relative(config.srcPath, m.source.filepath)
+        const moduleOutPath = parse(join(config.outPath, modulePath))
+        if (!existsSync(moduleOutPath.dir)) mkdirSync(moduleOutPath.dir)
 
-    const declaration = emitDeclaration(m)
-    const declarationPath = join(moduleOutPath.dir, moduleOutPath.name) + '.no'
-    writeFileSync(declarationPath, declaration)
-    console.info(`emit: declaration ${declarationPath}`)
+        const declaration = emitDeclaration(m)
+        const declarationPath = join(moduleOutPath.dir, moduleOutPath.name) + '.no'
+        writeFileSync(declarationPath, declaration)
+        console.info(`emit: declaration ${declarationPath}`)
 
-    const nativePath = m.source.filepath.replace(/\.no$/, '.js')
-    const native = existsSync(nativePath) ? readFileSync(nativePath) : undefined
-    const js = [emitModule(m, ctx), native].join('\n')
-    const jsPath = join(moduleOutPath.dir, moduleOutPath.name) + '.js'
-    writeFileSync(jsPath, js)
-    console.info(`emit: js          ${jsPath}`)
-})
+        const nativePath = m.source.filepath.replace(/\.no$/, '.js')
+        const native = existsSync(nativePath) ? readFileSync(nativePath) : undefined
+        const js = [emitModule(m, ctx), native].join('\n')
+        const jsPath = join(moduleOutPath.dir, moduleOutPath.name) + '.js'
+        writeFileSync(jsPath, js)
+        console.info(`emit: js          ${jsPath}`)
+    })
+}
