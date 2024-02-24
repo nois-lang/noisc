@@ -11,7 +11,7 @@
 ## Taste of Nois
 
 ```rust
-use std::math::pi
+use std::{ math::pi, iter::MapAdapter }
 
 trait Area {
     fn area(self): Float
