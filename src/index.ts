@@ -1,8 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'fs'
-import { basename, dirname, join, relative } from 'path'
+import { basename, dirname, join, parse, relative } from 'path'
 import { fileURLToPath } from 'url'
 import { parseOption } from './cli'
 import { emitDeclaration } from './codegen/declaration'
+import { emitModule } from './codegen/js'
 import { fromCmd } from './config'
 import { colorError, colorWarning, prettySourceMessage } from './error'
 import { Package } from './package'
@@ -144,12 +145,19 @@ for (const warning of ctx.warnings) {
 
 if (!existsSync(config.outPath)) mkdirSync(config.outPath, { recursive: true })
 pkg.modules.forEach(m => {
-    const content = emitDeclaration(m)
     const modulePath = relative(config.srcPath, m.source.filepath)
-    const moduleOutPath = join(config.outPath, modulePath)
-    const parentDir = dirname(moduleOutPath)
-    if (!existsSync(parentDir)) mkdirSync(parentDir)
+    const moduleOutPath = parse(join(config.outPath, modulePath))
+    if (!existsSync(moduleOutPath.dir)) mkdirSync(moduleOutPath.dir)
 
-    writeFileSync(moduleOutPath, content)
-    console.info(`emit: declaration ${moduleOutPath}`)
+    const declaration = emitDeclaration(m)
+    const declarationPath = join(moduleOutPath.dir, moduleOutPath.name) + '.no'
+    writeFileSync(declarationPath, declaration)
+    console.info(`emit: declaration ${declarationPath}`)
+
+    const nativePath = m.source.filepath.replace(/\.no$/, '.js')
+    const native = existsSync(nativePath) ? readFileSync(nativePath) : undefined
+    const js = [emitModule(m, ctx), native].join('\n')
+    const jsPath = join(moduleOutPath.dir, moduleOutPath.name) + '.js'
+    writeFileSync(jsPath, js)
+    console.info(`emit: js          ${jsPath}`)
 })
