@@ -1,4 +1,3 @@
-import { join } from 'path'
 import { parseOption } from './cli'
 
 export interface Config {
@@ -27,13 +26,13 @@ export const makeConfig = (pkgName: string, pkgPath: string): Config => {
 export const fromCmd = (): Config => {
     const pkgPath = process.argv.at(-1)!
     const pkgName = parseOption('name')
-    const libPath = parseOption('lib') ?? join(pkgPath, 'dist')
+    const libPath = parseOption('lib') ?? `${pkgPath}/dist`
     return {
         pkgName,
         pkgPath,
-        srcPath: parseOption('src') ?? join(pkgPath, 'src'),
+        srcPath: parseOption('src') ?? `${pkgPath}/src`,
         libPath,
-        outPath: parseOption('out') ?? join(libPath, pkgName ?? ''),
+        outPath: parseOption('out') ?? `${libPath}/${pkgName ?? ''}`,
         deps: parseOption('deps')?.split(',') ?? [],
         libCheck: parseOption('libCheck') === 'true'
     }
