@@ -102,6 +102,7 @@ export const compactAstNode = (node: AstNode<any>): any => {
 export interface Module extends AstNode<'module'> {
     source: Source
     identifier: VirtualIdentifier
+    mod: boolean
     block: Block
 
     scopeStack: Scope[]
@@ -128,7 +129,13 @@ export interface Module extends AstNode<'module'> {
     imports: VirtualIdentifierMatch[]
 }
 
-export const buildModuleAst = (node: ParseNode, id: VirtualIdentifier, source: Source, compiled = false): Module => {
+export const buildModuleAst = (
+    node: ParseNode,
+    id: VirtualIdentifier,
+    source: Source,
+    mod: boolean,
+    compiled = false
+): Module => {
     const nodes = filterNonAstNodes(node)
     const useExprs = nodes.filter(n => n.kind === 'use-stmt').map(buildUseExpr)
     const statements = nodes.filter(n => n.kind === 'statement').map(buildStatement)
@@ -138,6 +145,7 @@ export const buildModuleAst = (node: ParseNode, id: VirtualIdentifier, source: S
         parseNode: node,
         source,
         identifier: id,
+        mod,
         block,
         scopeStack: [],
         useExprs,

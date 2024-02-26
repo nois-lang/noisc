@@ -14,6 +14,7 @@ import { Context, pathToVid } from './scope'
 import { buildInstanceRelations } from './scope/trait'
 import { checkModule, checkTopLevelDefinition, prepareModule } from './semantic'
 import { Source } from './source'
+import { assert } from './util/todo'
 
 const dir = dirname(fileURLToPath(import.meta.url))
 const version = JSON.parse(readFileSync(join(dir, '..', 'package.json')).toString()).version
@@ -121,13 +122,18 @@ const ctx: Context = {
 
 ctx.packages.forEach(p => p.modules.forEach(m => prepareModule(m)))
 ctx.impls = buildInstanceRelations(ctx)
+assert(ctx.moduleStack.length === 0, ctx.moduleStack.length.toString())
+
 ctx.impls.forEach(impl => checkTopLevelDefinition(impl.module, impl.instanceDef, ctx))
+assert(ctx.moduleStack.length === 0, ctx.moduleStack.length.toString())
+
 ctx.check = true
 if (ctx.config.libCheck) {
     ctx.packages.flatMap(p => p.modules).forEach(m => checkModule(m, ctx))
 } else {
     pkg.modules.forEach(m => checkModule(m, ctx))
 }
+assert(ctx.moduleStack.length === 0, ctx.moduleStack.length.toString())
 
 if (ctx.errors.length > 0) {
     for (const error of ctx.errors) {

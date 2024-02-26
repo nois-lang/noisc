@@ -7,10 +7,13 @@ export const emitModule = (module: Module, ctx: Context): string => {
 }
 
 export const emitImports = (module: Module, ctx: Context): string => {
-    const imports_: { def: string; path: string }[] = module.imports.map(i => ({
-        def: i.vid.names.at(-1)!,
-        path: i.vid.names.slice(0, -1).join('/')
-    }))
+    const imports_: { def: string; path: string }[] = module.imports
+        .filter(i => i.module !== module)
+        .map(i => ({
+            // TODO: fails on variant imports
+            def: i.vid.names.at(-1)!,
+            path: [...i.vid.names.slice(0, -1), ...(i.module.mod ? ['mod'] : [])].join('/')
+        }))
     const imports = [...groupBy(imports_, i => i.path).entries()]
         .map(([path, is]) => {
             const defs = [...new Set(is.map(i => i.def))].toSorted()

@@ -27,5 +27,6 @@ export const buildModule = (source: Source, vid: VirtualIdentifier, compiled = f
         return undefined
     }
 
-    return buildModuleAst(root, vid, source, compiled)
+    const mod = /mod\.no$/.test(source.filepath)
+    return buildModuleAst(root, vid, source, mod, compiled)
 }
