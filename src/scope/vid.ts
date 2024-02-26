@@ -140,9 +140,11 @@ export const resolveVid = (
         }
     }
 
-    // check if fully qualified
-    ref = resolveMatchedVid(vid, ctx, ofKind)
-    if (ref) return ref
+    // check fully qualified import (only if in the same package)
+    if (vid.names.at(0) === module.identifier.names[0]) {
+        ref = resolveMatchedVid(vid, ctx, ofKind)
+        if (ref) return ref
+    }
 
     return undefined
 }
