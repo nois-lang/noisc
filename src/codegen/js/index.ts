@@ -1,24 +1,42 @@
 import { Module } from '../../ast'
 import { Context } from '../../scope'
+import { vidFromScope } from '../../scope/util'
+import { VirtualIdentifier } from '../../scope/vid'
 import { groupBy } from '../../util/array'
+
+export interface JsImport {
+    def: string
+    path: string
+}
 
 export const emitModule = (module: Module, ctx: Context): string => {
     return [emitImports(module, ctx)].join('\n\n')
 }
 
 export const emitImports = (module: Module, ctx: Context): string => {
-    const imports_: { def: string; path: string }[] = module.imports
+    const imports_: JsImport[] = module.imports
         .filter(i => i.module !== module)
-        .map(i => ({
-            // TODO: fails on variant imports
-            def: i.vid.names.at(-1)!,
-            path: [...i.vid.names.slice(0, -1), ...(i.module.mod ? ['mod'] : [])].join('/')
-        }))
+        .map(i => {
+            let vid = i.vid
+            // variant constructors are always accessible from type reference, e.g. `Option.Some`, so only `Option`
+            // needs to be imported
+            if (i.def.kind === 'variant') {
+                vid = vidFromScope(vid)
+            }
+            return makeJsImport(vid, i.module, module, ctx)
+        })
     const imports = [...groupBy(imports_, i => i.path).entries()]
         .map(([path, is]) => {
             const defs = [...new Set(is.map(i => i.def))].toSorted()
-            return `import { ${defs.join(', ')} } from "${path}";`
+            return `import { ${defs.join(', ')} } from "${path}.js";`
         })
         .join('\n')
     return imports
+}
+
+const makeJsImport = (vid: VirtualIdentifier, importModule: Module, module: Module, ctx: Context): JsImport => {
+    return {
+        def: vid.names.at(-1)!,
+        path: [...vid.names.slice(0, -1), ...(importModule.mod ? ['mod'] : [])].join('/')
+    }
 }
