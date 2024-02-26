@@ -15,7 +15,8 @@
         "run:node": "node dist",
         "test": "bun test src",
         "ci": "npm run test",
-        "clean": "rm -rf dist"
+        "clean": "rm -rf dist",
+        "fmt": "biome check --apply --linter-enabled=true --formatter-enabled=true --organize-imports-enabled=true --skip-errors src"
     },
     "type": "module",
     "main": "dist/index.js",
