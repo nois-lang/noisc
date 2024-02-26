@@ -23,3 +23,17 @@ export const fold = <T, A>(arr: T[], fn: (acc: A, v: T) => A, initial: A): A => 
     }
     return acc
 }
+
+export const groupBy = <T, K>(arr: T[], keyFn: (t: T) => K): Map<K, T[]> => {
+    const groups = new Map()
+    for (const t of arr) {
+        const k = keyFn(t)
+        const g = groups.get(k)
+        if (g) {
+            g.push(t)
+        } else {
+            groups.set(k, [t])
+        }
+    }
+    return groups
+}

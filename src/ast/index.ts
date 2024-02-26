@@ -1,6 +1,6 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { Scope } from '../scope'
-import { VirtualIdentifier } from '../scope/vid'
+import { VirtualIdentifier, VirtualIdentifierMatch } from '../scope/vid'
 import { Typed } from '../semantic'
 import { VirtualUseExpr } from '../semantic/use-expr'
 import { Source } from '../source'
@@ -122,6 +122,10 @@ export interface Module extends AstNode<'module'> {
      */
     topScope?: Scope
     compiled: boolean
+    /**
+     * List of resolved imports used by this module
+     */
+    imports: VirtualIdentifierMatch[]
 }
 
 export const buildModuleAst = (node: ParseNode, id: VirtualIdentifier, source: Source, compiled = false): Module => {
@@ -137,7 +141,8 @@ export const buildModuleAst = (node: ParseNode, id: VirtualIdentifier, source: S
         block,
         scopeStack: [],
         useExprs,
-        compiled
+        compiled,
+        imports: []
     }
 }
 

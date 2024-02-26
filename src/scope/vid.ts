@@ -71,6 +71,19 @@ export interface VirtualIdentifierMatch<D = Definition> {
     def: D
 }
 
+export const resolveVid = (
+    vid: VirtualIdentifier,
+    ctx: Context,
+    ofKind: DefinitionKind[] = [...defKinds]
+): VirtualIdentifierMatch | undefined => {
+    const module = ctx.moduleStack.at(-1)!
+    const res = resolveVid_(vid, ctx, ofKind)
+    if (res && ['variant', 'fn-def', 'type-def', 'trait-def'].includes(res.def.kind)) {
+        module.imports.push(res)
+    }
+    return res
+}
+
 /**
  * Priority:
  *  - stack variable, e.g. Foo
@@ -84,7 +97,7 @@ export interface VirtualIdentifierMatch<D = Definition> {
  *  - generic ref, e.g. C::fromIter, where C is bounded generic in scope
  *  - `Self`
  */
-export const resolveVid = (
+const resolveVid_ = (
     vid: VirtualIdentifier,
     ctx: Context,
     ofKind: DefinitionKind[] = [...defKinds]
