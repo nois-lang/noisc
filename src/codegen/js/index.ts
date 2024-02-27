@@ -35,8 +35,13 @@ export const emitImports = (module: Module, ctx: Context): string => {
 }
 
 const makeJsImport = (vid: VirtualIdentifier, importModule: Module, module: Module, ctx: Context): JsImport => {
-    return {
-        def: vid.names.at(-1)!,
-        path: [...vid.names.slice(0, -1), ...(importModule.mod ? ['mod'] : [])].join('/')
+    const importPkg = vid.names[0]
+    const modulePkg = ctx.packages.find(p => p.modules.find(m => m === module))!.name
+    const def = vid.names.at(-1)!
+    if (importPkg === modulePkg) {
+        // -2 is because vid looks like pkg::sub*::mod and only sub contributes to the actual dir tree
+        const root = ['.', ...new Array(module.identifier.names.length - 2).fill('..')]
+        return { def, path: [...root, ...vid.names.slice(1, -1), ...(importModule.mod ? ['mod'] : [])].join('/') }
     }
+    return { def, path: [...vid.names.slice(0, -1), ...(importModule.mod ? ['mod'] : [])].join('/') }
 }
