@@ -1,4 +1,5 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
+import { InstanceRelation } from '../scope/trait'
 import { Checked, Typed } from '../semantic'
 import { assert } from '../util/todo'
 import { Expr, buildExpr } from './expr'
@@ -113,6 +114,7 @@ export interface TraitDef extends AstNode<'trait-def'> {
     generics: Generic[]
     block: Block
     pub: boolean
+    rels?: InstanceRelation[]
 }
 
 export const buildTraitDef = (node: ParseNode): TraitDef => {

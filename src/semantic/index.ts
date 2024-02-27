@@ -16,7 +16,7 @@ import {
     instanceScope,
     unwindScope
 } from '../scope'
-import { findSuperRelChains, traitDefToVirtualType } from '../scope/trait'
+import { findSuperRelChains, traitDefToVirtualType, typeDefToVirtualType } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
 import { Definition, NameDef, resolveVid, typeKinds } from '../scope/vid'
 import { VirtualType, genericToVirtual, isAssignable, typeToVirtual } from '../typecheck'
@@ -361,6 +361,10 @@ const checkTraitDef = (traitDef: TraitDef, ctx: Context) => {
 
     checkBlock(traitDef.block, ctx)
     // TODO: make sure method signature matches with its trait
+    const traitVid = traitDefToVirtualType(traitDef, ctx).identifier
+    traitDef.rels = ctx.impls.filter(
+        i => i.instanceDef === traitDef || (i.implType.kind === 'vid-type' && vidEq(traitVid, i.implType.identifier))
+    )
 
     module.scopeStack.pop()
 }
@@ -458,6 +462,10 @@ export const checkTypeDef = (typeDef: TypeDef, ctx: Context) => {
 
     typeDef.variants.forEach(v => checkVariant(v, ctx))
     // TODO: check duplicate variants
+    const typeVid = typeDefToVirtualType(typeDef, ctx).identifier
+    typeDef.rel = ctx.impls.find(
+        i => i.inherent && i.implType.kind === 'vid-type' && vidEq(typeVid, i.implType.identifier)
+    )
 
     module.scopeStack.pop()
 }

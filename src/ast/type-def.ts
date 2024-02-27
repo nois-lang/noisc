@@ -1,4 +1,5 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
+import { InstanceRelation } from '../scope/trait'
 import { Checked, Typed } from '../semantic'
 import { AstNode } from './index'
 import { Name, buildName } from './operand'
@@ -9,6 +10,7 @@ export interface TypeDef extends AstNode<'type-def'>, Partial<Checked> {
     generics: Generic[]
     variants: Variant[]
     pub: boolean
+    rel?: InstanceRelation
 }
 
 export const buildTypeDef = (node: ParseNode): TypeDef => {

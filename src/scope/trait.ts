@@ -2,7 +2,7 @@ import { Module } from '../ast'
 import { ImplDef, TraitDef } from '../ast/statement'
 import { TypeDef } from '../ast/type-def'
 import { notFoundError } from '../semantic/error'
-import { VirtualType, genericToVirtual, typeToVirtual } from '../typecheck'
+import { VidType, VirtualType, genericToVirtual, typeToVirtual } from '../typecheck'
 import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { assert } from '../util/todo'
 import { Context, addError, defKey } from './index'
@@ -167,13 +167,27 @@ export const getInstanceForType = (implDef: TraitDef | ImplDef, ctx: Context): V
  * Convert instance def into virtual type.
  * Must be defined in a module that is currently at the top of module stack
  */
-export const traitDefToVirtualType = (traitDef: TraitDef | ImplDef, ctx: Context): VirtualType => {
+export const traitDefToVirtualType = (traitDef: TraitDef | ImplDef, ctx: Context): VidType => {
     const module = ctx.moduleStack.at(-1)!
     const name = traitDef.kind === 'trait-def' ? traitDef.name.value : traitDef.identifier.names.at(-1)!.value
     return {
         kind: 'vid-type',
         identifier: concatVid(module.identifier, vidFromString(name)),
         typeArgs: traitDef.generics.map(g => genericToVirtual(g, ctx))
+    }
+}
+
+/**
+ * Convert type def into virtual type.
+ * Must be defined in a module that is currently at the top of module stack
+ */
+export const typeDefToVirtualType = (typeDef: TypeDef, ctx: Context): VidType => {
+    const module = ctx.moduleStack.at(-1)!
+    const name = typeDef.name.value
+    return {
+        kind: 'vid-type',
+        identifier: concatVid(module.identifier, vidFromString(name)),
+        typeArgs: typeDef.generics.map(g => genericToVirtual(g, ctx))
     }
 }
 
