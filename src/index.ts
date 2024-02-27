@@ -163,8 +163,8 @@ if (config.emit) {
         console.info(`emit: declaration ${declarationPath} [${declaration.length}B]`)
 
         const nativePath = m.source.filepath.replace(/\.no$/, '.js')
-        const native = existsSync(nativePath) ? readFileSync(nativePath) : undefined
-        const js = [emitModule(m, ctx), ...(native ? [native] : [])].join('\n\n')
+        const native = existsSync(nativePath) ? readFileSync(nativePath) : ''
+        const js = [emitModule(m, ctx), native].filter(m => m.length > 0).join('\n\n')
         const jsPath = join(moduleOutPath.dir, moduleOutPath.name) + '.js'
         writeFileSync(jsPath, js)
         console.info(`emit: js          ${jsPath} [${js.length}B]`)

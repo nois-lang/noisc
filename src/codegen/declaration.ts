@@ -3,6 +3,7 @@ import { Statement, UseExpr } from '../ast/statement'
 import { FieldDef } from '../ast/type-def'
 import { ParseNode } from '../parser'
 import { unreachable } from '../util/todo'
+import { indent } from './js'
 
 export const emitDeclaration = (module: Module): string => {
     return [
@@ -31,7 +32,7 @@ export const emitStatement = (statement: Statement, pubOnly = true): string | un
                     : ''
             const params = statement.params.map(emitParam).join(', ')
             const returnType = statement.returnType ? `: ${emitParseNode(statement.returnType.parseNode)}` : ''
-            return `${statement.pub ? 'pub' : ''} fn ${statement.name.value}${generics}(${params})${returnType}`
+            return `${statement.pub ? 'pub ' : ''}fn ${statement.name.value}${generics}(${params})${returnType}`
         }
         case 'trait-def': {
             if (!statement.pub) return undefined
@@ -43,7 +44,7 @@ export const emitStatement = (statement: Statement, pubOnly = true): string | un
                 .map(s => emitStatement(s, false))
                 .filter(s => !!s)
                 .map(s => s!)
-            const block = statements.length > 0 ? `{\n${statements.map(s => ' '.repeat(4) + s).join('\n')}\n}` : '{}'
+            const block = statements.length > 0 ? `{\n${statements.map(s => indent(s)).join('\n')}\n}` : '{}'
             return `pub trait ${statement.name.value}${generics} ${block}`
         }
         case 'impl-def': {
@@ -60,7 +61,7 @@ export const emitStatement = (statement: Statement, pubOnly = true): string | un
                 .map(s => emitStatement(s))
                 .filter(s => !!s)
                 .map(s => s!)
-            const block = statements.length > 0 ? `{\n${statements.map(s => ' '.repeat(4) + s).join('\n')}\n}` : '{}'
+            const block = statements.length > 0 ? `{\n${statements.map(s => indent(s)).join('\n')}\n}` : '{}'
             return `impl ${generics}${emitParseNode(statement.identifier.parseNode)} ${block}`
         }
         case 'type-def': {
@@ -77,7 +78,7 @@ export const emitStatement = (statement: Statement, pubOnly = true): string | un
                 const fieldDefs = v.fieldDefs.length > 0 ? `(${fields})` : ''
                 return `${v.name.value}${fieldDefs}`
             })
-            const block = variants.length > 0 ? ` {\n${variants.map(s => ' '.repeat(4) + s).join(',\n')}\n}` : ''
+            const block = variants.length > 0 ? ` {\n${variants.map(s => indent(s)).join(',\n')}\n}` : ''
             return `pub type ${statement.name.value}${generics}${block}`
         }
         default:
