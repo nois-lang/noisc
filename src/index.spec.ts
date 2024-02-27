@@ -21,7 +21,7 @@ describe('nois', () => {
 
         expect(root.kind).toEqual('module')
 
-        const astRoot = buildModuleAst(root, { names: ['test'] }, source)
+        const astRoot = buildModuleAst(root, { names: ['test'] }, source, false)
 
         expect(astRoot.kind).toEqual('module')
     })

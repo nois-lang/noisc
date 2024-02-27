@@ -16,7 +16,7 @@ describe('ast', () => {
         parseModule(p)
         const parseTree = p.buildTree()
 
-        return buildModuleAst(parseTree, vidFromString('test'), source)
+        return buildModuleAst(parseTree, vidFromString('test'), source, false)
     }
 
     describe('use-stmt', () => {
