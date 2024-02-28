@@ -179,10 +179,8 @@ export const traitDefToVirtualType = (traitDef: TraitDef | ImplDef, ctx: Context
 
 /**
  * Convert type def into virtual type.
- * Must be defined in a module that is currently at the top of module stack
  */
-export const typeDefToVirtualType = (typeDef: TypeDef, ctx: Context): VidType => {
-    const module = ctx.moduleStack.at(-1)!
+export const typeDefToVirtualType = (typeDef: TypeDef, ctx: Context, module = ctx.moduleStack.at(-1)!): VidType => {
     const name = typeDef.name.value
     return {
         kind: 'vid-type',

@@ -15,7 +15,7 @@ import {
 } from '../ast/operand'
 import { Context, Scope, addError, fnDefScope, instanceScope } from '../scope'
 import { bool, iter, iterable, unwrap } from '../scope/std'
-import { getConcreteTrait } from '../scope/trait'
+import { getConcreteTrait, typeDefToVirtualType } from '../scope/trait'
 import { idToVid, vidEq, vidFromString, vidToString } from '../scope/util'
 import { MethodDef, VariantDef, VirtualIdentifierMatch, resolveVid } from '../scope/vid'
 import {
@@ -38,7 +38,7 @@ import {
 } from '../typecheck/generic'
 import { holeType, unitType, unknownType } from '../typecheck/type'
 import { assert } from '../util/todo'
-import { semanticError, typeError, unknownTypeError } from './error'
+import { notFoundError, semanticError, typeError, unknownTypeError } from './error'
 import { checkExhaustion } from './exhaust'
 import { checkAccessExpr } from './instance'
 import { checkPattern } from './match'
@@ -92,41 +92,56 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
         case 'list-expr':
             checkListExpr(operand, ctx)
             break
-        case 'string-literal':
-            operand.type = {
-                kind: 'vid-type',
-                identifier: vidFromString('std::string::String'),
-                typeArgs: []
+        case 'string-literal': {
+            const vid = vidFromString('std::string::String')
+            const ref = resolveVid(vid, ctx, ['type-def'])
+            if (!ref || ref.def.kind !== 'type-def') {
+                addError(ctx, notFoundError(ctx, operand, vidToString(vid)))
+                break
             }
+            operand.type = typeDefToVirtualType(ref.def, ctx, ref.module)
             break
-        case 'char-literal':
-            operand.type = {
-                kind: 'vid-type',
-                identifier: vidFromString('std::char::Char'),
-                typeArgs: []
+        }
+        case 'char-literal': {
+            const vid = vidFromString('std::char::Char')
+            const ref = resolveVid(vid, ctx, ['type-def'])
+            if (!ref || ref.def.kind !== 'type-def') {
+                addError(ctx, notFoundError(ctx, operand, vidToString(vid)))
+                break
             }
+            operand.type = typeDefToVirtualType(ref.def, ctx, ref.module)
             break
-        case 'int-literal':
-            operand.type = {
-                kind: 'vid-type',
-                identifier: vidFromString('std::int::Int'),
-                typeArgs: []
+        }
+        case 'int-literal': {
+            const vid = vidFromString('std::int::Int')
+            const ref = resolveVid(vid, ctx, ['type-def'])
+            if (!ref || ref.def.kind !== 'type-def') {
+                addError(ctx, notFoundError(ctx, operand, vidToString(vid)))
+                break
             }
+            operand.type = typeDefToVirtualType(ref.def, ctx, ref.module)
             break
-        case 'float-literal':
-            operand.type = {
-                kind: 'vid-type',
-                identifier: vidFromString('std::float::Float'),
-                typeArgs: []
+        }
+        case 'float-literal': {
+            const vid = vidFromString('std::float::Float')
+            const ref = resolveVid(vid, ctx, ['type-def'])
+            if (!ref || ref.def.kind !== 'type-def') {
+                addError(ctx, notFoundError(ctx, operand, vidToString(vid)))
+                break
             }
+            operand.type = typeDefToVirtualType(ref.def, ctx, ref.module)
             break
-        case 'bool-literal':
-            operand.type = {
-                kind: 'vid-type',
-                identifier: vidFromString('std::bool::Bool'),
-                typeArgs: []
+        }
+        case 'bool-literal': {
+            const vid = vidFromString('std::bool::Bool')
+            const ref = resolveVid(vid, ctx, ['type-def'])
+            if (!ref || ref.def.kind !== 'type-def') {
+                addError(ctx, notFoundError(ctx, operand, vidToString(vid)))
+                break
             }
+            operand.type = typeDefToVirtualType(ref.def, ctx, ref.module)
             break
+        }
         case 'identifier':
             checkIdentifier(operand, ctx)
             break
