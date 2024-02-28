@@ -2,7 +2,7 @@
  * @param {number} a
  * @returns {Int}
  */
-function Int(a) {
+Int.Int = function(a) {
     return { $noisType: 'std::int::Int', value: a }
 }
 

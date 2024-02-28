@@ -1,5 +1,14 @@
 /**
  * @template T
+ * @param {T[]} a
+ * @returns {List<T>}
+ */
+List.List = function(a) {
+    return { $noisType: 'std::list::List', value: a }
+}
+
+/**
+ * @template T
  * @param {List<T>} list
  * @param {Int} index
  * @returns {Option<T>}

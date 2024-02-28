@@ -1,4 +1,12 @@
 /**
+ * @param {string} a
+ * @returns {Char}
+ */
+Char.Char = function(a) {
+    return { $noisType: 'std::char::Char', value: a }
+}
+
+/**
  * @param {Char} a
  * @returns {String}
  */

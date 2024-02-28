@@ -2,7 +2,7 @@
  * @param {number} a
  * @returns {Float}
  */
-function Float(a) {
+Float.Float = function(a) {
     return { $noisType: 'std::float::Float', value: a }
 }
 

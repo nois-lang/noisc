@@ -1,4 +1,12 @@
 /**
+ * @param {boolean} a
+ * @returns {Boolean}
+ */
+Bool.Bool = function(a) {
+    return { $noisType: 'std::bool::Bool', value: a }
+}
+
+/**
  * @param {Bool} a
  * @param {Bool} b
  * @returns {Bool}

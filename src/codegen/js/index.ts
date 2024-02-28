@@ -2,7 +2,7 @@ import { Module, Param } from '../../ast'
 import { BinaryExpr, Expr, OperandExpr, UnaryExpr } from '../../ast/expr'
 import { Operand } from '../../ast/operand'
 import { Block, BreakStmt, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '../../ast/statement'
-import { TypeDef } from '../../ast/type-def'
+import { TypeDef, Variant } from '../../ast/type-def'
 import { Context } from '../../scope'
 import { vidFromScope } from '../../scope/util'
 import { VirtualIdentifier } from '../../scope/vid'
@@ -116,8 +116,11 @@ export const emitImplDef = (implDef: ImplDef, module: Module, ctx: Context): str
 
 export const emitTypeDef = (typeDef: TypeDef, module: Module, ctx: Context): string => {
     const name = typeDef.name.value
-    const impl = typeDef.rel ? emitInstance(typeDef.rel.instanceDef, module, ctx) : '{}'
-    return `const ${name} = ${impl};`
+    const variants = typeDef.variants.map(v => indent(`${v.name.value}: ${emitVariant(v, typeDef, module, ctx)}`))
+    const impl = typeDef.rel ? indent(`impl: ${emitInstance(typeDef.rel.instanceDef, module, ctx)}`) : ''
+    const items_ = [...variants, impl].filter(i => i.length > 0).join(',\n')
+    const items = items_.length > 0 ? `{\n${items_}\n}` : '{}'
+    return `const ${name} = ${items}`
 }
 
 export const emitReturnStmt = (returnStmt: ReturnStmt, module: Module, ctx: Context): string => {
@@ -247,4 +250,8 @@ export const extractValue = (str: string): string => {
 
 export const indent = (str: string, level = 1): string => {
     return str.replace(/^/gm, ' '.repeat(4 * level))
+}
+
+export const emitVariant = (v: Variant, typeDef: TypeDef, module: Module, ctx: Context) => {
+    return `function() {/*variant*/}`
 }
