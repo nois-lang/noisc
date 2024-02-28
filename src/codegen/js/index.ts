@@ -189,7 +189,7 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): str
         case 'list-expr':
             return `List(${operand.exprs.map(e => emitExpr(e, module, ctx)).join(', ')})`
         case 'string-literal':
-            return `Char(${operand.value})`
+            return `String(${operand.value})`
         case 'char-literal':
             return `Char(${operand.value})`
         case 'int-literal':
