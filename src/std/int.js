@@ -1,9 +1,9 @@
 /**
- * @param {number} a
+ * @param {number} value
  * @returns {Int}
  */
-Int.Int = function(a) {
-    return { $noisType: 'std::int::Int', value: a }
+Int.Int = function(value) {
+    return { $noisType: 'std::int::Int', value }
 }
 
 /**
@@ -11,7 +11,7 @@ Int.Int = function(a) {
  * @returns {Int}
  */
 function negInt(a) {
-    return Int(-a.value)
+    return Int.Int(-a.value)
 }
 
 /**
@@ -19,7 +19,7 @@ function negInt(a) {
  * @returns {Int}
  */
 function absInt(a) {
-    return Int(Math.abs(a.value))
+    return Int.Int(Math.abs(a.value))
 }
 
 /**
@@ -28,7 +28,7 @@ function absInt(a) {
  * @returns {Int}
  */
 function addInt(a, b) {
-    return Int(a.value + b.value)
+    return Int.Int(a.value + b.value)
 }
 
 /**
@@ -37,7 +37,7 @@ function addInt(a, b) {
  * @returns {Int}
  */
 function subInt(a, b) {
-    return Int(a.value - b.value)
+    return Int.Int(a.value - b.value)
 }
 
 /**
@@ -46,7 +46,7 @@ function subInt(a, b) {
  * @returns {Int}
  */
 function multInt(a, b) {
-    return Int(a.value * b.value)
+    return Int.Int(a.value * b.value)
 }
 
 /**
@@ -55,7 +55,7 @@ function multInt(a, b) {
  * @returns {Int}
  */
 function divInt(a, b) {
-    return Int(a.value / b.value)
+    return Int.Int(a.value / b.value)
 }
 
 /**
@@ -64,7 +64,7 @@ function divInt(a, b) {
  * @returns {Int}
  */
 function expInt(a, b) {
-    return Int(a.value ** b.value)
+    return Int.Int(a.value ** b.value)
 }
 
 /**
@@ -73,7 +73,7 @@ function expInt(a, b) {
  * @returns {Bool}
  */
 function eqInt(a) {
-    return Bool(a.value === b.value)
+    return Bool.Bool(a.value === b.value)
 }
 
 /**
@@ -81,5 +81,5 @@ function eqInt(a) {
  * @returns {String}
  */
 function fmtInt(a) {
-    return Int(a.value.toString())
+    return Int.Int(a.value.toString())
 }

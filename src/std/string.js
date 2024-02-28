@@ -1,9 +1,9 @@
 /**
- * @param {string} a
+ * @param {string} value
  * @returns {String}
  */
-String.String = function(a) {
-    return { $noisType: 'std::string::String', value: a }
+String.String = function(value) {
+    return { $noisType: 'std::string::String', value }
 }
 
 /**
@@ -12,7 +12,7 @@ String.String = function(a) {
  * @returns {String}
  */
 function concatString(a, b) {
-    return String(a.value + b.value)
+    return String.String(a.value + b.value)
 }
 
 /**
@@ -21,5 +21,5 @@ function concatString(a, b) {
  * @returns {Bool}
  */
 function eqString(a, b) {
-    return String(a.value === b.value)
+    return String.String(a.value === b.value)
 }

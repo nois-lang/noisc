@@ -4,7 +4,8 @@ import { Operand } from '../../ast/operand'
 import { Block, BreakStmt, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '../../ast/statement'
 import { TypeDef, Variant } from '../../ast/type-def'
 import { Context } from '../../scope'
-import { vidFromScope } from '../../scope/util'
+import { typeDefToVirtualType } from '../../scope/trait'
+import { vidFromScope, vidToString } from '../../scope/util'
 import { VirtualIdentifier } from '../../scope/vid'
 import { operatorImplMap } from '../../semantic/op'
 import { groupBy } from '../../util/array'
@@ -244,14 +245,27 @@ export const emitInstance = (instance: ImplDef | TraitDef, module: Module, ctx: 
     return `{${fns}}`
 }
 
+export const emitVariant = (v: Variant, typeDef: TypeDef, module: Module, ctx: Context) => {
+    const fieldNames = v.fieldDefs.map(f => f.name.value)
+    const fields = fieldNames.map(f => `${f}`)
+    const type = jsString(vidToString(typeDefToVirtualType(typeDef, ctx, module).identifier))
+    const name = jsString(v.name.value)
+    const props = [
+        `$noisType: ${type}`,
+        ...(typeDef.variants.length > 1 ? [`$noisVariant: ${name}`] : []),
+        ...fields
+    ].join(', ')
+    return `function(${fieldNames}) {\n${indent(`return { ${props} }`)}\n}`
+}
+
 export const extractValue = (str: string): string => {
     return `${str}.value`
 }
 
-export const indent = (str: string, level = 1): string => {
-    return str.replace(/^/gm, ' '.repeat(4 * level))
+export const jsString = (str: string): string => {
+    return JSON.stringify(str)
 }
 
-export const emitVariant = (v: Variant, typeDef: TypeDef, module: Module, ctx: Context) => {
-    return `function() {/*variant*/}`
+export const indent = (str: string, level = 1): string => {
+    return str.replace(/^/gm, ' '.repeat(4 * level))
 }

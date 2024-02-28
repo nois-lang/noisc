@@ -1,10 +1,10 @@
 /**
  * @template T
- * @param {T[]} a
+ * @param {T[]} value
  * @returns {List<T>}
  */
-List.List = function(a) {
-    return { $noisType: 'std::list::List', value: a }
+List.List = function(value) {
+    return { $noisType: 'std::list::List', value }
 }
 
 /**

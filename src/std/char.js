@@ -1,9 +1,9 @@
 /**
- * @param {string} a
+ * @param {string} value
  * @returns {Char}
  */
-Char.Char = function(a) {
-    return { $noisType: 'std::char::Char', value: a }
+Char.Char = function(value) {
+    return { $noisType: 'std::char::Char', value }
 }
 
 /**
@@ -11,7 +11,7 @@ Char.Char = function(a) {
  * @returns {String}
  */
 function fmtChar(a) {
-    return String(a.value)
+    return String.String(a.value)
 }
 
 /**
@@ -20,5 +20,5 @@ function fmtChar(a) {
  * @returns {Bool}
  */
 function eqChar(a, b) {
-    return Bool(a.value === b.value)
+    return Bool.Bool(a.value === b.value)
 }

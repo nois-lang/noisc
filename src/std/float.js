@@ -1,9 +1,9 @@
 /**
- * @param {number} a
+ * @param {number} value
  * @returns {Float}
  */
-Float.Float = function(a) {
-    return { $noisType: 'std::float::Float', value: a }
+Float.Float = function(value) {
+    return { $noisType: 'std::float::Float', value }
 }
 
 /**
@@ -11,7 +11,7 @@ Float.Float = function(a) {
  * @returns {Float}
  */
 function negFloat(a) {
-    return Float(-a.value)
+    return Float.Float(-a.value)
 }
 
 /**
@@ -19,7 +19,7 @@ function negFloat(a) {
  * @returns {Float}
  */
 function absFloat(a) {
-    return Float(Math.abs(a.value))
+    return Float.Float(Math.abs(a.value))
 }
 
 /**
@@ -28,7 +28,7 @@ function absFloat(a) {
  * @returns {Float}
  */
 function addFloat(a, b) {
-    return Float(a.value + b.value)
+    return Float.Float(a.value + b.value)
 }
 
 /**
@@ -37,7 +37,7 @@ function addFloat(a, b) {
  * @returns {Float}
  */
 function subFloat(a, b) {
-    return Float(a.value - b.value)
+    return Float.Float(a.value - b.value)
 }
 
 /**
@@ -46,7 +46,7 @@ function subFloat(a, b) {
  * @returns {Float}
  */
 function multFloat(a, b) {
-    return Float(a.value * b.value)
+    return Float.Float(a.value * b.value)
 }
 
 /**
@@ -55,7 +55,7 @@ function multFloat(a, b) {
  * @returns {Float}
  */
 function divFloat(a, b) {
-    return Float(a.value / b.value)
+    return Float.Float(a.value / b.value)
 }
 
 /**
@@ -64,7 +64,7 @@ function divFloat(a, b) {
  * @returns {Float}
  */
 function expFloat(a, b) {
-    return Float(a.value ** b.value)
+    return Float.Float(a.value ** b.value)
 }
 
 /**
@@ -73,7 +73,7 @@ function expFloat(a, b) {
  * @returns {Bool}
  */
 function eqFloat(a, b) {
-    return Bool(a.value === b.value)
+    return Bool.Bool(a.value === b.value)
 }
 
 /**
@@ -81,5 +81,5 @@ function eqFloat(a, b) {
  * @returns {String}
  */
 function fmtFloat(a) {
-    return Float(a.value.toString())
+    return Float.Float(a.value.toString())
 }

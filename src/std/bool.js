@@ -1,9 +1,9 @@
 /**
- * @param {boolean} a
+ * @param {boolean} value
  * @returns {Boolean}
  */
-Bool.Bool = function(a) {
-    return { $noisType: 'std::bool::Bool', value: a }
+Bool.Bool = function(value) {
+    return { $noisType: 'std::bool::Bool', value }
 }
 
 /**
@@ -12,7 +12,7 @@ Bool.Bool = function(a) {
  * @returns {Bool}
  */
 function andBool(a, b) {
-    return Bool(a.value && b.value)
+    return Bool.Bool(a.value && b.value)
 }
 
 /**
@@ -21,7 +21,7 @@ function andBool(a, b) {
  * @returns {Bool}
  */
 function orBool(a, b) {
-    return Bool(a.value || b.value)
+    return Bool.Bool(a.value || b.value)
 }
 
 /**
@@ -29,7 +29,7 @@ function orBool(a, b) {
  * @returns {Bool}
  */
 function notBool(a) {
-    return Bool(!a.value)
+    return Bool.Bool(!a.value)
 }
 
 /**
@@ -37,7 +37,7 @@ function notBool(a) {
  * @returns {String}
  */
 function fmtBool(a) {
-    return String(a.value.toString())
+    return String.String(a.value.toString())
 }
 
 /**
@@ -46,5 +46,5 @@ function fmtBool(a) {
  * @returns {Bool}
  */
 function eqBool(a, b) {
-    return Bool(a.value === b.value)
+    return Bool.Bool(a.value === b.value)
 }
