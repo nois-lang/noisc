@@ -6,6 +6,7 @@ import { TypeDef } from '../../ast/type-def'
 import { Context } from '../../scope'
 import { vidFromScope } from '../../scope/util'
 import { VirtualIdentifier } from '../../scope/vid'
+import { operatorImplMap } from '../../semantic/op'
 import { groupBy } from '../../util/array'
 import { todo } from '../../util/todo'
 
@@ -157,22 +158,30 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
 }
 
 export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Context): string => {
-    // TODO
-    return '/*binary*/'
+    const lOp = emitOperand(binaryExpr.lOperand, module, ctx)
+    const rOp = emitOperand(binaryExpr.rOperand, module, ctx)
+    if (binaryExpr.binaryOp.kind === 'access-op') {
+        return `${lOp}.${rOp}`
+    }
+    if (binaryExpr.binaryOp.kind === 'assign-op') {
+        return `${extractValue(lOp)} = ${extractValue(rOp)}`
+    }
+    const method = operatorImplMap.get(binaryExpr.binaryOp.kind)!.names.at(-1)!
+    return `${lOp}.${method}(${rOp})`
 }
 
 export const emitOperand = (operand: Operand, module: Module, ctx: Context): string => {
     switch (operand.kind) {
         case 'if-expr': {
-            const condition = emitExpr(operand.condition, module, ctx)
+            const condition = extractValue(emitExpr(operand.condition, module, ctx))
             const thenBlock = emitBlock(operand.thenBlock, module, ctx)
-            const elseBlock = operand.elseBlock ? emitBlock(operand.elseBlock, module, ctx) : ''
-            return `if (${condition}) ${thenBlock} ${elseBlock}`
+            const elseBlock = operand.elseBlock ? ` else ${emitBlock(operand.elseBlock, module, ctx)}` : ' '
+            return `if (${condition}) ${thenBlock}${elseBlock}`
         }
         case 'if-let-expr':
             return '/*if-let*/'
         case 'while-expr': {
-            const condition = emitExpr(operand.condition, module, ctx)
+            const condition = extractValue(emitExpr(operand.condition, module, ctx))
             const block = emitBlock(operand.block, module, ctx)
             return `while (${condition}) ${block}`
         }
@@ -181,7 +190,9 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): str
         case 'match-expr':
             return '/*match*/'
         case 'closure-expr':
-            return '/*closure*/'
+            const params = operand.params.map(p => emitParam(p, module, ctx)).join(', ')
+            const block = emitBlock(operand.block, module, ctx)
+            return `function(${params}) => ${block}`
         case 'operand-expr':
         case 'unary-expr':
         case 'binary-expr':
@@ -228,6 +239,10 @@ export const emitInstance = (instance: ImplDef | TraitDef, module: Module, ctx: 
         .map(f => indent(f))
     const fns = fns_.length > 0 ? `\n${fns_.join(',\n')}\n` : ''
     return `{${fns}}`
+}
+
+export const extractValue = (str: string): string => {
+    return `${str}.value`
 }
 
 export const indent = (str: string, level = 1): string => {

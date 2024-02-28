@@ -444,7 +444,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
         }
 
         // TODO: check bounded traits are implemented by type,
-        // e.g. `impl Ord for Foo` equires `impl Eq for Foo` since `trait Ord<Self: Eq>`
+        // e.g. `impl Ord for Foo` requires `impl Eq for Foo` since `trait Ord<Self: Eq>`
     }
 
     module.scopeStack.pop()
