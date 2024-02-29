@@ -575,6 +575,7 @@ export const checkBreakStmt = (breakStmt: BreakStmt, ctx: Context) => {
 
 export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
     const vid = idToVid(identifier)
+    // TODO: if absolute import, check that package is explicitly imported
     const ref = resolveVid(vid, ctx)
     if (ref) {
         switch (ref.def.kind) {
