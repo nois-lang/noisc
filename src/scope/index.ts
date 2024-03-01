@@ -24,13 +24,14 @@ export interface Context {
     errors: SemanticError[]
     warnings: SemanticError[]
     /**
-     * When disabled, semantic checker will not visit fn-def blocks only to populate top-level type information
+     * When disabled, semantic checker will visit fn-def blocks only to populate top-level type information
      */
     check: boolean
     /**
      * Suppress all errors and warnings that coming while the field is false
      */
     silent: boolean
+    variableCounter: number
 }
 
 export type Scope = InstanceScope | TypeDefScope | FnDefScope | BlockScope | CommonScope

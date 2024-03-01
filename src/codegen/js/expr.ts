@@ -1,4 +1,4 @@
-import { extractValue } from '.'
+import { extractValue, nextVariable } from '.'
 import { Module, Param } from '../../ast'
 import { BinaryExpr, Expr, OperandExpr, UnaryExpr } from '../../ast/expr'
 import { Operand } from '../../ast/operand'
@@ -7,7 +7,16 @@ import { operatorImplMap } from '../../semantic/op'
 import { todo } from '../../util/todo'
 import { emitBlock } from './statement'
 
-export const emitExpr = (expr: Expr, module: Module, ctx: Context): string => {
+export interface EmitExpr {
+    emit: string
+    resultVar: string
+}
+
+export const emitExprToString = (expr: EmitExpr | string): string => {
+    return typeof expr === 'string' ? expr : expr.emit
+}
+
+export const emitExpr = (expr: Expr, module: Module, ctx: Context, resultVar?: string): EmitExpr => {
     switch (expr.kind) {
         case 'operand-expr':
             return emitOperandExpr(expr, module, ctx)
@@ -18,77 +27,97 @@ export const emitExpr = (expr: Expr, module: Module, ctx: Context): string => {
     }
 }
 
-export const emitOperandExpr = (operandExpr: OperandExpr, module: Module, ctx: Context): string => {
+export const emitOperandExpr = (operandExpr: OperandExpr, module: Module, ctx: Context): EmitExpr => {
     return emitOperand(operandExpr.operand, module, ctx)
 }
 
-export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context): string => {
+export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context): EmitExpr => {
+    const resultVar = nextVariable(ctx)
     switch (unaryExpr.op.kind) {
         case 'call-op':
             const operand = emitOperand(unaryExpr.operand, module, ctx)
-            const args = unaryExpr.op.args.map(a => emitExpr(a.expr, module, ctx)).join(', ')
-            return `${operand}(${args})`
+            const args = unaryExpr.op.args.map(a => emitExpr(a.expr, module, ctx))
+            const call = `const ${resultVar} = ${operand.resultVar}(${args.map(a => a.resultVar)})`
+            return {
+                emit: [operand.emit, ...args.map(a => a.emit), call].join('\n'),
+                resultVar
+            }
         case 'unwrap-op':
-            return '/*unwrap*/'
+            return { emit: '/*unwrap*/', resultVar }
         case 'bind-op':
-            return '/*bind*/'
+            return { emit: '/*bind*/', resultVar }
     }
 }
 
-export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Context): string => {
+export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Context): EmitExpr => {
     const lOp = emitOperand(binaryExpr.lOperand, module, ctx)
     const rOp = emitOperand(binaryExpr.rOperand, module, ctx)
+    const resultVar = nextVariable(ctx)
     if (binaryExpr.binaryOp.kind === 'access-op') {
-        return `${lOp}.${rOp}`
+        return { emit: `const ${resultVar} = /*access-op*/`, resultVar }
     }
     if (binaryExpr.binaryOp.kind === 'assign-op') {
-        return `${extractValue(lOp)} = ${extractValue(rOp)}`
+        return {
+            emit: [lOp.emit, rOp.emit, `${extractValue(lOp.resultVar)} = ${extractValue(rOp.resultVar)}`].join('\n'),
+            resultVar
+        }
     }
     const method = operatorImplMap.get(binaryExpr.binaryOp.kind)!.names.at(-1)!
-    return `${lOp}.${method}(${rOp})`
+    return { emit: `const ${resultVar} = ${lOp}.${method}(${rOp})`, resultVar }
 }
 
-export const emitOperand = (operand: Operand, module: Module, ctx: Context): string => {
+export const emitOperand = (operand: Operand, module: Module, ctx: Context): EmitExpr => {
+    const resultVar = nextVariable(ctx)
     switch (operand.kind) {
         case 'if-expr': {
-            const condition = extractValue(emitExpr(operand.condition, module, ctx))
-            const thenBlock = emitBlock(operand.thenBlock, module, ctx)
-            const elseBlock = operand.elseBlock ? ` else ${emitBlock(operand.elseBlock, module, ctx)}` : ' '
-            return `if (${condition}) ${thenBlock}${elseBlock}`
+            const { emit: cEmit, resultVar: cVar } = emitExpr(operand.condition, module, ctx)
+            const thenBlock = emitBlock(operand.thenBlock, module, ctx, resultVar)
+            const elseBlock = operand.elseBlock ? `else ${emitBlock(operand.elseBlock, module, ctx, resultVar)}` : ''
+            return {
+                emit: [`let ${resultVar};`, cEmit, `if (${cVar}) ${thenBlock} ${elseBlock}`].join('\n'),
+                resultVar
+            }
         }
         case 'if-let-expr':
-            return '/*if-let*/'
+            return { emit: '/*if-let*/', resultVar }
         case 'while-expr': {
-            const condition = extractValue(emitExpr(operand.condition, module, ctx))
+            const { emit: cEmit, resultVar: cVar } = emitExpr(operand.condition, module, ctx)
             const block = emitBlock(operand.block, module, ctx)
-            return `while (${condition}) ${block}`
+            return { emit: [cEmit, `while (${cVar}) ${block}`].join('\n'), resultVar }
         }
         case 'for-expr':
-            return '/*for*/'
+            return { emit: '/*for*/', resultVar }
         case 'match-expr':
-            return '/*match*/'
+            return { emit: '/*match*/', resultVar }
         case 'closure-expr':
             const params = operand.params.map(p => emitParam(p, module, ctx)).join(', ')
             const block = emitBlock(operand.block, module, ctx)
-            return `function(${params}) => ${block}`
+            return { emit: `const ${resultVar} = function(${params}) => ${block}`, resultVar }
         case 'operand-expr':
         case 'unary-expr':
         case 'binary-expr':
             return emitExpr(operand, module, ctx)
         case 'list-expr':
-            return `List(${operand.exprs.map(e => emitExpr(e, module, ctx)).join(', ')})`
+            const items = operand.exprs.map(e => emitExpr(e, module, ctx))
+            return {
+                emit: [
+                    ...items.map(i => i.emit),
+                    `const ${resultVar} = List(${items.map(i => i.resultVar).join(', ')})`
+                ].join('\n'),
+                resultVar
+            }
         case 'string-literal':
-            return `String(${operand.value})`
+            return { emit: `const ${resultVar} = String(${operand.value});`, resultVar }
         case 'char-literal':
-            return `Char(${operand.value})`
+            return { emit: `const ${resultVar} = Char(${operand.value});`, resultVar }
         case 'int-literal':
-            return `Int(${operand.value})`
+            return { emit: `const ${resultVar} = Int(${operand.value});`, resultVar }
         case 'float-literal':
-            return `Float(${operand.value})`
+            return { emit: `const ${resultVar} = Float(${operand.value});`, resultVar }
         case 'bool-literal':
-            return `Bool(${operand.value})`
+            return { emit: `const ${resultVar} = Bool(${operand.value});`, resultVar }
         case 'identifier':
-            return operand.names.at(-1)!.value
+            return { emit: `const ${resultVar} = ${operand.names.at(-1)!.value};`, resultVar }
     }
 }
 

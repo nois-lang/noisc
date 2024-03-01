@@ -22,7 +22,8 @@ describe('trait', () => {
             errors: [],
             warnings: [],
             check: false,
-            silent: false
+            silent: false,
+            variableCounter: 0
         }
 
         ctx.packages.forEach(p => {

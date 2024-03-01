@@ -117,7 +117,8 @@ const ctx: Context = {
     errors: [],
     warnings: [],
     check: false,
-    silent: false
+    silent: false,
+    variableCounter: 0
 }
 
 ctx.packages.forEach(p => p.modules.forEach(m => prepareModule(m)))
@@ -153,6 +154,7 @@ for (const warning of ctx.warnings) {
 if (config.emit) {
     if (!existsSync(config.outPath)) mkdirSync(config.outPath, { recursive: true })
     pkg.modules.forEach(m => {
+        ctx.variableCounter = 0
         const modulePath = relative(config.srcPath, m.source.filepath)
         const moduleOutPath = parse(join(config.outPath, modulePath))
         if (!existsSync(moduleOutPath.dir)) mkdirSync(moduleOutPath.dir)

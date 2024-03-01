@@ -11,10 +11,7 @@ export interface JsImport {
 }
 
 export const emitModule = (module: Module, ctx: Context): string => {
-    const statements = module.block.statements
-        .map(s => emitStatement(s, module, ctx))
-        .filter(s => s.length > 0)
-        .join('\n\n')
+    const statements = module.block.statements.map(s => emitStatement(s, module, ctx)).join('\n\n')
     return [emitImports(module, ctx), statements].filter(s => s.length > 0).join('\n\n')
 }
 
@@ -60,4 +57,9 @@ export const jsString = (str: string): string => {
 
 export const indent = (str: string, level = 1): string => {
     return str.replace(/^/gm, ' '.repeat(4 * level))
+}
+
+export const nextVariable = (ctx: Context): string => {
+    ctx.variableCounter++
+    return `$${ctx.variableCounter}`
 }

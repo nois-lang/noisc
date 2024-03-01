@@ -6,9 +6,9 @@ import { Context } from '../../scope'
 import { typeDefToVirtualType } from '../../scope/trait'
 import { vidToString } from '../../scope/util'
 import { todo } from '../../util/todo'
-import { emitExpr, emitParam } from './expr'
+import { EmitExpr, emitExpr, emitExprToString, emitParam } from './expr'
 
-export const emitStatement = (statement: Statement, module: Module, ctx: Context): string => {
+export const emitStatement = (statement: Statement, module: Module, ctx: Context): string | EmitExpr => {
     switch (statement.kind) {
         case 'var-def':
             return emitVarDef(statement, module, ctx)
@@ -36,15 +36,15 @@ export const emitVarDef = (varDef: VarDef, module: Module, ctx: Context): string
         return todo('destructuring')
     }
     const name = varDef.pattern.expr.value
-    const expr = emitExpr(varDef.expr, module, ctx)
-    return `const ${name} = ${expr};`
+    const { emit: exprEmit, resultVar } = emitExpr(varDef.expr, module, ctx, name)
+    return [exprEmit, `const ${name} = ${resultVar}`].join('\n')
 }
 
 export const emitFnDef = (fnDef: FnDef, module: Module, ctx: Context, asProperty = false): string => {
     if (!fnDef.block) return ''
     const name = fnDef.name.value
     const params = fnDef.params.map(p => emitParam(p, module, ctx)).join(', ')
-    const block = emitBlock(fnDef.block, module, ctx)
+    const block = emitBlock(fnDef.block, module, ctx, true)
     if (asProperty) {
         return `${name}: function(${params}) ${block}`
     } else {
@@ -77,8 +77,8 @@ export const emitTypeDef = (typeDef: TypeDef, module: Module, ctx: Context): str
 }
 
 export const emitReturnStmt = (returnStmt: ReturnStmt, module: Module, ctx: Context): string => {
-    const expr = emitExpr(returnStmt.returnExpr, module, ctx)
-    return `return ${expr};`
+    const { emit: exprEmit, resultVar } = emitExpr(returnStmt.returnExpr, module, ctx)
+    return [exprEmit, `return ${resultVar};`].join('\n')
 }
 
 export const emitBreakStmt = (breakStmt: BreakStmt, module: Module, ctx: Context): string => {
@@ -95,13 +95,18 @@ export const emitInstance = (instance: ImplDef | TraitDef, module: Module, ctx: 
     return `{${fns}}`
 }
 
-export const emitBlock = (block: Block, module: Module, ctx: Context): string => {
-    const statements_ = block.statements
-        .map(s => emitStatement(s, module, ctx))
-        .filter(s => s.length > 0)
-        .map(s => indent(s))
-        .join('\n')
-    const statements = statements_.length > 0 ? `\n${statements_}\n` : ''
+export const emitBlock = (block: Block, module: Module, ctx: Context, resultVar?: boolean | string): string => {
+    const statements_ = block.statements.map(s => emitStatement(s, module, ctx))
+    const last = statements_.at(-1)
+    if (resultVar !== undefined && typeof last === 'object') {
+        if (typeof resultVar === 'string') {
+            statements_.push(`${resultVar} = ${last.resultVar};`)
+        }
+        if (resultVar === true) {
+            statements_.push(`return ${last.resultVar};`)
+        }
+    }
+    const statements = statements_.length > 0 ? `\n${indent(statements_.map(emitExprToString).join('\n'))}\n` : ''
     return `{${statements}}`
 }
 
@@ -115,5 +120,5 @@ export const emitVariant = (v: Variant, typeDef: TypeDef, module: Module, ctx: C
         ...(typeDef.variants.length > 1 ? [`$noisVariant: ${name}`] : []),
         ...fields
     ].join(', ')
-    return `function(${fieldNames}) {\n${indent(`return { ${props} }`)}\n}`
+    return `function(${fieldNames.join(', ')}) {\n${indent(`return { ${props} }`)}\n}`
 }
