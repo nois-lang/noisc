@@ -77,7 +77,7 @@ export const parsePatternBind = (parser: Parser): void => {
 }
 
 /**
- * pattern-expr ::= NAME | con-pattern | STRING | CHAR | number | hole
+ * pattern-expr ::= STRING | CHAR | number | bool | hole | NAME | con-pattern
  */
 export const parsePatternExpr = (parser: Parser): void => {
     const mark = parser.open()
@@ -88,6 +88,7 @@ export const parsePatternExpr = (parser: Parser): void => {
         parser.expectAny(nameLikeTokens)
     } else if (parser.consume('string')) {
     } else if (parser.consume('char')) {
+    } else if (parser.consume('bool')) {
     } else if (parser.atAny(numberFirstTokens)) {
         parseNumber(parser)
     } else if (parser.at('underscore')) {

@@ -7,7 +7,7 @@ pub use std::{
     int::Int,
     string::String,
     char::Char,
-    bool::Bool,
+    bool::Bool::{ self, True, False },
     eq::Eq,
     ord::{ Ordering, Ord },
     iter::{ Iterable, Iter, Collector },

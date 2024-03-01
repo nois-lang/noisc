@@ -55,8 +55,7 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
                       | STRING
                       | CHAR
                       | number
-                      | TRUE
-                      | FALSE
+                      | bool
                       | identifier
                       ;
     infix-op          ::= add-op | sub-op | mult-op | div-op | exp-op | mod-op | access-op | eq-op | ne-op
@@ -132,7 +131,7 @@ pattern               ::= pattern-bind? pattern-expr
                       ;
   pattern-bind        ::= NAME AT
                       ;
-  pattern-expr        ::= NAME | con-pattern | STRING | CHAR | number | hole
+  pattern-expr        ::= STRING | CHAR | number | bool | hole | NAME | con-pattern
                       ;
     con-pattern       ::= identifier con-pattern-params
                       ;
@@ -143,4 +142,6 @@ pattern               ::= pattern-bind? pattern-expr
     hole              ::= UNDERSCORE
                       ;
 number                ::= MINUS? (INT | FLOAT)
+                      ;
+bool                  ::= TRUE | FALSE
                       ;
