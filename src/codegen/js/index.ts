@@ -3,6 +3,7 @@ import { Context } from '../../scope'
 import { vidFromScope } from '../../scope/util'
 import { VirtualIdentifier } from '../../scope/vid'
 import { groupBy } from '../../util/array'
+import { emitExprToString } from './expr'
 import { emitStatement } from './statement'
 
 export interface JsImport {
@@ -11,7 +12,11 @@ export interface JsImport {
 }
 
 export const emitModule = (module: Module, ctx: Context): string => {
-    const statements = module.block.statements.map(s => emitStatement(s, module, ctx)).join('\n\n')
+    const statements = module.block.statements
+        .map(s => emitStatement(s, module, ctx))
+        .map(emitExprToString)
+        .filter(s => s.length > 0)
+        .join('\n\n')
     return [emitImports(module, ctx), statements].filter(s => s.length > 0).join('\n\n')
 }
 

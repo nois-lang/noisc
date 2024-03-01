@@ -37,7 +37,7 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
         case 'call-op':
             const operand = emitOperand(unaryExpr.operand, module, ctx)
             const args = unaryExpr.op.args.map(a => emitExpr(a.expr, module, ctx))
-            const call = `const ${resultVar} = ${operand.resultVar}(${args.map(a => a.resultVar)})`
+            const call = `const ${resultVar} = ${operand.resultVar}(${args.map(a => a.resultVar)});`
             return {
                 emit: [operand.emit, ...args.map(a => a.emit), call].join('\n'),
                 resultVar
@@ -54,7 +54,7 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
     const rOp = emitOperand(binaryExpr.rOperand, module, ctx)
     const resultVar = nextVariable(ctx)
     if (binaryExpr.binaryOp.kind === 'access-op') {
-        return { emit: `const ${resultVar} = /*access-op*/`, resultVar }
+        return { emit: `const ${resultVar} = /*access-op*/;`, resultVar }
     }
     if (binaryExpr.binaryOp.kind === 'assign-op') {
         return {
@@ -63,7 +63,7 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
         }
     }
     const method = operatorImplMap.get(binaryExpr.binaryOp.kind)!.names.at(-1)!
-    return { emit: `const ${resultVar} = ${lOp}.${method}(${rOp})`, resultVar }
+    return { emit: `const ${resultVar} = ${lOp}.${method}(${rOp});`, resultVar }
 }
 
 export const emitOperand = (operand: Operand, module: Module, ctx: Context): EmitExpr => {
@@ -74,7 +74,7 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
             const thenBlock = emitBlock(operand.thenBlock, module, ctx, resultVar)
             const elseBlock = operand.elseBlock ? `else ${emitBlock(operand.elseBlock, module, ctx, resultVar)}` : ''
             return {
-                emit: [`let ${resultVar};`, cEmit, `if (${cVar}) ${thenBlock} ${elseBlock}`].join('\n'),
+                emit: [`let ${resultVar};`, cEmit, `if (${extractValue(cVar)}) ${thenBlock} ${elseBlock}`].join('\n'),
                 resultVar
             }
         }
@@ -83,7 +83,7 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
         case 'while-expr': {
             const { emit: cEmit, resultVar: cVar } = emitExpr(operand.condition, module, ctx)
             const block = emitBlock(operand.block, module, ctx)
-            return { emit: [cEmit, `while (${cVar}) ${block}`].join('\n'), resultVar }
+            return { emit: [cEmit, `while (${extractValue(cVar)}) ${block}`].join('\n'), resultVar }
         }
         case 'for-expr':
             return { emit: '/*for*/', resultVar }
@@ -92,7 +92,7 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
         case 'closure-expr':
             const params = operand.params.map(p => emitParam(p, module, ctx)).join(', ')
             const block = emitBlock(operand.block, module, ctx)
-            return { emit: `const ${resultVar} = function(${params}) => ${block}`, resultVar }
+            return { emit: `const ${resultVar} = function(${params}) => ${block};`, resultVar }
         case 'operand-expr':
         case 'unary-expr':
         case 'binary-expr':
