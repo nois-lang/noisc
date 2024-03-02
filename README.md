@@ -55,9 +55,11 @@ fn main() {
 | --------------------------- | --------- | ------ |
 | Lexing                      | 0.1.0     | ✅     |
 | Parsing                     | 0.1.0     | ✅     |
-| Semantic checking           | 0.1.0     | 🚧     |
-| Type checking               | 0.1.0     | 🚧     |
-| Code generation (JS target) | 0.1.0     | ❌     |
+| Semantic checking           | 0.1.0     | ✅     |
+| Type checking               | 0.1.0     | ✅     |
+| Code generation (JS target) | 0.1.0     | 🚧     |
+| Package support             | 0.1.0     | ✅     |
+| Useful standard library     | 0.1.0     | 🚧     |
 
 > - ✅ Implemented
 > - 🚧 In progress
