@@ -1,10 +1,11 @@
-import { extractValue, nextVariable } from '.'
+import { extractValue, indent, jsString, nextVariable } from '.'
 import { Module, Param } from '../../ast'
 import { BinaryExpr, Expr, OperandExpr, UnaryExpr } from '../../ast/expr'
+import { MatchExpr, PatternExpr } from '../../ast/match'
 import { Operand } from '../../ast/operand'
 import { Context } from '../../scope'
 import { operatorImplMap } from '../../semantic/op'
-import { todo } from '../../util/todo'
+import { todo, unreachable } from '../../util/todo'
 import { emitBlock } from './statement'
 
 export interface EmitExpr {
@@ -88,7 +89,7 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
         case 'for-expr':
             return { emit: '/*for*/', resultVar }
         case 'match-expr':
-            return { emit: '/*match*/', resultVar }
+            return emitMatchExpr(operand, module, ctx, resultVar)
         case 'closure-expr':
             const params = operand.params.map(p => emitParam(p, module, ctx)).join(', ')
             const block = emitBlock(operand.block, module, ctx)
@@ -118,6 +119,69 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
             return { emit: `const ${resultVar} = Bool(${operand.value});`, resultVar }
         case 'identifier':
             return { emit: `const ${resultVar} = ${operand.names.at(-1)!.value};`, resultVar }
+    }
+}
+
+export const emitMatchExpr = (matchExpr: MatchExpr, module: Module, ctx: Context, resultVar: string): EmitExpr => {
+    const { emit: sEmit, resultVar: sVar } = emitExpr(matchExpr.expr, module, ctx)
+    if (matchExpr.clauses.length === 0) {
+        return { emit: '', resultVar }
+    }
+    const clauses = matchExpr.clauses.map(clause => {
+        if (clause.patterns.length !== 1) return '/*union clause*/'
+        const pattern = clause.patterns[0]
+        const cond = emitPatternExprCondition(pattern.expr, module, ctx, sVar)
+        const block = emitBlock(clause.block, module, ctx, resultVar)
+        return [cond.emit, `if (${cond.resultVar}) ${block}`].join('\n')
+    })
+    let ifElseChain = clauses[0]
+    for (let i = 1; i < clauses.length; i++) {
+        const clause = clauses[i]
+        ifElseChain += ` else {\n${indent(clause, i)}`
+    }
+    for (let i = clauses.length - 2; i >= 0; i--) {
+        ifElseChain += `\n${indent('}', i)}`
+    }
+    return {
+        emit: [sEmit, ifElseChain].join('\n'),
+        resultVar
+    }
+}
+
+export const emitPatternExprCondition = (
+    patternExpr: PatternExpr,
+    module: Module,
+    ctx: Context,
+    sVar: string
+): EmitExpr => {
+    const resultVar = nextVariable(ctx)
+    switch (patternExpr.kind) {
+        case 'con-pattern':
+            const variantName = patternExpr.identifier.names.at(-1)!.value
+            const cond = `${sVar}.$noisVariant === ${jsString(variantName)}`
+            // TODO: nested patterns
+            return { emit: `const ${resultVar} = ${cond};`, resultVar }
+        case 'hole':
+            return { emit: `const ${resultVar} = true`, resultVar }
+        case 'string-literal':
+        case 'char-literal':
+        case 'int-literal':
+        case 'float-literal':
+        case 'bool-literal':
+            return { emit: `const ${resultVar} = /*literal*/;`, resultVar }
+        case 'list-expr':
+        case 'operand-expr':
+        case 'unary-expr':
+        case 'binary-expr':
+        case 'identifier':
+        case 'name':
+        case 'if-expr':
+        case 'if-let-expr':
+        case 'while-expr':
+        case 'for-expr':
+        case 'match-expr':
+        case 'closure-expr':
+            return unreachable()
     }
 }
 
