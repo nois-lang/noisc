@@ -1,4 +1,4 @@
-import { extractValue, indent, jsString, nextVariable } from '.'
+import { extractValue, indent, jsString, jsVariable, nextVariable } from '.'
 import { Module, Param } from '../../ast'
 import { BinaryExpr, Expr, OperandExpr, UnaryExpr } from '../../ast/expr'
 import { MatchExpr, PatternExpr } from '../../ast/match'
@@ -38,7 +38,7 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
         case 'call-op':
             const operand = emitOperand(unaryExpr.operand, module, ctx)
             const args = unaryExpr.op.args.map(a => emitExpr(a.expr, module, ctx))
-            const call = `const ${resultVar} = ${operand.resultVar}(${args.map(a => a.resultVar)});`
+            const call = jsVariable(resultVar, `${operand.resultVar}(${args.map(a => a.resultVar)})`)
             return {
                 emit: [operand.emit, ...args.map(a => a.emit), call].join('\n'),
                 resultVar
@@ -55,7 +55,7 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
     const rOp = emitOperand(binaryExpr.rOperand, module, ctx)
     const resultVar = nextVariable(ctx)
     if (binaryExpr.binaryOp.kind === 'access-op') {
-        return { emit: `const ${resultVar} = /*access-op*/;`, resultVar }
+        return { emit: jsVariable(resultVar, '/*access-op*/'), resultVar }
     }
     if (binaryExpr.binaryOp.kind === 'assign-op') {
         return {
@@ -64,7 +64,7 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
         }
     }
     const method = operatorImplMap.get(binaryExpr.binaryOp.kind)!.names.at(-1)!
-    return { emit: `const ${resultVar} = ${lOp}.${method}(${rOp});`, resultVar }
+    return { emit: jsVariable(resultVar, `${lOp}.${method}(${rOp})`), resultVar }
 }
 
 export const emitOperand = (operand: Operand, module: Module, ctx: Context): EmitExpr => {
@@ -93,7 +93,7 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
         case 'closure-expr':
             const params = operand.params.map(p => emitParam(p, module, ctx)).join(', ')
             const block = emitBlock(operand.block, module, ctx)
-            return { emit: `const ${resultVar} = function(${params}) => ${block};`, resultVar }
+            return { emit: jsVariable(resultVar, `function(${params}) ${block}`), resultVar }
         case 'operand-expr':
         case 'unary-expr':
         case 'binary-expr':
@@ -103,22 +103,22 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
             return {
                 emit: [
                     ...items.map(i => i.emit),
-                    `const ${resultVar} = List(${items.map(i => i.resultVar).join(', ')})`
+                    jsVariable(resultVar, `List(${items.map(i => i.resultVar).join(', ')})`)
                 ].join('\n'),
                 resultVar
             }
         case 'string-literal':
-            return { emit: `const ${resultVar} = String(${operand.value});`, resultVar }
+            return { emit: jsVariable(resultVar, `String(${operand.value})`), resultVar }
         case 'char-literal':
-            return { emit: `const ${resultVar} = Char(${operand.value});`, resultVar }
+            return { emit: jsVariable(resultVar, `Char(${operand.value})`), resultVar }
         case 'int-literal':
-            return { emit: `const ${resultVar} = Int(${operand.value});`, resultVar }
+            return { emit: jsVariable(resultVar, `Int(${operand.value})`), resultVar }
         case 'float-literal':
-            return { emit: `const ${resultVar} = Float(${operand.value});`, resultVar }
+            return { emit: jsVariable(resultVar, `Float(${operand.value})`), resultVar }
         case 'bool-literal':
-            return { emit: `const ${resultVar} = Bool(${operand.value});`, resultVar }
+            return { emit: jsVariable(resultVar, `Bool(${operand.value})`), resultVar }
         case 'identifier':
-            return { emit: `const ${resultVar} = ${operand.names.at(-1)!.value};`, resultVar }
+            return { emit: jsVariable(resultVar, operand.names.at(-1)!.value), resultVar }
     }
 }
 
@@ -132,6 +132,7 @@ export const emitMatchExpr = (matchExpr: MatchExpr, module: Module, ctx: Context
         const pattern = clause.patterns[0]
         const cond = emitPatternExprCondition(pattern.expr, module, ctx, sVar)
         const block = emitBlock(clause.block, module, ctx, resultVar)
+        // TODO: inject aliases and fields in block's scope
         return [cond.emit, `if (${cond.resultVar}) ${block}`].join('\n')
     })
     let ifElseChain = clauses[0]
@@ -160,15 +161,15 @@ export const emitPatternExprCondition = (
             const variantName = patternExpr.identifier.names.at(-1)!.value
             const cond = `${sVar}.$noisVariant === ${jsString(variantName)}`
             // TODO: nested patterns
-            return { emit: `const ${resultVar} = ${cond};`, resultVar }
+            return { emit: jsVariable(resultVar, cond), resultVar }
         case 'hole':
-            return { emit: `const ${resultVar} = true`, resultVar }
+            return { emit: jsVariable(resultVar, 'true'), resultVar }
         case 'string-literal':
         case 'char-literal':
         case 'int-literal':
         case 'float-literal':
         case 'bool-literal':
-            return { emit: `const ${resultVar} = /*literal*/;`, resultVar }
+            return { emit: jsVariable(resultVar, '/*literal*/'), resultVar }
         case 'list-expr':
         case 'operand-expr':
         case 'unary-expr':

@@ -1,4 +1,4 @@
-import { indent, jsString } from '.'
+import { indent, jsString, jsVariable } from '.'
 import { Module } from '../../ast'
 import { Block, BreakStmt, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '../../ast/statement'
 import { TypeDef, Variant } from '../../ast/type-def'
@@ -37,7 +37,7 @@ export const emitVarDef = (varDef: VarDef, module: Module, ctx: Context): string
     }
     const name = varDef.pattern.expr.value
     const { emit: exprEmit, resultVar } = emitExpr(varDef.expr, module, ctx, name)
-    return [exprEmit, `const ${name} = ${resultVar};`].join('\n')
+    return [exprEmit, jsVariable(name, resultVar)].join('\n')
 }
 
 export const emitFnDef = (fnDef: FnDef, module: Module, ctx: Context, asProperty = false): string => {
@@ -59,7 +59,7 @@ export const emitTraitDef = (traitDef: TraitDef, module: Module, ctx: Context): 
         .filter(i => i.length > 0)
         .map(i => indent(i))
     const impls = impls_.length > 0 ? `\n${impls_.join(',\n')}\n` : ''
-    return `const ${name} = [${impls}];`
+    return jsVariable(name, `[${impls}]`)
 }
 
 export const emitImplDef = (implDef: ImplDef, module: Module, ctx: Context): string => {
@@ -73,7 +73,7 @@ export const emitTypeDef = (typeDef: TypeDef, module: Module, ctx: Context): str
     const impl = typeDef.rel ? indent(`impl: ${emitInstance(typeDef.rel.instanceDef, module, ctx)}`) : ''
     const items_ = [...variants, impl].filter(i => i.length > 0).join(',\n')
     const items = items_.length > 0 ? `{\n${items_}\n}` : '{}'
-    return `const ${name} = ${items};`
+    return jsVariable(name, items)
 }
 
 export const emitReturnStmt = (returnStmt: ReturnStmt, module: Module, ctx: Context): string => {

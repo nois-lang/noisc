@@ -60,6 +60,10 @@ export const jsString = (str: string): string => {
     return JSON.stringify(str)
 }
 
+export const jsVariable = (name: string, emit: string): string => {
+    return `const ${name} = ${emit};`
+}
+
 export const indent = (str: string, level = 1): string => {
     return str.replace(/^/gm, ' '.repeat(4 * level))
 }
