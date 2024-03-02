@@ -72,3 +72,8 @@ export const nextVariable = (ctx: Context): string => {
     ctx.variableCounter++
     return `$${ctx.variableCounter}`
 }
+
+export const jsTodo = (message?: string): string => {
+    const msg = 'todo' + (message ? `: ${message}` : '')
+    return `Error(${jsString(msg)})`
+}
