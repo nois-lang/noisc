@@ -22,8 +22,10 @@ export const emitUseExpr = (useExpr: UseExpr): string => {
 export const emitStatement = (statement: Statement, pubOnly = true): string | undefined => {
     switch (statement.kind) {
         case 'var-def':
-            if (statement.pub) return undefined
-            return `pub let ${emitParseNode(statement.pattern.parseNode)}`
+            if (!statement.pub) return undefined
+            return `pub let ${emitParseNode(statement.pattern.parseNode)}: ${emitParseNode(
+                statement.varType!.parseNode
+            )}`
         case 'fn-def': {
             if (pubOnly && !statement.pub) return undefined
             const generics =
