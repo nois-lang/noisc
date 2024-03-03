@@ -87,3 +87,11 @@ export const jsRelName = (rel: InstanceRelation): string => {
         return `impl${virtualTypeToString(rel.implType)}${virtualTypeToString(rel.forType)}`.replace(/[:<>,]/g, '')
     }
 }
+
+export const relName = (rel: InstanceRelation): string => {
+    if (rel.instanceDef.kind === 'impl-def') {
+        return rel.instanceDef.identifier.names.at(-1)!.value
+    } else {
+        return rel.instanceDef.name.value
+    }
+}

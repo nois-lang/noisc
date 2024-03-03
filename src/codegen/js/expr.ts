@@ -1,4 +1,4 @@
-import { extractValue, indent, jsString, jsTodo, jsVariable, nextVariable } from '.'
+import { extractValue, indent, jsString, jsTodo, jsVariable, nextVariable, relName } from '.'
 import { Module, Param } from '../../ast'
 import { BinaryExpr, Expr, OperandExpr, UnaryExpr } from '../../ast/expr'
 import { MatchExpr, PatternExpr } from '../../ast/match'
@@ -38,7 +38,7 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
         case 'call-op':
             const operand = emitOperand(unaryExpr.operand, module, ctx)
             const args = unaryExpr.op.args.map(a => emitExpr(a.expr, module, ctx))
-            const call = jsVariable(resultVar, `${operand.resultVar}(${args.map(a => a.resultVar)})`)
+            const call = jsVariable(resultVar, `${operand.resultVar}(${args.map(a => a.resultVar).join(', ')})`)
             return {
                 emit: [operand.emit, ...args.map(a => a.emit), call].join('\n'),
                 resultVar
@@ -61,7 +61,26 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
                 resultVar
             }
         }
-        return { emit: jsVariable(resultVar, jsTodo('access-op')), resultVar }
+        if (binaryExpr.rOperand.kind === 'unary-expr' && binaryExpr.rOperand.op.kind === 'call-op') {
+            const callOp = binaryExpr.rOperand.op
+            const methodDef = callOp.methodDef!
+            const traitName = relName(methodDef.rel)
+            const methodName = methodDef.fn.name.value
+            const args = callOp.args.map(a => emitExpr(a.expr, module, ctx))
+            const argsEmit = (methodDef.fn.static ? args : [lOp.resultVar, ...args.map(a => a.resultVar)]).join(', ')
+            return {
+                emit: [
+                    lOp.emit,
+                    ...args.map(a => a.emit),
+                    jsVariable(resultVar, `${lOp.resultVar}.${traitName}.${methodName}(${argsEmit})`)
+                ].join('\n'),
+                resultVar
+            }
+        }
+        return {
+            emit: jsTodo('unwrap/bind ops'),
+            resultVar
+        }
     }
     const rOp = emitOperand(binaryExpr.rOperand, module, ctx)
     if (binaryExpr.binaryOp.kind === 'assign-op') {

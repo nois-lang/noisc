@@ -67,7 +67,7 @@ export const emitImplDef = (implDef: ImplDef, module: Module, ctx: Context): str
 export const emitTypeDef = (typeDef: TypeDef, module: Module, ctx: Context): string => {
     const name = typeDef.name.value
     const variants = typeDef.variants.map(v => indent(`${v.name.value}: ${emitVariant(v, typeDef, module, ctx)}`))
-    const impl = typeDef.rel ? indent(`impl: ${emitInstance(typeDef.rel.instanceDef, module, ctx)}`) : ''
+    const impl = typeDef.rel ? indent(`${name}: ${emitInstance(typeDef.rel.instanceDef, module, ctx)}`) : ''
     const items_ = [...variants, impl].filter(i => i.length > 0).join(',\n')
     const items = items_.length > 0 ? `{\n${items_}\n}` : '{}'
     return jsVariable(name, items, true)
