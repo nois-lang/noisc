@@ -2,8 +2,9 @@ import { Module } from '../ast'
 import { ImplDef, TraitDef } from '../ast/statement'
 import { TypeDef } from '../ast/type-def'
 import { notFoundError } from '../semantic/error'
-import { VidType, VirtualType, genericToVirtual, typeToVirtual } from '../typecheck'
+import { VidType, VirtualType, genericToVirtual, isAssignable, typeToVirtual, virtualTypeToString } from '../typecheck'
 import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
+import { groupByHaving } from '../util/array'
 import { assert } from '../util/todo'
 import { Context, addError, defKey } from './index'
 import { concatVid, idToVid, vidEq, vidFromString, vidToString } from './util'
@@ -196,4 +197,33 @@ export const typeDefToVirtualType = (typeDef: TypeDef, ctx: Context, module = ct
 export const getConcreteTrait = (type: VirtualType, rel: InstanceRelation, ctx: Context): VirtualType => {
     const genericMap = makeGenericMapOverStructure(type, rel.forType)
     return resolveType(rel.implType, [genericMap], ctx)
+}
+
+export const relTypeName = (rel: InstanceRelation): string => {
+    if (rel.instanceDef.kind === 'impl-def') {
+        return rel.instanceDef.identifier.names.at(-1)!.value
+    } else {
+        return rel.instanceDef.name.value
+    }
+}
+
+export const resolveImplsForType = (type: VirtualType, ctx: Context): InstanceRelation[] => {
+    const inherentImpl = ctx.impls.find(i => i.inherent && isAssignable(type, i.implType, ctx))
+    const traitImpls = groupByHaving(
+        ctx.impls.filter(i => i.instanceDef.kind === 'impl-def' && !i.inherent),
+        relTypeName,
+        // TODO: include self-bounded impls
+        i => isAssignable(type, i.forType, ctx)
+    )
+    const rels = []
+    if (inherentImpl) {
+        rels.push(inherentImpl)
+    }
+    for (const [, is] of traitImpls) {
+        if (is.length === 0) continue
+        // TODO: detect at implDef level
+        assert(is.length === 1, `clashing implementations for type ${virtualTypeToString(type)}`)
+        rels.push(is[0])
+    }
+    return rels
 }

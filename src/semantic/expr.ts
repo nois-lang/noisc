@@ -15,7 +15,7 @@ import {
 } from '../ast/operand'
 import { Context, Scope, addError, fnDefScope, instanceScope } from '../scope'
 import { bool, iter, iterable, unwrap } from '../scope/std'
-import { getConcreteTrait, typeDefToVirtualType } from '../scope/trait'
+import { getConcreteTrait, resolveImplsForType, typeDefToVirtualType } from '../scope/trait'
 import { idToVid, vidEq, vidFromString, vidToString } from '../scope/util'
 import { MethodDef, VariantDef, VirtualIdentifierMatch, resolveVid } from '../scope/vid'
 import {
@@ -437,10 +437,8 @@ export const checkCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
     args.forEach(a => checkExpr(a, ctx))
     const variantRef = variantCallRef(operand, ctx)
     if (variantRef) {
-        // variant call
         unaryExpr.type = checkVariantCall(unaryExpr, variantRef, ctx)
     } else {
-        // function call
         unaryExpr.type = checkCall_(call, operand, args, ctx)
     }
 }
@@ -496,7 +494,9 @@ export const checkVariantCall = (
 
     // if there are regular positional args, call it as a regular function
     const args = (allArgsNamed ? orderedArgs : call.args).map(a => a?.expr)
-    return checkCall_(call, unaryExpr.operand, args, ctx)
+    const returnType = checkCall_(call, unaryExpr.operand, args, ctx)
+    call.impls = resolveImplsForType(returnType, ctx)
+    return returnType
 }
 
 export const checkCall_ = (call: AstNode<any>, operand: Operand, args: Expr[], ctx: Context): VirtualType => {

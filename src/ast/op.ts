@@ -1,4 +1,5 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
+import { InstanceRelation } from '../scope/trait'
 import { MethodDef } from '../scope/vid'
 import { Arg, AstNode, AstNodeKind, buildArg } from './index'
 
@@ -109,6 +110,7 @@ export const buildBinaryOp = (node: ParseNode): BinaryOp => {
 export interface CallOp extends AstNode<'call-op'> {
     args: Arg[]
     methodDef?: MethodDef
+    impls?: InstanceRelation[]
 }
 
 export const buildCallOp = (node: ParseNode): CallOp => {

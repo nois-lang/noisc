@@ -1,9 +1,10 @@
-import { extractValue, indent, jsString, jsTodo, jsVariable, nextVariable, relName } from '.'
+import { extractValue, indent, jsRelName, jsString, jsTodo, jsVariable, nextVariable } from '.'
 import { Module, Param } from '../../ast'
 import { BinaryExpr, Expr, OperandExpr, UnaryExpr } from '../../ast/expr'
 import { MatchExpr, PatternExpr } from '../../ast/match'
 import { Operand } from '../../ast/operand'
 import { Context } from '../../scope'
+import { relTypeName } from '../../scope/trait'
 import { operatorImplMap } from '../../semantic/op'
 import { todo, unreachable } from '../../util/todo'
 import { emitBlock } from './statement'
@@ -38,9 +39,16 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
         case 'call-op':
             const operand = emitOperand(unaryExpr.operand, module, ctx)
             const args = unaryExpr.op.args.map(a => emitExpr(a.expr, module, ctx))
+            const impls = []
+            if (unaryExpr.op.impls !== undefined && unaryExpr.op.impls.length > 0) {
+                for (const impl of unaryExpr.op.impls) {
+                    // TODO: import impls
+                    impls.push(`${resultVar}.${relTypeName(impl)} = ${jsRelName(impl)};`)
+                }
+            }
             const call = jsVariable(resultVar, `${operand.resultVar}(${args.map(a => a.resultVar).join(', ')})`)
             return {
-                emit: [operand.emit, ...args.map(a => a.emit), call].join('\n'),
+                emit: [operand.emit, ...args.map(a => a.emit), call, ...impls].join('\n'),
                 resultVar
             }
         case 'unwrap-op':
@@ -64,7 +72,7 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
         if (binaryExpr.rOperand.kind === 'unary-expr' && binaryExpr.rOperand.op.kind === 'call-op') {
             const callOp = binaryExpr.rOperand.op
             const methodDef = callOp.methodDef!
-            const traitName = relName(methodDef.rel)
+            const traitName = relTypeName(methodDef.rel)
             const methodName = methodDef.fn.name.value
             const args = callOp.args.map(a => emitExpr(a.expr, module, ctx))
             const argsEmit = (methodDef.fn.static ? args : [lOp.resultVar, ...args.map(a => a.resultVar)]).join(', ')

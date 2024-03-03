@@ -25,10 +25,15 @@ export const fold = <T, A>(arr: T[], fn: (acc: A, v: T) => A, initial: A): A => 
 }
 
 export const groupBy = <T, K>(arr: T[], keyFn: (t: T) => K): Map<K, T[]> => {
+    return groupByHaving(arr, keyFn, () => true)
+}
+
+export const groupByHaving = <T, K>(arr: T[], keyFn: (t: T) => K, havingFn: (t: T, g: T[]) => boolean): Map<K, T[]> => {
     const groups = new Map()
     for (const t of arr) {
         const k = keyFn(t)
         const g = groups.get(k)
+        if (!havingFn(t, g)) continue
         if (g) {
             g.push(t)
         } else {
