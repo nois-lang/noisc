@@ -83,7 +83,7 @@ export const parseUseList = (parser: Parser): void => {
 }
 
 /**
- * var-def ::= PUB-KEYWORD? LET-KEYWORD pattern type-annot? EQUALS expr
+ * var-def ::= PUB-KEYWORD? LET-KEYWORD pattern type-annot? (EQUALS expr)?
  */
 export const parseVarDef = (parser: Parser): void => {
     const mark = parser.open()
@@ -93,8 +93,10 @@ export const parseVarDef = (parser: Parser): void => {
     if (parser.at('colon')) {
         parseTypeAnnot(parser)
     }
-    parser.expect('equals')
-    parseExpr(parser)
+    if (parser.at('equals')) {
+        parser.expect('equals')
+        parseExpr(parser)
+    }
     parser.close(mark, 'var-def')
 }
 

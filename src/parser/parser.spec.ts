@@ -126,7 +126,7 @@ describe('parser', () => {
     describe('parse var-def', () => {
         it('miss identifier', () => {
             const { errors } = parse('let = 4')
-            expect(errors.length).toEqual(2)
+            expect(errors.length).toEqual(1)
             expect(errors[0]).toEqual({
                 expected: [],
                 got: { kind: 'equals', span: { end: 5, start: 4 }, value: '=' },

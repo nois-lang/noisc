@@ -500,10 +500,15 @@ const checkVarDef = (varDef: VarDef, ctx: Context): void => {
     if (varDef.checked) return
     varDef.checked = true
 
-    const topLevel = ctx.moduleStack.at(-1)!.scopeStack.length === 1
+    const module = ctx.moduleStack.at(-1)!
+    const topLevel = module.scopeStack.length === 1
 
     if (topLevel && !varDef.varType) {
         addError(ctx, semanticError(ctx, varDef, `top level \`${varDef.kind}\` must have explicit type`))
+        return
+    }
+    if (topLevel && !module.compiled && !varDef.expr) {
+        addError(ctx, semanticError(ctx, varDef, `top level \`${varDef.kind}\` must be defined`))
         return
     }
 
@@ -519,19 +524,21 @@ const checkVarDef = (varDef: VarDef, ctx: Context): void => {
         )
     }
 
-    checkExpr(varDef.expr, ctx)
+    if (varDef.expr) {
+        checkExpr(varDef.expr, ctx)
 
-    if (varType) {
-        const exprType = varDef.expr.type!
-        if (!isAssignable(exprType, varType, ctx)) {
-            addError(ctx, typeError(varDef, exprType, varType, ctx))
-        }
-    } else {
-        if (varDef.expr.type!.kind === 'unknown-type') {
-            addError(ctx, unknownTypeError(varDef.expr, varDef.expr.type!, ctx))
-            varType = unknownType
+        if (varType) {
+            const exprType = varDef.expr.type!
+            if (!isAssignable(exprType, varType, ctx)) {
+                addError(ctx, typeError(varDef, exprType, varType, ctx))
+            }
         } else {
-            varType = varDef.expr.type
+            if (varDef.expr.type!.kind === 'unknown-type') {
+                addError(ctx, unknownTypeError(varDef.expr, varDef.expr.type!, ctx))
+                varType = unknownType
+            } else {
+                varType = varDef.expr.type
+            }
         }
     }
 
@@ -628,7 +635,7 @@ export const checkType = (type: Type, ctx: Context) => {
             const vid = idToVid(type)
             const ref = resolveVid(vid, ctx, typeKinds)
             if (!ref) {
-                addError(ctx, notFoundError(ctx, type, vidToString(vid)))
+                addError(ctx, notFoundError(ctx, type, vidToString(vid), 'type'))
                 return
             }
             const k = ref.def.kind

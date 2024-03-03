@@ -66,7 +66,7 @@ export const buildUseExpr = (node: ParseNode): UseExpr => {
 export interface VarDef extends AstNode<'var-def'>, Partial<Checked> {
     pattern: Pattern
     varType?: Type
-    expr: Expr
+    expr?: Expr
     pub: boolean
 }
 
@@ -79,7 +79,7 @@ export const buildVarDef = (node: ParseNode): VarDef => {
     idx++
     const pattern = buildPattern(nodes[idx++])
     const varType = nodes[idx].kind === 'type-annot' ? buildType(filterNonAstNodes(nodes[idx++])[0]) : undefined
-    const expr = buildExpr(nodes[idx++])
+    const expr = nodes.at(idx)?.kind === 'expr' ? buildExpr(nodes[idx++]) : undefined
     return { kind: 'var-def', parseNode: node, pattern, varType, expr, pub }
 }
 

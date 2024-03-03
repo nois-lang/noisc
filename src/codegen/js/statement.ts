@@ -36,7 +36,7 @@ export const emitVarDef = (varDef: VarDef, module: Module, ctx: Context): string
         return todo('destructuring')
     }
     const name = varDef.pattern.expr.value
-    const { emit: exprEmit, resultVar } = emitExpr(varDef.expr, module, ctx)
+    const { emit: exprEmit, resultVar } = emitExpr(varDef.expr!, module, ctx)
     return [exprEmit, jsVariable(name, resultVar, varDef.pub)].join('\n')
 }
 

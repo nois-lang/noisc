@@ -8,7 +8,7 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
                       ;
     use-list          ::= O-BRACE (use-expr (COMMA use-expr)*)? COMMA? C-BRACE
                       ;
-  var-def             ::= PUB-KEYWORD? LET-KEYWORD pattern type-annot? EQUALS expr
+  var-def             ::= PUB-KEYWORD? LET-KEYWORD pattern type-annot? (EQUALS expr)?
                       ;
   fn-def              ::= PUB-KEYWORD? FN-KEYWORD NAME generics? params type-annot? block?
                       ;
