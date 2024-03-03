@@ -78,7 +78,7 @@ export const resolveVid = (
 ): VirtualIdentifierMatch | undefined => {
     const module = ctx.moduleStack.at(-1)!
     const res = resolveVid_(vid, ctx, ofKind)
-    if (res && ['variant', 'fn-def', 'type-def', 'trait-def'].includes(res.def.kind)) {
+    if (res && ['variant', 'fn-def', 'type-def', 'trait-def', 'name-def'].includes(res.def.kind)) {
         module.imports.push(res)
     }
     return res
