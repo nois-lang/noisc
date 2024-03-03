@@ -361,10 +361,6 @@ const checkTraitDef = (traitDef: TraitDef, ctx: Context) => {
 
     checkBlock(traitDef.block, ctx)
     // TODO: make sure method signature matches with its trait
-    const traitVid = traitDefToVirtualType(traitDef, ctx).identifier
-    traitDef.rels = ctx.impls.filter(
-        i => i.instanceDef === traitDef || (i.implType.kind === 'vid-type' && vidEq(traitVid, i.implType.identifier))
-    )
 
     module.scopeStack.pop()
 }

@@ -1,4 +1,4 @@
-import { indent, jsString, jsVariable } from '.'
+import { indent, jsRelName, jsString, jsVariable } from '.'
 import { Module } from '../../ast'
 import { Block, BreakStmt, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '../../ast/statement'
 import { TypeDef, Variant } from '../../ast/type-def'
@@ -36,7 +36,7 @@ export const emitVarDef = (varDef: VarDef, module: Module, ctx: Context): string
         return todo('destructuring')
     }
     const name = varDef.pattern.expr.value
-    const { emit: exprEmit, resultVar } = emitExpr(varDef.expr, module, ctx, name)
+    const { emit: exprEmit, resultVar } = emitExpr(varDef.expr, module, ctx)
     return [exprEmit, jsVariable(name, resultVar)].join('\n')
 }
 
@@ -54,17 +54,14 @@ export const emitFnDef = (fnDef: FnDef, module: Module, ctx: Context, asProperty
 
 export const emitTraitDef = (traitDef: TraitDef, module: Module, ctx: Context): string => {
     const name = traitDef.name.value
-    const impls_ = traitDef
-        .rels!.map(r => emitInstance(r.instanceDef, module, ctx))
-        .filter(i => i.length > 0)
-        .map(i => indent(i))
-    const impls = impls_.length > 0 ? `\n${impls_.join(',\n')}\n` : ''
-    return jsVariable(name, `[${impls}]`)
+    const impl = emitInstance(traitDef, module, ctx)
+    return jsVariable(name, impl)
 }
 
 export const emitImplDef = (implDef: ImplDef, module: Module, ctx: Context): string => {
-    // TODO
-    return ''
+    const rel = ctx.impls.find(i => i.instanceDef === implDef)!
+    const impl = emitInstance(implDef, module, ctx)
+    return jsVariable(jsRelName(rel), impl)
 }
 
 export const emitTypeDef = (typeDef: TypeDef, module: Module, ctx: Context): string => {

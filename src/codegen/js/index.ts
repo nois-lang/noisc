@@ -1,7 +1,9 @@
 import { Module } from '../../ast'
 import { Context } from '../../scope'
+import { InstanceRelation } from '../../scope/trait'
 import { vidFromScope } from '../../scope/util'
 import { VirtualIdentifier } from '../../scope/vid'
+import { virtualTypeToString } from '../../typecheck'
 import { groupBy } from '../../util/array'
 import { emitExprToString } from './expr'
 import { emitStatement } from './statement'
@@ -76,4 +78,12 @@ export const nextVariable = (ctx: Context): string => {
 export const jsTodo = (message?: string): string => {
     const msg = 'todo' + (message ? `: ${message}` : '')
     return `Error(${jsString(msg)})`
+}
+
+export const jsRelName = (rel: InstanceRelation): string => {
+    if (rel.inherent) {
+        return `impl${virtualTypeToString(rel.implType)}`.replace(/[:<>,]/g, '')
+    } else {
+        return `impl${virtualTypeToString(rel.implType)}${virtualTypeToString(rel.forType)}`.replace(/[:<>,]/g, '')
+    }
 }

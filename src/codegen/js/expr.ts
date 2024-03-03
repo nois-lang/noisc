@@ -17,7 +17,7 @@ export const emitExprToString = (expr: EmitExpr | string): string => {
     return typeof expr === 'string' ? expr : expr.emit
 }
 
-export const emitExpr = (expr: Expr, module: Module, ctx: Context, resultVar?: string): EmitExpr => {
+export const emitExpr = (expr: Expr, module: Module, ctx: Context): EmitExpr => {
     switch (expr.kind) {
         case 'operand-expr':
             return emitOperandExpr(expr, module, ctx)
