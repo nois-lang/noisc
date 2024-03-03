@@ -37,7 +37,7 @@ export const emitVarDef = (varDef: VarDef, module: Module, ctx: Context): string
     }
     const name = varDef.pattern.expr.value
     const { emit: exprEmit, resultVar } = emitExpr(varDef.expr, module, ctx)
-    return [exprEmit, jsVariable(name, resultVar)].join('\n')
+    return [exprEmit, jsVariable(name, resultVar, varDef.pub)].join('\n')
 }
 
 export const emitFnDef = (fnDef: FnDef, module: Module, ctx: Context, asProperty = false): string => {
@@ -48,20 +48,20 @@ export const emitFnDef = (fnDef: FnDef, module: Module, ctx: Context, asProperty
     if (asProperty) {
         return `${name}: function(${params}) ${block}`
     } else {
-        return `function ${name}(${params}) ${block}`
+        return `${fnDef.pub ? 'export ' : ''}function ${name}(${params}) ${block}`
     }
 }
 
 export const emitTraitDef = (traitDef: TraitDef, module: Module, ctx: Context): string => {
     const name = traitDef.name.value
     const impl = emitInstance(traitDef, module, ctx)
-    return jsVariable(name, impl)
+    return jsVariable(name, impl, true)
 }
 
 export const emitImplDef = (implDef: ImplDef, module: Module, ctx: Context): string => {
     const rel = ctx.impls.find(i => i.instanceDef === implDef)!
     const impl = emitInstance(implDef, module, ctx)
-    return jsVariable(jsRelName(rel), impl)
+    return jsVariable(jsRelName(rel), impl, true)
 }
 
 export const emitTypeDef = (typeDef: TypeDef, module: Module, ctx: Context): string => {
@@ -70,7 +70,7 @@ export const emitTypeDef = (typeDef: TypeDef, module: Module, ctx: Context): str
     const impl = typeDef.rel ? indent(`impl: ${emitInstance(typeDef.rel.instanceDef, module, ctx)}`) : ''
     const items_ = [...variants, impl].filter(i => i.length > 0).join(',\n')
     const items = items_.length > 0 ? `{\n${items_}\n}` : '{}'
-    return jsVariable(name, items)
+    return jsVariable(name, items, true)
 }
 
 export const emitReturnStmt = (returnStmt: ReturnStmt, module: Module, ctx: Context): string => {
