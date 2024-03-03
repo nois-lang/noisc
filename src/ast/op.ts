@@ -1,4 +1,5 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
+import { MethodDef } from '../scope/vid'
 import { Arg, AstNode, AstNodeKind, buildArg } from './index'
 
 export type PostfixOp = CallOp | UnwrapOp | BindOp
@@ -107,6 +108,7 @@ export const buildBinaryOp = (node: ParseNode): BinaryOp => {
 
 export interface CallOp extends AstNode<'call-op'> {
     args: Arg[]
+    methodDef?: MethodDef
 }
 
 export const buildCallOp = (node: ParseNode): CallOp => {

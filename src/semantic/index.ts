@@ -244,7 +244,6 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
     if (ctx.check) {
         fnDef.checked = true
     }
-
     const module = ctx.moduleStack.at(-1)!
     module.scopeStack.push({
         kind: 'fn',
@@ -257,6 +256,8 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
         checkParam(p, i, ctx)
         return p.type!
     })
+    const firstParam = paramTypes.at(0)
+    fnDef.static = !(firstParam?.kind === 'generic' && firstParam.name === selfType.name)
 
     if (fnDef.returnType) {
         checkType(fnDef.returnType, ctx)

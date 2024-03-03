@@ -153,6 +153,7 @@ const checkMethodCallExpr = (
         }
         return
     }
+    call.methodDef = ref.def
     const genericMaps = makeMethodGenericMaps(lOperand, identifier, ref.def, call, ctx)
     // normal method call
     const fnType = <VirtualFnType>ref.def.fn.type

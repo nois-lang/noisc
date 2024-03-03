@@ -90,6 +90,7 @@ export interface FnDef extends AstNode<'fn-def'>, Partial<Typed>, Partial<Checke
     params: Param[]
     block?: Block
     returnType?: Type
+    static?: boolean
     pub: boolean
 }
 
