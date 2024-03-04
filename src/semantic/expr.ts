@@ -91,6 +91,7 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
             break
         case 'list-expr':
             checkListExpr(operand, ctx)
+            operand.impls = resolveImplsForType(operand.type!, operand, ctx)
             break
         case 'string-literal': {
             const vid = vidFromString('std::string::String')
@@ -100,6 +101,7 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
                 break
             }
             operand.type = typeDefToVirtualType(ref.def, ctx, ref.module)
+            operand.impls = resolveImplsForType(operand.type!, operand, ctx)
             break
         }
         case 'char-literal': {
@@ -110,6 +112,7 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
                 break
             }
             operand.type = typeDefToVirtualType(ref.def, ctx, ref.module)
+            operand.impls = resolveImplsForType(operand.type!, operand, ctx)
             break
         }
         case 'int-literal': {
@@ -120,6 +123,7 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
                 break
             }
             operand.type = typeDefToVirtualType(ref.def, ctx, ref.module)
+            operand.impls = resolveImplsForType(operand.type!, operand, ctx)
             break
         }
         case 'float-literal': {
@@ -130,6 +134,7 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
                 break
             }
             operand.type = typeDefToVirtualType(ref.def, ctx, ref.module)
+            operand.impls = resolveImplsForType(operand.type!, operand, ctx)
             break
         }
         case 'bool-literal': {
@@ -140,6 +145,7 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
                 break
             }
             operand.type = typeDefToVirtualType(ref.def, ctx, ref.module)
+            operand.impls = resolveImplsForType(operand.type!, operand, ctx)
             break
         }
         case 'identifier':
@@ -495,7 +501,7 @@ export const checkVariantCall = (
     // if there are regular positional args, call it as a regular function
     const args = (allArgsNamed ? orderedArgs : call.args).map(a => a?.expr)
     const returnType = checkCall_(call, unaryExpr.operand, args, ctx)
-    call.impls = resolveImplsForType(returnType, ctx)
+    call.impls = resolveImplsForType(returnType, unaryExpr, ctx)
     call.variantDef = ref.def
     return returnType
 }

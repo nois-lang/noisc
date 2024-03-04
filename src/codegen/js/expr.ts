@@ -39,7 +39,7 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
         case 'call-op':
             const args = unaryExpr.op.args.map(a => emitExpr(a.expr, module, ctx))
             const impls: string[] = []
-            if (unaryExpr.op.impls !== undefined && unaryExpr.op.impls.length > 0) {
+            if (unaryExpr.op.impls !== undefined) {
                 for (const impl of unaryExpr.op.impls) {
                     impls.push(`${resultVar}.${relTypeName(impl)} = ${jsRelName(impl)};`)
                 }
@@ -151,18 +151,44 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
                 resultVar
             }
         case 'string-literal':
-            return { emit: jsVariable(resultVar, `String.String(${operand.value})`), resultVar }
         case 'char-literal':
-            return { emit: jsVariable(resultVar, `Char.Char(${operand.value})`), resultVar }
         case 'int-literal':
-            return { emit: jsVariable(resultVar, `Int.Int(${operand.value})`), resultVar }
         case 'float-literal':
-            return { emit: jsVariable(resultVar, `Float.Float(${operand.value})`), resultVar }
         case 'bool-literal':
-            return { emit: jsVariable(resultVar, `Bool.Bool(${operand.value})`), resultVar }
+            return emitLiteral(operand, module, ctx, resultVar)
         case 'identifier':
             return { emit: jsVariable(resultVar, operand.names.at(-1)!.value), resultVar }
     }
+}
+
+export const emitLiteral = (operand: Operand, module: Module, ctx: Context, resultVar: string): EmitExpr => {
+    let constructorEmit: string
+    switch (operand.kind) {
+        case 'string-literal':
+            constructorEmit = `String.String(${operand.value})`
+            break
+        case 'char-literal':
+            constructorEmit = `Char.Char(${operand.value})`
+            break
+        case 'int-literal':
+            constructorEmit = `Int.Int(${operand.value})`
+            break
+        case 'float-literal':
+            constructorEmit = `Float.Float(${operand.value})`
+            break
+        case 'bool-literal':
+            constructorEmit = `Bool.Bool(${operand.value})`
+            break
+        default:
+            return unreachable()
+    }
+    const impls: string[] = []
+    if (operand.impls !== undefined) {
+        for (const impl of operand.impls) {
+            impls.push(`${resultVar}.${relTypeName(impl)} = ${jsRelName(impl)};`)
+        }
+    }
+    return { emit: [jsVariable(resultVar, constructorEmit), ...impls].join('\n'), resultVar }
 }
 
 export const emitMatchExpr = (matchExpr: MatchExpr, module: Module, ctx: Context, resultVar: string): EmitExpr => {
