@@ -1,7 +1,9 @@
 pub fn panic(message: String): Never {
-    todo("panic")
+    throwError(message)
 }
 
 pub fn todo(message: String): Never {
-    todo("todo")
+    panic("TODO: ".concat(message))
 }
+
+pub fn throwError(message: String): Never
