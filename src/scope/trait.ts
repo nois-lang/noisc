@@ -1,12 +1,12 @@
-import { Module } from '../ast'
+import { AstNode, Module } from '../ast'
 import { ImplDef, TraitDef } from '../ast/statement'
 import { TypeDef } from '../ast/type-def'
-import { notFoundError } from '../semantic/error'
+import { notFoundError, semanticError } from '../semantic/error'
 import { VidType, VirtualType, genericToVirtual, isAssignable, typeToVirtual, virtualTypeToString } from '../typecheck'
 import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { groupByHaving } from '../util/array'
 import { assert } from '../util/todo'
-import { Context, addError, defKey } from './index'
+import { Context, addError, addWarning, defKey } from './index'
 import { concatVid, idToVid, vidEq, vidFromString, vidToString } from './util'
 import { VirtualIdentifier, VirtualIdentifierMatch, resolveVid, typeKinds } from './vid'
 
@@ -207,7 +207,7 @@ export const relTypeName = (rel: InstanceRelation): string => {
     }
 }
 
-export const resolveImplsForType = (type: VirtualType, ctx: Context): InstanceRelation[] => {
+export const resolveImplsForType = (type: VirtualType, node: AstNode<any>, ctx: Context): InstanceRelation[] => {
     const inherentImpl = ctx.impls.find(i => i.inherent && isAssignable(type, i.implType, ctx))
     const traitImpls = groupByHaving(
         ctx.impls.filter(i => i.instanceDef.kind === 'impl-def' && !i.inherent),
@@ -222,8 +222,13 @@ export const resolveImplsForType = (type: VirtualType, ctx: Context): InstanceRe
     for (const [, is] of traitImpls) {
         if (is.length === 0) continue
         // TODO: detect at implDef level
-        assert(is.length === 1, `clashing implementations for type ${virtualTypeToString(type)}`)
+        const vid = vidToString(is[0].implDef.vid)
+        if (is.length !== 1) {
+            const msg = `clashing impls of trait \`${vid}\` for type \`${virtualTypeToString(type)}\``
+            addWarning(ctx, semanticError(ctx, node, msg))
+        }
         rels.push(is[0])
     }
+    ctx.moduleStack.at(-1)!.relImports.push(...rels)
     return rels
 }
