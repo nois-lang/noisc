@@ -170,10 +170,15 @@ if (config.emit) {
 
         const nativePath = m.source.filepath.replace(/\.no$/, '.js')
         const native = existsSync(nativePath) ? readFileSync(nativePath) : ''
-        const js = [emitModule(m, ctx), native].filter(m => m.length > 0).join('\n\n')
+        // TODO: custom main module and main fn name
+        const mainFn =
+            m.mod && m.identifier.names.length === 1
+                ? m.block.statements.find(s => s.kind === 'fn-def' && s.pub && s.name.value === 'main')
+                : undefined
+        const mainFnName = mainFn?.kind === 'fn-def' ? mainFn.name.value : undefined
+        const js = [emitModule(m, ctx, mainFnName), native].filter(m => m.length > 0).join('\n\n')
         const jsPath = join(moduleOutPath.dir, moduleOutPath.name) + '.js'
         writeFileSync(jsPath, js)
         console.info(`emit: js           ${jsPath} [${js.length}B]`)
     })
-    // TODO: add `main` invocation to main module
 }

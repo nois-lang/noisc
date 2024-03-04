@@ -13,13 +13,25 @@ export interface JsImport {
     path: string
 }
 
-export const emitModule = (module: Module, ctx: Context): string => {
+export const emitModule = (module: Module, ctx: Context, mainFn?: string): string => {
+    const imports = emitImports(module, ctx)
     const statements = module.block.statements
         .map(s => emitStatement(s, module, ctx))
         .map(emitExprToString)
         .filter(s => s.length > 0)
         .join('\n\n')
-    return [emitImports(module, ctx), statements].filter(s => s.length > 0).join('\n\n')
+    const mainFnInvoke =
+        mainFn !== undefined
+            ? [
+                  `\
+try {
+    ${mainFn}();
+} catch (e) {
+    console.error(\`\${e.message}\\n\${e.stack.map(s => "    at " + s).join("\\n")}\`);
+}`
+              ]
+            : []
+    return [imports, statements, ...mainFnInvoke].filter(s => s.length > 0).join('\n\n')
 }
 
 export const emitImports = (module: Module, ctx: Context): string => {
