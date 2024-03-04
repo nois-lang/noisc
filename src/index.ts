@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'fs'
 import { basename, dirname, join, parse, relative } from 'path'
 import { fileURLToPath } from 'url'
 import { parseOption } from './cli'
@@ -153,6 +153,10 @@ for (const warning of ctx.warnings) {
 
 if (config.emit) {
     if (!existsSync(config.outPath)) mkdirSync(config.outPath, { recursive: true })
+    const packageInfoSrc = join(config.pkgPath, 'package.json')
+    const packageInfoDest = join(config.outPath, 'package.json')
+    copyFileSync(packageInfoSrc, packageInfoDest)
+    console.info(`copy: ${packageInfoSrc} -> ${packageInfoDest}`)
     pkg.modules.forEach(m => {
         ctx.variableCounter = 0
         const modulePath = relative(config.srcPath, m.source.filepath)
@@ -162,13 +166,13 @@ if (config.emit) {
         const declaration = emitDeclaration(m)
         const declarationPath = join(moduleOutPath.dir, moduleOutPath.name) + '.no'
         writeFileSync(declarationPath, declaration)
-        console.info(`emit: declaration ${declarationPath} [${declaration.length}B]`)
+        console.info(`emit: declaration  ${declarationPath} [${declaration.length}B]`)
 
         const nativePath = m.source.filepath.replace(/\.no$/, '.js')
         const native = existsSync(nativePath) ? readFileSync(nativePath) : ''
         const js = [emitModule(m, ctx), native].filter(m => m.length > 0).join('\n\n')
         const jsPath = join(moduleOutPath.dir, moduleOutPath.name) + '.js'
         writeFileSync(jsPath, js)
-        console.info(`emit: js          ${jsPath} [${js.length}B]`)
+        console.info(`emit: js           ${jsPath} [${js.length}B]`)
     })
 }
