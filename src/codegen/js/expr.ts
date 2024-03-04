@@ -37,19 +37,28 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
     const resultVar = nextVariable(ctx)
     switch (unaryExpr.op.kind) {
         case 'call-op':
-            const operand = emitOperand(unaryExpr.operand, module, ctx)
             const args = unaryExpr.op.args.map(a => emitExpr(a.expr, module, ctx))
-            const impls = []
+            const impls: string[] = []
             if (unaryExpr.op.impls !== undefined && unaryExpr.op.impls.length > 0) {
                 for (const impl of unaryExpr.op.impls) {
-                    // TODO: import impls
                     impls.push(`${resultVar}.${relTypeName(impl)} = ${jsRelName(impl)};`)
                 }
             }
-            const call = jsVariable(resultVar, `${operand.resultVar}(${args.map(a => a.resultVar).join(', ')})`)
-            return {
-                emit: [operand.emit, ...args.map(a => a.emit), call, ...impls].join('\n'),
-                resultVar
+            const variantDef = unaryExpr.op.variantDef
+            if (variantDef) {
+                const variantName = `${variantDef.typeDef.name.value}.${variantDef.variant.name.value}`
+                const call = jsVariable(resultVar, `${variantName}(${args.map(a => a.resultVar).join(', ')})`)
+                return {
+                    emit: [...args.map(a => a.emit), call, ...impls].join('\n'),
+                    resultVar
+                }
+            } else {
+                const operand = emitOperand(unaryExpr.operand, module, ctx)
+                const call = jsVariable(resultVar, `${operand.resultVar}(${args.map(a => a.resultVar).join(', ')})`)
+                return {
+                    emit: [operand.emit, ...args.map(a => a.emit), call, ...impls].join('\n'),
+                    resultVar
+                }
             }
         case 'unwrap-op':
             return { emit: jsTodo('unwrap-op'), resultVar }
@@ -142,15 +151,15 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
                 resultVar
             }
         case 'string-literal':
-            return { emit: jsVariable(resultVar, `String(${operand.value})`), resultVar }
+            return { emit: jsVariable(resultVar, `String.String(${operand.value})`), resultVar }
         case 'char-literal':
-            return { emit: jsVariable(resultVar, `Char(${operand.value})`), resultVar }
+            return { emit: jsVariable(resultVar, `Char.Char(${operand.value})`), resultVar }
         case 'int-literal':
-            return { emit: jsVariable(resultVar, `Int(${operand.value})`), resultVar }
+            return { emit: jsVariable(resultVar, `Int.Int(${operand.value})`), resultVar }
         case 'float-literal':
-            return { emit: jsVariable(resultVar, `Float(${operand.value})`), resultVar }
+            return { emit: jsVariable(resultVar, `Float.Float(${operand.value})`), resultVar }
         case 'bool-literal':
-            return { emit: jsVariable(resultVar, `Bool(${operand.value})`), resultVar }
+            return { emit: jsVariable(resultVar, `Bool.Bool(${operand.value})`), resultVar }
         case 'identifier':
             return { emit: jsVariable(resultVar, operand.names.at(-1)!.value), resultVar }
     }
@@ -178,7 +187,7 @@ export const emitMatchExpr = (matchExpr: MatchExpr, module: Module, ctx: Context
         ifElseChain += `\n${indent('}', i)}`
     }
     return {
-        emit: [sEmit, ifElseChain].join('\n'),
+        emit: [jsVariable(resultVar), sEmit, ifElseChain].join('\n'),
         resultVar
     }
 }

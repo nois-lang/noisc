@@ -175,4 +175,5 @@ if (config.emit) {
         writeFileSync(jsPath, js)
         console.info(`emit: js           ${jsPath} [${js.length}B]`)
     })
+    // TODO: add `main` invocation to main module
 }

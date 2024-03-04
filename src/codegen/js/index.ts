@@ -66,8 +66,9 @@ export const jsString = (str: string): string => {
     return JSON.stringify(str)
 }
 
-export const jsVariable = (name: string, emit: string, pub = false): string => {
-    return `${pub ? 'export ' : ''}const ${name} = ${emit};`
+export const jsVariable = (name: string, emit?: string, pub = false): string => {
+    const assign = emit !== undefined ? `const ${name} = ${emit};` : `let ${name}`
+    return `${pub ? 'export ' : ''}${assign}`
 }
 
 export const indent = (str: string, level = 1): string => {

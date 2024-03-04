@@ -496,6 +496,7 @@ export const checkVariantCall = (
     const args = (allArgsNamed ? orderedArgs : call.args).map(a => a?.expr)
     const returnType = checkCall_(call, unaryExpr.operand, args, ctx)
     call.impls = resolveImplsForType(returnType, ctx)
+    call.variantDef = ref.def
     return returnType
 }
 
