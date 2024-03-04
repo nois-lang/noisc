@@ -1,7 +1,7 @@
 import { Module } from '../../ast'
 import { Context } from '../../scope'
 import { InstanceRelation } from '../../scope/trait'
-import { vidFromScope } from '../../scope/util'
+import { concatVid, vidFromScope, vidFromString } from '../../scope/util'
 import { VirtualIdentifier } from '../../scope/vid'
 import { virtualTypeToString } from '../../typecheck'
 import { groupBy } from '../../util/array'
@@ -23,6 +23,9 @@ export const emitModule = (module: Module, ctx: Context): string => {
 }
 
 export const emitImports = (module: Module, ctx: Context): string => {
+    const relImports = module.relImports
+        .filter(i => i.module !== module)
+        .map(i => makeJsImport(concatVid(i.module.identifier, vidFromString(jsRelName(i))), i.module, module, ctx))
     const imports_: JsImport[] = module.imports
         .filter(i => i.module !== module)
         .map(i => {
@@ -34,6 +37,7 @@ export const emitImports = (module: Module, ctx: Context): string => {
             }
             return makeJsImport(vid, i.module, module, ctx)
         })
+    imports_.push(...relImports)
     const imports = [...groupBy(imports_, i => i.path).entries()]
         .map(([path, is]) => {
             const defs = [...new Set(is.map(i => i.def))].toSorted()
@@ -48,7 +52,7 @@ const makeJsImport = (vid: VirtualIdentifier, importModule: Module, module: Modu
     const modulePkg = ctx.packages.find(p => p.modules.find(m => m === module))!.name
     const def = vid.names.at(-1)!
     if (importPkg === modulePkg) {
-        const root = ['.', ...new Array(module.identifier.names.length - 2).fill('..')]
+        const root = ['.', ...new Array(module.identifier.names.length - (module.mod ? 1 : 2)).fill('..')]
         return { def, path: [...root, ...vid.names.slice(1, -1), ...(importModule.mod ? ['mod'] : [])].join('/') }
     }
     return { def, path: [...vid.names.slice(0, -1), ...(importModule.mod ? ['mod'] : [])].join('/') }

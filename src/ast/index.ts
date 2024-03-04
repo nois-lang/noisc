@@ -1,5 +1,6 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { Scope } from '../scope'
+import { InstanceRelation } from '../scope/trait'
 import { VirtualIdentifier, VirtualIdentifierMatch } from '../scope/vid'
 import { Typed } from '../semantic'
 import { VirtualUseExpr } from '../semantic/use-expr'
@@ -127,6 +128,7 @@ export interface Module extends AstNode<'module'> {
      * List of resolved imports used by this module
      */
     imports: VirtualIdentifierMatch[]
+    relImports: InstanceRelation[]
 }
 
 export const buildModuleAst = (
@@ -150,7 +152,8 @@ export const buildModuleAst = (
         scopeStack: [],
         useExprs,
         compiled,
-        imports: []
+        imports: [],
+        relImports: []
     }
 }
 

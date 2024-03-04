@@ -153,6 +153,7 @@ const checkMethodCallExpr = (
         }
         return
     }
+    ctx.moduleStack.at(-1)!.relImports.push(ref.def.rel)
     call.methodDef = ref.def
     const genericMaps = makeMethodGenericMaps(lOperand, identifier, ref.def, call, ctx)
     // normal method call
