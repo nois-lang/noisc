@@ -1,3 +1,5 @@
+use std::{ math::pi, iter::MapAdapter }
+
 trait Area {
     fn area(self): Float
 }
@@ -10,8 +12,8 @@ type Shape {
 impl Area for Shape {
     fn area(self): Float {
         match self {
-            Shape::Rect(width, height) { width * height },
-            Shape::Circle(radius) { math::pi * radius ^ 2. }
+            Shape::Rect(width, height) { width * height }
+            Shape::Circle(radius) { pi * radius ^ 2. }
         }
     }
 }
@@ -23,3 +25,4 @@ fn main() {
     ]
     println(shapes.iter().map(Area::area).collect<List<_>>())
 }
+

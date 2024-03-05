@@ -24,7 +24,7 @@ export const usage = `\
 ${usageHeader}
 
 Usage: noisc [OPTIONS] FILE
-If FILE is a directory, compile files at FILE/<src> into FILE/<out> directory with <deps> in scope
+If FILE is a directory, compile source files at <src> into <out> directory with <deps> in scope
 If FILE is a source file, compile it into <out> directory
 Options:
     --name=<name>               Compile package with this name
@@ -56,7 +56,8 @@ if (!existsSync(config.pkgPath)) {
     console.error(`no such file \`${config.pkgPath}\``)
     process.exit(1)
 }
-if (statSync(config.pkgPath).isDirectory()) {
+const isDir = statSync(config.pkgPath).isDirectory()
+if (isDir) {
     const srcPath = join(config.pkgPath, config.srcPath)
     if (!existsSync(srcPath)) {
         console.error(`no such file \`${srcPath}\``)
@@ -152,33 +153,51 @@ for (const warning of ctx.warnings) {
 }
 
 if (config.emit) {
-    if (!existsSync(config.outPath)) mkdirSync(config.outPath, { recursive: true })
-    const packageInfoSrc = join(config.pkgPath, 'package.json')
-    const packageInfoDest = join(config.outPath, 'package.json')
-    copyFileSync(packageInfoSrc, packageInfoDest)
-    console.info(`copy: ${packageInfoSrc} -> ${packageInfoDest}`)
-    pkg.modules.forEach(m => {
-        ctx.variableCounter = 0
-        const modulePath = relative(config.srcPath, m.source.filepath)
-        const moduleOutPath = parse(join(config.outPath, modulePath))
-        if (!existsSync(moduleOutPath.dir)) mkdirSync(moduleOutPath.dir)
+    if (isDir) {
+        if (!existsSync(config.outPath)) mkdirSync(config.outPath, { recursive: true })
+        const packageInfoSrc = join(config.pkgPath, 'package.json')
+        if (!existsSync(packageInfoSrc)) {
+            console.error(`${packageInfoSrc} not found`)
+            process.exit(1)
+        }
+        const packageInfoDest = join(config.outPath, 'package.json')
+        copyFileSync(packageInfoSrc, packageInfoDest)
+        console.info(`copy: ${packageInfoSrc} -> ${packageInfoDest}`)
+        pkg.modules.forEach(m => {
+            ctx.variableCounter = 0
+            const modulePath = relative(config.srcPath, m.source.filepath)
+            const moduleOutPath = parse(join(config.outPath, modulePath))
+            if (!existsSync(moduleOutPath.dir)) mkdirSync(moduleOutPath.dir)
 
-        const declaration = emitDeclaration(m)
-        const declarationPath = join(moduleOutPath.dir, moduleOutPath.name) + '.no'
-        writeFileSync(declarationPath, declaration)
-        console.info(`emit: declaration  ${declarationPath} [${declaration.length}B]`)
+            const declaration = emitDeclaration(m)
+            const declarationPath = join(moduleOutPath.dir, moduleOutPath.name) + '.no'
+            writeFileSync(declarationPath, declaration)
+            console.info(`emit: declaration  ${declarationPath} [${declaration.length}B]`)
 
-        const nativePath = m.source.filepath.replace(/\.no$/, '.js')
-        const native = existsSync(nativePath) ? readFileSync(nativePath) : ''
+            const nativePath = m.source.filepath.replace(/\.no$/, '.js')
+            const native = existsSync(nativePath) ? readFileSync(nativePath) : ''
+            // TODO: custom main module and main fn name
+            const mainFn =
+                m.mod && m.identifier.names.length === 1
+                    ? m.block.statements.find(s => s.kind === 'fn-def' && s.pub && s.name.value === 'main')
+                    : undefined
+            const mainFnName = mainFn?.kind === 'fn-def' ? mainFn.name.value : undefined
+            const js = [emitModule(m, ctx, mainFnName), native].filter(m => m.length > 0).join('\n\n')
+            const jsPath = join(moduleOutPath.dir, moduleOutPath.name) + '.js'
+            writeFileSync(jsPath, js)
+            console.info(`emit: js           ${jsPath} [${js.length}B]`)
+        })
+    } else {
+        const m = pkg.modules[0]
         // TODO: custom main module and main fn name
         const mainFn =
             m.mod && m.identifier.names.length === 1
                 ? m.block.statements.find(s => s.kind === 'fn-def' && s.pub && s.name.value === 'main')
                 : undefined
         const mainFnName = mainFn?.kind === 'fn-def' ? mainFn.name.value : undefined
-        const js = [emitModule(m, ctx, mainFnName), native].filter(m => m.length > 0).join('\n\n')
-        const jsPath = join(moduleOutPath.dir, moduleOutPath.name) + '.js'
+        const js = emitModule(m, ctx, mainFnName)
+        const jsPath = join(config.outPath, parse(config.pkgPath).name) + '.js'
         writeFileSync(jsPath, js)
         console.info(`emit: js           ${jsPath} [${js.length}B]`)
-    })
+    }
 }
