@@ -88,7 +88,7 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
             return {
                 emit: [
                     lOp.emit,
-                    ...args.map(a => a.emit),
+                    ...args.map(a => a.emit).join('\n'),
                     jsVariable(resultVar, `${lOp.resultVar}.${traitName}.${methodName}(${argsEmit})`)
                 ].join('\n'),
                 resultVar
@@ -107,7 +107,10 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
         }
     }
     const method = operatorImplMap.get(binaryExpr.binaryOp.kind)!.names.at(-1)!
-    return { emit: jsVariable(resultVar, `${lOp}.${method}(${rOp})`), resultVar }
+    return {
+        emit: [lOp.emit, rOp.emit, jsVariable(resultVar, `${lOp.resultVar}.${method}(${rOp.resultVar})`)].join('\n'),
+        resultVar
+    }
 }
 
 export const emitOperand = (operand: Operand, module: Module, ctx: Context): EmitExpr => {
