@@ -91,7 +91,6 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
             break
         case 'list-expr':
             checkListExpr(operand, ctx)
-            operand.impls = resolveImplsForType(operand.type!, operand, ctx)
             break
         case 'string-literal': {
             const vid = vidFromString('std::string::String')
@@ -610,7 +609,15 @@ export const checkListExpr = (listExpr: ListExpr, ctx: Context): void => {
             addError(ctx, typeError(expr, otherType, itemType, ctx))
         }
     }
-    listExpr.type = { kind: 'vid-type', identifier: vidFromString('std::list::List'), typeArgs: [itemType] }
+    const listVid = vidFromString('std::list::List')
+    const ref = resolveVid(listVid, ctx, ['type-def'])
+    if (!ref || ref.def.kind !== 'type-def') {
+        addError(ctx, notFoundError(ctx, listExpr, vidToString(listVid)))
+        listExpr.type = unknownType
+        return
+    }
+    listExpr.type = { kind: 'vid-type', identifier: listVid, typeArgs: [itemType] }
+    listExpr.impls = resolveImplsForType(listExpr.type, listExpr, ctx)
 }
 
 export const checkAssignExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {

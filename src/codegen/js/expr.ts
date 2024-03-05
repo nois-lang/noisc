@@ -1,13 +1,13 @@
-import { extractValue, indent, jsRelName, jsString, jsTodo, jsVariable, nextVariable } from '.'
+import { emitLines, extractValue, indent, jsError, jsRelName, jsString, jsVariable, nextVariable } from '.'
 import { Module, Param } from '../../ast'
 import { BinaryExpr, Expr, OperandExpr, UnaryExpr } from '../../ast/expr'
-import { MatchExpr, PatternExpr } from '../../ast/match'
+import { MatchExpr, Pattern, PatternExpr } from '../../ast/match'
 import { Operand } from '../../ast/operand'
 import { Context } from '../../scope'
 import { relTypeName } from '../../scope/trait'
 import { operatorImplMap } from '../../semantic/op'
-import { todo, unreachable } from '../../util/todo'
-import { emitBlock } from './statement'
+import { unreachable } from '../../util/todo'
+import { emitBlock, emitBlockStatements } from './statement'
 
 export interface EmitExpr {
     emit: string
@@ -49,21 +49,21 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
                 const variantName = `${variantDef.typeDef.name.value}.${variantDef.variant.name.value}`
                 const call = jsVariable(resultVar, `${variantName}(${args.map(a => a.resultVar).join(', ')})`)
                 return {
-                    emit: [...args.map(a => a.emit), call, ...impls].join('\n'),
+                    emit: emitLines([...args.map(a => a.emit), call, ...impls]),
                     resultVar
                 }
             } else {
                 const operand = emitOperand(unaryExpr.operand, module, ctx)
                 const call = jsVariable(resultVar, `${operand.resultVar}(${args.map(a => a.resultVar).join(', ')})`)
                 return {
-                    emit: [operand.emit, ...args.map(a => a.emit), call, ...impls].join('\n'),
+                    emit: emitLines([operand.emit, ...args.map(a => a.emit), call, ...impls]),
                     resultVar
                 }
             }
         case 'unwrap-op':
-            return { emit: jsTodo('unwrap-op'), resultVar }
+            return { emit: jsError('unwrap-op'), resultVar }
         case 'bind-op':
-            return { emit: jsTodo('bind'), resultVar }
+            return { emit: jsError('bind'), resultVar }
     }
 }
 
@@ -74,7 +74,7 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
         if (binaryExpr.rOperand.kind === 'identifier') {
             const accessor = binaryExpr.rOperand.names.at(-1)!.value
             return {
-                emit: [lOp.emit, jsVariable(resultVar, `${lOp.resultVar}.${accessor}`)].join('\n'),
+                emit: emitLines([lOp.emit, jsVariable(resultVar, `${lOp.resultVar}.${accessor}`)]),
                 resultVar
             }
         }
@@ -86,29 +86,31 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
             const args = callOp.args.map(a => emitExpr(a.expr, module, ctx))
             const argsEmit = (methodDef.fn.static ? args : [lOp.resultVar, ...args.map(a => a.resultVar)]).join(', ')
             return {
-                emit: [
+                emit: emitLines([
                     lOp.emit,
-                    ...args.map(a => a.emit).join('\n'),
+                    emitLines(args.map(a => a.emit)),
                     jsVariable(resultVar, `${lOp.resultVar}.${traitName}.${methodName}(${argsEmit})`)
-                ].join('\n'),
+                ]),
                 resultVar
             }
         }
         return {
-            emit: jsTodo('unwrap/bind ops'),
+            emit: jsError('unwrap/bind ops'),
             resultVar
         }
     }
     const rOp = emitOperand(binaryExpr.rOperand, module, ctx)
     if (binaryExpr.binaryOp.kind === 'assign-op') {
         return {
-            emit: [lOp.emit, rOp.emit, `${extractValue(lOp.resultVar)} = ${extractValue(rOp.resultVar)}`].join('\n'),
+            emit: emitLines([lOp.emit, rOp.emit, `${extractValue(lOp.resultVar)} = ${extractValue(rOp.resultVar)}`]),
             resultVar
         }
     }
+    const trait = operatorImplMap.get(binaryExpr.binaryOp.kind)!.names.at(-2)!
     const method = operatorImplMap.get(binaryExpr.binaryOp.kind)!.names.at(-1)!
+    const assign = jsVariable(resultVar, `${lOp.resultVar}.${trait}.${method}(${lOp.resultVar}, ${rOp.resultVar})`)
     return {
-        emit: [lOp.emit, rOp.emit, jsVariable(resultVar, `${lOp.resultVar}.${method}(${rOp.resultVar})`)].join('\n'),
+        emit: emitLines([lOp.emit, rOp.emit, assign]),
         resultVar
     }
 }
@@ -121,36 +123,68 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
             const thenBlock = emitBlock(operand.thenBlock, module, ctx, resultVar)
             const elseBlock = operand.elseBlock ? `else ${emitBlock(operand.elseBlock, module, ctx, resultVar)}` : ''
             return {
-                emit: [`let ${resultVar};`, cEmit, `if (${extractValue(cVar)}) ${thenBlock} ${elseBlock}`].join('\n'),
+                emit: emitLines([jsVariable(resultVar), cEmit, `if (${extractValue(cVar)}) ${thenBlock} ${elseBlock}`]),
                 resultVar
             }
         }
         case 'if-let-expr':
-            return { emit: jsTodo('if-let'), resultVar }
+            return { emit: jsError('if-let'), resultVar }
         case 'while-expr': {
             const { emit: cEmit, resultVar: cVar } = emitExpr(operand.condition, module, ctx)
             const block = emitBlock(operand.block, module, ctx)
-            return { emit: [cEmit, `while (${extractValue(cVar)}) ${block}`].join('\n'), resultVar }
+            return { emit: emitLines([cEmit, `while (${extractValue(cVar)}) ${block}`]), resultVar }
         }
-        case 'for-expr':
-            return { emit: jsTodo('for'), resultVar }
+        case 'for-expr': {
+            const expr = emitExpr(operand.expr, module, ctx)
+            const iteratorVar = nextVariable(ctx)
+            const iterator = {
+                emit: emitLines([
+                    expr.emit,
+                    jsVariable(iteratorVar, `${expr.resultVar}.Iterable.iter(${expr.resultVar})`)
+                ]),
+                resultVar: iteratorVar
+            }
+            const iterateeVar = nextVariable(ctx)
+            const thenBlock = emitLines([
+                emitPattern(operand.pattern, module, ctx, `${iterateeVar}.value`),
+                ...emitBlockStatements(operand.block, module, ctx)
+            ])
+            const block = emitLines([
+                jsVariable(iterateeVar, `${iterator.resultVar}.Iter.next(${iterator.resultVar})`),
+                `if (${iterateeVar}.$noisVariant === "Some") {`,
+                indent(thenBlock),
+                `} else {`,
+                indent(`break;`),
+                `}`
+            ])
+            const forEmit = emitLines([iterator.emit, 'while (true) {', indent(block), '}'])
+            return { emit: emitLines([jsVariable(resultVar), forEmit]), resultVar: jsError('no use') }
+        }
         case 'match-expr':
             return emitMatchExpr(operand, module, ctx, resultVar)
-        case 'closure-expr':
+        case 'closure-expr': {
             const params = operand.params.map(p => emitParam(p, module, ctx)).join(', ')
             const block = emitBlock(operand.block, module, ctx)
             return { emit: jsVariable(resultVar, `function(${params}) ${block}`), resultVar }
+        }
         case 'operand-expr':
         case 'unary-expr':
         case 'binary-expr':
             return emitExpr(operand, module, ctx)
         case 'list-expr':
             const items = operand.exprs.map(e => emitExpr(e, module, ctx))
+            const impls: string[] = []
+            if (operand.impls !== undefined) {
+                for (const impl of operand.impls) {
+                    impls.push(`${resultVar}.${relTypeName(impl)} = ${jsRelName(impl)};`)
+                }
+            }
             return {
-                emit: [
+                emit: emitLines([
                     ...items.map(i => i.emit),
-                    jsVariable(resultVar, `List(${items.map(i => i.resultVar).join(', ')})`)
-                ].join('\n'),
+                    jsVariable(resultVar, `List.List(${items.map(i => i.resultVar).join(', ')})`),
+                    ...impls
+                ]),
                 resultVar
             }
         case 'string-literal':
@@ -160,7 +194,7 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
         case 'bool-literal':
             return emitLiteral(operand, module, ctx, resultVar)
         case 'identifier':
-            return { emit: jsVariable(resultVar, operand.names.at(-1)!.value), resultVar }
+            return { emit: '', resultVar: operand.names.at(-1)!.value }
     }
 }
 
@@ -191,7 +225,7 @@ export const emitLiteral = (operand: Operand, module: Module, ctx: Context, resu
             impls.push(`${resultVar}.${relTypeName(impl)} = ${jsRelName(impl)};`)
         }
     }
-    return { emit: [jsVariable(resultVar, constructorEmit), ...impls].join('\n'), resultVar }
+    return { emit: emitLines([jsVariable(resultVar, constructorEmit), ...impls]), resultVar }
 }
 
 export const emitMatchExpr = (matchExpr: MatchExpr, module: Module, ctx: Context, resultVar: string): EmitExpr => {
@@ -200,12 +234,12 @@ export const emitMatchExpr = (matchExpr: MatchExpr, module: Module, ctx: Context
         return { emit: '', resultVar }
     }
     const clauses = matchExpr.clauses.map(clause => {
-        if (clause.patterns.length !== 1) return jsTodo('union clause')
+        if (clause.patterns.length !== 1) return jsError('union clause')
         const pattern = clause.patterns[0]
         const cond = emitPatternExprCondition(pattern.expr, module, ctx, sVar)
         const block = emitBlock(clause.block, module, ctx, resultVar)
         // TODO: inject aliases and fields in block's scope
-        return [cond.emit, `if (${cond.resultVar}) ${block}`].join('\n')
+        return emitLines([cond.emit, `if (${cond.resultVar}) ${block}`])
     })
     let ifElseChain = clauses[0]
     for (let i = 1; i < clauses.length; i++) {
@@ -216,7 +250,7 @@ export const emitMatchExpr = (matchExpr: MatchExpr, module: Module, ctx: Context
         ifElseChain += `\n${indent('}', i)}`
     }
     return {
-        emit: [jsVariable(resultVar), sEmit, ifElseChain].join('\n'),
+        emit: emitLines([jsVariable(resultVar), sEmit, ifElseChain]),
         resultVar
     }
 }
@@ -241,7 +275,7 @@ export const emitPatternExprCondition = (
         case 'int-literal':
         case 'float-literal':
         case 'bool-literal':
-            return { emit: jsVariable(resultVar, jsTodo('literal')), resultVar }
+            return { emit: jsVariable(resultVar, jsError('literal')), resultVar }
         case 'list-expr':
         case 'operand-expr':
         case 'unary-expr':
@@ -260,7 +294,15 @@ export const emitPatternExprCondition = (
 
 export const emitParam = (param: Param, module: Module, ctx: Context): string => {
     if (param.pattern.expr.kind !== 'name') {
-        return todo('destructuring')
+        return jsError('destructuring')
     }
     return param.pattern.expr.value
+}
+
+export const emitPattern = (pattern: Pattern, module: Module, ctx: Context, assignVar: string): string => {
+    if (pattern.expr.kind !== 'name') {
+        return jsError('destructuring')
+    }
+    const name = pattern.expr.value
+    return jsVariable(name, assignVar)
 }

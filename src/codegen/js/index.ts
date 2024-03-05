@@ -92,15 +92,18 @@ export const nextVariable = (ctx: Context): string => {
     return `$${ctx.variableCounter}`
 }
 
-export const jsTodo = (message?: string): string => {
-    const msg = 'todo' + (message ? `: ${message}` : '')
-    return `(() => { throw Error(${jsString(msg)}); })()`
+export const jsError = (message?: string): string => {
+    return `(() => { throw Error(${jsString(message ?? '')}); })()`
 }
 
 export const jsRelName = (rel: InstanceRelation): string => {
     if (rel.inherent) {
-        return `impl${virtualTypeToString(rel.implType)}`.replace(/[:<>,]/g, '')
+        return `impl_${virtualTypeToString(rel.implType)}`.replace(/[:<>, ]/g, '')
     } else {
-        return `impl${virtualTypeToString(rel.implType)}${virtualTypeToString(rel.forType)}`.replace(/[:<>,]/g, '')
+        return `impl_${virtualTypeToString(rel.implType)}_${virtualTypeToString(rel.forType)}`.replace(/[:<>, ]/g, '')
     }
+}
+
+export const emitLines = (lines: string[]): string => {
+    return lines.filter(l => l.length > 0).join('\n')
 }

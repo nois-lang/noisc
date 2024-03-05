@@ -15,9 +15,8 @@ export const emitStatement = (statement: Statement, module: Module, ctx: Context
         case 'fn-def':
             return emitFnDef(statement, module, ctx)
         case 'trait-def':
-            return emitTraitDef(statement, module, ctx)
         case 'impl-def':
-            return emitImplDef(statement, module, ctx)
+            return emitInstanceDef(statement, module, ctx)
         case 'type-def':
             return emitTypeDef(statement, module, ctx)
         case 'return-stmt':
@@ -52,15 +51,9 @@ export const emitFnDef = (fnDef: FnDef, module: Module, ctx: Context, asProperty
     }
 }
 
-export const emitTraitDef = (traitDef: TraitDef, module: Module, ctx: Context): string => {
-    const name = traitDef.name.value
-    const impl = emitInstance(traitDef, module, ctx)
-    return jsVariable(name, impl, true)
-}
-
-export const emitImplDef = (implDef: ImplDef, module: Module, ctx: Context): string => {
-    const rel = ctx.impls.find(i => i.instanceDef === implDef)!
-    const impl = emitInstance(implDef, module, ctx)
+export const emitInstanceDef = (instanceDef: ImplDef | TraitDef, module: Module, ctx: Context): string => {
+    const rel = ctx.impls.find(i => i.instanceDef === instanceDef)!
+    const impl = emitInstance(instanceDef, module, ctx)
     return jsVariable(jsRelName(rel), impl, true)
 }
 
@@ -92,18 +85,28 @@ export const emitInstance = (instance: ImplDef | TraitDef, module: Module, ctx: 
     return `{${fns}}`
 }
 
-export const emitBlock = (block: Block, module: Module, ctx: Context, resultVar?: boolean | string): string => {
-    const statements_ = block.statements.map(s => emitStatement(s, module, ctx))
-    const last = statements_.at(-1)
+export const emitBlockStatements = (
+    block: Block,
+    module: Module,
+    ctx: Context,
+    resultVar?: boolean | string
+): string[] => {
+    const statements = block.statements.map(s => emitStatement(s, module, ctx))
+    const last = statements.at(-1)
     if (resultVar !== undefined && typeof last === 'object') {
         if (typeof resultVar === 'string') {
-            statements_.push(`${resultVar} = ${last.resultVar};`)
+            statements.push(`${resultVar} = ${last.resultVar};`)
         }
         if (resultVar === true) {
-            statements_.push(`return ${last.resultVar};`)
+            statements.push(`return ${last.resultVar};`)
         }
     }
-    const statements = statements_.length > 0 ? `\n${indent(statements_.map(emitExprToString).join('\n'))}\n` : ''
+    return statements.map(emitExprToString)
+}
+
+export const emitBlock = (block: Block, module: Module, ctx: Context, resultVar?: boolean | string): string => {
+    const statements_ = emitBlockStatements(block, module, ctx, resultVar)
+    const statements = statements_.length > 0 ? `\n${indent(statements_.join('\n'))}\n` : ''
     return `{${statements}}`
 }
 
