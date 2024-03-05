@@ -140,6 +140,7 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
             const iterator = {
                 emit: emitLines([
                     expr.emit,
+                    // TODO: do not invoke `iter` if it is already Iter
                     jsVariable(iteratorVar, `${expr.resultVar}.Iterable.iter(${expr.resultVar})`)
                 ]),
                 resultVar: iteratorVar
@@ -299,10 +300,16 @@ export const emitParam = (param: Param, module: Module, ctx: Context): string =>
     return param.pattern.expr.value
 }
 
-export const emitPattern = (pattern: Pattern, module: Module, ctx: Context, assignVar: string): string => {
+export const emitPattern = (
+    pattern: Pattern,
+    module: Module,
+    ctx: Context,
+    assignVar: string,
+    pub: boolean = false
+): string => {
     if (pattern.expr.kind !== 'name') {
         return jsError('destructuring')
     }
     const name = pattern.expr.value
-    return jsVariable(name, assignVar)
+    return jsVariable(name, assignVar, pub)
 }

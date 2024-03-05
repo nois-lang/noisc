@@ -1,12 +1,11 @@
-import { indent, jsRelName, jsString, jsVariable } from '.'
+import { emitLines, indent, jsRelName, jsString, jsVariable } from '.'
 import { Module } from '../../ast'
 import { Block, BreakStmt, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '../../ast/statement'
 import { TypeDef, Variant } from '../../ast/type-def'
 import { Context } from '../../scope'
 import { typeDefToVirtualType } from '../../scope/trait'
 import { vidToString } from '../../scope/util'
-import { todo } from '../../util/todo'
-import { EmitExpr, emitExpr, emitExprToString, emitParam } from './expr'
+import { EmitExpr, emitExpr, emitExprToString, emitParam, emitPattern } from './expr'
 
 export const emitStatement = (statement: Statement, module: Module, ctx: Context): string | EmitExpr => {
     switch (statement.kind) {
@@ -31,12 +30,8 @@ export const emitStatement = (statement: Statement, module: Module, ctx: Context
 }
 
 export const emitVarDef = (varDef: VarDef, module: Module, ctx: Context): string => {
-    if (varDef.pattern.expr.kind !== 'name') {
-        return todo('destructuring')
-    }
-    const name = varDef.pattern.expr.value
     const { emit: exprEmit, resultVar } = emitExpr(varDef.expr!, module, ctx)
-    return [exprEmit, jsVariable(name, resultVar, varDef.pub)].join('\n')
+    return emitLines([exprEmit, emitPattern(varDef.pattern, module, ctx, resultVar, varDef.pub)])
 }
 
 export const emitFnDef = (fnDef: FnDef, module: Module, ctx: Context, asProperty = false): string => {
