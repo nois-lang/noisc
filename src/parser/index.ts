@@ -107,6 +107,7 @@ export const compactParseNode = (node: ParseNode): any => {
 }
 
 export const getSpan = (node: ParseNode): Span => {
+    if ('nodes' in node && node.nodes.length === 0) return { start: 0, end: 0 }
     const leftmostNode = (node: ParseNode): LexerToken => {
         if ('nodes' in node) {
             return leftmostNode(node.nodes[0])
