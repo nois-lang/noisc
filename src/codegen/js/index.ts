@@ -27,7 +27,7 @@ export const emitModule = (module: Module, ctx: Context, mainFn?: string): strin
 try {
     ${mainFn}();
 } catch (e) {
-    console.error(\`\${e.message}\\n\${e.stack.map(s => "    at " + s).join("\\n")}\`);
+    console.error(\`\${e.message}\\n\${e.stack.split("\\n").slice(1).join("\\n")}\`);
 }`
               ]
             : []
@@ -94,7 +94,7 @@ export const nextVariable = (ctx: Context): string => {
 
 export const jsTodo = (message?: string): string => {
     const msg = 'todo' + (message ? `: ${message}` : '')
-    return `Error(${jsString(msg)})`
+    return `(() => { throw Error(${jsString(msg)}); })()`
 }
 
 export const jsRelName = (rel: InstanceRelation): string => {
