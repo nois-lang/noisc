@@ -235,17 +235,14 @@ fn main() {
 
         it('clashing generic name', () => {
             const code = (arg: string): string => `\
-fn foo<T>(): ${arg} {
+fn foo<T>() {
     let a: Option<T> = Option::None()
-    a.unwrap()
+    let b = a.unwrap()
+    b()
+    return unit
 }`
-            let ctx = check(code('Unit'))
-            expect(ctx.errors.map(e => e.message)).toEqual([
-                'type error: expected std::unit::Unit\n            got      T'
-            ])
-
-            ctx = check(code('T'))
-            expect(ctx.errors.map(e => e.message)).toEqual([])
+            const ctx = check(code('Unit'))
+            expect(ctx.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `T`'])
         })
 
         it('replace unresolved generics with hole type', () => {
