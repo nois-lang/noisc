@@ -273,11 +273,8 @@ export const checkWhileExpr = (whileExpr: WhileExpr, ctx: Context): void => {
         scope.allBranchesReturned = true
     }
 
-    whileExpr.type = {
-        kind: 'vid-type',
-        identifier: iter.identifier,
-        typeArgs: [whileExpr.block.type!]
-    }
+    // TODO: break with a value
+    whileExpr.type = unknownType
 
     module.scopeStack.pop()
 }
@@ -313,11 +310,8 @@ export const checkForExpr = (forExpr: ForExpr, ctx: Context): void => {
         scope.allBranchesReturned = true
     }
 
-    forExpr.type = {
-        kind: 'vid-type',
-        identifier: iter.identifier,
-        typeArgs: [forExpr.block.type!]
-    }
+    // TODO: break with a value
+    forExpr.type = unknownType
 
     module.scopeStack.pop()
 }
