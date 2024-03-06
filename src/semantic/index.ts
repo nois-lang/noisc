@@ -588,6 +588,14 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
                 break
             case 'name-def':
                 const name = ref.def.name
+                if (
+                    ref.def.parent &&
+                    ref.def.parent.kind === 'var-def' &&
+                    !ref.def.parent.pub &&
+                    ref.module !== ctx.moduleStack.at(-1)!
+                ) {
+                    addError(ctx, semanticError(ctx, identifier, `variable \`${ref.def.name.value}\` is private`))
+                }
                 if (name.type === selfType) {
                     const instScope = instanceScope(ctx)
                     identifier.type = resolveType(name.type, instScope ? [instanceGenericMap(instScope, ctx)] : [], ctx)
@@ -596,6 +604,13 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
                 }
                 break
             case 'method-def':
+                if (
+                    !ref.def.fn.pub &&
+                    ref.def.rel.instanceDef.kind === 'impl-def' &&
+                    ref.module !== ctx.moduleStack.at(-1)!
+                ) {
+                    addError(ctx, semanticError(ctx, identifier, `method \`${ref.def.fn.name.value}\` is private`))
+                }
                 const instScope: InstanceScope = {
                     kind: 'instance',
                     selfType: unknownType,
@@ -611,6 +626,9 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
                 identifier.type = ref.def.variant.type
                 break
             case 'fn-def':
+                if (!ref.def.pub && ref.module !== ctx.moduleStack.at(-1)!) {
+                    addError(ctx, semanticError(ctx, identifier, `function \`${ref.def.name.value}\` is private`))
+                }
                 identifier.type = ref.def.type
                 break
             case 'module':
