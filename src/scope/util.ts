@@ -13,8 +13,6 @@ export const vidEq = (a: VirtualIdentifier, b: VirtualIdentifier): boolean => {
     return true
 }
 
-export const vidScopeToString = (vid: VirtualIdentifier) => vidToString(vidFromScope(vid))
-
 export const vidFromScope = (vid: VirtualIdentifier): VirtualIdentifier => ({ names: vid.names.slice(0, -1) })
 
 export const idToVid = (id: Identifier): VirtualIdentifier => ({ names: id.names.map(s => s.value) })

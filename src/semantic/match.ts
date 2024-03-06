@@ -55,7 +55,7 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
 }
 
 /**
- * @returns a list of definied names within con pattern (recursive included)
+ * @returns a list of definied names within con pattern (including recursive)
  */
 const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Context): Name[] => {
     const defs: Name[] = []
@@ -85,6 +85,11 @@ const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Contex
         if (!field) {
             addError(ctx, notFoundError(ctx, fp, fp.name.value, 'field'))
             return []
+        }
+        if (!field.pub && ctx.moduleStack.at(-1)! !== ref.module) {
+            const typeVid = vidToString(vidFromScope(ref.vid))
+            const msg = `field \`${fp.name.value}\` is private in type \`${typeVid}\``
+            addError(ctx, semanticError(ctx, fp, msg))
         }
 
         field.name.type = resolveType(field.type!, [conGenericMap], ctx)
