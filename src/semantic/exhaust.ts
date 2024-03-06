@@ -28,7 +28,7 @@
 import { MatchExpr, PatternExpr } from '../ast/match'
 import { Context, addError, addWarning } from '../scope'
 import { concatVid, idToVid, vidFromScope, vidFromString, vidToString } from '../scope/util'
-import { VariantDef, resolveVid } from '../scope/vid'
+import { VariantDef, VirtualIdentifierMatch, resolveVid } from '../scope/vid'
 import { assert, unreachable } from '../util/todo'
 import { semanticError } from './error'
 
@@ -39,7 +39,7 @@ export type MatchNode = MatchType | MatchVariant | Exhaustive | Unmatched
 
 export interface MatchType {
     kind: 'type'
-    def: VariantDef
+    ref: VirtualIdentifierMatch<VariantDef>
     variants: Map<string, MatchTree>
 }
 
@@ -103,27 +103,31 @@ const matchPattern = (pattern: PatternExpr, tree: MatchTree, ctx: Context): bool
             const vid = idToVid(pattern.identifier)
             if (tree.node.kind !== 'type') {
                 const ref = resolveVid(vid, ctx, ['variant'])
-                const def = ref?.def
-                if (!def || def.kind !== 'variant') throw Error(`\`${vidToString(vid)}\` not found`)
+                if (!ref || ref.def.kind !== 'variant') throw Error(`\`${vidToString(vid)}\` not found`)
 
                 const variants: Map<string, MatchTree> = new Map(
-                    def.typeDef.variants.map(v => {
+                    ref.def.typeDef.variants.map(v => {
                         const variantVid = concatVid(vidFromScope(vid), vidFromString(v.name.value))
                         return [vidToString(variantVid), { node: { kind: 'unmatched' } }]
                     })
                 )
-                tree.node = { kind: 'type', def, variants }
+                tree.node = { kind: 'type', ref: <VirtualIdentifierMatch<VariantDef>>ref, variants }
             }
             const conName = pattern.identifier.names.at(-1)!.value
             const variantTree = tree.node.variants.get(vidToString(vid))
             if (!variantTree) throw Error()
             // if this variant hasn't been explored yet, populate fields as unmatched
             if (variantTree.node.kind !== 'variant') {
-                const variantDef = tree.node.def.typeDef.variants.find(v => v.name.value === conName)
+                const variantDef = tree.node.ref.def.typeDef.variants.find(v => v.name.value === conName)
                 if (!variantDef) throw Error()
+                const fields = new Map<string, MatchTree>(
+                    variantDef.fieldDefs
+                        .filter(f => f.pub || (<MatchType>tree.node).ref.module === ctx.moduleStack.at(-1)!)
+                        .map(f => [f.name.value, { node: { kind: 'unmatched' } }])
+                )
                 variantTree.node = {
                     kind: 'variant',
-                    fields: new Map(variantDef.fieldDefs.map(f => [f.name.value, { node: { kind: 'unmatched' } }]))
+                    fields
                 }
             }
             const fields = [...variantTree.node.fields.values()]
