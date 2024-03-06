@@ -183,7 +183,7 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
             return {
                 emit: emitLines([
                     ...items.map(i => i.emit),
-                    jsVariable(resultVar, `List.List(${items.map(i => i.resultVar).join(', ')})`),
+                    jsVariable(resultVar, `List.List([${items.map(i => i.resultVar).join(', ')}])`),
                     ...impls
                 ]),
                 resultVar
@@ -238,9 +238,11 @@ export const emitMatchExpr = (matchExpr: MatchExpr, module: Module, ctx: Context
         if (clause.patterns.length !== 1) return jsError('union clause')
         const pattern = clause.patterns[0]
         const cond = emitPatternExprCondition(pattern.expr, module, ctx, sVar)
-        const block = emitBlock(clause.block, module, ctx, resultVar)
-        // TODO: inject aliases and fields in block's scope
-        return emitLines([cond.emit, `if (${cond.resultVar}) ${block}`])
+        const block = emitLines([
+            emitPattern(pattern, module, ctx, sVar),
+            ...emitBlockStatements(clause.block, module, ctx, resultVar)
+        ])
+        return emitLines([cond.emit, `if (${cond.resultVar}) {\n${indent(block)}\n}`])
     })
     let ifElseChain = clauses[0]
     for (let i = 1; i < clauses.length; i++) {
@@ -307,9 +309,30 @@ export const emitPattern = (
     assignVar: string,
     pub: boolean = false
 ): string => {
-    if (pattern.expr.kind !== 'name') {
-        return jsError('destructuring')
+    switch (pattern.expr.kind) {
+        case 'name':
+            const name = pattern.expr.value
+            return jsVariable(name, assignVar, pub)
+        case 'con-pattern':
+            const patterns = pattern.expr.fieldPatterns.flatMap(f => {
+                const fieldAssign = f.name.value
+                if (f.pattern) {
+                    return [emitPattern(f.pattern, module, ctx, `${assignVar}.${fieldAssign}`)]
+                }
+                return jsVariable(fieldAssign, `${assignVar}.${fieldAssign}`)
+            })
+            return emitLines([...patterns])
+        case 'list-expr':
+        case 'string-literal':
+        case 'char-literal':
+        case 'int-literal':
+        case 'float-literal':
+        case 'bool-literal':
+        case 'identifier':
+            return jsError(pattern.expr.kind)
+        case 'hole':
+            return ''
+        default:
+            return unreachable()
     }
-    const name = pattern.expr.value
-    return jsVariable(name, assignVar, pub)
 }
