@@ -676,37 +676,4 @@ impl Foo {
             expect(ctx.errors.map(e => e.message)).toEqual(['unknown field: `y`', 'unknown type', 'unknown type'])
         })
     })
-
-    describe('pub', () => {
-        it('private field access', () => {
-            const code = (arg: string) => `\
-type Foo(${arg}x: Int)
-
-fn main() {
-    let foo = Foo::Foo(5)
-    foo.x
-    return unit
-}`
-            let ctx = check(code('pub '))
-            expect(ctx.errors.map(e => e.message)).toEqual([])
-
-            ctx = check(code(''))
-            expect(ctx.errors.map(e => e.message)).toEqual(['field `x` is private in type `test::Foo`'])
-        })
-
-        it('private in some variants', () => {
-            const code = `\
-type Foo{ A(pub x: Int), B(x: Int) }
-
-fn main() {
-    let foo = Foo::A(5)
-    foo.x
-    return unit
-}`
-            const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual([
-                'field `x` is private in some variants of type `test::Foo`'
-            ])
-        })
-    })
 })

@@ -4,7 +4,7 @@ import { CallOp } from '../ast/op'
 import { Identifier, Operand, identifierFromOperand } from '../ast/operand'
 import { Context, addError, instanceScope } from '../scope'
 import { getInstanceForType } from '../scope/trait'
-import { vidEq, vidToString } from '../scope/util'
+import { vidToString } from '../scope/util'
 import { MethodDef, resolveVid } from '../scope/vid'
 import { VirtualFnType, VirtualType, combine, genericToVirtual, typeToVirtual, virtualTypeToString } from '../typecheck'
 import {
@@ -76,23 +76,22 @@ const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): Vi
     // if field is defined in multiple variants, make sure their type is equal
     // normaly single variant types use field access, but there is no reason to restrict multiple variants sharing the
     // same field
-    const typeCandidates = typeDef.variants
+    const fieldCandidates = typeDef.variants
         .map(v => v.fieldDefs.find(f => f.name.value === fieldName))
         .filter(f => !!f)
         .map(f => f!)
-    assert(typeCandidates.length > 0)
-    const fieldType = typeCandidates[0].type!
-    if (!typeCandidates.every(f => !!combine(fieldType, f.type!, ctx))) {
+    assert(fieldCandidates.length > 0)
+    const fieldType = fieldCandidates[0].type!
+    if (!fieldCandidates.every(f => !!combine(fieldType, f.type!, ctx))) {
         const msg = `field \`${fieldName}\` is not defined in every variant of type \`${vidToString(typeRef.vid)}\``
         addError(ctx, semanticError(ctx, field, msg))
         return
     }
 
-    const rel = instanceScope(ctx)?.rel
-    const inInherentImpl = rel ? vidEq(rel.forDef.vid, typeVid) : undefined
-    if (!inInherentImpl && !typeCandidates.every(f => f.pub)) {
+    const sameModule = ctx.moduleStack.at(-1)! === typeRef.module
+    if (!sameModule && !fieldCandidates.every(f => f.pub)) {
         const msg =
-            typeCandidates.length === 1
+            fieldCandidates.length === 1
                 ? `field \`${fieldName}\` is private in type \`${vidToString(typeRef.vid)}\``
                 : `field \`${fieldName}\` is private in some variants of type \`${vidToString(typeRef.vid)}\``
         addError(ctx, semanticError(ctx, field, msg))
