@@ -14,10 +14,11 @@ List.List = function(value) {
  * @returns {Option<T>}
  */
 function listAt(list, index) {
-    if (index < 0 || index >= list.value.length) {
+    const i = index.value
+    if (i < 0 || i >= list.value.length) {
         return Option.None()
     }
-    const e = list.value[index]
+    const e = list.value[i]
     return Option.Some(e)
 }
 
