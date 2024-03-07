@@ -165,7 +165,7 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
             return emitMatchExpr(operand, module, ctx, resultVar)
         case 'closure-expr': {
             const params = operand.params.map(p => emitParam(p, module, ctx)).join(', ')
-            const block = emitBlock(operand.block, module, ctx)
+            const block = emitBlock(operand.block, module, ctx, true)
             return { emit: jsVariable(resultVar, `function(${params}) ${block}`), resultVar }
         }
         case 'operand-expr':
@@ -194,8 +194,19 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
         case 'float-literal':
         case 'bool-literal':
             return emitLiteral(operand, module, ctx, resultVar)
-        case 'identifier':
+        case 'identifier': {
+            if (operand.ref?.def.kind === 'method-def') {
+                const arg = nextVariable(ctx)
+                const args = nextVariable(ctx)
+                const relName = relTypeName(operand.ref.def.rel)
+                const fnName = operand.ref.def.fn.name.value
+                return {
+                    emit: '',
+                    resultVar: `function(${arg}, ...${args}) { ${arg}.${relName}.${fnName}(${arg}, ${args}); }`
+                }
+            }
             return { emit: '', resultVar: operand.names.at(-1)!.value }
+        }
     }
 }
 

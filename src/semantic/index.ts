@@ -582,6 +582,7 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
     // TODO: if absolute import, check that package is explicitly imported
     const ref = resolveVid(vid, ctx)
     if (ref) {
+        identifier.ref = ref
         switch (ref.def.kind) {
             case 'self':
                 identifier.type = instanceScope(ctx)!.selfType

@@ -96,7 +96,7 @@ export const emitBlockStatements = (
             statements.push(`return ${last.resultVar};`)
         }
     }
-    return statements.map(emitExprToString)
+    return statements.map(emitExprToString).filter(s => s.length > 0)
 }
 
 export const emitBlock = (block: Block, module: Module, ctx: Context, resultVar?: boolean | string): string => {

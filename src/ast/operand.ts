@@ -2,6 +2,7 @@ import { LexerToken } from '../lexer/lexer'
 import { ParseNode, ParseTree, filterNonAstNodes } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
 import { InstanceRelation } from '../scope/trait'
+import { VirtualIdentifierMatch } from '../scope/vid'
 import { Typed } from '../semantic'
 import { Expr, buildExpr } from './expr'
 import { AstNode, Param, buildParam } from './index'
@@ -217,6 +218,7 @@ export const buildBoolLiteral = (node: ParseNode): BoolLiteral => {
 export interface Identifier extends AstNode<'identifier'>, Partial<Typed> {
     names: Name[]
     typeArgs: Type[]
+    ref?: VirtualIdentifierMatch
 }
 
 export const buildIdentifier = (node: ParseNode): Identifier => {
