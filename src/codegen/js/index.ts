@@ -1,6 +1,6 @@
 import { Module } from '../../ast'
 import { Context } from '../../scope'
-import { InstanceRelation } from '../../scope/trait'
+import { InstanceRelation, relTypeName } from '../../scope/trait'
 import { concatVid, vidFromScope, vidFromString } from '../../scope/util'
 import { VirtualIdentifier } from '../../scope/vid'
 import { virtualTypeToString } from '../../typecheck'
@@ -97,11 +97,13 @@ export const jsError = (message?: string): string => {
 }
 
 export const jsRelName = (rel: InstanceRelation): string => {
+    if (rel.instanceDef.kind === 'trait-def') {
+        return relTypeName(rel)
+    }
     if (rel.inherent) {
         return `impl_${virtualTypeToString(rel.implType)}`.replace(/[:<>, ]/g, '')
-    } else {
-        return `impl_${virtualTypeToString(rel.implType)}_${virtualTypeToString(rel.forType)}`.replace(/[:<>, ]/g, '')
     }
+    return `impl_${virtualTypeToString(rel.implType)}_${virtualTypeToString(rel.forType)}`.replace(/[:<>, ]/g, '')
 }
 
 export const emitLines = (lines: string[]): string => {

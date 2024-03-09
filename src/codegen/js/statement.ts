@@ -3,8 +3,9 @@ import { Module } from '../../ast'
 import { Block, BreakStmt, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '../../ast/statement'
 import { TypeDef, Variant } from '../../ast/type-def'
 import { Context } from '../../scope'
-import { typeDefToVirtualType } from '../../scope/trait'
+import { relTypeName, typeDefToVirtualType } from '../../scope/trait'
 import { vidToString } from '../../scope/util'
+import { assert } from '../../util/todo'
 import { EmitExpr, emitExpr, emitExprToString, emitParam, emitPattern } from './expr'
 
 export const emitStatement = (statement: Statement, module: Module, ctx: Context): string | EmitExpr => {
@@ -71,13 +72,17 @@ export const emitBreakStmt = (breakStmt: BreakStmt, module: Module, ctx: Context
 }
 
 export const emitInstance = (instance: ImplDef | TraitDef, module: Module, ctx: Context): string => {
-    const fns_ = instance.block.statements
+    const superMethods = instance.kind === 'impl-def' ? instance.superMethods ?? [] : []
+    const ms = superMethods.map(m => {
+        const mName = m.fn.name.value
+        return `${mName}: ${jsRelName(m.rel)}().${mName}`
+    })
+    const fns = instance.block.statements
         .map(s => <FnDef>s)
         .map(f => emitFnDef(f, module, ctx, true))
         .filter(f => f.length > 0)
-        .map(f => indent(f))
-    const fns = fns_.length > 0 ? `\n${fns_.join(',\n')}\n` : ''
-    return `{${fns}}`
+    const all = [...ms, ...fns]
+    return `function() {\n${indent(`return {${all.length > 0 ? `\n${indent(all.join(',\n'))}\n` : ''}}`)}\n}`
 }
 
 export const emitBlockStatements = (

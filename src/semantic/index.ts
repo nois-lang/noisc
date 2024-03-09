@@ -18,7 +18,7 @@ import {
 } from '../scope'
 import { findSuperRelChains, traitDefToVirtualType, typeDefToVirtualType } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
-import { Definition, NameDef, resolveVid, typeKinds } from '../scope/vid'
+import { Definition, MethodDef, NameDef, resolveVid, typeKinds } from '../scope/vid'
 import { VirtualType, genericToVirtual, isAssignable, typeToVirtual } from '../typecheck'
 import { instanceGenericMap, makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { holeType, neverType, selfType, unitType, unknownType } from '../typecheck/type'
@@ -402,16 +402,14 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                     ctx.impls.find(rel => rel.instanceDef === ref.def)!,
                     ...findSuperRelChains(ref.vid, ctx).flatMap(chain => chain)
                 ]
-                const traitMethods = traitRels
-                    .map(t => {
-                        const methods = <FnDef[]>t.instanceDef.block.statements.filter(s => s.kind === 'fn-def')
-                        return { rel: t, methods }
-                    })
-                    .flatMap(({ rel, methods }) => methods.map(m => ({ rel, method: m })))
-                const requiredImplMethods = traitMethods.filter(f => !f.method.block)
+                const traitMethods: MethodDef[] = traitRels.flatMap(t => {
+                    const methods = <FnDef[]>t.instanceDef.block.statements.filter(s => s.kind === 'fn-def')
+                    return methods.map(m => ({ kind: 'method-def', rel: t, fn: m }))
+                })
+                const requiredImplMethods = traitMethods.filter(f => !f.fn.block)
                 const implMethods = implDef.block.statements.filter(s => s.kind === 'fn-def').map(s => <FnDef>s)
                 for (const m of requiredImplMethods) {
-                    const mName = m.method.name.value
+                    const mName = m.fn.name.value
                     if (!implMethods.find(im => im.name.value === mName)) {
                         const msg = `missing method implementation \`${vidToString(ref.vid)}::${mName}\``
                         addError(ctx, semanticError(ctx, implDef.identifier.names.at(-1)!, msg))
@@ -419,7 +417,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                 }
                 for (const m of implMethods) {
                     const mName = m.name.value
-                    const traitMethod = traitMethods.find(im => im.method.name.value === mName)
+                    const traitMethod = traitMethods.find(im => im.fn.name.value === mName)
                     if (!traitMethod) {
                         const msg = `method \`${vidToString(ref.vid)}::${mName}\` is not defined by implemented trait`
                         addError(ctx, semanticError(ctx, m.name, msg))
@@ -428,11 +426,14 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                     checkTopLevelDefinition(traitMethod.rel.module, traitMethod.rel.instanceDef, ctx)
 
                     const traitMap = makeGenericMapOverStructure(rel.implType, traitMethod.rel.implType)
-                    const mResolvedType = resolveType(traitMethod.method.type!, [traitMap], ctx)
+                    const mResolvedType = resolveType(traitMethod.fn.type!, [traitMap], ctx)
                     if (!isAssignable(m.type!, mResolvedType, ctx)) {
                         addError(ctx, typeError(m.name, m.type!, mResolvedType, ctx))
                     }
                 }
+                implDef.superMethods = traitMethods.filter(
+                    m => m.fn.block && !implMethods.find(im => im.name.value === m.fn.name.value)
+                )
             } else {
                 addError(ctx, semanticError(ctx, implDef.forTrait, `expected \`trait-def\`, got \`${ref.def.kind}\``))
             }
@@ -440,7 +441,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
             addError(ctx, notFoundError(ctx, implDef.forTrait, vidToString(vid)))
         }
 
-        // TODO: check bounded traits are implemented by type,
+        // TODO: check that bounded traits are implemented by type,
         // e.g. `impl Ord for Foo` requires `impl Eq for Foo` since `trait Ord<Self: Eq>`
     }
 

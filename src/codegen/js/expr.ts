@@ -89,7 +89,7 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
                 emit: emitLines([
                     lOp.emit,
                     emitLines(args.map(a => a.emit)),
-                    jsVariable(resultVar, `${lOp.resultVar}.${traitName}.${methodName}(${argsEmit})`)
+                    jsVariable(resultVar, `${lOp.resultVar}.${traitName}().${methodName}(${argsEmit})`)
                 ]),
                 resultVar
             }

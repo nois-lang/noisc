@@ -1,4 +1,5 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
+import { MethodDef } from '../scope/vid'
 import { Checked, Typed } from '../semantic'
 import { assert } from '../util/todo'
 import { Expr, buildExpr } from './expr'
@@ -134,6 +135,7 @@ export interface ImplDef extends AstNode<'impl-def'> {
     generics: Generic[]
     forTrait?: Identifier
     block: Block
+    superMethods?: MethodDef[]
 }
 
 export const buildImplDef = (node: ParseNode): ImplDef => {
