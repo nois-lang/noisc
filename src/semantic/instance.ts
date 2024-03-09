@@ -3,7 +3,7 @@ import { BinaryExpr } from '../ast/expr'
 import { CallOp } from '../ast/op'
 import { Identifier, Operand, identifierFromOperand } from '../ast/operand'
 import { Context, addError, instanceScope } from '../scope'
-import { getInstanceForType } from '../scope/trait'
+import { getInstanceForType, resolveImplsForType } from '../scope/trait'
 import { vidToString } from '../scope/util'
 import { MethodDef, resolveVid } from '../scope/vid'
 import { VirtualFnType, VirtualType, combine, genericToVirtual, typeToVirtual, virtualTypeToString } from '../typecheck'
@@ -170,6 +170,10 @@ const checkMethodCallExpr = (
 
     const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
     checkCallArgs(call, [lOperand, ...call.args.map(a => a.expr)], paramTypes, ctx)
+    call.generics = fnType.generics.map(g => ({
+        generic: g,
+        impls: resolveImplsForType(resolveType(g, genericMaps, ctx), call, ctx)
+    }))
 
     return resolveType(fnType.returnType, genericMaps, ctx)
 }

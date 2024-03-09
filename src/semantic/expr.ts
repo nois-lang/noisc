@@ -499,7 +499,7 @@ export const checkVariantCall = (
     return returnType
 }
 
-export const checkCall_ = (call: AstNode<any>, operand: Operand, args: Expr[], ctx: Context): VirtualType => {
+export const checkCall_ = (call: CallOp, operand: Operand, args: Expr[], ctx: Context): VirtualType => {
     if (operand.type?.kind === 'malleable-type') {
         const closureType: VirtualFnType = {
             kind: 'fn-type',
@@ -531,6 +531,10 @@ export const checkCall_ = (call: AstNode<any>, operand: Operand, args: Expr[], c
     const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
     // TODO: if it is a vid type call without args (e.g. Option::Some()), use checkNamedCall() reporting
     checkCallArgs(call, args, paramTypes, ctx)
+    call.generics = fnType.generics.map(g => ({
+        generic: g,
+        impls: resolveImplsForType(resolveType(g, genericMaps, ctx), call, ctx)
+    }))
 
     return replaceGenericsWithHoles(resolveType(fnType.returnType, genericMaps, ctx))
 }

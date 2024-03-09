@@ -3,9 +3,8 @@ import { Module } from '../../ast'
 import { Block, BreakStmt, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '../../ast/statement'
 import { TypeDef, Variant } from '../../ast/type-def'
 import { Context } from '../../scope'
-import { relTypeName, typeDefToVirtualType } from '../../scope/trait'
+import { typeDefToVirtualType } from '../../scope/trait'
 import { vidToString } from '../../scope/util'
-import { assert } from '../../util/todo'
 import { EmitExpr, emitExpr, emitExprToString, emitParam, emitPattern } from './expr'
 
 export const emitStatement = (statement: Statement, module: Module, ctx: Context): string | EmitExpr => {
@@ -38,12 +37,14 @@ export const emitVarDef = (varDef: VarDef, module: Module, ctx: Context): string
 export const emitFnDef = (fnDef: FnDef, module: Module, ctx: Context, asProperty = false): string => {
     if (!fnDef.block) return ''
     const name = fnDef.name.value
-    const params = fnDef.params.map(p => emitParam(p, module, ctx)).join(', ')
+    const params = fnDef.params.map(p => emitParam(p, module, ctx))
+    const generics = fnDef.generics.map(g => g.name.value)
+    const jsParams = [...params, ...generics].join(', ')
     const block = emitBlock(fnDef.block, module, ctx, true)
     if (asProperty) {
-        return `${name}: function(${params}) ${block}`
+        return `${name}: function(${jsParams}) ${block}`
     } else {
-        return `${fnDef.pub ? 'export ' : ''}function ${name}(${params}) ${block}`
+        return `${fnDef.pub ? 'export ' : ''}function ${name}(${jsParams}) ${block}`
     }
 }
 
@@ -82,7 +83,10 @@ export const emitInstance = (instance: ImplDef | TraitDef, module: Module, ctx: 
         .map(f => emitFnDef(f, module, ctx, true))
         .filter(f => f.length > 0)
     const all = [...ms, ...fns]
-    return `function() {\n${indent(`return {${all.length > 0 ? `\n${indent(all.join(',\n'))}\n` : ''}}`)}\n}`
+    const generics = instance.generics.map(g => g.name.value)
+    return `function(${generics.join(', ')}) {\n${indent(
+        `return {${all.length > 0 ? `\n${indent(all.join(',\n'))}\n` : ''}}`
+    )}\n}`
 }
 
 export const emitBlockStatements = (

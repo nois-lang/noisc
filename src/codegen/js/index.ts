@@ -3,8 +3,9 @@ import { Context } from '../../scope'
 import { InstanceRelation, relTypeName } from '../../scope/trait'
 import { concatVid, vidFromScope, vidFromString } from '../../scope/util'
 import { VirtualIdentifier } from '../../scope/vid'
-import { virtualTypeToString } from '../../typecheck'
+import { VirtualType, virtualTypeToString } from '../../typecheck'
 import { groupBy } from '../../util/array'
+import { unreachable } from '../../util/todo'
 import { emitExprToString } from './expr'
 import { emitStatement } from './statement'
 
@@ -108,4 +109,19 @@ export const jsRelName = (rel: InstanceRelation): string => {
 
 export const emitLines = (lines: string[]): string => {
     return lines.filter(l => l.length > 0).join('\n')
+}
+
+export const jsGenericTypeName = (type: VirtualType): string => {
+    switch (type.kind) {
+        case 'generic':
+            return type.name
+        case 'vid-type':
+            return type.identifier.names.at(-1)!
+        case 'hole-type':
+            return 'undefined'
+        case 'fn-type':
+        case 'unknown-type':
+        case 'malleable-type':
+            return unreachable(type.kind)
+    }
 }

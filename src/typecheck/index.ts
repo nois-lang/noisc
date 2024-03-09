@@ -1,7 +1,7 @@
 import { ClosureExpr } from '../ast/operand'
 import { Generic, Type } from '../ast/type'
 import { Context, addError } from '../scope'
-import { findSuperRelChains, getConcreteTrait } from '../scope/trait'
+import { InstanceRelation, findSuperRelChains, getConcreteTrait } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
 import { VirtualIdentifier, resolveVid, typeKinds } from '../scope/vid'
 import { semanticError } from '../semantic/error'
@@ -46,6 +46,11 @@ export interface VirtualGeneric {
     kind: 'generic'
     name: string
     bounds: VirtualType[]
+}
+
+export interface ConcreteGeneric {
+    generic: VirtualGeneric
+    impls: InstanceRelation[]
 }
 
 export const virtualTypeToString = (vt: VirtualType): string => {

@@ -6,6 +6,7 @@ import { Operand } from '../../ast/operand'
 import { Context } from '../../scope'
 import { relTypeName } from '../../scope/trait'
 import { operatorImplMap } from '../../semantic/op'
+import { ConcreteGeneric } from '../../typecheck'
 import { unreachable } from '../../util/todo'
 import { emitBlock, emitBlockStatements } from './statement'
 
@@ -38,6 +39,8 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
     switch (unaryExpr.op.kind) {
         case 'call-op':
             const args = unaryExpr.op.args.map(a => emitExpr(a.expr, module, ctx))
+            const genericTypes = unaryExpr.op.generics?.map(g => emitGeneric(g, module, ctx)) ?? []
+            const jsArgs = [...args, ...genericTypes]
             const impls: string[] = []
             if (unaryExpr.op.impls !== undefined) {
                 for (const impl of unaryExpr.op.impls) {
@@ -47,16 +50,16 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
             const variantDef = unaryExpr.op.variantDef
             if (variantDef) {
                 const variantName = `${variantDef.typeDef.name.value}.${variantDef.variant.name.value}`
-                const call = jsVariable(resultVar, `${variantName}(${args.map(a => a.resultVar).join(', ')})`)
+                const call = jsVariable(resultVar, `${variantName}(${jsArgs.map(a => a.resultVar).join(', ')})`)
                 return {
-                    emit: emitLines([...args.map(a => a.emit), call, ...impls]),
+                    emit: emitLines([...jsArgs.map(a => a.emit), call, ...impls]),
                     resultVar
                 }
             } else {
                 const operand = emitOperand(unaryExpr.operand, module, ctx)
-                const call = jsVariable(resultVar, `${operand.resultVar}(${args.map(a => a.resultVar).join(', ')})`)
+                const call = jsVariable(resultVar, `${operand.resultVar}(${jsArgs.map(a => a.resultVar).join(', ')})`)
                 return {
-                    emit: emitLines([operand.emit, ...args.map(a => a.emit), call, ...impls]),
+                    emit: emitLines([operand.emit, ...jsArgs.map(a => a.emit), call, ...impls]),
                     resultVar
                 }
             }
@@ -84,11 +87,15 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
             const traitName = relTypeName(methodDef.rel)
             const methodName = methodDef.fn.name.value
             const args = callOp.args.map(a => emitExpr(a.expr, module, ctx))
-            const argsEmit = (methodDef.fn.static ? args : [lOp.resultVar, ...args.map(a => a.resultVar)]).join(', ')
+            const genericTypes = callOp.generics?.map(g => emitGeneric(g, module, ctx)) ?? []
+            const jsArgs = [...args, ...genericTypes]
+            const argsEmit = (
+                methodDef.fn.static ? jsArgs.map(a => a.resultVar) : [lOp.resultVar, ...jsArgs.map(a => a.resultVar)]
+            ).join(', ')
             return {
                 emit: emitLines([
                     lOp.emit,
-                    emitLines(args.map(a => a.emit)),
+                    emitLines(jsArgs.map(a => a.emit)),
                     jsVariable(resultVar, `${lOp.resultVar}.${traitName}().${methodName}(${argsEmit})`)
                 ]),
                 resultVar
@@ -108,7 +115,7 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
     }
     const trait = operatorImplMap.get(binaryExpr.binaryOp.kind)!.names.at(-2)!
     const method = operatorImplMap.get(binaryExpr.binaryOp.kind)!.names.at(-1)!
-    const assign = jsVariable(resultVar, `${lOp.resultVar}.${trait}.${method}(${lOp.resultVar}, ${rOp.resultVar})`)
+    const assign = jsVariable(resultVar, `${lOp.resultVar}.${trait}().${method}(${lOp.resultVar}, ${rOp.resultVar})`)
     return {
         emit: emitLines([lOp.emit, rOp.emit, assign]),
         resultVar
@@ -141,17 +148,17 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
                 emit: emitLines([
                     expr.emit,
                     // TODO: do not invoke `iter` if it is already Iter
-                    jsVariable(iteratorVar, `${expr.resultVar}.Iterable.iter(${expr.resultVar})`)
+                    jsVariable(iteratorVar, `${expr.resultVar}.Iterable().iter(${expr.resultVar})`)
                 ]),
                 resultVar: iteratorVar
             }
             const iterateeVar = nextVariable(ctx)
             const thenBlock = emitLines([
-                emitPattern(operand.pattern, module, ctx, `${iterateeVar}.value`),
+                emitPattern(operand.pattern, module, ctx, `${iterateeVar}`),
                 ...emitBlockStatements(operand.block, module, ctx)
             ])
             const block = emitLines([
-                jsVariable(iterateeVar, `${iterator.resultVar}.Iter.next(${iterator.resultVar})`),
+                jsVariable(iterateeVar, `${iterator.resultVar}.Iter().next(${iterator.resultVar})`),
                 `if (${iterateeVar}.$noisVariant === "Some") {`,
                 indent(thenBlock),
                 `} else {`,
@@ -196,13 +203,22 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
             return emitLiteral(operand, module, ctx, resultVar)
         case 'identifier': {
             if (operand.ref?.def.kind === 'method-def') {
-                const arg = nextVariable(ctx)
-                const args = nextVariable(ctx)
-                const relName = relTypeName(operand.ref.def.rel)
-                const fnName = operand.ref.def.fn.name.value
-                return {
-                    emit: '',
-                    resultVar: `function(${arg}, ...${args}) { ${arg}.${relName}.${fnName}(${arg}, ${args}); }`
+                if (operand.ref.def.fn.static === true) {
+                    const typeName = operand.names.at(-2)!.value
+                    const traitName = relTypeName(operand.ref.def.rel)
+                    return {
+                        emit: '',
+                        resultVar: `${typeName}.${traitName}().${operand.ref.def.fn.name.value}`
+                    }
+                } else {
+                    const arg = nextVariable(ctx)
+                    const args = nextVariable(ctx)
+                    const relName = relTypeName(operand.ref.def.rel)
+                    const fnName = operand.ref.def.fn.name.value
+                    return {
+                        emit: '',
+                        resultVar: `(function(${arg}, ...${args}) { ${arg}.${relName}().${fnName}(${arg}, ${args}); })`
+                    }
                 }
             }
             return { emit: '', resultVar: operand.names.at(-1)!.value }
@@ -346,4 +362,13 @@ export const emitPattern = (
         default:
             return unreachable()
     }
+}
+
+export const emitGeneric = (generic: ConcreteGeneric, module: Module, ctx: Context): EmitExpr => {
+    const resultVar = nextVariable(ctx)
+    const impls: string[] = []
+    for (const impl of generic.impls) {
+        impls.push(`${resultVar}.${relTypeName(impl)} = ${jsRelName(impl)};`)
+    }
+    return { emit: emitLines([jsVariable(resultVar, '{}'), ...impls]), resultVar }
 }
