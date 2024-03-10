@@ -1,14 +1,13 @@
-import { AstNode, Module } from '../ast'
+import { Module } from '../ast'
 import { ImplDef, TraitDef } from '../ast/statement'
 import { TypeDef } from '../ast/type-def'
-import { notFoundError, semanticError } from '../semantic/error'
-import { VidType, VirtualType, genericToVirtual, isAssignable, typeToVirtual, virtualTypeToString } from '../typecheck'
+import { notFoundError } from '../semantic/error'
+import { VidType, VirtualGeneric, VirtualType, genericToVirtual, isAssignable, typeToVirtual } from '../typecheck'
 import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
-import { groupByHaving } from '../util/array'
 import { assert } from '../util/todo'
-import { Context, addError, addWarning, defKey } from './index'
+import { Context, addError, defKey } from './index'
 import { concatVid, idToVid, vidEq, vidFromString, vidToString } from './util'
-import { VirtualIdentifier, VirtualIdentifierMatch, resolveVid, typeKinds } from './vid'
+import { MethodDef, VirtualIdentifier, VirtualIdentifierMatch, resolveVid, typeKinds } from './vid'
 
 /**
  * Description of type/trait/impl relations
@@ -207,28 +206,33 @@ export const relTypeName = (rel: InstanceRelation): string => {
     }
 }
 
-export const resolveImplsForType = (type: VirtualType, node: AstNode<any>, ctx: Context): InstanceRelation[] => {
-    const inherentImpl = ctx.impls.find(i => i.inherent && isAssignable(type, i.implType, ctx))
-    const traitImpls = groupByHaving(
-        ctx.impls.filter(i => i.instanceDef.kind === 'impl-def' && !i.inherent),
-        relTypeName,
-        // TODO: include self-bounded impls
-        i => isAssignable(type, i.forType, ctx)
-    )
-    const rels = []
-    if (inherentImpl) {
-        rels.push(inherentImpl)
-    }
-    for (const [, is] of traitImpls) {
-        if (is.length === 0) continue
-        // TODO: detect at implDef level
-        const vid = vidToString(is[0].implDef.vid)
-        if (is.length !== 1) {
-            const msg = `clashing impls of trait \`${vid}\` for type \`${virtualTypeToString(type)}\``
-            addWarning(ctx, semanticError(ctx, node, msg))
-        }
-        rels.push(is[0])
-    }
-    ctx.moduleStack.at(-1)!.relImports.push(...rels)
-    return rels
+export const resolveGenericImpls = (generic: VirtualGeneric, ctx: Context): InstanceRelation[] => {
+    return generic.bounds.flatMap(b => {
+        const candidates = ctx.impls
+            .filter(i => i.instanceDef.kind === 'impl-def' && isAssignable(b, i.implType, ctx))
+            .toSorted((a, b) => relOrdering(b) - relOrdering(a))
+        return candidates.length > 0 ? [candidates.at(0)!] : []
+    })
+}
+
+export const resolveMethodImpl = (type: VirtualType, method: MethodDef, ctx: Context): InstanceRelation | undefined => {
+    const candidates = ctx.impls
+        .filter(
+            i =>
+                i.instanceDef.kind === 'impl-def' &&
+                isAssignable(type, i.forType, ctx) &&
+                isAssignable(i.implType, method.rel.implType, ctx) &&
+                (!i.inherent ||
+                    i.instanceDef.block.statements.find(
+                        s => s.kind === 'fn-def' && s.name.value === method.fn.name.value
+                    ))
+        )
+        .toSorted((a, b) => relOrdering(b) - relOrdering(a))
+    return candidates.at(0)
+}
+
+export const relOrdering = (rel: InstanceRelation): number => {
+    let score = 0
+    if (rel.instanceDef.kind === 'impl-def') score += 8
+    return score
 }

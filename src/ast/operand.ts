@@ -1,7 +1,6 @@
 import { LexerToken } from '../lexer/lexer'
 import { ParseNode, ParseTree, filterNonAstNodes } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
-import { InstanceRelation } from '../scope/trait'
 import { VirtualIdentifierMatch } from '../scope/vid'
 import { Typed } from '../semantic'
 import { Expr, buildExpr } from './expr'
@@ -161,7 +160,6 @@ export const buildClosureExpr = (node: ParseNode): ClosureExpr => {
 
 export interface ListExpr extends AstNode<'list-expr'>, Partial<Typed> {
     exprs: Expr[]
-    impls?: InstanceRelation[]
 }
 
 export const buildListExpr = (node: ParseNode): ListExpr => {
@@ -172,7 +170,6 @@ export const buildListExpr = (node: ParseNode): ListExpr => {
 
 export interface StringLiteral extends AstNode<'string-literal'>, Partial<Typed> {
     value: string
-    impls?: InstanceRelation[]
 }
 
 export const buildStringLiteral = (node: ParseNode): StringLiteral => {
@@ -181,7 +178,6 @@ export const buildStringLiteral = (node: ParseNode): StringLiteral => {
 
 export interface CharLiteral extends AstNode<'char-literal'>, Partial<Typed> {
     value: string
-    impls?: InstanceRelation[]
 }
 
 export const buildCharLiteral = (node: ParseNode): CharLiteral => {
@@ -190,7 +186,6 @@ export const buildCharLiteral = (node: ParseNode): CharLiteral => {
 
 export interface IntLiteral extends AstNode<'int-literal'>, Partial<Typed> {
     value: string
-    impls?: InstanceRelation[]
 }
 
 export const buildIntLiteral = (node: ParseNode): IntLiteral => {
@@ -199,7 +194,6 @@ export const buildIntLiteral = (node: ParseNode): IntLiteral => {
 
 export interface FloatLiteral extends AstNode<'float-literal'>, Partial<Typed> {
     value: string
-    impls?: InstanceRelation[]
 }
 
 export const buildFloatLiteral = (node: ParseNode): FloatLiteral => {
@@ -208,7 +202,6 @@ export const buildFloatLiteral = (node: ParseNode): FloatLiteral => {
 
 export interface BoolLiteral extends AstNode<'bool-literal'>, Partial<Typed> {
     value: string
-    impls?: InstanceRelation[]
 }
 
 export const buildBoolLiteral = (node: ParseNode): BoolLiteral => {

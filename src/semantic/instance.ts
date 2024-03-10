@@ -3,7 +3,7 @@ import { BinaryExpr } from '../ast/expr'
 import { CallOp } from '../ast/op'
 import { Identifier, Operand, identifierFromOperand } from '../ast/operand'
 import { Context, addError, instanceScope } from '../scope'
-import { getInstanceForType, resolveImplsForType } from '../scope/trait'
+import { getInstanceForType, resolveGenericImpls, resolveMethodImpl } from '../scope/trait'
 import { vidToString } from '../scope/util'
 import { MethodDef, resolveVid } from '../scope/vid'
 import { VirtualFnType, VirtualType, combine, genericToVirtual, typeToVirtual, virtualTypeToString } from '../typecheck'
@@ -137,8 +137,8 @@ const checkMethodCallExpr = (
         addError(ctx, semanticError(ctx, identifier, msg))
         return
     }
-    const traitFnVid = { names: [...lOperand.type!.identifier.names, methodName] }
-    const ref = resolveVid(traitFnVid, ctx, ['method-def'])
+    const methodVid = { names: [...lOperand.type!.identifier.names, methodName] }
+    const ref = resolveVid(methodVid, ctx, ['method-def'])
     if (!ref || ref.def.kind !== 'method-def') {
         // hint if it is a field call
         ctx.silent = true
@@ -152,7 +152,6 @@ const checkMethodCallExpr = (
         }
         return
     }
-    ctx.moduleStack.at(-1)!.relImports.push(ref.def.rel)
     call.methodDef = ref.def
     const genericMaps = makeMethodGenericMaps(lOperand, identifier, ref.def, call, ctx)
     // normal method call
@@ -170,10 +169,23 @@ const checkMethodCallExpr = (
 
     const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
     checkCallArgs(call, [lOperand, ...call.args.map(a => a.expr)], paramTypes, ctx)
-    call.generics = fnType.generics.map(g => ({
-        generic: g,
-        impls: resolveImplsForType(resolveType(g, genericMaps, ctx), call, ctx)
-    }))
+
+    call.generics = fnType.generics.map(g => {
+        const impls = resolveGenericImpls(g, ctx)
+        ctx.moduleStack.at(-1)!.relImports.push(...impls)
+        return {
+            generic: g,
+            impls
+        }
+    })
+
+    // TODO: impl resolution
+    if (ref.def.rel.instanceDef.kind === 'trait-def') {
+        call.impl = resolveMethodImpl(lOperand.type!, ref.def, ctx)
+        if (call.impl) {
+            ctx.moduleStack.at(-1)!.relImports.push(call.impl)
+        }
+    }
 
     return resolveType(fnType.returnType, genericMaps, ctx)
 }

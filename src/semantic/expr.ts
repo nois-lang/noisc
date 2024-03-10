@@ -15,7 +15,7 @@ import {
 } from '../ast/operand'
 import { Context, Scope, addError, fnDefScope, instanceScope } from '../scope'
 import { bool, iter, iterable, unwrap } from '../scope/std'
-import { getConcreteTrait, resolveImplsForType, typeDefToVirtualType } from '../scope/trait'
+import { getConcreteTrait, resolveGenericImpls, typeDefToVirtualType } from '../scope/trait'
 import { idToVid, vidEq, vidFromString, vidToString } from '../scope/util'
 import { MethodDef, VariantDef, VirtualIdentifierMatch, resolveVid } from '../scope/vid'
 import {
@@ -100,7 +100,6 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
                 break
             }
             operand.type = typeDefToVirtualType(ref.def, ctx, ref.module)
-            operand.impls = resolveImplsForType(operand.type!, operand, ctx)
             break
         }
         case 'char-literal': {
@@ -111,7 +110,6 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
                 break
             }
             operand.type = typeDefToVirtualType(ref.def, ctx, ref.module)
-            operand.impls = resolveImplsForType(operand.type!, operand, ctx)
             break
         }
         case 'int-literal': {
@@ -122,7 +120,6 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
                 break
             }
             operand.type = typeDefToVirtualType(ref.def, ctx, ref.module)
-            operand.impls = resolveImplsForType(operand.type!, operand, ctx)
             break
         }
         case 'float-literal': {
@@ -133,7 +130,6 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
                 break
             }
             operand.type = typeDefToVirtualType(ref.def, ctx, ref.module)
-            operand.impls = resolveImplsForType(operand.type!, operand, ctx)
             break
         }
         case 'bool-literal': {
@@ -144,7 +140,6 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
                 break
             }
             operand.type = typeDefToVirtualType(ref.def, ctx, ref.module)
-            operand.impls = resolveImplsForType(operand.type!, operand, ctx)
             break
         }
         case 'identifier':
@@ -491,12 +486,10 @@ export const checkVariantCall = (
         }
     }
 
+    call.variantDef = ref.def
     // if there are regular positional args, call it as a regular function
     const args = (allArgsNamed ? orderedArgs : call.args).map(a => a?.expr)
-    const returnType = checkCall_(call, unaryExpr.operand, args, ctx)
-    call.impls = resolveImplsForType(returnType, unaryExpr, ctx)
-    call.variantDef = ref.def
-    return returnType
+    return checkCall_(call, unaryExpr.operand, args, ctx)
 }
 
 export const checkCall_ = (call: CallOp, operand: Operand, args: Expr[], ctx: Context): VirtualType => {
@@ -531,10 +524,15 @@ export const checkCall_ = (call: CallOp, operand: Operand, args: Expr[], ctx: Co
     const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
     // TODO: if it is a vid type call without args (e.g. Option::Some()), use checkNamedCall() reporting
     checkCallArgs(call, args, paramTypes, ctx)
-    call.generics = fnType.generics.map(g => ({
-        generic: g,
-        impls: resolveImplsForType(resolveType(g, genericMaps, ctx), call, ctx)
-    }))
+
+    call.generics = fnType.generics.map(g => {
+        const impls = resolveGenericImpls(g, ctx)
+        ctx.moduleStack.at(-1)!.relImports.push(...impls)
+        return {
+            generic: g,
+            impls
+        }
+    })
 
     return replaceGenericsWithHoles(resolveType(fnType.returnType, genericMaps, ctx))
 }
@@ -621,7 +619,6 @@ export const checkListExpr = (listExpr: ListExpr, ctx: Context): void => {
         return
     }
     listExpr.type = { kind: 'vid-type', identifier: listVid, typeArgs: [itemType] }
-    listExpr.impls = resolveImplsForType(listExpr.type, listExpr, ctx)
 }
 
 export const checkAssignExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {

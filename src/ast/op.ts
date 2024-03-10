@@ -1,7 +1,7 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { InstanceRelation } from '../scope/trait'
 import { MethodDef, VariantDef } from '../scope/vid'
-import { ConcreteGeneric, VirtualGeneric, VirtualType } from '../typecheck'
+import { ConcreteGeneric } from '../typecheck'
 import { Arg, AstNode, AstNodeKind, buildArg } from './index'
 
 export type PostfixOp = CallOp | UnwrapOp | BindOp
@@ -111,9 +111,9 @@ export const buildBinaryOp = (node: ParseNode): BinaryOp => {
 export interface CallOp extends AstNode<'call-op'> {
     args: Arg[]
     methodDef?: MethodDef
-    impls?: InstanceRelation[]
     variantDef?: VariantDef
     generics?: ConcreteGeneric[]
+    impl?: InstanceRelation
 }
 
 export const buildCallOp = (node: ParseNode): CallOp => {
