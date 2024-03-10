@@ -57,6 +57,7 @@ export const emitInstanceDef = (instanceDef: ImplDef | TraitDef, module: Module,
 export const emitTypeDef = (typeDef: TypeDef, module: Module, ctx: Context): string => {
     const name = typeDef.name.value
     const variants = typeDef.variants.map(v => indent(`${v.name.value}: ${emitVariant(v, typeDef, module, ctx)}`))
+    // TODO: link to impl instead of emitting it again
     const impl = typeDef.rel ? indent(`${name}: ${emitInstance(typeDef.rel.instanceDef, module, ctx)}`) : ''
     const items_ = [...variants, impl].filter(i => i.length > 0).join(',\n')
     const items = items_.length > 0 ? `{\n${items_}\n}` : '{}'
@@ -116,13 +117,14 @@ export const emitBlock = (block: Block, module: Module, ctx: Context, resultVar?
 
 export const emitVariant = (v: Variant, typeDef: TypeDef, module: Module, ctx: Context) => {
     const fieldNames = v.fieldDefs.map(f => f.name.value)
-    const fields = fieldNames.map(f => `${f}`)
+    const fields_ = fieldNames.map(f => `${f}`)
+    const fields = fields_.length > 0 ? ` ${fields_.join(', ')} ` : ''
     const type = jsString(vidToString(typeDefToVirtualType(typeDef, ctx, module).identifier))
     const name = jsString(v.name.value)
     const props = [
         `$noisType: ${type}`,
         ...(typeDef.variants.length > 1 ? [`$noisVariant: ${name}`] : []),
-        ...fields
-    ].join(', ')
-    return `function(${fieldNames.join(', ')}) {\n${indent(`return { ${props} }`)}\n}`
+        `value: {${fields}}`
+    ].join(',\n')
+    return `function(${fieldNames.join(', ')}) {\n${indent(`return {\n${indent(props)}\n}`)}\n}`
 }
