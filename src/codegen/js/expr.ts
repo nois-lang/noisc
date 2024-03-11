@@ -48,16 +48,17 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
     const resultVar = nextVariable(ctx)
     switch (unaryExpr.op.kind) {
         case 'call-op':
-            const args = unaryExpr.op.args.map(a => {
+            const call = unaryExpr.op
+            const args = call.args.map(a => {
                 const { emit, resultVar: res } = emitExpr(a.expr, module, ctx)
-                const argTraits = a.expr.kind === 'operand-expr' ? a.expr.operand.traits : undefined
+                const argTraits = a.expr.traits
                 const traitEmit = argTraits ? emitVirtualTraits(res, argTraits) : ''
-                return { emit: emitLines([emit, ...traitEmit]), resultVar: res }
+                return { emit: emitLines([emit, traitEmit]), resultVar: res }
             })
-            const genericTypes = unaryExpr.op.generics?.map(g => emitGeneric(g, module, ctx)) ?? []
+            const genericTypes = call.generics?.map(g => emitGeneric(g, module, ctx)) ?? []
             const jsArgs = [...args, ...genericTypes]
             const traitEmit = unaryExpr.traits ? emitVirtualTraits(resultVar, unaryExpr.traits) : ''
-            const variantDef = unaryExpr.op.variantDef
+            const variantDef = call.variantDef
             if (variantDef) {
                 const variantName = `${variantDef.typeDef.name.value}.${variantDef.variant.name.value}`
                 const call = jsVariable(resultVar, `${variantName}(${jsArgs.map(a => a.resultVar).join(', ')})`)

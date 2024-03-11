@@ -3,6 +3,7 @@ import { Identifier, Name, Operand } from '../ast/operand'
 import { Block, BreakStmt, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '../ast/statement'
 import { Generic, Type } from '../ast/type'
 import { TypeDef, Variant } from '../ast/type-def'
+import { jsRelName } from '../codegen/js'
 import {
     BlockScope,
     Context,
@@ -732,6 +733,13 @@ export const checkCallArgs = (node: AstNode<any>, args: Operand[], paramTypes: V
 
         if (!isAssignable(argType, paramType, ctx)) {
             addError(ctx, typeError(arg, argType, paramType, ctx))
+        }
+
+        const res = resolveTypeImpl(argType, paramType, ctx)
+        if (res) {
+            arg.traits ??= new Map()
+            arg.traits.set(relTypeName(res.trait), res.impl)
+            ctx.moduleStack.at(-1)!.relImports.push(res.impl)
         }
     }
 }
