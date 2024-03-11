@@ -19,7 +19,7 @@ import {
 import { findSuperRelChains, traitDefToVirtualType, typeDefToVirtualType } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
 import { Definition, MethodDef, NameDef, resolveVid, typeKinds } from '../scope/vid'
-import { VirtualType, genericToVirtual, isAssignable, typeToVirtual } from '../typecheck'
+import { VirtualType, genericToVirtual, isAssignable, typeEq, typeToVirtual } from '../typecheck'
 import { instanceGenericMap, makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { holeType, neverType, selfType, unitType, unknownType } from '../typecheck/type'
 import { assert, todo } from '../util/todo'
@@ -275,7 +275,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
     const genericMaps = instScope ? [instanceGenericMap(instScope, ctx)] : []
     const returnTypeResolved = resolveType(returnType, genericMaps, ctx)
 
-    if (ctx.check) {
+    if (ctx.check && !module.compiled) {
         if (fnDef.block) {
             checkBlock(fnDef.block, ctx)
             const blockType = fnDef.block.type!
@@ -427,13 +427,14 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
 
                     const traitMap = makeGenericMapOverStructure(rel.implType, traitMethod.rel.implType)
                     const mResolvedType = resolveType(traitMethod.fn.type!, [traitMap], ctx)
-                    if (!isAssignable(m.type!, mResolvedType, ctx)) {
+                    if (!(isAssignable(m.type!, mResolvedType, ctx) && typeEq(m.type!, mResolvedType))) {
                         addError(ctx, typeError(m.name, m.type!, mResolvedType, ctx))
                     }
                 }
                 implDef.superMethods = traitMethods.filter(
                     m => m.fn.block && !implMethods.find(im => im.name.value === m.fn.name.value)
                 )
+                module.relImports.push(...implDef.superMethods.map(i => i.rel))
             } else {
                 addError(ctx, semanticError(ctx, implDef.forTrait, `expected \`trait-def\`, got \`${ref.def.kind}\``))
             }
@@ -699,7 +700,7 @@ export const checkCallArgs = (node: AstNode<any>, args: Operand[], paramTypes: V
             checkClosureExpr(arg.type.closure, ctx, node, paramType)
             arg.type = arg.type.closure.type
         }
-        const argType = arg.type || unknownType
+        const argType = arg.type ?? unknownType
 
         if (!isAssignable(argType, paramType, ctx)) {
             addError(ctx, typeError(arg, argType, paramType, ctx))

@@ -5,6 +5,7 @@ import { InstanceRelation, findSuperRelChains, getConcreteTrait } from '../scope
 import { idToVid, vidEq, vidToString } from '../scope/util'
 import { VirtualIdentifier, resolveVid, typeKinds } from '../scope/vid'
 import { semanticError } from '../semantic/error'
+import { zip } from '../util/array'
 import { todo } from '../util/todo'
 import { holeType, selfType, unknownType } from './type'
 
@@ -135,9 +136,6 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
     if (t.kind === 'hole-type' || target.kind === 'hole-type') return true
     if (t.kind === 'vid-type' && vidToString(t.identifier) === 'std::never::Never') return true
 
-    if (target.kind === 'generic' && t.kind === 'generic') {
-        return t.name === target.name
-    }
     if (target.kind === 'generic') {
         return target.bounds.every(b => isAssignable(b, t, ctx))
     }
@@ -179,6 +177,27 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
             }
         }
         return isAssignable(t.returnType, target.returnType, ctx)
+    }
+    return false
+}
+
+export const typeEq = (a: VirtualType, b: VirtualType): boolean => {
+    if (a.kind === 'unknown-type' && b.kind === 'unknown-type') return false
+    if (a.kind === 'hole-type' && b.kind === 'hole-type') return true
+    if (a.kind === 'generic' || b.kind === 'generic') return true
+    if (a.kind === 'vid-type' && b.kind === 'vid-type') {
+        return (
+            vidEq(a.identifier, b.identifier) &&
+            a.typeArgs.length === b.typeArgs.length &&
+            zip(a.typeArgs, b.typeArgs, (a_, b_) => [a_, b_]).every(([a_, b_]) => typeEq(a_, b_))
+        )
+    }
+    if (a.kind === 'fn-type' && b.kind === 'fn-type') {
+        return (
+            a.paramTypes.length === b.paramTypes.length &&
+            zip(a.paramTypes, b.paramTypes, (a_, b_) => [a_, b_]).every(([a_, b_]) => typeEq(a_, b_)) &&
+            typeEq(a.returnType, b.returnType)
+        )
     }
     return false
 }

@@ -14,7 +14,7 @@ impl <T> List<T> {
 }
 
 impl <T> Iterable<T> for List<T> {
-    fn iter(self): ListIter<T> {
+    fn iter(self): Iter<T> {
         ListIter(list: self, index: 0)
     }
 }
