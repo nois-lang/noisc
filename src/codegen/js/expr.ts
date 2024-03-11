@@ -109,18 +109,10 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
                 const upcastEmit = upcastRels
                     ? [...upcastRels.entries()].map(([name, rel]) => `${lOp.resultVar}.${name} = ${jsRelName(rel)}`)
                     : ''
+                const callerEmit = call.impl ? jsRelName(call.impl) : `${lOp.resultVar}.${relTypeName(methodDef.rel)}`
+                const callEmit = jsVariable(resultVar, `${callerEmit}().${methodName}(${argsEmit})`)
                 return {
-                    emit: emitLines([
-                        lOp.emit,
-                        ...upcastEmit,
-                        emitLines(jsArgs.map(a => a.emit)),
-                        jsVariable(
-                            resultVar,
-                            `${
-                                call.impl ? jsRelName(call.impl) : `${lOp.resultVar}.${relTypeName(methodDef.rel)}`
-                            }().${methodName}(${argsEmit})`
-                        )
-                    ]),
+                    emit: emitLines([lOp.emit, ...upcastEmit, emitLines(jsArgs.map(a => a.emit)), callEmit]),
                     resultVar
                 }
             }
@@ -141,11 +133,14 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
             }
         }
         default: {
-            const trait = operatorImplMap.get(binaryExpr.binaryOp.kind)!.names.at(-2)!
-            const method = operatorImplMap.get(binaryExpr.binaryOp.kind)!.names.at(-1)!
-            const assign = jsVariable(resultVar, `${trait}().${method}(${lOp.resultVar}, ${rOp.resultVar})`)
+            const op = binaryExpr.binaryOp
+            const methodVid = operatorImplMap.get(op.kind)!
+            const trait = methodVid.names.at(-2)!
+            const method = methodVid.names.at(-1)!
+            const callerEmit = binaryExpr.binaryOp.impl ? jsRelName(binaryExpr.binaryOp.impl) : trait
+            const callEmit = jsVariable(resultVar, `${callerEmit}().${method}(${lOp.resultVar}, ${rOp.resultVar})`)
             return {
-                emit: emitLines([lOp.emit, rOp.emit, assign]),
+                emit: emitLines([lOp.emit, rOp.emit, callEmit]),
                 resultVar
             }
         }

@@ -45,6 +45,10 @@ export interface Typed {
     type: VirtualType
 }
 
+export interface Static {
+    impl: InstanceRelation
+}
+
 export interface Virtual {
     traits: Map<string, InstanceRelation>
 }

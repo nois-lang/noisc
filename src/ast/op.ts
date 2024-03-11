@@ -1,6 +1,6 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
-import { InstanceRelation } from '../scope/trait'
 import { MethodDef, VariantDef } from '../scope/vid'
+import { Static } from '../semantic'
 import { ConcreteGeneric } from '../typecheck'
 import { Arg, AstNode, AstNodeKind, buildArg } from './index'
 
@@ -20,7 +20,7 @@ export const buildPostfixOp = (node: ParseNode): PostfixOp => {
     throw Error(`expected prefix-op, got ${node.kind}`)
 }
 
-export type BinaryOp =
+export type BinaryOp = (
     | AddOp
     | SubOp
     | MultOp
@@ -37,6 +37,8 @@ export type BinaryOp =
     | AndOp
     | OrOp
     | AssignOp
+) &
+    Partial<Static>
 
 export type Associativity = 'left' | 'right' | 'none'
 
@@ -108,12 +110,11 @@ export const buildBinaryOp = (node: ParseNode): BinaryOp => {
     return { kind: <any>node.kind, parseNode: node }
 }
 
-export interface CallOp extends AstNode<'call-op'> {
+export interface CallOp extends AstNode<'call-op'>, Partial<Static> {
     args: Arg[]
     methodDef?: MethodDef
     variantDef?: VariantDef
     generics?: ConcreteGeneric[]
-    impl?: InstanceRelation
 }
 
 export const buildCallOp = (node: ParseNode): CallOp => {

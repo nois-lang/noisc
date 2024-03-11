@@ -15,7 +15,7 @@ import {
 } from '../ast/operand'
 import { Context, Scope, addError, fnDefScope, instanceScope } from '../scope'
 import { bool, iter, iterable, unwrap } from '../scope/std'
-import { getConcreteTrait, resolveGenericImpls, typeDefToVirtualType } from '../scope/trait'
+import { getConcreteTrait, resolveGenericImpls, resolveMethodImpl, typeDefToVirtualType } from '../scope/trait'
 import { idToVid, vidEq, vidFromString, vidToString } from '../scope/util'
 import { MethodDef, VariantDef, VirtualIdentifierMatch, resolveVid } from '../scope/vid'
 import {
@@ -193,6 +193,11 @@ export const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
         const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
         checkCallArgs(binaryExpr, args, paramTypes, ctx)
         binaryExpr.type = resolveType(fnType.returnType, genericMaps, ctx)
+        const impl = resolveMethodImpl(binaryExpr.lOperand.type!, methodRef, ctx)
+        if (impl) {
+            binaryExpr.binaryOp.impl = impl
+            ctx.moduleStack.at(-1)!.relImports.push(impl)
+        }
     } else {
         addError(ctx, typeError(binaryExpr, binaryExpr.lOperand.type!, implTargetType, ctx))
         binaryExpr.type = unknownType
