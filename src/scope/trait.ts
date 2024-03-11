@@ -2,7 +2,15 @@ import { Module } from '../ast'
 import { ImplDef, TraitDef } from '../ast/statement'
 import { TypeDef } from '../ast/type-def'
 import { notFoundError } from '../semantic/error'
-import { VidType, VirtualGeneric, VirtualType, genericToVirtual, isAssignable, typeToVirtual } from '../typecheck'
+import {
+    VidType,
+    VirtualGeneric,
+    VirtualType,
+    genericToVirtual,
+    isAssignable,
+    typeEq,
+    typeToVirtual
+} from '../typecheck'
 import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { assert } from '../util/todo'
 import { Context, addError, defKey } from './index'
@@ -210,7 +218,7 @@ export const resolveGenericImpls = (generic: VirtualGeneric, ctx: Context): Inst
     return generic.bounds.flatMap(b => {
         const candidates = ctx.impls
             .filter(i => isAssignable(b, i.implType, ctx))
-            .toSorted((a, b) => relOrdering(b) - relOrdering(a))
+            .toSorted((a, b) => relComparator(b) - relComparator(a))
         return candidates.length > 0 ? [candidates.at(0)!] : []
     })
 }
@@ -230,9 +238,9 @@ export const resolveTypeImpl = (
                 (i.instanceDef.kind === 'impl-def' ||
                     i.instanceDef.block.statements.every(s => s.kind === 'fn-def' && s.block)) &&
                 isAssignable(type, i.forType, ctx) &&
-                isAssignable(i.implType, traitType, ctx)
+                typeEq(i.implType, traitType)
         )
-        .toSorted((a, b) => relOrdering(b, type, traitType) - relOrdering(a, type, traitType))
+        .toSorted((a, b) => relComparator(b, ctx, type, traitType) - relComparator(a, ctx, type, traitType))
     const impl = candidates.at(0)
     return impl ? { trait, impl } : undefined
 }
@@ -246,17 +254,24 @@ export const resolveMethodImpl = (type: VirtualType, method: MethodDef, ctx: Con
                         s => s.kind === 'fn-def' && s.name.value === method.fn.name.value && s.block
                     )) &&
                 isAssignable(type, i.forType, ctx) &&
-                isAssignable(i.implType, method.rel.implType, ctx) &&
+                typeEq(i.implType, method.rel.implType) &&
                 (!i.inherent ||
                     i.instanceDef.block.statements.find(
                         s => s.kind === 'fn-def' && s.name.value === method.fn.name.value
                     ))
         )
-        .toSorted((a, b) => relOrdering(b, type, method.rel.forType) - relOrdering(a, type, method.rel.forType))
+        .toSorted(
+            (a, b) => relComparator(b, ctx, type, method.rel.forType) - relComparator(a, ctx, type, method.rel.forType)
+        )
     return candidates.at(0)
 }
 
-export const relOrdering = (rel: InstanceRelation, implType?: VirtualType, forType?: VirtualType): number => {
+export const relComparator = (
+    rel: InstanceRelation,
+    ctx?: Context,
+    implType?: VirtualType,
+    forType?: VirtualType
+): number => {
     let score = 0
     if (rel.instanceDef.kind === 'impl-def') score += 8
     return score

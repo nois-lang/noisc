@@ -32,15 +32,16 @@ impl <T> Collector<T> for List<T> {
     }
 }
 
-impl Display for List<String> {
-    fn fmt(self): String {
-        let string = "["
-        for s in self {
-            string = string.concat(s)
-        }
-        string.concat("]")
-    }
-}
+// TODO: proper impl solving
+// impl Display for List<String> {
+//     fn fmt(self): String {
+//         let string = "["
+//         for s in self {
+//             string = string.concat(s)
+//         }
+//         string.concat("]")
+//     }
+// }
 
 impl <T: Display> Display for List<T> {
     fn fmt(self): String {
