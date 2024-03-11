@@ -1,5 +1,5 @@
 import { AstNode, Module } from '../ast'
-import { ClosureExpr } from '../ast/operand'
+import { ClosureExpr, Operand } from '../ast/operand'
 import { FnDef, ImplDef, TraitDef } from '../ast/statement'
 import { TypeDef } from '../ast/type-def'
 import { Config } from '../config'
@@ -62,7 +62,7 @@ export interface FnDefScope {
     kind: 'fn'
     definitions: DefinitionMap
     def: FnDef | ClosureExpr
-    returnStatements: (AstNode<any> & Partial<Typed>)[]
+    returns: Operand[]
 }
 
 export interface BlockScope {

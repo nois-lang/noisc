@@ -7,6 +7,7 @@ import {
     BlockScope,
     Context,
     DefinitionMap,
+    FnDefScope,
     InstanceScope,
     TypeDefScope,
     addError,
@@ -16,7 +17,14 @@ import {
     instanceScope,
     unwindScope
 } from '../scope'
-import { findSuperRelChains, traitDefToVirtualType, typeDefToVirtualType } from '../scope/trait'
+import {
+    InstanceRelation,
+    findSuperRelChains,
+    relTypeName,
+    resolveTypeImpl,
+    traitDefToVirtualType,
+    typeDefToVirtualType
+} from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
 import { Definition, MethodDef, NameDef, resolveVid, typeKinds } from '../scope/vid'
 import { VirtualType, genericToVirtual, isAssignable, typeEq, typeToVirtual } from '../typecheck'
@@ -35,6 +43,10 @@ export interface Checked {
 
 export interface Typed {
     type: VirtualType
+}
+
+export interface Virtual {
+    traits: Map<string, InstanceRelation>
 }
 
 export const prepareModule = (module: Module): void => {
@@ -174,8 +186,17 @@ export const checkBlock = (block: Block, ctx: Context): boolean => {
     if (scope.allBranchesReturned) {
         block.type = neverType
     } else {
-        const lastStatement = <Partial<Typed> | undefined>block.statements.at(-1)
-        block.type = lastStatement?.type ?? unitType
+        const lastStatement = block.statements.at(-1)
+        block.type = lastStatement && 'type' in lastStatement ? lastStatement.type : unitType
+        if (
+            module.scopeStack.at(-2)?.kind === 'fn' &&
+            lastStatement &&
+            (lastStatement.kind === 'operand-expr' ||
+                lastStatement.kind === 'unary-expr' ||
+                lastStatement.kind === 'binary-expr')
+        ) {
+            fnDefScope(ctx)?.returns.push(lastStatement)
+        }
     }
 
     module.scopeStack.pop()
@@ -245,12 +266,13 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
         fnDef.checked = true
     }
     const module = ctx.moduleStack.at(-1)!
-    module.scopeStack.push({
+    const fnScope: FnDefScope = {
         kind: 'fn',
         definitions: new Map(fnDef.generics.map(g => [defKey(g), g])),
         def: fnDef,
-        returnStatements: []
-    })
+        returns: []
+    }
+    module.scopeStack.push(fnScope)
 
     const paramTypes = fnDef.params.map((p, i) => {
         checkParam(p, i, ctx)
@@ -278,13 +300,15 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
     if (ctx.check && !module.compiled) {
         if (fnDef.block) {
             checkBlock(fnDef.block, ctx)
-            const blockType = fnDef.block.type!
-            if (!isAssignable(blockType, returnTypeResolved, ctx)) {
-                addError(ctx, typeError(fnDef.block, blockType, returnTypeResolved, ctx))
-            }
-            fnDefScope(ctx)!.returnStatements.forEach(rs => {
+            fnScope.returns.forEach(rs => {
                 if (!isAssignable(rs.type!, returnTypeResolved, ctx)) {
                     addError(ctx, typeError(rs, rs.type!, returnTypeResolved, ctx))
+                }
+                const res = resolveTypeImpl(rs.type!, returnTypeResolved, ctx)
+                if (res) {
+                    rs.traits ??= new Map()
+                    rs.traits.set(relTypeName(res.trait), res.impl)
+                    module.relImports.push(res.impl)
                 }
             })
         } else {
@@ -558,7 +582,7 @@ export const checkReturnStmt = (returnStmt: ReturnStmt, ctx: Context) => {
     checkExpr(returnStmt.returnExpr, ctx)
     returnStmt.type = returnStmt.returnExpr.type
 
-    scope?.returnStatements.push(returnStmt)
+    scope?.returns.push(returnStmt.returnExpr)
 }
 
 export const checkBreakStmt = (breakStmt: BreakStmt, ctx: Context) => {

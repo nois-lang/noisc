@@ -1,5 +1,5 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
-import { Typed } from '../semantic'
+import { Typed, Virtual } from '../semantic'
 import { assert } from '../util/todo'
 import { AstNode } from './index'
 import { BinaryOp, PostfixOp, associativityMap, buildBinaryOp, buildPostfixOp, precedenceMap } from './op'
@@ -7,7 +7,7 @@ import { Operand, buildOperand } from './operand'
 
 export type Expr = OperandExpr | UnaryExpr | BinaryExpr
 
-export interface OperandExpr extends AstNode<'operand-expr'>, Partial<Typed> {
+export interface OperandExpr extends AstNode<'operand-expr'>, Partial<Typed>, Partial<Virtual> {
     operand: Operand
 }
 
@@ -19,12 +19,12 @@ export const buildOperandExpr = (node: ParseNode): OperandExpr => {
     }
 }
 
-export interface UnaryExpr extends AstNode<'unary-expr'>, Partial<Typed> {
+export interface UnaryExpr extends AstNode<'unary-expr'>, Partial<Typed>, Partial<Virtual> {
     operand: Operand
     op: PostfixOp
 }
 
-export interface BinaryExpr extends AstNode<'binary-expr'>, Partial<Typed> {
+export interface BinaryExpr extends AstNode<'binary-expr'>, Partial<Typed>, Partial<Virtual> {
     binaryOp: BinaryOp
     lOperand: Operand
     rOperand: Operand

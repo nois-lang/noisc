@@ -1,9 +1,8 @@
 import { LexerToken } from '../lexer/lexer'
 import { ParseNode, ParseTree, filterNonAstNodes } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
-import { InstanceRelation } from '../scope/trait'
 import { VirtualIdentifierMatch } from '../scope/vid'
-import { Typed } from '../semantic'
+import { Typed, Virtual } from '../semantic'
 import { Expr, buildExpr } from './expr'
 import { AstNode, Param, buildParam } from './index'
 import { MatchExpr, Pattern, buildMatchExpr, buildNumber, buildPattern } from './match'
@@ -25,7 +24,8 @@ export type Operand = (
     | FloatLiteral
     | BoolLiteral
     | Identifier
-) & { traits?: Map<string, InstanceRelation> }
+) &
+    Partial<Virtual>
 
 export const buildOperand = (node: ParseNode): Operand => {
     const n = filterNonAstNodes(node)[0]

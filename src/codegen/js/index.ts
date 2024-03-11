@@ -125,3 +125,7 @@ export const jsGenericTypeName = (type: VirtualType): string => {
             return unreachable(type.kind)
     }
 }
+
+export const emitVirtualTraits = (resultVar: string, traits: Map<string, InstanceRelation>): string => {
+    return emitLines([...traits.entries()].map(([name, rel]) => `${resultVar}.${name} = ${jsRelName(rel)}`))
+}

@@ -384,7 +384,7 @@ export const checkClosureExpr = (
     }
 
     const module = ctx.moduleStack.at(-1)!
-    module.scopeStack.push({ kind: 'fn', definitions: new Map(), def: closureExpr, returnStatements: [] })
+    module.scopeStack.push({ kind: 'fn', definitions: new Map(), def: closureExpr, returns: [] })
 
     if (caller && inferredType) {
         if (closureExpr.params.length > inferredType.paramTypes.length) {
@@ -567,7 +567,7 @@ export const checkBind = (unaryExpr: UnaryExpr, ctx: Context): void => {
         addError(ctx, semanticError(ctx, unaryExpr.op, `\`${unaryExpr.op.kind}\` outside of the function scope`))
         return
     }
-    scope.returnStatements.push(operand)
+    scope.returns.push(operand)
 }
 
 export const findUnwrapInnerType = (type: VirtualType, ctx: Context): VirtualType | undefined => {

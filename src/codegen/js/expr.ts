@@ -1,4 +1,14 @@
-import { emitLines, extractValue, indent, jsError, jsRelName, jsString, jsVariable, nextVariable } from '.'
+import {
+    emitLines,
+    emitVirtualTraits,
+    extractValue,
+    indent,
+    jsError,
+    jsRelName,
+    jsString,
+    jsVariable,
+    nextVariable
+} from '.'
 import { Module, Param } from '../../ast'
 import { BinaryExpr, Expr, OperandExpr, UnaryExpr } from '../../ast/expr'
 import { MatchExpr, Pattern, PatternExpr } from '../../ast/match'
@@ -40,27 +50,26 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
         case 'call-op':
             const args = unaryExpr.op.args.map(a => {
                 const { emit, resultVar: res } = emitExpr(a.expr, module, ctx)
-                const traits = a.expr.kind === 'operand-expr' ? a.expr.operand.traits : undefined
-                const traitEmit = traits
-                    ? [...traits.entries()].map(([name, rel]) => `${a}.${name} = ${jsRelName(rel)}`)
-                    : ''
+                const argTraits = a.expr.kind === 'operand-expr' ? a.expr.operand.traits : undefined
+                const traitEmit = argTraits ? emitVirtualTraits(res, argTraits) : ''
                 return { emit: emitLines([emit, ...traitEmit]), resultVar: res }
             })
             const genericTypes = unaryExpr.op.generics?.map(g => emitGeneric(g, module, ctx)) ?? []
             const jsArgs = [...args, ...genericTypes]
+            const traitEmit = unaryExpr.traits ? emitVirtualTraits(resultVar, unaryExpr.traits) : ''
             const variantDef = unaryExpr.op.variantDef
             if (variantDef) {
                 const variantName = `${variantDef.typeDef.name.value}.${variantDef.variant.name.value}`
                 const call = jsVariable(resultVar, `${variantName}(${jsArgs.map(a => a.resultVar).join(', ')})`)
                 return {
-                    emit: emitLines([...jsArgs.map(a => a.emit), call]),
+                    emit: emitLines([...jsArgs.map(a => a.emit), call, traitEmit]),
                     resultVar
                 }
             } else {
                 const operand = emitOperand(unaryExpr.operand, module, ctx)
                 const call = jsVariable(resultVar, `${operand.resultVar}(${jsArgs.map(a => a.resultVar).join(', ')})`)
                 return {
-                    emit: emitLines([operand.emit, ...jsArgs.map(a => a.emit), call]),
+                    emit: emitLines([operand.emit, ...jsArgs.map(a => a.emit), call, traitEmit]),
                     resultVar
                 }
             }

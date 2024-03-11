@@ -215,6 +215,28 @@ export const resolveGenericImpls = (generic: VirtualGeneric, ctx: Context): Inst
     })
 }
 
+export const resolveTypeImpl = (
+    type: VirtualType,
+    traitType: VirtualType,
+    ctx: Context
+): { trait: InstanceRelation; impl: InstanceRelation } | undefined => {
+    if (traitType.kind !== 'vid-type') return undefined
+    const traitRef = resolveVid(traitType.identifier, ctx, typeKinds)
+    if (!traitRef || traitRef.def.kind !== 'trait-def') return undefined
+    const trait = ctx.impls.find(i => i.instanceDef === traitRef.def)!
+    const candidates = ctx.impls
+        .filter(
+            i =>
+                (i.instanceDef.kind === 'impl-def' ||
+                    i.instanceDef.block.statements.every(s => s.kind === 'fn-def' && s.block)) &&
+                isAssignable(type, i.forType, ctx) &&
+                isAssignable(i.implType, traitType, ctx)
+        )
+        .toSorted((a, b) => relOrdering(b, type, traitType) - relOrdering(a, type, traitType))
+    const impl = candidates.at(0)
+    return impl ? { trait, impl } : undefined
+}
+
 export const resolveMethodImpl = (type: VirtualType, method: MethodDef, ctx: Context): InstanceRelation | undefined => {
     const candidates = ctx.impls
         .filter(
