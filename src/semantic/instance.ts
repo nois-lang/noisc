@@ -168,7 +168,8 @@ const checkMethodCallExpr = (
     identifier.typeArgs.forEach(typeArg => checkType(typeArg, ctx))
 
     const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
-    checkCallArgs(call, [lOperand, ...call.args.map(a => a.expr)], paramTypes, ctx)
+    const args = [lOperand, ...call.args.map(a => a.expr)]
+    checkCallArgs(call, args, paramTypes, ctx)
 
     call.generics = fnType.generics.map(g => {
         const impls = resolveGenericImpls(g, ctx)
@@ -179,12 +180,13 @@ const checkMethodCallExpr = (
         }
     })
 
-    // TODO: impl resolution
     if (ref.def.rel.instanceDef.kind === 'trait-def') {
         call.impl = resolveMethodImpl(lOperand.type!, ref.def, ctx)
-        if (call.impl) {
-            ctx.moduleStack.at(-1)!.relImports.push(call.impl)
-        }
+    } else {
+        call.impl = ref.def.rel
+    }
+    if (call.impl) {
+        ctx.moduleStack.at(-1)!.relImports.push(call.impl)
     }
 
     return resolveType(fnType.returnType, genericMaps, ctx)
