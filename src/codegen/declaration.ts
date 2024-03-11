@@ -34,7 +34,8 @@ export const emitStatement = (statement: Statement, pubOnly = true): string | un
                     : ''
             const params = statement.params.map(emitParam).join(', ')
             const returnType = statement.returnType ? `: ${emitParseNode(statement.returnType.parseNode)}` : ''
-            return `${statement.pub ? 'pub ' : ''}fn ${statement.name.value}${generics}(${params})${returnType}`
+            const block = statement.block ? ' {}' : ''
+            return `${statement.pub ? 'pub ' : ''}fn ${statement.name.value}${generics}(${params})${returnType}${block}`
         }
         case 'trait-def': {
             if (!statement.pub) return undefined
