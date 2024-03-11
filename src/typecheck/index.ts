@@ -75,7 +75,8 @@ export const virtualTypeToString = (vt: VirtualType): string => {
             }
         }
         case 'generic':
-            return vt.name
+            const bounds = vt.bounds.map(virtualTypeToString)
+            return `${vt.name}${bounds.length > 0 ? `: ${bounds.join(' + ')}` : ''}`
         case 'hole-type':
             return '_'
         case 'unknown-type':

@@ -5,7 +5,7 @@ import { Identifier, Operand, identifierFromOperand } from '../ast/operand'
 import { Context, addError, instanceScope } from '../scope'
 import { getInstanceForType, resolveGenericImpls, resolveMethodImpl } from '../scope/trait'
 import { vidToString } from '../scope/util'
-import { MethodDef, resolveVid } from '../scope/vid'
+import { MethodDef, VirtualIdentifier, resolveVid } from '../scope/vid'
 import { VirtualFnType, VirtualType, combine, genericToVirtual, typeToVirtual, virtualTypeToString } from '../typecheck'
 import {
     instanceGenericMap,
@@ -132,12 +132,22 @@ const checkMethodCallExpr = (
         const instanceMap = instScope ? instanceGenericMap(instScope, ctx) : new Map()
         lOperand.type = resolveType(lOperand.type!, [instanceMap], ctx)
     }
-    if (lOperand.type!.kind !== 'vid-type') {
-        const msg = `expected instance type, got \`${virtualTypeToString(lOperand.type ?? unknownType)}\``
+    let typeVid: VirtualIdentifier
+    if (lOperand.type!.kind === 'vid-type') {
+        typeVid = lOperand.type!.identifier
+    } else if (
+        lOperand.type!.kind === 'generic' &&
+        lOperand.type!.bounds.length > 0 &&
+        lOperand.type!.bounds[0].kind === 'vid-type'
+    ) {
+        // TODO: select logic when multiple bounds
+        typeVid = lOperand.type!.bounds[0].identifier
+    } else {
+        const msg = `expected instance type, got \`${virtualTypeToString(lOperand.type!)}\``
         addError(ctx, semanticError(ctx, identifier, msg))
         return
     }
-    const methodVid = { names: [...lOperand.type!.identifier.names, methodName] }
+    const methodVid = { names: [...typeVid.names, methodName] }
     const ref = resolveVid(methodVid, ctx, ['method-def'])
     if (!ref || ref.def.kind !== 'method-def') {
         // hint if it is a field call

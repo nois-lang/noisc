@@ -179,7 +179,7 @@ const resolveGenericMap = (
                 typeArgs: virtualType.typeArgs.map(g => resolveGenericMap(g, genericMap, ctx))
             }
         case 'generic':
-            const res = genericMap.get(virtualTypeToString(virtualType))
+            const res = genericMap.get(virtualType.name)
             if (res) {
                 return res
             }
