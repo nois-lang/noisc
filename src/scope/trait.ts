@@ -209,7 +209,7 @@ export const relTypeName = (rel: InstanceRelation): string => {
 export const resolveGenericImpls = (generic: VirtualGeneric, ctx: Context): InstanceRelation[] => {
     return generic.bounds.flatMap(b => {
         const candidates = ctx.impls
-            .filter(i => i.instanceDef.kind === 'impl-def' && isAssignable(b, i.implType, ctx))
+            .filter(i => isAssignable(b, i.implType, ctx))
             .toSorted((a, b) => relOrdering(b) - relOrdering(a))
         return candidates.length > 0 ? [candidates.at(0)!] : []
     })
@@ -219,7 +219,10 @@ export const resolveMethodImpl = (type: VirtualType, method: MethodDef, ctx: Con
     const candidates = ctx.impls
         .filter(
             i =>
-                i.instanceDef.kind === 'impl-def' &&
+                (i.instanceDef.kind === 'impl-def' ||
+                    i.instanceDef.block.statements.find(
+                        s => s.kind === 'fn-def' && s.name.value === method.fn.name.value && s.block
+                    )) &&
                 isAssignable(type, i.forType, ctx) &&
                 isAssignable(i.implType, method.rel.implType, ctx) &&
                 (!i.inherent ||
@@ -227,11 +230,11 @@ export const resolveMethodImpl = (type: VirtualType, method: MethodDef, ctx: Con
                         s => s.kind === 'fn-def' && s.name.value === method.fn.name.value
                     ))
         )
-        .toSorted((a, b) => relOrdering(b) - relOrdering(a))
+        .toSorted((a, b) => relOrdering(b, type, method.rel.forType) - relOrdering(a, type, method.rel.forType))
     return candidates.at(0)
 }
 
-export const relOrdering = (rel: InstanceRelation): number => {
+export const relOrdering = (rel: InstanceRelation, implType?: VirtualType, forType?: VirtualType): number => {
     let score = 0
     if (rel.instanceDef.kind === 'impl-def') score += 8
     return score

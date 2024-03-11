@@ -42,3 +42,13 @@ export const groupByHaving = <T, K>(arr: T[], keyFn: (t: T) => K, havingFn: (t: 
     }
     return groups
 }
+
+export const zip = <A, B, C>(a: A[], b: B[], f: (a: A, b: B, i: number) => C): C[] => {
+    const la = a.length
+    const lb = b.length
+    const res = []
+    for (let i = 0; i < la && i < lb; i++) {
+        res.push(f(a[i], b[i], i))
+    }
+    return res
+}

@@ -38,7 +38,14 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
     const resultVar = nextVariable(ctx)
     switch (unaryExpr.op.kind) {
         case 'call-op':
-            const args = unaryExpr.op.args.map(a => emitExpr(a.expr, module, ctx))
+            const args = unaryExpr.op.args.map(a => {
+                const { emit, resultVar: res } = emitExpr(a.expr, module, ctx)
+                const traits = a.expr.kind === 'operand-expr' ? a.expr.operand.traits : undefined
+                const traitEmit = traits
+                    ? [...traits.entries()].map(([name, rel]) => `${a}.${name} = ${jsRelName(rel)}`)
+                    : ''
+                return { emit: emitLines([emit, ...traitEmit]), resultVar: res }
+            })
             const genericTypes = unaryExpr.op.generics?.map(g => emitGeneric(g, module, ctx)) ?? []
             const jsArgs = [...args, ...genericTypes]
             const variantDef = unaryExpr.op.variantDef
@@ -89,14 +96,19 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
                         ? jsArgs.map(a => a.resultVar)
                         : [lOp.resultVar, ...jsArgs.map(a => a.resultVar)]
                 ).join(', ')
+                const upcastRels = binaryExpr.lOperand.traits
+                const upcastEmit = upcastRels
+                    ? [...upcastRels.entries()].map(([name, rel]) => `${lOp.resultVar}.${name} = ${jsRelName(rel)}`)
+                    : ''
                 return {
                     emit: emitLines([
                         lOp.emit,
+                        ...upcastEmit,
                         emitLines(jsArgs.map(a => a.emit)),
                         jsVariable(
                             resultVar,
                             `${
-                                call.impl ? jsRelName(call.impl) : jsError('dynamic dispatch')
+                                call.impl ? jsRelName(call.impl) : `${lOp.resultVar}.${relTypeName(methodDef.rel)}`
                             }().${methodName}(${argsEmit})`
                         )
                     ]),
