@@ -11,28 +11,40 @@ export interface Upcast {
 export const upcast = (
     virtual: Partial<Virtual>,
     type: VirtualType,
-    returnTypeResolved: VirtualType,
+    traitType: VirtualType,
     ctx: Context
 ): void => {
-    const res = resolveTypeImpl(type, returnTypeResolved, ctx)
-    if (res) {
-        const genericMap = makeGenericMapOverStructure(type, res.impl.forType)
+    const upcastMap = makeUpcastMap(type, traitType, ctx)
+    if (upcastMap) {
         virtual.upcasts ??= new Map()
-        virtual.upcasts.set('Self', { traits: new Map([[relTypeName(res.trait), res.impl]]) })
-        for (const g of res.impl.generics) {
-            const gUpcast: Upcast = { traits: new Map() }
-            const concreteG = genericMap.get(g.name)
-            if (concreteG) {
-                for (const b of g.bounds) {
-                    const gRes = resolveTypeImpl(concreteG, b, ctx)
-                    if (gRes) {
-                        gUpcast.traits.set(relTypeName(gRes.trait), gRes.impl)
-                        ctx.moduleStack.at(-1)!.relImports.push(gRes.impl)
-                    }
+        upcastMap.forEach((v, k) => virtual.upcasts!.set(k, v))
+    }
+}
+
+export const makeUpcastMap = (
+    type: VirtualType,
+    traitType: VirtualType,
+    ctx: Context
+): Map<string, Upcast> | undefined => {
+    const res = resolveTypeImpl(type, traitType, ctx)
+    if (!res) return undefined
+    const genericMap = makeGenericMapOverStructure(type, res.impl.forType)
+    const upcasts = new Map()
+    upcasts.set('Self', { traits: new Map([[relTypeName(res.trait), res.impl]]) })
+    for (const g of res.impl.generics) {
+        const gUpcast: Upcast = { traits: new Map() }
+        const concreteG = genericMap.get(g.name)
+        if (concreteG) {
+            for (const b of g.bounds) {
+                const gRes = resolveTypeImpl(concreteG, b, ctx)
+                if (gRes) {
+                    gUpcast.traits.set(relTypeName(gRes.trait), gRes.impl)
+                    ctx.moduleStack.at(-1)!.relImports.push(gRes.impl)
                 }
             }
-            virtual.upcasts.set(g.name, gUpcast)
         }
-        ctx.moduleStack.at(-1)!.relImports.push(res.impl)
+        upcasts.set(g.name, gUpcast)
     }
+    ctx.moduleStack.at(-1)!.relImports.push(res.impl)
+    return upcasts
 }
