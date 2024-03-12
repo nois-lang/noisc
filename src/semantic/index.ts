@@ -3,7 +3,6 @@ import { Identifier, Name, Operand } from '../ast/operand'
 import { Block, BreakStmt, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '../ast/statement'
 import { Generic, Type } from '../ast/type'
 import { TypeDef, Variant } from '../ast/type-def'
-import { jsRelName } from '../codegen/js'
 import {
     BlockScope,
     Context,

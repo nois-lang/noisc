@@ -220,5 +220,5 @@ const makeMethodGenericMaps = (
     const fnTypeArgGenericMap = makeFnTypeArgGenericMap(fnType, typeArgs)
     const fnGenericMap = makeFnGenericMap(fnType, [lOperand.type!, ...call.args.map(a => a.expr.type!)])
 
-    return [implGenericMap, fnTypeArgGenericMap, fnGenericMap]
+    return [fnTypeArgGenericMap, implGenericMap, fnGenericMap]
 }
