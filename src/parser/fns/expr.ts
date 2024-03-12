@@ -1,14 +1,7 @@
 import { Parser } from '..'
 import { syntaxError } from '../../error'
 import { TokenKind } from '../../lexer/lexer'
-import {
-    exprFirstTokens,
-    infixOpFirstTokens,
-    nameLikeTokens,
-    numberFirstTokens,
-    parseClosureExpr,
-    postfixOpFirstTokens
-} from './index'
+import { exprFirstTokens, infixOpFirstTokens, nameLikeTokens, numberFirstTokens, parseClosureExpr } from './index'
 import { parseMatchExpr, parsePattern } from './match'
 import { parseInfixOp, parsePostfixOp } from './op'
 import { parseBlock } from './statement'
@@ -33,7 +26,7 @@ export const parseExpr = (parser: Parser): void => {
 export const parseSubExpr = (parser: Parser): void => {
     const mark = parser.open()
     parseOperand(parser)
-    while (parser.atAny(postfixOpFirstTokens)) {
+    while (parser.at('o-paren') || (parser.at('excl') && parser.nth(1) !== 'equals') || parser.at('qmark')) {
         parsePostfixOp(parser)
     }
     parser.close(mark, 'sub-expr')
