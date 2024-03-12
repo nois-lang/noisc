@@ -233,13 +233,14 @@ export const resolveTypeImpl = (
     if (!traitRef || traitRef.def.kind !== 'trait-def') return undefined
     const trait = ctx.impls.find(i => i.instanceDef === traitRef.def)!
     const candidates = ctx.impls
-        .filter(
-            i =>
+        .filter(i => {
+            return (
                 (i.instanceDef.kind === 'impl-def' ||
                     i.instanceDef.block.statements.every(s => s.kind === 'fn-def' && s.block)) &&
                 isAssignable(type, i.forType, ctx) &&
                 typeEq(i.implType, traitType)
-        )
+            )
+        })
         .toSorted((a, b) => relComparator(b, ctx, type, traitType) - relComparator(a, ctx, type, traitType))
     const impl = candidates.at(0)
     return impl ? { trait, impl } : undefined
