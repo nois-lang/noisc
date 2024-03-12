@@ -32,20 +32,20 @@ impl <T> Collector<T> for List<T> {
     }
 }
 
-// TODO: proper impl solving
-// impl Display for List<String> {
-//     fn fmt(self): String {
-//         let string = "["
-//         for s in self {
-//             string = string.concat(s)
-//         }
-//         string.concat("]")
-//     }
-// }
+impl Display for List<String> {
+    fn fmt(self): String {
+        let string = "["
+        for s in self {
+            string = string.concat(s).concat(", ")
+        }
+        string.concat("]")
+    }
+}
 
 impl <T: Display> Display for List<T> {
     fn fmt(self): String {
-        self.iter().map(Display::fmt).collect<List<String>>().fmt()
+        // TODO: method ref
+        self.iter().map(|d| { d.fmt() }).collect<List<String>>().fmt()
     }
 }
 

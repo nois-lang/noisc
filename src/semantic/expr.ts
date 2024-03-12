@@ -43,6 +43,7 @@ import { checkExhaustion } from './exhaust'
 import { checkAccessExpr } from './instance'
 import { checkPattern } from './match'
 import { operatorImplMap } from './op'
+import { upcast } from './upcast'
 
 export const checkExpr = (expr: Expr, ctx: Context): void => {
     switch (expr.kind) {
@@ -311,6 +312,10 @@ export const checkForExpr = (forExpr: ForExpr, ctx: Context): void => {
 
     // TODO: break with a value
     forExpr.type = unknownType
+
+    // TODO: only one needed
+    upcast(forExpr.expr, forExpr.expr.type!, iter, ctx)
+    upcast(forExpr.expr, forExpr.expr.type!, iterable, ctx)
 
     module.scopeStack.pop()
 }

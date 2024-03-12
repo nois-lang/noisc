@@ -3,6 +3,7 @@ import { Context } from '../../scope'
 import { InstanceRelation, relTypeName } from '../../scope/trait'
 import { concatVid, vidFromScope, vidFromString } from '../../scope/util'
 import { VirtualIdentifier } from '../../scope/vid'
+import { Upcast } from '../../semantic/upcast'
 import { VirtualType, virtualTypeToString } from '../../typecheck'
 import { groupBy } from '../../util/array'
 import { unreachable } from '../../util/todo'
@@ -126,6 +127,10 @@ export const jsGenericTypeName = (type: VirtualType): string => {
     }
 }
 
-export const emitVirtualTraits = (resultVar: string, traits: Map<string, InstanceRelation>): string => {
-    return emitLines([...traits.entries()].map(([name, rel]) => `${resultVar}.${name} = ${jsRelName(rel)}`))
+export const emitUpcasts = (resultVar: string, upcasts: Map<string, Upcast>): string => {
+    const args = [...upcasts.entries()].map(
+        ([k, v]) => `[${[...v.traits.entries()].map(([tk, tv]) => `[${jsString(tk)}, ${jsRelName(tv)}]`).join(', ')}]`
+    )
+    args.unshift(resultVar)
+    return `${resultVar}.upcast(${args.join(', ')})`
 }

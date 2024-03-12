@@ -17,14 +17,7 @@ import {
     instanceScope,
     unwindScope
 } from '../scope'
-import {
-    InstanceRelation,
-    findSuperRelChains,
-    relTypeName,
-    resolveTypeImpl,
-    traitDefToVirtualType,
-    typeDefToVirtualType
-} from '../scope/trait'
+import { InstanceRelation, findSuperRelChains, traitDefToVirtualType, typeDefToVirtualType } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
 import { Definition, MethodDef, NameDef, resolveVid, typeKinds } from '../scope/vid'
 import { VirtualType, genericToVirtual, isAssignable, typeEq, typeToVirtual } from '../typecheck'
@@ -35,6 +28,7 @@ import { notFoundError, semanticError, typeError, unknownTypeError } from './err
 import { checkClosureExpr, checkExpr } from './expr'
 import { checkPattern } from './match'
 import { typeNames } from './type-def'
+import { Upcast, upcast } from './upcast'
 import { useExprToVids } from './use-expr'
 
 export interface Checked {
@@ -50,7 +44,7 @@ export interface Static {
 }
 
 export interface Virtual {
-    traits: Map<string, InstanceRelation>
+    upcasts: Map<string, Upcast>
 }
 
 export const prepareModule = (module: Module): void => {
@@ -308,12 +302,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
                 if (!isAssignable(rs.type!, returnTypeResolved, ctx)) {
                     addError(ctx, typeError(rs, rs.type!, returnTypeResolved, ctx))
                 }
-                const res = resolveTypeImpl(rs.type!, returnTypeResolved, ctx)
-                if (res) {
-                    rs.traits ??= new Map()
-                    rs.traits.set(relTypeName(res.trait), res.impl)
-                    module.relImports.push(res.impl)
-                }
+                upcast(rs, rs.type!, returnTypeResolved, ctx)
             })
         } else {
             if (!module.compiled && instScope?.rel.instanceDef.kind !== 'trait-def') {
@@ -734,11 +723,6 @@ export const checkCallArgs = (node: AstNode<any>, args: Operand[], paramTypes: V
             addError(ctx, typeError(arg, argType, paramType, ctx))
         }
 
-        const res = resolveTypeImpl(argType, paramType, ctx)
-        if (res) {
-            arg.traits ??= new Map()
-            arg.traits.set(relTypeName(res.trait), res.impl)
-            ctx.moduleStack.at(-1)!.relImports.push(res.impl)
-        }
+        upcast(arg, argType, paramType, ctx)
     }
 }

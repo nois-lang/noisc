@@ -124,7 +124,15 @@ export const emitVariant = (v: Variant, typeDef: TypeDef, module: Module, ctx: C
     const props = [
         `$noisType: ${type}`,
         ...(typeDef.variants.length > 1 ? [`$noisVariant: ${name}`] : []),
-        `value: {${fields}}`
+        `value: {${fields}}`,
+        `upcast: ${emitUpcastFn(v, typeDef, module, ctx)}`
     ].join(',\n')
     return `function(${fieldNames.join(', ')}) {\n${indent(`return {\n${indent(props)}\n}`)}\n}`
+}
+
+export const emitUpcastFn = (v: Variant, typeDef: TypeDef, module: Module, ctx: Context) => {
+    const params = ['value', 'Self', ...typeDef.generics.map(g => g.name.value)]
+    const selfG = emitLines(['for (const [trait, impl] of Self) {', indent('value[trait] = impl;'), '}'])
+    const block = emitLines([selfG])
+    return `function(${params.join(', ')}) {\n${indent(block)}\n}`
 }

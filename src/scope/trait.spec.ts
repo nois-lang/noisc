@@ -52,6 +52,7 @@ describe('trait', () => {
         expect(formatImplTypes(findSuperRelChains(vidFromString('std::list::List'), ctx))).toEqual([
             ['std::iter::Iterable<T>'],
             ['std::iter::Collector<T>'],
+            ['std::io::Display'],
             ['std::io::Display']
         ])
 

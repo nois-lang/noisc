@@ -3,7 +3,15 @@
  * @returns {Int}
  */
 Int.Int = function(value) {
-    return { $noisType: 'std::int::Int', value }
+    return {
+        $noisType: 'std::int::Int',
+        value,
+        upcast: function(value, Self) {
+            for (const [trait, impl] of Self) {
+                value[trait] = impl;
+            }
+        }
+    }
 }
 
 /**

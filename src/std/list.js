@@ -4,7 +4,20 @@
  * @returns {List<T>}
  */
 List.List = function(value) {
-    return { $noisType: 'std::list::List', value }
+    return { 
+        $noisType: 'std::list::List',
+        value,
+        upcast: function(value, Self, T) {
+            for (const [trait, impl] of Self) {
+                value[trait] = impl;
+            }
+            for (const item of value.value) {
+                for (const [itemTrait, itemImpl] of T) {
+                    item[itemTrait] = itemImpl;
+                }
+            }
+        }
+    }
 }
 
 /**

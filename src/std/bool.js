@@ -3,7 +3,15 @@
  * @returns {Boolean}
  */
 Bool.Bool = function(value) {
-    return { $noisType: 'std::bool::Bool', value }
+    return { 
+        $noisType: 'std::bool::Bool',
+        value,
+        upcast: function(value, Self) {
+            for (const [trait, impl] of Self) {
+                value[trait] = impl;
+            }
+        }
+    }
 }
 
 /**

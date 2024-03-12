@@ -3,7 +3,15 @@
  * @returns {Float}
  */
 Float.Float = function(value) {
-    return { $noisType: 'std::float::Float', value }
+    return {
+        $noisType: 'std::float::Float',
+        value,
+        upcast: function(value, Self) {
+            for (const [trait, impl] of Self) {
+                value[trait] = impl;
+            }
+        }
+    }
 }
 
 /**

@@ -3,7 +3,15 @@
  * @returns {Char}
  */
 Char.Char = function(value) {
-    return { $noisType: 'std::char::Char', value }
+    return { 
+        $noisType: 'std::char::Char',
+        value,
+        upcast: function(value, Self) {
+            for (const [trait, impl] of Self) {
+                value[trait] = impl;
+            }
+        }
+    }
 }
 
 /**

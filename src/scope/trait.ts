@@ -46,6 +46,10 @@ export interface InstanceRelation {
      */
     instanceDef: TraitDef | ImplDef
     /**
+     * Generics
+     */
+    generics: VirtualGeneric[]
+    /**
      * There are two types of implementations:
      *   - trait impl: implementing trait for some type
      *   - inherent impl: attaching methods to some type
@@ -85,11 +89,12 @@ const getImplRel = (instance: TraitDef | ImplDef, ctx: Context): InstanceRelatio
 }
 
 const getTraitImplRel = (instance: TraitDef, module: Module, ctx: Context): InstanceRelation | undefined => {
+    const generics = instance.generics.filter(g => g.name.value !== 'Self').map(g => genericToVirtual(g, ctx))
     const traitType: VirtualType = {
         kind: 'vid-type',
         identifier: { names: [...module.identifier.names, instance.name.value] },
         // self args are for bounds and should be excluded from virtual types
-        typeArgs: instance.generics.filter(g => g.name.value !== 'Self').map(g => genericToVirtual(g, ctx))
+        typeArgs: generics
     }
     const ref = resolveVid(traitType.identifier, ctx, ['trait-def'])
     assert(!!ref, 'traitDef did not find itself by name')
@@ -101,6 +106,7 @@ const getTraitImplRel = (instance: TraitDef, module: Module, ctx: Context): Inst
         implDef: traitRef,
         forDef: traitRef,
         instanceDef: instance,
+        generics,
         inherent: false
     }
 }
@@ -134,6 +140,7 @@ const getImplImplRel = (instance: ImplDef, module: Module, ctx: Context): Instan
         implDef: <VirtualIdentifierMatch<TypeDef | TraitDef>>ref,
         forDef: forDef,
         instanceDef: instance,
+        generics: instance.generics.map(g => genericToVirtual(g, ctx)),
         inherent: !instance.forTrait
     }
 }

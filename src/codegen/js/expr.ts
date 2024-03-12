@@ -1,14 +1,4 @@
-import {
-    emitLines,
-    emitVirtualTraits,
-    extractValue,
-    indent,
-    jsError,
-    jsRelName,
-    jsString,
-    jsVariable,
-    nextVariable
-} from '.'
+import { emitLines, emitUpcasts, extractValue, indent, jsError, jsRelName, jsString, jsVariable, nextVariable } from '.'
 import { Module, Param } from '../../ast'
 import { BinaryExpr, Expr, OperandExpr, UnaryExpr } from '../../ast/expr'
 import { MatchExpr, Pattern, PatternExpr } from '../../ast/match'
@@ -51,26 +41,25 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
             const call = unaryExpr.op
             const args = call.args.map(a => {
                 const { emit, resultVar: res } = emitExpr(a.expr, module, ctx)
-                const argTraits = a.expr.traits
-                const traitEmit = argTraits ? emitVirtualTraits(res, argTraits) : ''
-                return { emit: emitLines([emit, traitEmit]), resultVar: res }
+                const upcastEmit = a.expr.upcasts ? emitUpcasts(res, a.expr.upcasts) : ''
+                return { emit: emitLines([emit, upcastEmit]), resultVar: res }
             })
             const genericTypes = call.generics?.map(g => emitGeneric(g, module, ctx)) ?? []
             const jsArgs = [...args, ...genericTypes]
-            const traitEmit = unaryExpr.traits ? emitVirtualTraits(resultVar, unaryExpr.traits) : ''
+            const upcastEmit = unaryExpr.upcasts ? emitUpcasts(resultVar, unaryExpr.upcasts) : ''
             const variantDef = call.variantDef
             if (variantDef) {
                 const variantName = `${variantDef.typeDef.name.value}.${variantDef.variant.name.value}`
                 const call = jsVariable(resultVar, `${variantName}(${jsArgs.map(a => a.resultVar).join(', ')})`)
                 return {
-                    emit: emitLines([...jsArgs.map(a => a.emit), call, traitEmit]),
+                    emit: emitLines([...jsArgs.map(a => a.emit), call, upcastEmit]),
                     resultVar
                 }
             } else {
                 const operand = emitOperand(unaryExpr.operand, module, ctx)
                 const call = jsVariable(resultVar, `${operand.resultVar}(${jsArgs.map(a => a.resultVar).join(', ')})`)
                 return {
-                    emit: emitLines([operand.emit, ...jsArgs.map(a => a.emit), call, traitEmit]),
+                    emit: emitLines([operand.emit, ...jsArgs.map(a => a.emit), call, upcastEmit]),
                     resultVar
                 }
             }
@@ -106,10 +95,8 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
                         ? jsArgs.map(a => a.resultVar)
                         : [lOp.resultVar, ...jsArgs.map(a => a.resultVar)]
                 ).join(', ')
-                const upcastRels = binaryExpr.lOperand.traits
-                const upcastEmit = upcastRels
-                    ? [...upcastRels.entries()].map(([name, rel]) => `${lOp.resultVar}.${name} = ${jsRelName(rel)}`)
-                    : ''
+                const upcasts = binaryExpr.lOperand.upcasts
+                const upcastEmit = upcasts ? emitUpcasts(lOp.resultVar, upcasts) : ''
                 const callerEmit = call.impl ? jsRelName(call.impl) : `${lOp.resultVar}.${relTypeName(methodDef.rel)}`
                 const callEmit = jsVariable(resultVar, `${callerEmit}().${methodName}(${argsEmit})`)
                 return {
@@ -170,22 +157,26 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
         case 'for-expr': {
             const expr = emitExpr(operand.expr, module, ctx)
             const iteratorVar = nextVariable(ctx)
+            const upcastsEmit = operand.expr.upcasts ? emitUpcasts(expr.resultVar, operand.expr.upcasts) : ''
             const iterator = {
                 emit: emitLines([
                     expr.emit,
+                    upcastsEmit,
                     // TODO: do not invoke `iter` if it is already Iter
                     jsVariable(iteratorVar, `${expr.resultVar}.Iterable().iter(${expr.resultVar})`)
                 ]),
                 resultVar: iteratorVar
             }
+            const iterateeVarOption = nextVariable(ctx)
             const iterateeVar = nextVariable(ctx)
             const thenBlock = emitLines([
+                jsVariable(iterateeVar, `${extractValue(iterateeVarOption)}.value`),
                 emitPattern(operand.pattern, module, ctx, `${iterateeVar}`),
                 ...emitBlockStatements(operand.block, module, ctx)
             ])
             const block = emitLines([
-                jsVariable(iterateeVar, `${iterator.resultVar}.Iter().next(${iterator.resultVar})`),
-                `if (${iterateeVar}.$noisVariant === "Some") {`,
+                jsVariable(iterateeVarOption, `${iterator.resultVar}.Iter().next(${iterator.resultVar})`),
+                `if (${iterateeVarOption}.$noisVariant === "Some") {`,
                 indent(thenBlock),
                 `} else {`,
                 indent(`break;`),
@@ -354,10 +345,10 @@ export const emitPattern = (
             const name = pattern.expr.value
             return jsVariable(name, assignVar, pub)
         case 'con-pattern':
-            const patterns = pattern.expr.fieldPatterns.flatMap(f => {
+            const patterns = pattern.expr.fieldPatterns.map(f => {
                 const fieldAssign = f.name.value
                 if (f.pattern) {
-                    return [emitPattern(f.pattern, module, ctx, `${assignVar}.value.${fieldAssign}`)]
+                    return emitPattern(f.pattern, module, ctx, `${assignVar}.value.${fieldAssign}`)
                 }
                 return jsVariable(fieldAssign, `${assignVar}.value.${fieldAssign}`)
             })
