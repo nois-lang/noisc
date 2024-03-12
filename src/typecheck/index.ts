@@ -138,7 +138,7 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
     if (t.kind === 'vid-type' && vidToString(t.identifier) === 'std::never::Never') return true
 
     if (target.kind === 'generic') {
-        return target.bounds.every(b => isAssignable(b, t, ctx))
+        return target.bounds.every(b => isAssignable(t, b, ctx))
     }
     if (t.kind === 'generic') {
         return t.bounds.length === 0 || t.bounds.some(b => isAssignable(b, target, ctx))
@@ -151,7 +151,7 @@ export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context):
             for (let i = 0; i < t.typeArgs.length; i++) {
                 const tArg = t.typeArgs[i]
                 const targetArg = target.typeArgs[i]
-                if (!isAssignable(targetArg, tArg, ctx)) {
+                if (!isAssignable(tArg, targetArg, ctx)) {
                     return false
                 }
             }
