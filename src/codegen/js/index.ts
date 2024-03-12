@@ -81,7 +81,7 @@ export const jsString = (str: string): string => {
 }
 
 export const jsVariable = (name: string, emit?: string, pub = false): string => {
-    const assign = emit !== undefined ? `const ${name} = ${emit};` : `let ${name}`
+    const assign = `let ${name}${emit !== undefined ? ` = ${emit}` : ''}`
     return `${pub ? 'export ' : ''}${assign}`
 }
 

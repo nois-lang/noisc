@@ -151,8 +151,13 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
             return { emit: jsError('if-let'), resultVar }
         case 'while-expr': {
             const { emit: cEmit, resultVar: cVar } = emitExpr(operand.condition, module, ctx)
-            const block = emitBlock(operand.block, module, ctx)
-            return { emit: emitLines([cEmit, `while (${extractValue(cVar)}) ${block}`]), resultVar }
+            const { emit: cEndEmit, resultVar: cEndVar } = emitExpr(operand.condition, module, ctx)
+            const block = emitLines([
+                ...emitBlockStatements(operand.block, module, ctx),
+                cEndEmit,
+                `${cVar} = ${cEndVar}`
+            ])
+            return { emit: emitLines([cEmit, `while (${extractValue(cVar)}) {\n${indent(block)}\n}`]), resultVar }
         }
         case 'for-expr': {
             const expr = emitExpr(operand.expr, module, ctx)
