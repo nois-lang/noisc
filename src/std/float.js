@@ -89,5 +89,5 @@ function eqFloat(a, b) {
  * @returns {String}
  */
 function fmtFloat(a) {
-    return Float.Float(a.value.toString())
+    return String.String(a.value.toString())
 }

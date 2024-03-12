@@ -181,15 +181,6 @@ const checkMethodCallExpr = (
     const args = [lOperand, ...call.args.map(a => a.expr)]
     checkCallArgs(call, args, paramTypes, ctx)
 
-    call.generics = fnType.generics.map(g => {
-        const impls = resolveGenericImpls(g, ctx)
-        ctx.moduleStack.at(-1)!.relImports.push(...impls)
-        return {
-            generic: g,
-            impls
-        }
-    })
-
     if (ref.def.rel.instanceDef.kind === 'trait-def') {
         call.impl = resolveMethodImpl(lOperand.type!, ref.def, ctx)
     } else {
@@ -198,6 +189,18 @@ const checkMethodCallExpr = (
     if (call.impl) {
         ctx.moduleStack.at(-1)!.relImports.push(call.impl)
     }
+
+    const implGenericMap = genericMaps[1]
+    call.generics = fnType.generics.map(g => {
+        const t = resolveType(g, [implGenericMap], ctx)
+        if (t.kind !== 'generic') return { generic: g, impls: [] }
+        const impls = resolveGenericImpls(t, ctx)
+        ctx.moduleStack.at(-1)!.relImports.push(...impls)
+        return {
+            generic: g,
+            impls
+        }
+    })
 
     return resolveType(fnType.returnType, genericMaps, ctx)
 }

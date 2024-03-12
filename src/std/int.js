@@ -80,7 +80,7 @@ function expInt(a, b) {
  * @param {Int} b
  * @returns {Bool}
  */
-function eqInt(a) {
+function eqInt(a, b) {
     return Bool.Bool(a.value === b.value)
 }
 
@@ -89,5 +89,5 @@ function eqInt(a) {
  * @returns {String}
  */
 function fmtInt(a) {
-    return Int.Int(a.value.toString())
+    return String.String(a.value.toString())
 }

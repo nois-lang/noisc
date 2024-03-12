@@ -17,11 +17,11 @@ impl <T> Iter<T> for IntersperseIter<T> {
 }
 
 pub trait IntersperseAdapter<T> {
-    fn intersperse(self, separator: T): IntersperseIter<T>
+    fn intersperse(self, separator: T): Iter<T>
 }
 
 impl <T> IntersperseAdapter<T> for Iter<T> {
-    fn intersperse(self, separator: T): IntersperseIter<T> {
+    fn intersperse(self, separator: T): Iter<T> {
         IntersperseIter(iter: self, separator, needsSeparator: false)
     }
 }

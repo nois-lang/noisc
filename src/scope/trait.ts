@@ -225,7 +225,7 @@ export const resolveGenericImpls = (generic: VirtualGeneric, ctx: Context): Inst
     return generic.bounds.flatMap(b => {
         const candidates = ctx.impls
             .filter(i => isAssignable(b, i.implType, ctx))
-            .toSorted((a, b) => relComparator(b) - relComparator(a))
+            .toSorted((a_, b_) => relComparator(b_, ctx, b) - relComparator(a_, ctx, b))
         return candidates.length > 0 ? [candidates.at(0)!] : []
     })
 }
@@ -281,6 +281,18 @@ export const relComparator = (
     forType?: VirtualType
 ): number => {
     let score = 0
+    // TODO: refactor
+    if (
+        implType &&
+        implType.kind === 'vid-type' &&
+        rel.implType.kind === 'vid-type' &&
+        implType.typeArgs.length > 0 &&
+        rel.implType.typeArgs.length > 0 &&
+        implType.typeArgs[0].kind === 'vid-type' &&
+        rel.implType.typeArgs[0].kind === 'vid-type'
+    ) {
+        score += 16
+    }
     if (rel.instanceDef.kind === 'impl-def') score += 8
     return score
 }

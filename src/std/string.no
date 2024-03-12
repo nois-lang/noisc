@@ -21,6 +21,16 @@ impl Eq for String {
     }
 }
 
+impl Collector<String> for String {
+    fn fromIter(iter: Iter<String>): Self {
+        let res = ""
+        for i in iter {
+            res = res.concat(i)
+        }
+        res
+    }
+}
+
 fn concatString(a: String, b: String): String
 
 fn eqString(a: String, b: String): Bool

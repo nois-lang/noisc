@@ -2,7 +2,7 @@ import { Context, InstanceScope } from '../scope'
 import { fold } from '../util/array'
 import { merge } from '../util/map'
 import { assert, unreachable } from '../util/todo'
-import { VirtualFnType, VirtualType, genericToVirtual, virtualTypeToString } from './index'
+import { VirtualFnType, VirtualType, genericToVirtual } from './index'
 import { holeType, selfType } from './type'
 
 export const makeFnGenericMap = (fnType: VirtualFnType, argTypes: VirtualType[]): Map<string, VirtualType> => {
@@ -179,11 +179,16 @@ const resolveGenericMap = (
                 typeArgs: virtualType.typeArgs.map(g => resolveGenericMap(g, genericMap, ctx))
             }
         case 'generic':
-            const res = genericMap.get(virtualType.name)
-            if (res) {
-                return res
+            const mapped = genericMap.get(virtualType.name)
+            const res = mapped ?? virtualType
+            if (res.kind === 'generic') {
+                return {
+                    kind: 'generic',
+                    name: res.name,
+                    bounds: res.bounds.map(b => resolveGenericMap(b, genericMap, ctx))
+                }
             }
-            return virtualType
+            return res
         case 'fn-type':
             return {
                 kind: 'fn-type',
