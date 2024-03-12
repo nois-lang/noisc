@@ -28,7 +28,7 @@ import { notFoundError, semanticError, typeError, unknownTypeError } from './err
 import { checkClosureExpr, checkExpr } from './expr'
 import { checkPattern } from './match'
 import { typeNames } from './type-def'
-import { Upcast, upcast } from './upcast'
+import { Upcast, makeUpcastMap, upcast } from './upcast'
 import { useExprToVids } from './use-expr'
 
 export interface Checked {
@@ -451,6 +451,14 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                 implDef.superMethods = traitMethods.filter(
                     m => m.fn.block && !implMethods.find(im => im.name.value === m.fn.name.value)
                 )
+                implDef.superMethods.forEach(m => checkTopLevelDefinition(m.rel.module, m.rel.instanceDef, ctx))
+                for (const m of implDef.superMethods) {
+                    m.paramUpcasts = m.fn.params.map(p => {
+                        const genericMaps = [makeGenericMapOverStructure(rel.forType, p.type!)]
+                        const resolvedType = resolveType(p.type!, genericMaps, ctx)
+                        return makeUpcastMap(resolvedType, m.rel.forType, ctx)
+                    })
+                }
                 module.relImports.push(...implDef.superMethods.map(i => i.rel))
             } else {
                 addError(ctx, semanticError(ctx, implDef.forTrait, `expected \`trait-def\`, got \`${ref.def.kind}\``))

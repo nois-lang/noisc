@@ -4,6 +4,7 @@ import { FnDef, ImplDef, Statement, TraitDef } from '../ast/statement'
 import { Generic } from '../ast/type'
 import { TypeDef, Variant } from '../ast/type-def'
 import { checkTopLevelDefinition } from '../semantic'
+import { Upcast } from '../semantic/upcast'
 import { selfType } from '../typecheck/type'
 import { unreachable } from '../util/todo'
 import { Context, Scope, instanceScope } from './index'
@@ -63,6 +64,7 @@ export interface MethodDef {
     kind: 'method-def'
     fn: FnDef
     rel: InstanceRelation
+    paramUpcasts?: (Map<string, Upcast> | undefined)[]
 }
 
 export interface VirtualIdentifierMatch<D = Definition> {

@@ -1,4 +1,4 @@
-import { emitLines, indent, jsRelName, jsString, jsVariable, nextVariable } from '.'
+import { emitLines, emitUpcasts, indent, jsRelName, jsString, jsVariable, nextVariable } from '.'
 import { Module } from '../../ast'
 import { Block, BreakStmt, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '../../ast/statement'
 import { TypeDef, Variant } from '../../ast/type-def'
@@ -82,8 +82,21 @@ export const emitBreakStmt = (breakStmt: BreakStmt, module: Module, ctx: Context
 export const emitInstance = (instance: ImplDef | TraitDef, module: Module, ctx: Context): EmitExpr => {
     const superMethods = instance.kind === 'impl-def' ? instance.superMethods ?? [] : []
     const ms = superMethods.map(m => {
+        const params = m.fn.params.map((p, i) => {
+            const pVar = nextVariable(ctx)
+            const upcastMap = m.paramUpcasts ? m.paramUpcasts[i] : undefined
+            if (upcastMap) {
+                return { emit: emitUpcasts(pVar, upcastMap), resultVar: pVar }
+            } else {
+                return { emit: '', resultVar: pVar }
+            }
+        })
         const mName = m.fn.name.value
-        return `${mName}: ${jsRelName(m.rel)}().${mName}`
+        const block = emitLines([
+            ...params.map(p => p.emit),
+            `return ${jsRelName(m.rel)}().${mName}(${params.map(p => p.resultVar).join(', ')})`
+        ])
+        return `${mName}: function(${params.map(p => p.resultVar).join(', ')}) {\n${indent(block)}\n}`
     })
     const fns = instance.block.statements
         .map(s => <FnDef>s)
