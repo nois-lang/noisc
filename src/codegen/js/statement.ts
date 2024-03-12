@@ -1,4 +1,4 @@
-import { emitLines, indent, jsRelName, jsString, jsVariable } from '.'
+import { emitLines, indent, jsRelName, jsString, jsVariable, nextVariable } from '.'
 import { Module } from '../../ast'
 import { Block, BreakStmt, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '../../ast/statement'
 import { TypeDef, Variant } from '../../ast/type-def'
@@ -51,15 +51,21 @@ export const emitFnDef = (fnDef: FnDef, module: Module, ctx: Context, asProperty
 export const emitInstanceDef = (instanceDef: ImplDef | TraitDef, module: Module, ctx: Context): string => {
     const rel = ctx.impls.find(i => i.instanceDef === instanceDef)!
     const impl = emitInstance(instanceDef, module, ctx)
-    return jsVariable(jsRelName(rel), impl, true)
+    return emitLines([impl.emit, jsVariable(jsRelName(rel), impl.resultVar, true)])
 }
 
 export const emitTypeDef = (typeDef: TypeDef, module: Module, ctx: Context): string => {
     const name = typeDef.name.value
     const variants = typeDef.variants.map(v => indent(`${v.name.value}: ${emitVariant(v, typeDef, module, ctx)}`))
     // TODO: link to impl instead of emitting it again
-    const impl = typeDef.rel ? indent(`${name}: ${emitInstance(typeDef.rel.instanceDef, module, ctx)}`) : ''
-    const items_ = [...variants, impl].filter(i => i.length > 0).join(',\n')
+    if (typeDef.rel) {
+        const instance = emitInstance(typeDef.rel.instanceDef, module, ctx)
+        const impl = indent(`${name}: ${instance.resultVar}`)
+        const items_ = [...variants, impl].filter(i => i.length > 0).join(',\n')
+        const items = items_.length > 0 ? `{\n${items_}\n}` : '{}'
+        return emitLines([instance.emit, jsVariable(name, items, true)])
+    }
+    const items_ = variants.filter(i => i.length > 0).join(',\n')
     const items = items_.length > 0 ? `{\n${items_}\n}` : '{}'
     return jsVariable(name, items, true)
 }
@@ -73,7 +79,7 @@ export const emitBreakStmt = (breakStmt: BreakStmt, module: Module, ctx: Context
     return 'break;'
 }
 
-export const emitInstance = (instance: ImplDef | TraitDef, module: Module, ctx: Context): string => {
+export const emitInstance = (instance: ImplDef | TraitDef, module: Module, ctx: Context): EmitExpr => {
     const superMethods = instance.kind === 'impl-def' ? instance.superMethods ?? [] : []
     const ms = superMethods.map(m => {
         const mName = m.fn.name.value
@@ -85,9 +91,10 @@ export const emitInstance = (instance: ImplDef | TraitDef, module: Module, ctx: 
         .filter(f => f.length > 0)
     const all = [...ms, ...fns]
     const generics = instance.generics.map(g => g.name.value)
-    return `function(${generics.join(', ')}) {\n${indent(
-        `return {${all.length > 0 ? `\n${indent(all.join(',\n'))}\n` : ''}}`
-    )}\n}`
+    const cached = nextVariable(ctx)
+    const fnEmit = `{${all.length > 0 ? `\n${indent(all.join(',\n'))}\n` : ''}}`
+    const block = emitLines([`if (${cached}) { return ${cached}; }`, `${cached} = ${fnEmit}`, `return ${cached}`])
+    return { emit: jsVariable(cached), resultVar: `function(${generics.join(', ')}) {\n${indent(block)}\n}` }
 }
 
 export const emitBlockStatements = (
