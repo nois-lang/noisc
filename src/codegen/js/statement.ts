@@ -57,14 +57,6 @@ export const emitInstanceDef = (instanceDef: ImplDef | TraitDef, module: Module,
 export const emitTypeDef = (typeDef: TypeDef, module: Module, ctx: Context): string => {
     const name = typeDef.name.value
     const variants = typeDef.variants.map(v => indent(`${v.name.value}: ${emitVariant(v, typeDef, module, ctx)}`))
-    // TODO: link to impl instead of emitting it again
-    if (typeDef.rel) {
-        const instance = emitInstance(typeDef.rel.instanceDef, module, ctx)
-        const impl = indent(`${name}: ${instance.resultVar}`)
-        const items_ = [...variants, impl].filter(i => i.length > 0).join(',\n')
-        const items = items_.length > 0 ? `{\n${items_}\n}` : '{}'
-        return emitLines([instance.emit, jsVariable(name, items, true)])
-    }
     const items_ = variants.filter(i => i.length > 0).join(',\n')
     const items = items_.length > 0 ? `{\n${items_}\n}` : '{}'
     return jsVariable(name, items, true)
