@@ -19,7 +19,7 @@ import {
 } from '../scope'
 import { InstanceRelation, findSuperRelChains, traitDefToVirtualType, typeDefToVirtualType } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
-import { Definition, MethodDef, NameDef, resolveVid, typeKinds } from '../scope/vid'
+import { Definition, MethodDef, NameDef, VirtualIdentifierMatch, resolveVid, typeKinds } from '../scope/vid'
 import { VirtualType, genericToVirtual, isAssignable, typeEq, typeToVirtual } from '../typecheck'
 import { instanceGenericMap, makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { holeType, neverType, selfType, unitType, unknownType } from '../typecheck/type'
@@ -29,7 +29,7 @@ import { checkClosureExpr, checkExpr } from './expr'
 import { checkPattern } from './match'
 import { typeNames } from './type-def'
 import { Upcast, makeUpcastMap, upcast } from './upcast'
-import { useExprToVids } from './use-expr'
+import { VirtualUseExpr, useExprToVids } from './use-expr'
 
 export interface Checked {
     checked: boolean
@@ -95,18 +95,10 @@ export const checkModule = (module: Module, ctx: Context): void => {
     ctx.moduleStack.push(module)
 
     const resolvedRefs = []
-    for (const useRef of module.references!) {
-        const pkgName = useRef.vid.names[0]
-        if (!ctx.packages.some(pkg => pkg.name === pkgName)) {
-            addError(ctx, notFoundError(ctx, useRef.useExpr.scope[0], pkgName, 'package'))
-            continue
-        }
-        const name = <Name>useRef.useExpr.expr
-        const ref = resolveVid(useRef.vid, ctx)
-        if (!ref) {
-            addError(ctx, notFoundError(ctx, name, vidToString(useRef.vid)))
-            continue
-        }
+    for (const useExpr of module.references!) {
+        const ref = checkUseExpr(useExpr, ctx)
+        if (!ref) continue
+        const name = <Name>useExpr.useExpr.expr
         if (resolvedRefs.filter(e => vidEq(e.vid, ref.vid)).length > 0) {
             // TODO: reference first occurence
             addWarning(ctx, semanticError(ctx, name, `duplicate import`))
@@ -116,12 +108,31 @@ export const checkModule = (module: Module, ctx: Context): void => {
             addWarning(ctx, semanticError(ctx, name, `unnecessary self import`))
             continue
         }
-        resolvedRefs.push({ vid: ref.vid, useExpr: useRef.useExpr })
+        resolvedRefs.push({ vid: ref.vid, useExpr: useExpr.useExpr })
     }
     module.references = resolvedRefs
 
+    for (const reExport of module.reExports!) {
+        checkUseExpr(reExport, ctx)
+    }
+
     checkBlock(module.block, ctx)
     ctx.moduleStack.pop()
+}
+
+export const checkUseExpr = (useExpr: VirtualUseExpr, ctx: Context): VirtualIdentifierMatch<Definition> | undefined => {
+    const pkgName = useExpr.vid.names[0]
+    if (!ctx.packages.some(pkg => pkg.name === pkgName)) {
+        addError(ctx, notFoundError(ctx, useExpr.useExpr.scope[0], pkgName, 'package'))
+        return undefined
+    }
+    const name = <Name>useExpr.useExpr.expr
+    const ref = resolveVid(useExpr.vid, ctx)
+    if (!ref) {
+        addError(ctx, notFoundError(ctx, name, vidToString(useExpr.vid)))
+        return undefined
+    }
+    return ref
 }
 
 /*

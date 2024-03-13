@@ -1,7 +1,7 @@
 pub use std::iter::{
     intersperseIter::{ IntersperseIter, IntersperseAdapter },
     mapIter::{ MapIter, MapAdapter },
-    peekableIter::{ PeekableIter, PeekableAdapter },
+    peekable::{ PeekableIter, PeekableAdapter },
 }
 
 pub trait Iterable<T> {
