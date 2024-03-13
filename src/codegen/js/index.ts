@@ -1,7 +1,7 @@
 import { Module } from '../../ast'
 import { Context } from '../../scope'
 import { InstanceRelation, relTypeName } from '../../scope/trait'
-import { concatVid, vidFromScope, vidFromString } from '../../scope/util'
+import { concatVid, vidFromString } from '../../scope/util'
 import { VirtualIdentifier } from '../../scope/vid'
 import { Upcast } from '../../semantic/upcast'
 import { VirtualType, virtualTypeToString } from '../../typecheck'
@@ -47,7 +47,7 @@ export const emitImports = (module: Module, ctx: Context): string => {
             // variant constructors are always accessible from type reference, e.g. `Option.Some`, so only `Option`
             // needs to be imported
             if (i.def.kind === 'variant') {
-                vid = vidFromScope(vid)
+                vid = { names: [...i.module.identifier.names, i.def.typeDef.name.value] }
             }
             return makeJsImport(vid, i.module, module, ctx)
         })
