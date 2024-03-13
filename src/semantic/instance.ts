@@ -164,7 +164,7 @@ const checkMethodCallExpr = (
             )}\` not found\n    to access field \`${methodName}\`, surround operand in parentheses`
             addError(ctx, semanticError(ctx, identifier, msg))
         } else {
-            addError(ctx, notFoundError(ctx, identifier, vidToString(methodVid)))
+            addError(ctx, notFoundError(ctx, identifier, vidToString(methodVid), 'method'))
         }
         return
     }

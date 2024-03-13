@@ -598,11 +598,11 @@ impl Foo {
     }
 }`
             let ctx = check(code('', ''))
-            expect(ctx.errors.map(e => e.message)).toEqual(['method `x` not found'])
+            expect(ctx.errors.map(e => e.message)).toEqual(['method `test::Foo::x` not found'])
 
             ctx = check(code('x: Int', '5'))
             expect(ctx.errors.map(e => e.message)).toEqual([
-                'method `x` not found\n    to access field `x`, surround operand in parentheses'
+                'method `test::Foo::x` not found\n    to access field `x`, surround operand in parentheses'
             ])
         })
 
