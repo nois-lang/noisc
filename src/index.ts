@@ -1,6 +1,7 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync } from 'fs'
 import { basename, dirname, join, parse, relative } from 'path'
 import { fileURLToPath } from 'url'
+import { writeFile } from 'fs/promises'
 import { parseOption } from './cli'
 import { emitDeclaration } from './codegen/declaration'
 import { emitModule } from './codegen/js'
@@ -171,8 +172,9 @@ if (config.emit) {
 
             const declaration = emitDeclaration(m)
             const declarationPath = join(moduleOutPath.dir, moduleOutPath.name) + '.no'
-            writeFileSync(declarationPath, declaration)
-            console.info(`emit: declaration  ${declarationPath} [${declaration.length}B]`)
+            writeFile(declarationPath, declaration).then(() => {
+                console.info(`emit: declaration  ${declarationPath} [${declaration.length}B]`)
+            })
 
             const nativePath = m.source.filepath.replace(/\.no$/, '.js')
             const native = existsSync(nativePath)
@@ -188,8 +190,7 @@ if (config.emit) {
             const mainFnName = mainFn?.kind === 'fn-def' ? mainFn.name.value : undefined
             const js = [emitModule(m, ctx, mainFnName), native].filter(m => m.length > 0).join('\n\n')
             const jsPath = join(moduleOutPath.dir, moduleOutPath.name) + '.js'
-            writeFileSync(jsPath, js)
-            console.info(`emit: js           ${jsPath} [${js.length}B]`)
+            writeFile(jsPath, js).then(() => console.info(`emit: js           ${jsPath} [${js.length}B]`))
         })
     } else {
         const m = pkg.modules[0]
@@ -201,7 +202,6 @@ if (config.emit) {
         const mainFnName = mainFn?.kind === 'fn-def' ? mainFn.name.value : undefined
         const js = emitModule(m, ctx, mainFnName)
         const jsPath = join(config.outPath, parse(config.pkgPath).name) + '.js'
-        writeFileSync(jsPath, js)
-        console.info(`emit: js           ${jsPath} [${js.length}B]`)
+        writeFile(jsPath, js).then(() => console.info(`emit: js           ${jsPath} [${js.length}B]`))
     }
 }
