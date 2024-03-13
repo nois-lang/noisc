@@ -44,6 +44,12 @@ impl Eq for Int {
     }
 }
 
+impl Ord for Int {
+    fn cmp(self, other: Self): Ordering {
+        cmpInt(self, other)
+    }
+}
+
 impl Display for Int {
     fn fmt(self): String {
         fmtInt(self)
@@ -67,6 +73,8 @@ fn divInt(a: Int, b: Int): Int
 fn expInt(a: Int, b: Int): Int
 
 fn eqInt(a: Int, b: Int): Bool
+
+fn cmpInt(a: Int, b: Int): Ordering
 
 fn fmtInt(a: Int): String
 

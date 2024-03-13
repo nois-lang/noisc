@@ -86,6 +86,21 @@ function eqInt(a, b) {
 
 /**
  * @param {Int} a
+ * @param {Int} b
+ * @returns {Ordering}
+ */
+function cmpInt(a, b) {
+    if (a.value === b.value) {
+        return Ordering.Equal()
+    }
+    if (a.value > b.value) {
+        return Ordering.Greater()
+    }
+    return Ordering.Less()
+}
+
+/**
+ * @param {Int} a
  * @returns {String}
  */
 function fmtInt(a) {
