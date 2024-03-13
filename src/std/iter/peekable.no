@@ -1,15 +1,16 @@
 pub type PeekableIter<T>(
     iter: Iter<T>,
-    peeked: Option<Option<T>>,
+    peeked: Option<Option<T>>
 )
 
 impl <T> PeekableIter<T> {
-    fn peek(self): Option<T> {
+    pub fn peek(self): Option<T> {
         match self.peeked {
             Some(value) { value }
             None() {
-                self.peeked = Some(self.iter.next())
-                self.peeked
+                let n = self.next()
+                self.peeked = Some(value: n)
+                n
             }
         }
     }

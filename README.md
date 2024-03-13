@@ -31,7 +31,7 @@ impl Area for Shape {
     }
 }
 
-fn main() {
+pub fn main() {
     let shapes: List<Shape> = [
         Shape::Rect(width: 4., height: 2.),
         Shape::Circle(radius: 12.34),

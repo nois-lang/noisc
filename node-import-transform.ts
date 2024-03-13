@@ -19,7 +19,7 @@ function exec(args: string[]): string[] {
         .filter(s => s.length > 0)
 }
 
-if (exec([`grep`, `-r`, `.js'`, `dist`]).length > 0) {
+if (exec([`grep`, `-r`, `.js'`, `dist`]).length > 10) {
     exit()
 }
 const dirImports = exec([`find`, `dist`, `-name`, `index.js`])

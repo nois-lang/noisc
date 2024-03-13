@@ -1,5 +1,7 @@
+use std::iter::{ PeekableIter, PeekableAdapter }
+
 pub type IntersperseIter<T>(
-    iter: Iter<T>,
+    iter: PeekableIter<T>,
     separator: T,
     needsSeparator: Bool
 )
@@ -10,8 +12,9 @@ impl <T> Iter<T> for IntersperseIter<T> {
             self.needsSeparator = false
             Some(self.separator)
         } else {
-            self.needsSeparator = true
-            self.iter.next()
+            let n = self.iter.next()
+            self.needsSeparator = self.iter.peek().isSome()
+            n
         }
     }
 }
@@ -22,7 +25,7 @@ pub trait IntersperseAdapter<T> {
 
 impl <T> IntersperseAdapter<T> for Iter<T> {
     fn intersperse(self, separator: T): Iter<T> {
-        IntersperseIter(iter: self, separator, needsSeparator: false)
+        IntersperseIter(iter: self.peekable(), separator, needsSeparator: false)
     }
 }
 
