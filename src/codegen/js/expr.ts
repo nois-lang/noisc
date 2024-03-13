@@ -110,12 +110,13 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
             }
         }
         case 'assign-op': {
-            // TODO: assign all js fields, including $noisType and impls
             return {
                 emit: emitLines([
                     lOp.emit,
                     rOp.emit,
-                    `${extractValue(lOp.resultVar)} = ${extractValue(rOp.resultVar)}`
+                    `${extractValue(lOp.resultVar)} = ${extractValue(rOp.resultVar)}`,
+                    `${lOp.resultVar}.$noisType = ${rOp.resultVar}.$noisType`,
+                    `${lOp.resultVar}.$noisVariant = ${rOp.resultVar}.$noisVariant`
                 ]),
                 resultVar
             }
