@@ -28,7 +28,8 @@ export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     }
     if (rOperand.kind === 'unary-expr') {
         if (rOperand.op.kind === 'call-op') {
-            binaryExpr.type = checkMethodCallExpr(lOperand, rOperand.operand, rOperand.op, ctx) ?? unknownType
+            binaryExpr.type =
+                checkMethodCallExpr(binaryExpr, lOperand, rOperand.operand, rOperand.op, ctx) ?? unknownType
             return
         } else {
             checkOperand(rOperand, ctx)
@@ -107,11 +108,14 @@ const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): Vi
 }
 
 const checkMethodCallExpr = (
+    binaryExpr: BinaryExpr,
     lOperand: Operand,
     rOperand: Operand,
     call: CallOp,
     ctx: Context
 ): VirtualType | undefined => {
+    if (binaryExpr.type) return binaryExpr.type
+
     checkOperand(lOperand, ctx)
     call.args.forEach(a => checkExpr(a.expr, ctx))
 
@@ -155,10 +159,12 @@ const checkMethodCallExpr = (
         const fieldType = checkFieldAccessExpr(lOperand, identifier, ctx)
         ctx.silent = false
         if (fieldType) {
-            const msg = `method \`${methodName}\` not found\n    to access field \`${methodName}\`, surround operand in parentheses`
+            const msg = `method \`${vidToString(
+                methodVid
+            )}\` not found\n    to access field \`${methodName}\`, surround operand in parentheses`
             addError(ctx, semanticError(ctx, identifier, msg))
         } else {
-            addError(ctx, notFoundError(ctx, identifier, methodName, 'method'))
+            addError(ctx, notFoundError(ctx, identifier, vidToString(methodVid)))
         }
         return
     }
