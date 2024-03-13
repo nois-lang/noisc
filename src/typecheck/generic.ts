@@ -2,7 +2,7 @@ import { Context, InstanceScope } from '../scope'
 import { fold } from '../util/array'
 import { merge } from '../util/map'
 import { assert, unreachable } from '../util/todo'
-import { VirtualFnType, VirtualType, genericToVirtual } from './index'
+import { VirtualFnType, VirtualType } from './index'
 import { holeType, selfType } from './type'
 
 export const makeFnGenericMap = (fnType: VirtualFnType, argTypes: VirtualType[]): Map<string, VirtualType> => {
@@ -146,12 +146,7 @@ export const getTypeParams = (virtualType: VirtualType): VirtualType[] => {
 }
 
 export const instanceGenericMap = (instScope: InstanceScope, ctx: Context): Map<string, VirtualType> => {
-    // TODO: virtual generics should already be contained in InstanceRelation, check in other places too
-    const generics = instScope.rel.instanceDef.generics.map(g => {
-        const vg = genericToVirtual(g, ctx)
-        return <const>[vg.name, vg]
-    })
-    return new Map([[selfType.name, instScope.selfType], ...generics])
+    return new Map([[selfType.name, instScope.selfType]])
 }
 
 /**
