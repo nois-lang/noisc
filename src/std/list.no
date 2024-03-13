@@ -1,5 +1,5 @@
 use std::io::Display
-use std::iter::MapAdapter
+use std::iter::{ MapAdapter, IntersperseAdapter }
 
 pub type List<T>
 
@@ -34,11 +34,7 @@ impl <T> Collector<T> for List<T> {
 
 impl Display for List<String> {
     fn fmt(self): String {
-        let string = "["
-        for s in self {
-            string = string.concat(s).concat(", ")
-        }
-        string.concat("]")
+        "[".concat(self.iter().intersperse(", ").collect<String>()).concat("]")
     }
 }
 
