@@ -175,7 +175,11 @@ if (config.emit) {
             console.info(`emit: declaration  ${declarationPath} [${declaration.length}B]`)
 
             const nativePath = m.source.filepath.replace(/\.no$/, '.js')
-            const native = existsSync(nativePath) ? readFileSync(nativePath) : ''
+            const native = existsSync(nativePath)
+                ? readFileSync(nativePath)
+                      .toString()
+                      .replace(/^[ \t]*(\/\/|\/\*|\*).*\s/gm, '')
+                : ''
             // TODO: custom main module and main fn name
             const mainFn =
                 m.mod && m.identifier.names.length === 1
