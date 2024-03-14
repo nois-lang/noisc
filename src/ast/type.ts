@@ -1,9 +1,10 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
+import { Checked } from '../semantic'
 import { AstNode } from './index'
 import { Hole, buildHole } from './match'
 import { Identifier, Name, buildIdentifier, buildName } from './operand'
 
-export type Type = Identifier | TypeBounds | FnType | Hole
+export type Type = (Identifier | TypeBounds | FnType | Hole) & Partial<Checked>
 
 export const buildType = (node: ParseNode): Type => {
     const n = filterNonAstNodes(node)[0]

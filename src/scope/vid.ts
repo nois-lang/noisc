@@ -3,7 +3,7 @@ import { Name } from '../ast/operand'
 import { FnDef, ImplDef, Statement, TraitDef } from '../ast/statement'
 import { Generic } from '../ast/type'
 import { TypeDef, Variant } from '../ast/type-def'
-import { checkTopLevelDefinition } from '../semantic'
+import { TopLevelChecked, checkTopLevelDefinition } from '../semantic'
 import { Upcast } from '../semantic/upcast'
 import { selfType } from '../typecheck/type'
 import { unreachable } from '../util/todo'
@@ -32,7 +32,7 @@ export type DefinitionKind = (typeof defKinds)[number]
 
 export const typeKinds: DefinitionKind[] = ['type-def', 'trait-def', 'generic', 'self']
 
-export type Definition =
+export type Definition = (
     | Module
     | NameDef
     | FnDef
@@ -43,6 +43,8 @@ export type Definition =
     | Generic
     | SelfDef
     | MethodDef
+) &
+    Partial<TopLevelChecked>
 
 export interface NameDef {
     kind: 'name-def'

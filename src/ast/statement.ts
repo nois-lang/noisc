@@ -1,4 +1,5 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
+import { InstanceRelation } from '../scope/trait'
 import { MethodDef } from '../scope/vid'
 import { Checked, Typed } from '../semantic'
 import { assert } from '../util/todo'
@@ -130,12 +131,13 @@ export const buildTraitDef = (node: ParseNode): TraitDef => {
     return { kind: 'trait-def', parseNode: node, name, generics, block, pub }
 }
 
-export interface ImplDef extends AstNode<'impl-def'> {
+export interface ImplDef extends AstNode<'impl-def'>, Partial<Checked> {
     identifier: Identifier
     generics: Generic[]
     forTrait?: Identifier
     block: Block
     superMethods?: MethodDef[]
+    rel?: InstanceRelation
 }
 
 export const buildImplDef = (node: ParseNode): ImplDef => {

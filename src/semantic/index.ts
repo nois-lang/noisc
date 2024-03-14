@@ -35,6 +35,10 @@ export interface Checked {
     checked: boolean
 }
 
+export interface TopLevelChecked {
+    topLevelChecked: boolean
+}
+
 export interface Typed {
     type: VirtualType
 }
@@ -395,9 +399,13 @@ const checkTraitDef = (traitDef: TraitDef, ctx: Context) => {
 }
 
 const checkImplDef = (implDef: ImplDef, ctx: Context) => {
-    // TODO: should any errors be reported?
-    const rel = ctx.impls.find(i => i.instanceDef === implDef)
-    if (!rel) return
+    if (implDef.checked) return
+
+    if (!implDef.rel) {
+        const rel = ctx.impls.find(i => i.instanceDef === implDef)
+        assert(!!rel)
+        implDef.rel = rel
+    }
 
     const module = ctx.moduleStack.at(-1)!
 
@@ -408,8 +416,8 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
 
     const scope: InstanceScope = {
         kind: 'instance',
-        selfType: rel.forType,
-        rel,
+        selfType: implDef.rel!.forType,
+        rel: implDef.rel!,
         definitions: new Map(implDef.generics.map(g => [defKey(g), g]))
     }
     module.scopeStack.push(scope)
@@ -425,6 +433,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
         const ref = resolveVid(vid, ctx, ['type-def', 'trait-def'])
         if (ref) {
             if (module.compiled) {
+                implDef.checked = true
             } else if (ref.def.kind === 'trait-def') {
                 const traitRels = [
                     ctx.impls.find(rel => rel.instanceDef === ref.def)!,
@@ -453,7 +462,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                     }
                     checkTopLevelDefinition(traitMethod.rel.module, traitMethod.rel.instanceDef, ctx)
 
-                    const traitMap = makeGenericMapOverStructure(rel.implType, traitMethod.rel.implType)
+                    const traitMap = makeGenericMapOverStructure(implDef.rel!.implType, traitMethod.rel.implType)
                     const mResolvedType = resolveType(traitMethod.fn.type!, [traitMap], ctx)
                     if (!(isAssignable(m.type!, mResolvedType, ctx) && typeEq(m.type!, mResolvedType))) {
                         addError(ctx, typeError(m.name, m.type!, mResolvedType, ctx))
@@ -465,7 +474,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                 implDef.superMethods.forEach(m => checkTopLevelDefinition(m.rel.module, m.rel.instanceDef, ctx))
                 for (const m of implDef.superMethods) {
                     m.paramUpcasts = m.fn.params.map(p => {
-                        const genericMaps = [makeGenericMapOverStructure(rel.forType, p.type!)]
+                        const genericMaps = [makeGenericMapOverStructure(implDef.rel!.forType, p.type!)]
                         const resolvedType = resolveType(p.type!, genericMaps, ctx)
                         return makeUpcastMap(resolvedType, m.rel.forType, ctx)
                     })
@@ -684,6 +693,9 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
 }
 
 export const checkType = (type: Type, ctx: Context) => {
+    if (type.checked) return
+    type.checked = true
+
     switch (type.kind) {
         case 'identifier':
             const vid = idToVid(type)
