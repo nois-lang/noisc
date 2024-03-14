@@ -31,6 +31,8 @@ export interface Context {
      */
     silent: boolean
     variableCounter: number
+
+    relChainsMemo: Map<string, InstanceRelation[][]>
 }
 
 export type Scope = InstanceScope | TypeDefScope | FnDefScope | BlockScope | CommonScope

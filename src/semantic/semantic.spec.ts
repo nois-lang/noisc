@@ -34,7 +34,8 @@ describe('semantic', () => {
             warnings: [],
             check: false,
             silent: false,
-            variableCounter: 0
+            variableCounter: 0,
+            relChainsMemo: new Map()
         }
 
         ctx.packages.forEach(p => {

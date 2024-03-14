@@ -161,6 +161,10 @@ export const findSuperRelChains = (
     ctx: Context,
     chain: InstanceRelation[] = []
 ): InstanceRelation[][] => {
+    const key = vidToString(typeVid)
+    const memo = ctx.relChainsMemo.get(key)
+    if (memo) return memo
+
     const chains = ctx.impls
         // avoid infinite recursion by looking up for the same type
         .filter(r => !vidEq(r.implDef.vid, typeVid) && vidEq(r.forDef.vid, typeVid))
@@ -169,6 +173,7 @@ export const findSuperRelChains = (
             return [newChain, ...findSuperRelChains(r.implDef.vid, ctx, newChain)]
         })
 
+    ctx.relChainsMemo.set(key, chains)
     return chains
 }
 
