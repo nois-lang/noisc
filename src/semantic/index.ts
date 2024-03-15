@@ -17,7 +17,7 @@ import {
     instanceScope,
     unwindScope
 } from '../scope'
-import { InstanceRelation, findSuperRelChains, traitDefToVirtualType } from '../scope/trait'
+import { InstanceRelation, findSuperRelChains } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
 import { Definition, MethodDef, NameDef, VirtualIdentifierMatch, resolveVid, typeKinds } from '../scope/vid'
 import { VirtualType, genericToVirtual, isAssignable, typeEq, typeToVirtual } from '../typecheck'
@@ -154,7 +154,21 @@ export const checkTopLevelDefinition = (module: Module, definition: Definition, 
             checkTypeDef(definition.typeDef, ctx)
             break
         case 'method-def':
-            checkStatement(definition.fn, ctx)
+            const instanceDef = definition.rel.instanceDef
+            if (instanceDef.kind === 'impl-def') {
+                if (!instanceDef.checked) {
+                    checkImplDef(instanceDef, ctx)
+                    instanceDef.checked = true
+                }
+            } else {
+                checkTraitDef(instanceDef, ctx)
+            }
+            break
+        case 'impl-def':
+            if (!definition.checked) {
+                checkImplDef(definition, ctx)
+                definition.checked = true
+            }
             break
         case 'name-def':
             if (definition.parent) {
@@ -373,7 +387,6 @@ export const checkParam = (param: Param, index: number, ctx: Context): void => {
 }
 
 const checkTraitDef = (traitDef: TraitDef, ctx: Context) => {
-    // TODO: should any errors be reported?
     const rel = ctx.impls.find(i => i.instanceDef === traitDef)
     if (!rel) return
 
@@ -386,7 +399,6 @@ const checkTraitDef = (traitDef: TraitDef, ctx: Context) => {
 
     const scope: InstanceScope = {
         kind: 'instance',
-        selfType: rel.forType,
         rel,
         definitions: new Map(traitDef.generics.map(g => [defKey(g), g]))
     }
@@ -399,12 +411,10 @@ const checkTraitDef = (traitDef: TraitDef, ctx: Context) => {
 }
 
 const checkImplDef = (implDef: ImplDef, ctx: Context) => {
-    if (implDef.checked) return
-
     if (!implDef.rel) {
         const rel = ctx.impls.find(i => i.instanceDef === implDef)
         assert(!!rel)
-        implDef.rel = rel
+        implDef.rel = rel!
     }
 
     const module = ctx.moduleStack.at(-1)!
@@ -416,8 +426,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
 
     const scope: InstanceScope = {
         kind: 'instance',
-        selfType: implDef.rel!.forType,
-        rel: implDef.rel!,
+        rel: implDef.rel,
         definitions: new Map(implDef.generics.map(g => [defKey(g), g]))
     }
     module.scopeStack.push(scope)
@@ -433,7 +442,6 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
         const ref = resolveVid(vid, ctx, ['type-def', 'trait-def'])
         if (ref) {
             if (module.compiled) {
-                implDef.checked = true
             } else if (ref.def.kind === 'trait-def') {
                 const traitRels = [
                     ctx.impls.find(rel => rel.instanceDef === ref.def)!,
@@ -460,9 +468,9 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                         addError(ctx, semanticError(ctx, m.name, msg))
                         continue
                     }
-                    checkTopLevelDefinition(traitMethod.rel.module, traitMethod.rel.instanceDef, ctx)
+                    checkTopLevelDefinition(traitMethod.rel.module, traitMethod, ctx)
 
-                    const traitMap = makeGenericMapOverStructure(implDef.rel!.implType, traitMethod.rel.implType)
+                    const traitMap = makeGenericMapOverStructure(implDef.rel.implType, traitMethod.rel.implType)
                     const mResolvedType = resolveType(traitMethod.fn.type!, [traitMap], ctx)
                     if (!(isAssignable(m.type!, mResolvedType, ctx) && typeEq(m.type!, mResolvedType))) {
                         addError(ctx, typeError(m.name, m.type!, mResolvedType, ctx))
@@ -471,7 +479,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                 implDef.superMethods = traitMethods.filter(
                     m => m.fn.block && !implMethods.find(im => im.name.value === m.fn.name.value)
                 )
-                implDef.superMethods.forEach(m => checkTopLevelDefinition(m.rel.module, m.rel.instanceDef, ctx))
+                implDef.superMethods.forEach(m => checkTopLevelDefinition(m.rel.module, m, ctx))
                 for (const m of implDef.superMethods) {
                     m.paramUpcasts = m.fn.params.map(p => {
                         const genericMaps = [makeGenericMapOverStructure(implDef.rel!.forType, p.type!)]
@@ -628,7 +636,7 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
         identifier.ref = ref
         switch (ref.def.kind) {
             case 'self':
-                identifier.type = instanceScope(ctx)!.selfType
+                identifier.type = instanceScope(ctx)!.rel.forType
                 break
             case 'name-def':
                 const name = ref.def.name
@@ -657,12 +665,9 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
                 }
                 const instScope: InstanceScope = {
                     kind: 'instance',
-                    selfType: unknownType,
                     rel: ref.def.rel,
                     definitions: new Map(ref.def.rel.instanceDef.generics.map(g => [defKey(g), g]))
                 }
-                // must be set afterwards since impl generics cannot be resolved
-                instScope.selfType = traitDefToVirtualType(ref.def.rel.instanceDef, ctx)
 
                 identifier.type = resolveType(ref.def.fn.type!, [instanceGenericMap(instScope, ctx)], ctx)
                 break

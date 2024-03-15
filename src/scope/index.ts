@@ -5,7 +5,6 @@ import { TypeDef } from '../ast/type-def'
 import { Config } from '../config'
 import { Package } from '../package'
 import { SemanticError } from '../semantic/error'
-import { VirtualType } from '../typecheck'
 import { InstanceRelation } from './trait'
 import { vidToString } from './util'
 import { Definition, VirtualIdentifier } from './vid'
@@ -48,7 +47,6 @@ export type DefinitionMap = Map<string, Definition>
 export interface InstanceScope {
     kind: 'instance'
     definitions: DefinitionMap
-    selfType: VirtualType
     rel: InstanceRelation
 }
 
