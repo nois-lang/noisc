@@ -2,13 +2,12 @@ import { checkCallArgs, checkType } from '.'
 import { BinaryExpr } from '../ast/expr'
 import { CallOp } from '../ast/op'
 import { Identifier, Operand, identifierFromOperand } from '../ast/operand'
-import { Context, addError, instanceScope } from '../scope'
+import { Context, addError } from '../scope'
 import { getInstanceForType, resolveGenericImpls, resolveMethodImpl } from '../scope/trait'
-import { vidToString } from '../scope/util'
+import { vidFromString, vidToString } from '../scope/util'
 import { MethodDef, VirtualIdentifier, resolveVid } from '../scope/vid'
 import { VirtualFnType, VirtualType, combine, genericToVirtual, typeToVirtual, virtualTypeToString } from '../typecheck'
 import {
-    instanceGenericMap,
     makeFnGenericMap,
     makeFnTypeArgGenericMap,
     makeGenericMapOverStructure,
@@ -124,38 +123,24 @@ const checkMethodCallExpr = (
         }
     })
 
-    const namedArgs = call.args.filter(a => a.name)
-    namedArgs.forEach(arg => {
-        addError(ctx, semanticError(ctx, arg.name!, `unexpected named argument`))
-        return
-    })
-
     const identifier = identifierFromOperand(rOperand)
     if (!identifier || identifier.names.length > 1) {
         addError(ctx, semanticError(ctx, rOperand, `expected method name, got \`${rOperand.kind}\``))
         return
     }
-    const methodName = identifier.names.at(-1)!.value
-    const instScope = instanceScope(ctx)
-    if (instScope) {
-        const instanceMap = instScope ? instanceGenericMap(instScope, ctx) : new Map()
-        lOperand.type = resolveType(lOperand.type!, [instanceMap], ctx)
-    }
+
     let typeVid: VirtualIdentifier
     if (lOperand.type!.kind === 'vid-type') {
         typeVid = lOperand.type!.identifier
-    } else if (
-        lOperand.type!.kind === 'generic' &&
-        lOperand.type!.bounds.length > 0 &&
-        lOperand.type!.bounds[0].kind === 'vid-type'
-    ) {
-        // TODO: select logic when multiple bounds
-        typeVid = lOperand.type!.bounds[0].identifier
+    } else if (lOperand.type!.kind === 'generic') {
+        typeVid = vidFromString(lOperand.type!.name)
     } else {
         const msg = `expected instance type, got \`${virtualTypeToString(lOperand.type!)}\``
         addError(ctx, semanticError(ctx, identifier, msg))
         return
     }
+
+    const methodName = identifier.names.at(-1)!.value
     const methodVid = { names: [...typeVid.names, methodName] }
     const ref = resolveVid(methodVid, ctx, ['method-def'])
     if (!ref || ref.def.kind !== 'method-def') {
@@ -173,23 +158,16 @@ const checkMethodCallExpr = (
         }
         return
     }
+
     call.methodDef = ref.def
     const genericMaps = makeMethodGenericMaps(lOperand, identifier, ref.def, call, ctx)
-    // normal method call
     const fnType = <VirtualFnType>ref.def.fn.type
-
-    // TODO: custom check for static methods
-    if (fnType.paramTypes.length !== call.args.length + 1) {
-        const msg = `expected ${fnType.paramTypes.length} arguments, got ${call.args.length}`
-        addError(ctx, semanticError(ctx, call, msg))
-        return
-    }
 
     // TODO: check required type args (that cannot be inferred via `resolveFnGenerics`)
     identifier.typeArgs.forEach(typeArg => checkType(typeArg, ctx))
 
+    const args = ref.def.fn.static ? call.args.map(a => a.expr) : [lOperand, ...call.args.map(a => a.expr)]
     const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
-    const args = [lOperand, ...call.args.map(a => a.expr)]
     checkCallArgs(call, args, paramTypes, ctx)
 
     if (ref.def.rel.instanceDef.kind === 'trait-def') {
@@ -201,16 +179,12 @@ const checkMethodCallExpr = (
         ctx.moduleStack.at(-1)!.relImports.push(call.impl)
     }
 
-    const implGenericMap = genericMaps[1]
     call.generics = fnType.generics.map(g => {
-        const t = resolveType(g, [implGenericMap], ctx)
+        const t = resolveType(g, [genericMaps[1]], ctx)
         if (t.kind !== 'generic') return { generic: g, impls: [] }
         const impls = resolveGenericImpls(t, ctx)
         ctx.moduleStack.at(-1)!.relImports.push(...impls)
-        return {
-            generic: g,
-            impls
-        }
+        return { generic: g, impls }
     })
 
     return resolveType(fnType.returnType, genericMaps, ctx)
