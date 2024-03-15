@@ -659,6 +659,16 @@ fn main() {
             ])
         })
 
+        it('fn named call', () => {
+            const code = `\
+fn main() {
+    let foo = println(value: 5)
+    return unit
+}`
+            const ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual(['unexpected named argument `value`'])
+        })
+
         it('wrong arg count', () => {
             const code = (arg: string) => `\
 type Foo(x: Int)

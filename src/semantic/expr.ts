@@ -443,6 +443,11 @@ export const checkCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
     if (variantRef) {
         unaryExpr.type = checkVariantCall(unaryExpr, variantRef, ctx)
     } else {
+        call.args
+            .filter(arg => arg.name !== undefined)
+            .forEach(arg =>
+                addError(ctx, semanticError(ctx, arg.name!, `unexpected named argument \`${arg.name!.value}\``))
+            )
         unaryExpr.type = checkCall_(call, operand, args, ctx)
     }
 }
@@ -525,6 +530,7 @@ export const checkCall_ = (call: CallOp, operand: Operand, args: Expr[], ctx: Co
     }
 
     const fnType = <VirtualFnType>operand.type
+
     const genericMaps = makeFnGenericMaps(
         operand.kind === 'identifier' ? operand.typeArgs.map(tp => typeToVirtual(tp, ctx)) : [],
         fnType,
@@ -532,7 +538,6 @@ export const checkCall_ = (call: CallOp, operand: Operand, args: Expr[], ctx: Co
         ctx
     )
     const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
-    // TODO: if it is a vid type call without args (e.g. Option::Some()), use checkNamedCall() reporting
     checkCallArgs(call, args, paramTypes, ctx)
 
     call.generics = fnType.generics.map(g => {

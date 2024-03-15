@@ -117,7 +117,12 @@ const checkMethodCallExpr = (
     if (binaryExpr.type) return binaryExpr.type
 
     checkOperand(lOperand, ctx)
-    call.args.forEach(a => checkExpr(a.expr, ctx))
+    call.args.forEach(arg => {
+        checkExpr(arg.expr, ctx)
+        if (arg.name) {
+            addError(ctx, semanticError(ctx, arg.name, `unexpected named argument \`${arg.name!.value}\``))
+        }
+    })
 
     const namedArgs = call.args.filter(a => a.name)
     namedArgs.forEach(arg => {
