@@ -30,7 +30,7 @@ import {
     duplicateImportError,
     expectedTraitError,
     methodNotDefinedError,
-    missingMethodImplError,
+    missingMethodImplsError,
     noBodyFnError,
     notFoundError,
     notInFnScopeError,
@@ -470,12 +470,11 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                 })
                 const requiredImplMethods = traitMethods.filter(f => !f.fn.block)
                 const implMethods = implDef.block.statements.filter(s => s.kind === 'fn-def').map(s => <FnDef>s)
-                for (const m of requiredImplMethods) {
-                    const mName = m.fn.name.value
-                    const mVid = `${vidToString(ref.vid)}::${mName}`
-                    if (!implMethods.find(im => im.name.value === mName)) {
-                        addError(ctx, missingMethodImplError(ctx, implDef, mVid))
-                    }
+                const missingImpls = requiredImplMethods.filter(
+                    m => !implMethods.find(im => im.name.value === m.fn.name.value)
+                )
+                if (missingImpls.length > 0) {
+                    addError(ctx, missingMethodImplsError(ctx, implDef, missingImpls))
                 }
                 for (const m of implMethods) {
                     const mName = m.name.value

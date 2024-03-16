@@ -8,7 +8,9 @@ import { Type } from '../ast/type'
 import { FieldDef } from '../ast/type-def'
 import { Context } from '../scope'
 import { vidToString } from '../scope/util'
-import { VirtualType, virtualTypeToString } from '../typecheck'
+import { MethodDef } from '../scope/vid'
+import { VirtualFnType, VirtualType, virtualTypeToString } from '../typecheck'
+import { unreachable } from '../util/todo'
 import { MatchTree, unmatchedPaths } from './exhaust'
 
 export interface SemanticError {
@@ -135,8 +137,25 @@ export const unexpectedPatternKindError = (ctx: Context, param: Param): Semantic
     return semanticError(16, ctx, param.pattern, 'unexpected pattern type', notes)
 }
 
-export const missingMethodImplError = (ctx: Context, implDef: ImplDef, methodVid: string): SemanticError => {
-    const msg = `missing method implementation \`${methodVid}\``
+export const missingMethodImplsError = (ctx: Context, implDef: ImplDef, methodDefs: MethodDef[]): SemanticError => {
+    const printParam = (param: Param, i: number): string => {
+        const type = param.paramType ? `: ${virtualTypeToString(param.type!)}` : ''
+        switch (param.pattern.expr.kind) {
+            case 'name':
+                return `${param.pattern.expr.value}${type}`
+            case 'con-pattern':
+                return `p${i}${type}`
+            case 'hole':
+                return `_${type}`
+        }
+        return unreachable()
+    }
+    const printFn = (fnDef: FnDef): string => {
+        const returnType = fnDef.returnType ? `: ${virtualTypeToString((<VirtualFnType>fnDef.type!).returnType)}` : ''
+        return `    fn ${fnDef.name.value}(${fnDef.params.map(printParam).join(', ')})${returnType}`
+    }
+    const methodSigs = methodDefs.map(m => printFn(m.fn)).join('\n')
+    const msg = `missing implementations for methods:\n${methodSigs}`
     return semanticError(17, ctx, implDef.identifier.names.at(-1)!, msg)
 }
 

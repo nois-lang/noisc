@@ -303,11 +303,14 @@ export const checkForExpr = (forExpr: ForExpr, ctx: Context): void => {
         .map(t => extractConcreteSupertype(forExpr.expr.type!, t.identifier, ctx))
         .filter(t => !!t)
         .at(0)
-    assert(!!iterableType, 'unresolved iterable type')
-    assert(iterableType!.kind === 'vid-type', `iterable type is ${iterableType!.kind}`)
-    const itemType = (<VidType>iterableType).typeArgs.at(0)
-    assert(!!itemType, 'unresolved item type')
-    checkPattern(forExpr.pattern, itemType!, ctx)
+    if (iterableType) {
+        assert(iterableType!.kind === 'vid-type', `iterable type is ${iterableType!.kind}`)
+        const itemType = (<VidType>iterableType).typeArgs.at(0)
+        assert(!!itemType, 'unresolved item type')
+        checkPattern(forExpr.pattern, itemType!, ctx)
+    } else {
+        addError(ctx, notIterableError(ctx, forExpr.expr))
+    }
 
     const abr = checkBlock(forExpr.block, ctx)
     assert(!!forExpr.block.type)
