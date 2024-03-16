@@ -247,10 +247,11 @@ export const resolveTypeImpl = (
     const candidates = ctx.impls
         .filter(i => {
             return (
+                !i.inherent &&
                 (i.instanceDef.kind === 'impl-def' ||
                     i.instanceDef.block.statements.every(s => s.kind === 'fn-def' && s.block)) &&
                 isAssignable(type, i.forType, ctx) &&
-                typeEq(i.implType, traitType)
+                isAssignable(i.implType, traitType, ctx)
             )
         })
         .toSorted((a, b) => relComparator(b, ctx, type, traitType) - relComparator(a, ctx, type, traitType))
