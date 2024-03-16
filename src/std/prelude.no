@@ -8,6 +8,7 @@ pub use std::{
     char::Char,
     bool::Bool::{ self, True, False },
     eq::Eq,
+    copy::{ Copy, copy },
     ord::{ Ordering, Ord },
     iter::{ Iterable, Iter, Collector },
     list::List,

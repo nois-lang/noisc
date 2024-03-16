@@ -44,6 +44,12 @@ impl Display for Float {
     }
 }
 
+impl Copy for Int {
+    fn copy(self): Self {
+        copy(self)
+    }
+}
+
 fn negFloat(a: Float): Float
 
 fn absFloat(a: Float): Float

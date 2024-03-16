@@ -56,6 +56,12 @@ impl Display for Int {
     }
 }
 
+impl Copy for Int {
+    fn copy(self): Self {
+        copy(self)
+    }
+}
+
 fn negInt(a: Int): Int
 
 fn absInt(a: Int): Int

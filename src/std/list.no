@@ -38,6 +38,12 @@ impl Display for List<String> {
     }
 }
 
+impl Copy for Int {
+    fn copy(self): Self {
+        copy(self)
+    }
+}
+
 impl <T: Display> Display for List<T> {
     fn fmt(self): String {
         // TODO: method ref

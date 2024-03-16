@@ -1,0 +1,5 @@
+pub trait Copy {
+    fn copy(self): Self
+}
+
+pub fn copy<T>(value: T): T

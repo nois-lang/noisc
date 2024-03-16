@@ -31,6 +31,12 @@ impl Collector<String> for String {
     }
 }
 
+impl Copy for Int {
+    fn copy(self): Self {
+        copy(self)
+    }
+}
+
 fn concatString(a: String, b: String): String
 
 fn eqString(a: String, b: String): Bool

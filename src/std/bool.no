@@ -31,6 +31,12 @@ impl Eq for Bool {
     }
 }
 
+impl Copy for Bool {
+    fn copy(self): Self {
+        copy(self)
+    }
+}
+
 fn andBool(a: Bool, b: Bool): Bool
 
 fn orBool(a: Bool, b: Bool): Bool
@@ -40,3 +46,5 @@ fn notBool(a: Bool): Bool
 fn fmtBool(a: Bool): String
 
 fn eqBool(a: Bool, b: Bool): Bool
+
+fn copyBool(a: Bool): Bool
