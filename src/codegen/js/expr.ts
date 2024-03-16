@@ -100,7 +100,7 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
                 const callerEmit = call.impl ? jsRelName(call.impl) : `${lOp.resultVar}.${relTypeName(methodDef.rel)}`
                 const callEmit = jsVariable(resultVar, `${callerEmit}().${methodName}(${argsEmit})`)
                 return {
-                    emit: emitLines([lOp.emit, ...upcastEmit, emitLines(jsArgs.map(a => a.emit)), callEmit]),
+                    emit: emitLines([lOp.emit, upcastEmit, emitLines(jsArgs.map(a => a.emit)), callEmit]),
                     resultVar
                 }
             }
