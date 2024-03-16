@@ -142,7 +142,12 @@ assert(ctx.moduleStack.length === 0, ctx.moduleStack.length.toString())
 if (ctx.errors.length > 0) {
     for (const error of ctx.errors) {
         console.error(
-            prettySourceMessage(colorError(error.message), getSpan(error.node.parseNode), error.module.source)
+            prettySourceMessage(
+                colorError(error.message),
+                getSpan(error.node.parseNode),
+                error.module.source,
+                error.notes
+            )
         )
     }
     process.exit(1)
@@ -150,7 +155,12 @@ if (ctx.errors.length > 0) {
 
 for (const warning of ctx.warnings) {
     console.error(
-        prettySourceMessage(colorWarning(warning.message), getSpan(warning.node.parseNode), warning.module.source)
+        prettySourceMessage(
+            colorWarning(warning.message),
+            getSpan(warning.node.parseNode),
+            warning.module.source,
+            warning.notes
+        )
     )
 }
 

@@ -147,8 +147,8 @@ const checkMethodCallExpr = (
         const fieldType = checkFieldAccessExpr(lOperand, identifier, ctx)
         ctx.silent = false
         if (fieldType) {
-            // TODO: add note
-            addError(ctx, notFoundError(ctx, identifier, vidToString(methodVid), 'method'))
+            const note = `to access field \`${methodName}\`, surround operand in parentheses`
+            addError(ctx, notFoundError(ctx, identifier, vidToString(methodVid), 'method', [note]))
         } else {
             addError(ctx, notFoundError(ctx, identifier, vidToString(methodVid), 'method'))
         }

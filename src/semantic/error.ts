@@ -27,8 +27,13 @@ export const semanticError = (
     notes: string[] = []
 ): SemanticError => ({ code, module: ctx.moduleStack.at(-1)!, node, message, notes })
 
-export const notFoundError = (ctx: Context, node: AstNode<any>, id: string, kind: string = node.kind): SemanticError =>
-    semanticError(1, ctx, node, `${kind} \`${id}\` not found`)
+export const notFoundError = (
+    ctx: Context,
+    node: AstNode<any>,
+    id: string,
+    kind: string = 'identifier',
+    notes?: string[]
+): SemanticError => semanticError(1, ctx, node, `${kind} \`${id}\` not found`, notes)
 
 export const notImplementedError = (ctx: Context, node: AstNode<any>, message?: string): SemanticError =>
     semanticError(2, ctx, node, `not implemented:${message ? ` ${message}` : ''}`)
