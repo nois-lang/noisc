@@ -163,11 +163,9 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
         case 'for-expr': {
             const expr = emitExpr(operand.expr, module, ctx)
             const iteratorVar = nextVariable(ctx)
-            const upcastsEmit = operand.expr.upcasts ? emitUpcasts(expr.resultVar, operand.expr.upcasts) : ''
             const iterator = {
                 emit: emitLines([
                     expr.emit,
-                    upcastsEmit,
                     // TODO: do not invoke `iter` if it is already Iter
                     jsVariable(iteratorVar, `${expr.resultVar}.Iterable().iter(${expr.resultVar})`)
                 ]),
