@@ -187,7 +187,7 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
                 `}`
             ])
             const forEmit = emitLines([iterator.emit, 'while (true) {', indent(block), '}'])
-            return { emit: emitLines([jsVariable(resultVar), forEmit]), resultVar: jsError('no use') }
+            return { emit: emitLines([jsVariable(resultVar), forEmit]), resultVar }
         }
         case 'match-expr':
             return emitMatchExpr(operand, module, ctx, resultVar)
