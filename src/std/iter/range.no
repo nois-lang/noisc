@@ -1,0 +1,25 @@
+pub type RangeIter (
+    head: Int,
+    end: Int
+)
+
+impl Iter<Int> for RangeIter {
+    fn next(self): Option<Int> {
+        if self.head < self.end {
+            let n = Some(self.head.copy())
+            self.head = self.head + 1
+            n
+        } else {
+            None()
+        }
+    }
+}
+
+pub fn range(start: Int, end: Int): RangeIter {
+    RangeIter(head: start, end)
+}
+
+pub fn rangeClosed(start: Int, end: Int): RangeIter {
+    RangeIter(head: start, end: end + 1)
+}
+

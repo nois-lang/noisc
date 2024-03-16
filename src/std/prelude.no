@@ -11,6 +11,7 @@ pub use std::{
     copy::{ Copy, copy },
     ord::{ Ordering, Ord },
     iter::{ Iterable, Iter, Collector },
+    iter::range::{ range },
     list::List,
     never::Never,
     panic::{ panic, todo },
