@@ -2,17 +2,15 @@
  * @param {boolean} value
  * @returns {Boolean}
  */
-Bool.Bool = function(value) {
-    return { 
-        $noisType: 'std::bool::Bool',
-        value,
-        upcast: function(value, Self) {
-            for (const [trait, impl] of Self) {
-                value[trait] = impl;
-            }
+Bool.Bool = value => ({
+    $noisType: 'std::bool::Bool',
+    value,
+    upcast: (value, self) => {
+        for (const [trait, impl] of self) {
+            value[trait] = impl
         }
     }
-}
+})
 
 /**
  * @param {Bool} a

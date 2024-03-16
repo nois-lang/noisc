@@ -30,7 +30,7 @@ import { Context, addError, addWarning } from '../scope'
 import { concatVid, idToVid, vidFromScope, vidFromString, vidToString } from '../scope/util'
 import { VariantDef, VirtualIdentifierMatch, resolveVid } from '../scope/vid'
 import { assert, unreachable } from '../util/todo'
-import { semanticError } from './error'
+import { nonExhaustiveMatchError, unreachableMatchClauseError } from './error'
 
 export interface MatchTree {
     node: MatchNode
@@ -68,14 +68,12 @@ export const checkExhaustion = (matchExpr: MatchExpr, ctx: Context): MatchTree =
             }
         }
         if (!clauseAffected) {
-            addWarning(ctx, semanticError(ctx, clause, `unreachable match clause`))
+            addWarning(ctx, unreachableMatchClauseError(ctx, clause))
         }
     }
 
     if (!isExhaustive(tree.node)) {
-        const ps = unmatchedPaths(tree.node)
-        const pathsStr = ps.map(p => `    ${p} {}`).join('\n')
-        addError(ctx, semanticError(ctx, matchExpr, `non-exhaustive match expression, unmatched paths:\n${pathsStr}`))
+        addError(ctx, nonExhaustiveMatchError(ctx, matchExpr, tree))
     }
 
     return tree
@@ -162,23 +160,10 @@ const matchPattern = (pattern: PatternExpr, tree: MatchTree, ctx: Context): bool
     }
 }
 
-const isExhaustive = (node: MatchNode): boolean => {
-    switch (node.kind) {
-        case 'type':
-            return [...node.variants.values()].every(t => isExhaustive(t.node))
-        case 'variant':
-            return [...node.fields.values()].every(t => isExhaustive(t.node))
-        case 'exhaustive':
-            return true
-        case 'unmatched':
-            return false
-    }
-}
-
 /**
  * @returns a list of strings each representing missing pattern, e.g. Option::Some(value: _)
  */
-const unmatchedPaths = (node: MatchNode): string[] => {
+export const unmatchedPaths = (node: MatchNode): string[] => {
     switch (node.kind) {
         case 'type':
             return [...node.variants.entries()].flatMap(([name, n]) => {
@@ -194,5 +179,18 @@ const unmatchedPaths = (node: MatchNode): string[] => {
             return []
         case 'unmatched':
             return ['_']
+    }
+}
+
+const isExhaustive = (node: MatchNode): boolean => {
+    switch (node.kind) {
+        case 'type':
+            return [...node.variants.values()].every(t => isExhaustive(t.node))
+        case 'variant':
+            return [...node.fields.values()].every(t => isExhaustive(t.node))
+        case 'exhaustive':
+            return true
+        case 'unmatched':
+            return false
     }
 }

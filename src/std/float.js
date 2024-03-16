@@ -2,17 +2,15 @@
  * @param {number} value
  * @returns {Float}
  */
-Float.Float = function(value) {
-    return {
-        $noisType: 'std::float::Float',
-        value,
-        upcast: function(value, Self) {
-            for (const [trait, impl] of Self) {
-                value[trait] = impl;
-            }
+Float.Float = value => ({
+    $noisType: 'std::float::Float',
+    value,
+    upcast: (value, self) => {
+        for (const [trait, impl] of self) {
+            value[trait] = impl
         }
     }
-}
+})
 
 /**
  * @param {Float} a

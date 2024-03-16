@@ -3,22 +3,20 @@
  * @param {T[]} value
  * @returns {List<T>}
  */
-List.List = function(value) {
-    return { 
-        $noisType: 'std::list::List',
-        value,
-        upcast: function(value, Self, T) {
-            for (const [trait, impl] of Self) {
-                value[trait] = impl;
-            }
-            for (const item of value.value) {
-                for (const [itemTrait, itemImpl] of T) {
-                    item[itemTrait] = itemImpl;
-                }
+List.List = value => ({
+    $noisType: 'std::list::List',
+    value,
+    upcast: (value, self, t) => {
+        for (const [trait, impl] of self) {
+            value[trait] = impl
+        }
+        for (const item of value.value) {
+            for (const [itemTrait, itemImpl] of t) {
+                item[itemTrait] = itemImpl
             }
         }
     }
-}
+})
 
 /**
  * @template T

@@ -1,35 +1,48 @@
-import { AstNode, Module } from '../ast'
+import { Arg, AstNode, Module, Param } from '../ast'
+import { Expr } from '../ast/expr'
+import { MatchClause, MatchExpr, PatternExpr } from '../ast/match'
+import { CallOp } from '../ast/op'
+import { Identifier, Name, Operand } from '../ast/operand'
+import { FnDef, ImplDef, Statement, VarDef } from '../ast/statement'
+import { Type } from '../ast/type'
+import { FieldDef } from '../ast/type-def'
 import { Context } from '../scope'
+import { vidToString } from '../scope/util'
 import { VirtualType, virtualTypeToString } from '../typecheck'
+import { MatchTree, unmatchedPaths } from './exhaust'
 
 export interface SemanticError {
+    code: number
     module: Module
     node: AstNode<any>
     message: string
+    notes: string[]
 }
 
-export const semanticError = (ctx: Context, node: AstNode<any>, message: string): SemanticError => ({
-    module: ctx.moduleStack.at(-1)!,
-    node,
-    message
-})
+export const semanticError = (
+    code: number,
+    ctx: Context,
+    node: AstNode<any>,
+    message: string,
+    notes: string[] = []
+): SemanticError => ({ code, module: ctx.moduleStack.at(-1)!, node, message, notes })
 
-export const notFoundError = (ctx: Context, node: AstNode<any>, id: string, name: string = node.kind): SemanticError =>
-    semanticError(ctx, node, `${name} \`${id}\` not found`)
+export const notFoundError = (ctx: Context, node: AstNode<any>, id: string, kind: string = node.kind): SemanticError =>
+    semanticError(1, ctx, node, `${kind} \`${id}\` not found`)
 
 export const notImplementedError = (ctx: Context, node: AstNode<any>, message?: string): SemanticError =>
-    semanticError(ctx, node, `not implemented:${message ? ` ${message}` : ''}`)
+    semanticError(2, ctx, node, `not implemented:${message ? ` ${message}` : ''}`)
 
 export const unknownTypeError = (node: AstNode<any>, type: VirtualType, ctx: Context): SemanticError => {
     if (type.kind === 'unknown-type') {
         if (type.mismatchedBranches) {
-            return mismatchedBranchesError(node, type.mismatchedBranches.then, type.mismatchedBranches.else, ctx)
+            return mismatchedBranchesError(ctx, node, type.mismatchedBranches.then, type.mismatchedBranches.else)
         }
         if (type.mismatchedMatchClauses) {
-            return mismatchedClausesError(node, type.mismatchedMatchClauses, ctx)
+            return mismatchedClausesError(ctx, node, type.mismatchedMatchClauses)
         }
     }
-    return semanticError(ctx, node, 'unknown type')
+    return semanticError(3, ctx, node, 'unknown type')
 }
 
 export const typeError = (
@@ -39,19 +52,19 @@ export const typeError = (
     ctx: Context
 ): SemanticError => {
     if (actual.kind === 'unknown-type' && actual.mismatchedBranches) {
-        return mismatchedBranchesError(node, actual.mismatchedBranches.then, actual.mismatchedBranches.else, ctx)
+        return mismatchedBranchesError(ctx, node, actual.mismatchedBranches.then, actual.mismatchedBranches.else)
     }
     const message = `\
 type error: expected ${virtualTypeToString(expected)}
             got      ${virtualTypeToString(actual)}`
-    return semanticError(ctx, node, message)
+    return semanticError(4, ctx, node, message)
 }
 
 export const mismatchedBranchesError = (
+    ctx: Context,
     node: AstNode<any>,
     thenType: VirtualType,
-    elseType: VirtualType | undefined,
-    ctx: Context
+    elseType: VirtualType | undefined
 ): SemanticError => {
     const message = elseType
         ? `\
@@ -59,14 +72,190 @@ if branches have incompatible types:
     then: \`${virtualTypeToString(thenType)}\`
     else: \`${virtualTypeToString(elseType)}\``
         : 'missing `else` clause'
-    return semanticError(ctx, node, message)
+    return semanticError(5, ctx, node, message)
 }
 
 /**
  * TODO: include clause ref for better error reporting
  */
-export const mismatchedClausesError = (node: AstNode<any>, types: VirtualType[], ctx: Context): SemanticError => {
+export const mismatchedClausesError = (ctx: Context, node: AstNode<any>, types: VirtualType[]): SemanticError => {
     const typesStr = types.map(t => `    ${virtualTypeToString(t)}`).join('\n')
     const message = `match clauses have incompatible types:\n${typesStr}`
-    return semanticError(ctx, node, message)
+    return semanticError(6, ctx, node, message)
+}
+
+export const circularModuleError = (ctx: Context, module: Module): SemanticError => {
+    const vid = vidToString(module.identifier)
+    const stackVids = ctx.moduleStack.map(m => vidToString(m.identifier))
+    const refChain = [...stackVids.slice(stackVids.indexOf(vid)), vid].join(' -> ')
+    return semanticError(7, ctx, module, `circular module reference: ${refChain}`)
+}
+
+export const duplicateImportError = (ctx: Context, name: Name): SemanticError => {
+    return semanticError(8, ctx, name, `duplicate import`)
+}
+
+export const selfImportError = (ctx: Context, name: Name): SemanticError => {
+    return semanticError(9, ctx, name, `unnecessary self import`)
+}
+
+export const unreachableStatementError = (ctx: Context, statement: Statement): SemanticError => {
+    return semanticError(10, ctx, statement, `unreachable statement`)
+}
+
+export const unexpectedTopLevelStatementError = (ctx: Context, statement: Statement): SemanticError => {
+    return semanticError(11, ctx, statement, `unexpected top level statement`)
+}
+
+export const unexpectedInInstanceScopeError = (ctx: Context, statement: Statement): SemanticError => {
+    return semanticError(12, ctx, statement, `unexpected statement within instance scope`)
+}
+
+export const noBodyFnError = (ctx: Context, fnDef: FnDef): SemanticError => {
+    const msg = `fn \`${fnDef.name.value}\` has no body`
+    return semanticError(13, ctx, fnDef.name, msg)
+}
+
+export const unnecessaryPubMethodError = (ctx: Context, fnDef: FnDef): SemanticError => {
+    const msg = `trait method \`${fnDef.name.value}\` is always public`
+    return semanticError(14, ctx, fnDef.name, msg)
+}
+
+export const unspecifiedParamTypeError = (ctx: Context, param: Param): SemanticError => {
+    return semanticError(15, ctx, param, 'unspecified parameter type')
+}
+
+export const unexpectedPatternKindError = (ctx: Context, param: Param): SemanticError => {
+    const notes = [`\`${param.pattern.kind}\` can only be used in match expressions`]
+    return semanticError(16, ctx, param.pattern, 'unexpected pattern type', notes)
+}
+
+export const missingMethodImplError = (ctx: Context, implDef: ImplDef, methodVid: string): SemanticError => {
+    const msg = `missing method implementation \`${methodVid}\``
+    return semanticError(17, ctx, implDef.identifier.names.at(-1)!, msg)
+}
+
+export const methodNotDefinedError = (ctx: Context, fnDef: FnDef, methodVid: string): SemanticError => {
+    const msg = `method \`${methodVid}\` is not defined`
+    return semanticError(18, ctx, fnDef.name, msg)
+}
+
+export const expectedTraitError = (ctx: Context, id: Identifier): SemanticError => {
+    return semanticError(19, ctx, id, 'expected trait')
+}
+
+export const topLevelVarUntypedError = (ctx: Context, varDef: VarDef): SemanticError => {
+    return semanticError(20, ctx, varDef, 'top level variable must have explicit type')
+}
+
+export const topLevelVarNotDefinedError = (ctx: Context, varDef: VarDef): SemanticError => {
+    return semanticError(21, ctx, varDef, 'top level variable must be defined')
+}
+
+export const notInFnScopeError = (ctx: Context, node: AstNode<any>): SemanticError => {
+    return semanticError(22, ctx, node, 'outside of the function scope')
+}
+
+export const notInLoopScopeError = (ctx: Context, statement: Statement): SemanticError => {
+    return semanticError(23, ctx, statement, 'outside of the loop')
+}
+
+export const privateAccessError = (ctx: Context, node: AstNode<any>, kind: string, name: string): SemanticError => {
+    return semanticError(24, ctx, node, `${kind} \`${name}\` is private`)
+}
+
+export const vidResolveToModuleError = (ctx: Context, id: Identifier, name: string): SemanticError => {
+    return semanticError(25, ctx, id, `\`${name}\` is a module`)
+}
+
+export const typeArgCountMismatchError = (
+    ctx: Context,
+    type: Type,
+    paramCount: number,
+    argCount: number
+): SemanticError => {
+    const msg = `expected ${paramCount} type arguments, got ${argCount}`
+    return semanticError(26, ctx, type, msg)
+}
+
+export const argCountMismatchError = (
+    ctx: Context,
+    node: AstNode<any>,
+    paramCount: number,
+    argCount: number
+): SemanticError => {
+    const msg = `expected ${paramCount} arguments, got ${argCount}`
+    return semanticError(27, ctx, node, msg)
+}
+
+export const missingFieldsError = (ctx: Context, call: CallOp, fields: FieldDef[]): SemanticError => {
+    const msg = `missing fields: ${fields.map(f => `\`${f.name.value}\``).join(', ')}`
+    return semanticError(28, ctx, call, msg)
+}
+
+export const nonCallableError = (ctx: Context, operand: Operand): SemanticError => {
+    const msg = `type error: non-callable operand of type \`${virtualTypeToString(operand.type!)}\``
+    return semanticError(29, ctx, operand, msg)
+}
+
+export const notIterableError = (ctx: Context, expr: Expr): SemanticError => {
+    const msg = `not iterable expression of type ${virtualTypeToString(expr.type!)}`
+    return semanticError(30, ctx, expr, msg)
+}
+
+export const unexpectedNamedArgError = (ctx: Context, arg: Arg): SemanticError => {
+    const msg = `unexpected named argument \`${arg.name!.value}\``
+    return semanticError(30, ctx, arg.name!, msg)
+}
+
+export const expectedTypeError = (ctx: Context, type: Identifier, kind: string): SemanticError => {
+    const msg = `expected type, got \`${kind}\``
+    return semanticError(31, ctx, type, msg)
+}
+
+export const nonDestructurableTypeError = (
+    ctx: Context,
+    patternExpr: PatternExpr,
+    type: VirtualType
+): SemanticError => {
+    const msg = `non-destructurable type \`${virtualTypeToString(type)}\``
+    return semanticError(32, ctx, patternExpr, msg)
+}
+
+export const expectedFieldError = (ctx: Context, id: Identifier): SemanticError => {
+    return semanticError(33, ctx, id, 'expected field name')
+}
+
+export const expectedMethodError = (ctx: Context, node: AstNode<any>): SemanticError => {
+    return semanticError(34, ctx, node, 'expected method name')
+}
+
+export const unexpectedTypeError = (
+    ctx: Context,
+    node: AstNode<any>,
+    expected: string,
+    type: VirtualType
+): SemanticError => {
+    const msg = `expected ${expected}, got \`${virtualTypeToString(type)}\``
+    return semanticError(35, ctx, node, msg)
+}
+
+export const narrowFieldAccessError = (ctx: Context, field: Identifier): SemanticError => {
+    const msg = `field \`${field.names.at(-1)!.value}\` is not defined in all variants`
+    return semanticError(36, ctx, field, msg)
+}
+
+export const unreachableMatchClauseError = (ctx: Context, clause: MatchClause): SemanticError => {
+    return semanticError(37, ctx, clause, 'unreachable match clause')
+}
+
+export const nonExhaustiveMatchError = (ctx: Context, match: MatchExpr, tree: MatchTree): SemanticError => {
+    const ps = unmatchedPaths(tree.node)
+    const pathsStr = ps.map(p => `    ${p} {}`).join('\n')
+    const msg = `non-exhaustive match expression, unmatched paths:\n${pathsStr}`
+    return semanticError(38, ctx, match, msg)
+}
+
+export const errorError = (ctx: Context, name: Name): SemanticError => {
+    return semanticError(0, ctx, name, `message`)
 }

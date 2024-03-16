@@ -2,17 +2,15 @@
  * @param {string} value
  * @returns {String}
  */
-String.String = function(value) {
-    return {
-        $noisType: 'std::string::String',
-        value,
-        upcast: function(value, Self) {
-            for (const [trait, impl] of Self) {
-                value[trait] = impl;
-            }
+String.String = value => ({
+    $noisType: 'std::string::String',
+    value,
+    upcast: (value, self) => {
+        for (const [trait, impl] of self) {
+            value[trait] = impl
         }
     }
-}
+})
 
 /**
  * @param {String} a

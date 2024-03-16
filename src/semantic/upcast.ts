@@ -8,12 +8,7 @@ export interface Upcast {
     traits: Map<string, InstanceRelation>
 }
 
-export const upcast = (
-    virtual: Partial<Virtual>,
-    type: VirtualType,
-    traitType: VirtualType,
-    ctx: Context
-): void => {
+export const upcast = (virtual: Partial<Virtual>, type: VirtualType, traitType: VirtualType, ctx: Context): void => {
     const upcastMap = makeUpcastMap(type, traitType, ctx)
     if (upcastMap) {
         virtual.upcasts ??= new Map()

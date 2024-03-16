@@ -6,7 +6,7 @@ import { Context, addError } from '../scope'
 import { getInstanceForType, resolveGenericImpls, resolveMethodImpl } from '../scope/trait'
 import { vidFromString, vidToString } from '../scope/util'
 import { MethodDef, VirtualIdentifier, resolveVid } from '../scope/vid'
-import { VirtualFnType, VirtualType, combine, genericToVirtual, typeToVirtual, virtualTypeToString } from '../typecheck'
+import { VirtualFnType, VirtualType, combine, genericToVirtual, typeToVirtual } from '../typecheck'
 import {
     makeFnGenericMap,
     makeFnTypeArgGenericMap,
@@ -14,8 +14,16 @@ import {
     resolveType
 } from '../typecheck/generic'
 import { selfType, unknownType } from '../typecheck/type'
-import { assert } from '../util/todo'
-import { notFoundError, semanticError } from './error'
+import { assert, unreachable } from '../util/todo'
+import {
+    expectedFieldError,
+    expectedMethodError,
+    narrowFieldAccessError,
+    notFoundError,
+    privateAccessError,
+    unexpectedNamedArgError,
+    unexpectedTypeError
+} from './error'
 import { checkExpr, checkOperand } from './expr'
 
 export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
@@ -36,20 +44,18 @@ export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
             return
         }
     }
-    addError(ctx, semanticError(ctx, rOperand, `unexpected operand \`${rOperand.kind}\``))
-    binaryExpr.type = unknownType
+    unreachable()
 }
 
 const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): VirtualType | undefined => {
     checkOperand(lOp, ctx)
     // TODO: make sure no type args specified; check other identifier uses also
     if (field.names.length > 1) {
-        addError(ctx, semanticError(ctx, field, `expected field name`))
+        addError(ctx, expectedFieldError(ctx, field))
         return
     }
     if (!(lOp.type?.kind === 'vid-type')) {
-        const msg = `expected variant type, got \`${virtualTypeToString(lOp.type ?? unknownType)}\``
-        addError(ctx, semanticError(ctx, field, msg))
+        addError(ctx, unexpectedTypeError(ctx, field, 'variant type', lOp.type!))
         return
     }
     const typeVid = lOp.type.identifier
@@ -63,18 +69,16 @@ const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): Vi
     // check that every type variant has such field
     const matchedCount = typeDef.variants.filter(v => v.fieldDefs.find(f => f.name.value === fieldName)).length
     if (matchedCount === 0) {
-        const msg = `field \`${fieldName}\` is not defined in type \`${vidToString(typeRef.vid)}\``
-        addError(ctx, semanticError(ctx, field, msg))
+        addError(ctx, notFoundError(ctx, field, fieldName, 'field'))
         return
     } else {
         if (matchedCount !== typeDef.variants.length) {
-            const msg = `field \`${fieldName}\` is not defined in all variants of type \`${vidToString(typeRef.vid)}\``
-            addError(ctx, semanticError(ctx, field, msg))
+            addError(ctx, narrowFieldAccessError(ctx, field))
             return
         }
     }
     // if field is defined in multiple variants, make sure their type is equal
-    // normaly single variant types use field access, but there is no reason to restrict multiple variants sharing the
+    // normally single variant types use field access, but there is no reason to restrict multiple variants sharing the
     // same field
     const fieldCandidates = typeDef.variants
         .map(v => v.fieldDefs.find(f => f.name.value === fieldName))
@@ -83,18 +87,13 @@ const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): Vi
     assert(fieldCandidates.length > 0)
     const fieldType = fieldCandidates[0].type!
     if (!fieldCandidates.every(f => !!combine(fieldType, f.type!, ctx))) {
-        const msg = `field \`${fieldName}\` is not defined in every variant of type \`${vidToString(typeRef.vid)}\``
-        addError(ctx, semanticError(ctx, field, msg))
+        addError(ctx, narrowFieldAccessError(ctx, field))
         return
     }
 
     const sameModule = ctx.moduleStack.at(-1)! === typeRef.module
     if (!sameModule && !fieldCandidates.every(f => f.pub)) {
-        const msg =
-            fieldCandidates.length === 1
-                ? `field \`${fieldName}\` is private in type \`${vidToString(typeRef.vid)}\``
-                : `field \`${fieldName}\` is private in some variants of type \`${vidToString(typeRef.vid)}\``
-        addError(ctx, semanticError(ctx, field, msg))
+        addError(ctx, privateAccessError(ctx, field, 'field', vidToString(typeRef.vid)))
         return
     }
 
@@ -119,13 +118,13 @@ const checkMethodCallExpr = (
     call.args.forEach(arg => {
         checkExpr(arg.expr, ctx)
         if (arg.name) {
-            addError(ctx, semanticError(ctx, arg.name, `unexpected named argument \`${arg.name!.value}\``))
+            addError(ctx, unexpectedNamedArgError(ctx, arg))
         }
     })
 
     const identifier = identifierFromOperand(rOperand)
     if (!identifier || identifier.names.length > 1) {
-        addError(ctx, semanticError(ctx, rOperand, `expected method name, got \`${rOperand.kind}\``))
+        addError(ctx, expectedMethodError(ctx, rOperand))
         return
     }
 
@@ -135,8 +134,7 @@ const checkMethodCallExpr = (
     } else if (lOperand.type!.kind === 'generic') {
         typeVid = vidFromString(lOperand.type!.name)
     } else {
-        const msg = `expected instance type, got \`${virtualTypeToString(lOperand.type!)}\``
-        addError(ctx, semanticError(ctx, identifier, msg))
+        addError(ctx, unexpectedTypeError(ctx, identifier, 'instance type', lOperand.type!))
         return
     }
 
@@ -149,10 +147,8 @@ const checkMethodCallExpr = (
         const fieldType = checkFieldAccessExpr(lOperand, identifier, ctx)
         ctx.silent = false
         if (fieldType) {
-            const msg = `method \`${vidToString(
-                methodVid
-            )}\` not found\n    to access field \`${methodName}\`, surround operand in parentheses`
-            addError(ctx, semanticError(ctx, identifier, msg))
+            // TODO: add note
+            addError(ctx, notFoundError(ctx, identifier, vidToString(methodVid), 'method'))
         } else {
             addError(ctx, notFoundError(ctx, identifier, vidToString(methodVid), 'method'))
         }

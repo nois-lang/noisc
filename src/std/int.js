@@ -2,17 +2,15 @@
  * @param {number} value
  * @returns {Int}
  */
-Int.Int = function(value) {
-    return {
-        $noisType: 'std::int::Int',
-        value,
-        upcast: function(value, Self) {
-            for (const [trait, impl] of Self) {
-                value[trait] = impl;
-            }
+Int.Int = value => ({
+    $noisType: 'std::int::Int',
+    value,
+    upcast: (value, self) => {
+        for (const [trait, impl] of self) {
+            value[trait] = impl
         }
     }
-}
+})
 
 /**
  * @param {Int} a

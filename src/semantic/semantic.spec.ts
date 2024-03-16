@@ -405,7 +405,7 @@ fn main() {
 
             ctx = check(code('4'))
             expect(ctx.errors.map(e => e.message)).toEqual([
-                'cannot destructure type `std::int::Int` into `std::option::Option`',
+                'non-destructurable type `std::int::Int`',
                 'identifier `value` not found',
                 'unknown type',
                 'identifier `value` not found',
@@ -555,7 +555,7 @@ fn main() {
     break
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual(['`break-stmt` outside of the loop'])
+            expect(ctx.errors.map(e => e.message)).toEqual(['outside of the loop'])
         })
 
         it('from closure', () => {
@@ -566,7 +566,7 @@ fn main() {
     }
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual(['cannot break from within the closure'])
+            expect(ctx.errors.map(e => e.message)).toEqual(['outside of the loop'])
         })
     })
 
@@ -603,7 +603,7 @@ impl Foo {
 
             ctx = check(code('x: Int', '5'))
             expect(ctx.errors.map(e => e.message)).toEqual([
-                'method `test::Foo::x` not found\n    to access field `x`, surround operand in parentheses'
+                'method `test::Foo::x` not found'
             ])
         })
 
@@ -653,7 +653,7 @@ fn main() {
             ctx = check(code('y'))
             expect(ctx.errors.map(e => e.message)).toEqual([
                 'missing fields: `x`',
-                'unknown field: `y`',
+                'field `y` not found',
                 'unknown type',
                 'unknown type'
             ])
@@ -684,7 +684,7 @@ impl Foo {
             expect(ctx.errors.map(e => e.message)).toEqual(['missing fields: `x`', 'unknown type', 'unknown type'])
 
             ctx = check(code('x: 5, y: 6'))
-            expect(ctx.errors.map(e => e.message)).toEqual(['unknown field: `y`', 'unknown type', 'unknown type'])
+            expect(ctx.errors.map(e => e.message)).toEqual(['field `y` not found', 'unknown type', 'unknown type'])
         })
     })
 })

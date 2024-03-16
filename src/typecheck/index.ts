@@ -4,7 +4,7 @@ import { Context, addError } from '../scope'
 import { InstanceRelation, findSuperRelChains, getConcreteTrait } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
 import { VirtualIdentifier, resolveVid, typeKinds } from '../scope/vid'
-import { semanticError } from '../semantic/error'
+import { expectedTypeError } from '../semantic/error'
 import { zip } from '../util/array'
 import { todo } from '../util/todo'
 import { holeType, selfType, unknownType } from './type'
@@ -107,7 +107,7 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
                         .map(arg => typeToVirtual(arg, ctx))
                 }
             } else {
-                addError(ctx, semanticError(ctx, type, `expected type, got \`${ref.def.kind}\``))
+                addError(ctx, expectedTypeError(ctx, type, ref.def.kind))
                 return unknownType
             }
         case 'fn-type':

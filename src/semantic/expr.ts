@@ -25,8 +25,7 @@ import {
     combine,
     extractConcreteSupertype,
     isAssignable,
-    typeToVirtual,
-    virtualTypeToString
+    typeToVirtual
 } from '../typecheck'
 import {
     instanceGenericMap,
@@ -38,7 +37,17 @@ import {
 } from '../typecheck/generic'
 import { holeType, unitType, unknownType } from '../typecheck/type'
 import { assert } from '../util/todo'
-import { notFoundError, semanticError, typeError, unknownTypeError } from './error'
+import {
+    argCountMismatchError,
+    missingFieldsError,
+    nonCallableError,
+    notFoundError,
+    notInFnScopeError,
+    notIterableError,
+    typeError,
+    unexpectedNamedArgError,
+    unknownTypeError
+} from './error'
 import { checkExhaustion } from './exhaust'
 import { checkAccessExpr } from './instance'
 import { checkPattern } from './match'
@@ -287,10 +296,7 @@ export const checkForExpr = (forExpr: ForExpr, ctx: Context): void => {
     checkExpr(forExpr.expr, ctx)
     assert(!!forExpr.expr.type)
     if (![iter, iterable].some(t => isAssignable(forExpr.expr.type!, t, ctx))) {
-        addError(
-            ctx,
-            semanticError(ctx, forExpr.expr, `type ${virtualTypeToString(forExpr.expr.type!)} is not iterable`)
-        )
+        addError(ctx, notIterableError(ctx, forExpr.expr))
     }
 
     const iterableType = [iter, iterable]
@@ -398,8 +404,7 @@ export const checkClosureExpr = (
 
     if (caller && inferredType) {
         if (closureExpr.params.length > inferredType.paramTypes.length) {
-            const msg = `expected ${closureExpr.params.length} arguments, got ${inferredType.paramTypes.length}`
-            addError(ctx, semanticError(ctx, caller, msg))
+            addError(ctx, argCountMismatchError(ctx, caller, closureExpr.params.length, inferredType.paramTypes.length))
             return
         }
         for (let i = 0; i < closureExpr.params.length; i++) {
@@ -443,11 +448,7 @@ export const checkCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
     if (variantRef) {
         unaryExpr.type = checkVariantCall(unaryExpr, variantRef, ctx)
     } else {
-        call.args
-            .filter(arg => arg.name !== undefined)
-            .forEach(arg =>
-                addError(ctx, semanticError(ctx, arg.name!, `unexpected named argument \`${arg.name!.value}\``))
-            )
+        call.args.filter(arg => arg.name !== undefined).forEach(arg => addError(ctx, unexpectedNamedArgError(ctx, arg)))
         unaryExpr.type = checkCall_(call, operand, args, ctx)
     }
 }
@@ -483,14 +484,12 @@ export const checkVariantCall = (
             orderedArgs.push(field)
         }
         if (missingFields.length > 0) {
-            const msg = `missing fields: ${missingFields.map(f => `\`${f.name.value}\``).join(', ')}`
-            addError(ctx, semanticError(ctx, call, msg))
+            addError(ctx, missingFieldsError(ctx, call, missingFields))
             argsHaveErrors = true
         }
         for (const arg of call.args) {
             if (!orderedArgs.includes(arg)) {
-                const msg = `unknown field: \`${arg.name!.value}\``
-                addError(ctx, semanticError(ctx, arg.name!, msg))
+                addError(ctx, notFoundError(ctx, arg.name!, arg.name!.value, 'field'))
                 argsHaveErrors = true
             }
         }
@@ -524,8 +523,7 @@ export const checkCall_ = (call: CallOp, operand: Operand, args: Expr[], ctx: Co
         return unknownType
     }
     if (operand.type?.kind !== 'fn-type') {
-        const message = `type error: non-callable operand of type \`${virtualTypeToString(operand.type!)}\``
-        addError(ctx, semanticError(ctx, operand, message))
+        addError(ctx, nonCallableError(ctx, operand))
         return unknownType
     }
 
@@ -579,7 +577,7 @@ export const checkBind = (unaryExpr: UnaryExpr, ctx: Context): void => {
 
     const scope = fnDefScope(ctx)
     if (!scope) {
-        addError(ctx, semanticError(ctx, unaryExpr.op, `\`${unaryExpr.op.kind}\` outside of the function scope`))
+        addError(ctx, notInFnScopeError(ctx, unaryExpr.op))
         return
     }
     scope.returns.push(operand)

@@ -1,12 +1,12 @@
 import { ConPattern, Pattern } from '../ast/match'
 import { Name } from '../ast/operand'
 import { Context, addError, defKey } from '../scope'
-import { idToVid, vidFromScope, vidToString } from '../scope/util'
+import { idToVid, vidToString } from '../scope/util'
 import { NameDef, resolveVid } from '../scope/vid'
-import { VidType, VirtualFnType, VirtualType, isAssignable, virtualTypeToString } from '../typecheck'
+import { VidType, VirtualFnType, VirtualType, isAssignable } from '../typecheck'
 import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { unknownType } from '../typecheck/type'
-import { notFoundError, semanticError, typeError } from './error'
+import { nonDestructurableTypeError, notFoundError, privateAccessError, typeError } from './error'
 import { checkOperand } from './expr'
 
 export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: Context): void => {
@@ -29,8 +29,7 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
             break
         case 'con-pattern':
             if (expectedType.kind !== 'vid-type') {
-                const msg = `cannot destructure type \`${virtualTypeToString(expectedType)}\``
-                addError(ctx, semanticError(ctx, pattern, msg))
+                addError(ctx, nonDestructurableTypeError(ctx, pattern.expr, expectedType))
                 break
             }
 
@@ -55,7 +54,7 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
 }
 
 /**
- * @returns a list of definied names within con pattern (including recursive)
+ * @returns a list of defined names within con pattern (including recursive)
  */
 const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Context): Name[] => {
     const defs: Name[] = []
@@ -67,12 +66,8 @@ const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Contex
         return []
     }
 
-    const typeDefVid = vidFromScope(ref.vid)
     if (ref.def.typeDef.name.value !== expectedType.identifier.names.at(-1)!) {
-        const msg = `cannot destructure type \`${virtualTypeToString(expectedType)}\` into \`${vidToString(
-            typeDefVid
-        )}\``
-        addError(ctx, semanticError(ctx, pattern.identifier, msg))
+        addError(ctx, nonDestructurableTypeError(ctx, pattern, expectedType))
         return []
     }
 
@@ -87,9 +82,7 @@ const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Contex
             return []
         }
         if (!field.pub && ctx.moduleStack.at(-1)! !== ref.module) {
-            const typeVid = vidToString(vidFromScope(ref.vid))
-            const msg = `field \`${fp.name.value}\` is private in type \`${typeVid}\``
-            addError(ctx, semanticError(ctx, fp, msg))
+            addError(ctx, privateAccessError(ctx, fp, 'field', fp.name.value))
         }
 
         field.name.type = resolveType(field.type!, [conGenericMap], ctx)
