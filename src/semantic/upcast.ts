@@ -12,7 +12,14 @@ export const upcast = (virtual: Partial<Virtual>, type: VirtualType, traitType: 
     const upcastMap = makeUpcastMap(type, traitType, ctx)
     if (upcastMap) {
         virtual.upcasts ??= new Map()
-        upcastMap.forEach((v, k) => virtual.upcasts!.set(k, v))
+        upcastMap.forEach((up, k) => {
+            const existing = virtual.upcasts!.get(k)
+            if (existing) {
+                up.traits.forEach((t, tk) => existing.traits.set(tk, t))
+            } else {
+                virtual.upcasts!.set(k, up)
+            }
+        })
     }
 }
 
