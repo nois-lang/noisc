@@ -10,9 +10,11 @@ List.List = value => ({
         for (const [trait, impl] of self) {
             value[trait] = impl
         }
-        for (const item of value.value) {
-            for (const [itemTrait, itemImpl] of t) {
-                item[itemTrait] = itemImpl
+        if (t !== undefined) {
+            for (const item of value.value) {
+                for (const [itemTrait, itemImpl] of t) {
+                    item[itemTrait] = itemImpl
+                }
             }
         }
     }
