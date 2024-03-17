@@ -37,6 +37,33 @@ export const emitOperandExpr = (operandExpr: OperandExpr, module: Module, ctx: C
 export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context): EmitExpr => {
     const resultVar = nextVariable(ctx)
     switch (unaryExpr.op.kind) {
+        case 'method-call-op': {
+            const lOp = emitOperand(unaryExpr.operand, module, ctx)
+            const mCall = unaryExpr.op
+            const call = mCall.call
+            const methodDef = call.methodDef!
+            const methodName = methodDef.fn.name.value
+            const args = call.args.map(a => emitExpr(a.expr, module, ctx))
+            const genericTypes = call.generics?.map(g => emitGeneric(g, module, ctx)) ?? []
+            const jsArgs = [...args, ...genericTypes]
+            const argsEmit = (
+                methodDef.fn.static ? jsArgs.map(a => a.resultVar) : [lOp.resultVar, ...jsArgs.map(a => a.resultVar)]
+            ).join(', ')
+            const upcasts = unaryExpr.operand.upcasts
+            const upcastEmit = upcasts ? emitUpcasts(lOp.resultVar, upcasts) : ''
+            const callerEmit = call.impl ? jsRelName(call.impl) : `${lOp.resultVar}.${relTypeName(methodDef.rel)}`
+            const callEmit = jsVariable(resultVar, `${callerEmit}().${methodName}(${argsEmit})`)
+            return {
+                emit: emitLines([lOp.emit, upcastEmit, emitLines(jsArgs.map(a => a.emit)), callEmit]),
+                resultVar
+            }
+        }
+        case 'field-access-op':
+            const lOp = emitOperand(unaryExpr.operand, module, ctx)
+            return {
+                emit: emitLines([lOp.emit, jsVariable(resultVar, `${lOp.resultVar}.value.${unaryExpr.op.name.value}`)]),
+                resultVar
+            }
         case 'call-op':
             const call = unaryExpr.op
             const args = call.args.map(a => {
@@ -75,40 +102,6 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
     const resultVar = nextVariable(ctx)
     const rOp = emitOperand(binaryExpr.rOperand, module, ctx)
     switch (binaryExpr.binaryOp.kind) {
-        case 'access-op': {
-            if (binaryExpr.rOperand.kind === 'identifier') {
-                const accessor = binaryExpr.rOperand.names.at(-1)!.value
-                return {
-                    emit: emitLines([lOp.emit, jsVariable(resultVar, `${lOp.resultVar}.value.${accessor}`)]),
-                    resultVar
-                }
-            }
-            if (binaryExpr.rOperand.kind === 'unary-expr' && binaryExpr.rOperand.op.kind === 'call-op') {
-                const call = binaryExpr.rOperand.op
-                const methodDef = call.methodDef!
-                const methodName = methodDef.fn.name.value
-                const args = call.args.map(a => emitExpr(a.expr, module, ctx))
-                const genericTypes = call.generics?.map(g => emitGeneric(g, module, ctx)) ?? []
-                const jsArgs = [...args, ...genericTypes]
-                const argsEmit = (
-                    methodDef.fn.static
-                        ? jsArgs.map(a => a.resultVar)
-                        : [lOp.resultVar, ...jsArgs.map(a => a.resultVar)]
-                ).join(', ')
-                const upcasts = binaryExpr.lOperand.upcasts
-                const upcastEmit = upcasts ? emitUpcasts(lOp.resultVar, upcasts) : ''
-                const callerEmit = call.impl ? jsRelName(call.impl) : `${lOp.resultVar}.${relTypeName(methodDef.rel)}`
-                const callEmit = jsVariable(resultVar, `${callerEmit}().${methodName}(${argsEmit})`)
-                return {
-                    emit: emitLines([lOp.emit, upcastEmit, emitLines(jsArgs.map(a => a.emit)), callEmit]),
-                    resultVar
-                }
-            }
-            return {
-                emit: jsError('unwrap/bind ops'),
-                resultVar
-            }
-        }
         case 'assign-op': {
             return {
                 emit: emitLines([

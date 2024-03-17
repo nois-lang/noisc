@@ -1,10 +1,10 @@
 import { nameLikeTokens } from '.'
 import { Parser } from '..'
 import { syntaxError } from '../../error'
-import { parseExpr } from './expr'
+import { parseExpr, parseTypeArgs } from './expr'
 
 /**
- * infix-op ::= add-op | sub-op | mult-op | div-op | exp-op | mod-op | access-op | eq-op | ne-op | ge-op | le-op | gt-op
+ * infix-op ::= add-op | sub-op | mult-op | div-op | exp-op | mod-op | eq-op | ne-op | ge-op | le-op | gt-op
  * | lt-op | and-op | or-op | assign-op;
  */
 export const parseInfixOp = (parser: Parser): void => {
@@ -31,10 +31,6 @@ export const parseInfixOp = (parser: Parser): void => {
     }
     if (parser.consume('percent')) {
         parser.close(mark, 'mod-op')
-        return
-    }
-    if (parser.consume('period')) {
-        parser.close(mark, 'access-op')
         return
     }
     if (parser.at('equals') && parser.nth(1) === 'equals') {
@@ -91,6 +87,18 @@ export const parsePostfixOp = (parser: Parser): void => {
         parseCallOp(parser)
         return
     }
+    if (parser.at('period')) {
+        if (
+            parser.nth(2) === 'o-paren' ||
+            (parser.nth(2) === 'o-angle' &&
+                parser.encounter('c-angle', [...nameLikeTokens, 'comma', 'o-angle', 'underscore'], 2))
+        ) {
+            parseMethodCallOp(parser)
+        } else {
+            parseFieldAccessOp(parser)
+        }
+        return
+    }
     const mark = parser.open()
     if (parser.consume('excl')) {
         parser.close(mark, 'unwrap-op')
@@ -101,6 +109,30 @@ export const parsePostfixOp = (parser: Parser): void => {
         return
     }
     parser.advanceWithError(syntaxError(parser, 'expected postfix operator'), mark)
+}
+
+/*
+ * method-call-op ::= PERIOD NAME type-args? call-op
+ */
+export const parseMethodCallOp = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('period')
+    parser.expectAny(nameLikeTokens)
+    if (parser.at('o-angle')) {
+        parseTypeArgs(parser)
+    }
+    parseCallOp(parser)
+    parser.close(mark, 'method-call-op')
+}
+
+/*
+ * field-access-op ::= PERIOD NAME
+ */
+export const parseFieldAccessOp = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('period')
+    parser.expectAny(nameLikeTokens)
+    parser.close(mark, 'field-access-op')
 }
 
 /**

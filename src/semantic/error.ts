@@ -246,14 +246,6 @@ export const nonDestructurableTypeError = (
     return semanticError(32, ctx, patternExpr, msg)
 }
 
-export const expectedFieldError = (ctx: Context, id: Identifier): SemanticError => {
-    return semanticError(33, ctx, id, 'expected field name')
-}
-
-export const expectedMethodError = (ctx: Context, node: AstNode<any>): SemanticError => {
-    return semanticError(34, ctx, node, 'expected method name')
-}
-
 export const unexpectedTypeError = (
     ctx: Context,
     node: AstNode<any>,
@@ -264,8 +256,8 @@ export const unexpectedTypeError = (
     return semanticError(35, ctx, node, msg)
 }
 
-export const narrowFieldAccessError = (ctx: Context, field: Identifier): SemanticError => {
-    const msg = `field \`${field.names.at(-1)!.value}\` is not defined in all variants`
+export const narrowFieldAccessError = (ctx: Context, field: Name): SemanticError => {
+    const msg = `field \`${field.value}\` is not defined in all variants`
     return semanticError(36, ctx, field, msg)
 }
 

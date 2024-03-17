@@ -1,7 +1,7 @@
 import { checkCallArgs, checkType } from '.'
-import { BinaryExpr } from '../ast/expr'
-import { CallOp } from '../ast/op'
-import { Identifier, Operand, identifierFromOperand } from '../ast/operand'
+import { UnaryExpr } from '../ast/expr'
+import { MethodCallOp } from '../ast/op'
+import { Name, Operand } from '../ast/operand'
 import { Context, addError } from '../scope'
 import { getInstanceForType, resolveGenericImpls, resolveMethodImpl } from '../scope/trait'
 import { vidFromString, vidToString } from '../scope/util'
@@ -13,11 +13,9 @@ import {
     makeGenericMapOverStructure,
     resolveType
 } from '../typecheck/generic'
-import { selfType, unknownType } from '../typecheck/type'
-import { assert, unreachable } from '../util/todo'
+import { selfType } from '../typecheck/type'
+import { assert } from '../util/todo'
 import {
-    expectedFieldError,
-    expectedMethodError,
     narrowFieldAccessError,
     notFoundError,
     privateAccessError,
@@ -26,54 +24,28 @@ import {
 } from './error'
 import { checkExpr, checkOperand } from './expr'
 
-export const checkAccessExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
-    const lOperand = binaryExpr.lOperand
-    const rOperand = binaryExpr.rOperand
-    if (rOperand.kind === 'identifier') {
-        binaryExpr.type = checkFieldAccessExpr(lOperand, rOperand, ctx) ?? unknownType
+export const checkFieldAccess = (operand: Operand, name: Name, ctx: Context): VirtualType | undefined => {
+    checkOperand(operand, ctx)
+    if (!(operand.type?.kind === 'vid-type')) {
+        addError(ctx, unexpectedTypeError(ctx, name, 'variant type', operand.type!))
         return
     }
-    if (rOperand.kind === 'unary-expr') {
-        if (rOperand.op.kind === 'call-op') {
-            binaryExpr.type =
-                checkMethodCallExpr(binaryExpr, lOperand, rOperand.operand, rOperand.op, ctx) ?? unknownType
-            return
-        } else {
-            checkOperand(rOperand, ctx)
-            binaryExpr.type = rOperand.type
-            return
-        }
-    }
-    unreachable()
-}
-
-const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): VirtualType | undefined => {
-    checkOperand(lOp, ctx)
-    // TODO: make sure no type args specified; check other identifier uses also
-    if (field.names.length > 1) {
-        addError(ctx, expectedFieldError(ctx, field))
-        return
-    }
-    if (!(lOp.type?.kind === 'vid-type')) {
-        addError(ctx, unexpectedTypeError(ctx, field, 'variant type', lOp.type!))
-        return
-    }
-    const typeVid = lOp.type.identifier
+    const typeVid = operand.type.identifier
     const typeRef = resolveVid(typeVid, ctx, ['type-def'])
     if (!typeRef || typeRef.def.kind !== 'type-def') {
-        addError(ctx, notFoundError(ctx, lOp, vidToString(typeVid), 'type'))
+        addError(ctx, notFoundError(ctx, operand, vidToString(typeVid), 'type'))
         return
     }
     const typeDef = typeRef.def
-    const fieldName = field.names.at(-1)!.value
+    const fieldName = name.value
     // check that every type variant has such field
     const matchedCount = typeDef.variants.filter(v => v.fieldDefs.find(f => f.name.value === fieldName)).length
     if (matchedCount === 0) {
-        addError(ctx, notFoundError(ctx, field, fieldName, 'field'))
+        addError(ctx, notFoundError(ctx, name, fieldName, 'field'))
         return
     } else {
         if (matchedCount !== typeDef.variants.length) {
-            addError(ctx, narrowFieldAccessError(ctx, field))
+            addError(ctx, narrowFieldAccessError(ctx, name))
             return
         }
     }
@@ -87,17 +59,17 @@ const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): Vi
     assert(fieldCandidates.length > 0)
     const fieldType = fieldCandidates[0].type!
     if (!fieldCandidates.every(f => !!combine(fieldType, f.type!, ctx))) {
-        addError(ctx, narrowFieldAccessError(ctx, field))
+        addError(ctx, narrowFieldAccessError(ctx, name))
         return
     }
 
     const sameModule = ctx.moduleStack.at(-1)! === typeRef.module
     if (!sameModule && !fieldCandidates.every(f => f.pub)) {
-        addError(ctx, privateAccessError(ctx, field, 'field', vidToString(typeRef.vid)))
+        addError(ctx, privateAccessError(ctx, name, 'field', vidToString(typeRef.vid)))
         return
     }
 
-    const conGenericMap = makeGenericMapOverStructure(lOp.type, {
+    const conGenericMap = makeGenericMapOverStructure(operand.type, {
         kind: 'vid-type',
         identifier: typeRef.vid,
         typeArgs: typeRef.def.generics.map(g => genericToVirtual(g, ctx))
@@ -105,77 +77,66 @@ const checkFieldAccessExpr = (lOp: Operand, field: Identifier, ctx: Context): Vi
     return resolveType(fieldType, [conGenericMap], ctx)
 }
 
-const checkMethodCallExpr = (
-    binaryExpr: BinaryExpr,
-    lOperand: Operand,
-    rOperand: Operand,
-    call: CallOp,
-    ctx: Context
-): VirtualType | undefined => {
-    if (binaryExpr.type) return binaryExpr.type
+export const checkMethodCall = (expr: UnaryExpr, mCall: MethodCallOp, ctx: Context): VirtualType | undefined => {
+    if (expr.type) return expr.type
 
-    checkOperand(lOperand, ctx)
-    call.args.forEach(arg => {
+    const operand = expr.operand
+    checkOperand(operand, ctx)
+    mCall.call.args.forEach(arg => {
         checkExpr(arg.expr, ctx)
         if (arg.name) {
             addError(ctx, unexpectedNamedArgError(ctx, arg))
         }
     })
 
-    const identifier = identifierFromOperand(rOperand)
-    if (!identifier || identifier.names.length > 1) {
-        addError(ctx, expectedMethodError(ctx, rOperand))
-        return
-    }
-
     let typeVid: VirtualIdentifier
-    if (lOperand.type!.kind === 'vid-type') {
-        typeVid = lOperand.type!.identifier
-    } else if (lOperand.type!.kind === 'generic') {
-        typeVid = vidFromString(lOperand.type!.name)
+    if (operand.type!.kind === 'vid-type') {
+        typeVid = operand.type!.identifier
+    } else if (operand.type!.kind === 'generic') {
+        typeVid = vidFromString(operand.type!.name)
     } else {
-        addError(ctx, unexpectedTypeError(ctx, identifier, 'instance type', lOperand.type!))
+        addError(ctx, unexpectedTypeError(ctx, mCall.name, 'instance type', operand.type!))
         return
     }
 
-    const methodName = identifier.names.at(-1)!.value
+    const methodName = mCall.name.value
     const methodVid = { names: [...typeVid.names, methodName] }
     const ref = resolveVid(methodVid, ctx, ['method-def'])
     if (!ref || ref.def.kind !== 'method-def') {
         // hint if it is a field call
         ctx.silent = true
-        const fieldType = checkFieldAccessExpr(lOperand, identifier, ctx)
+        const fieldType = checkFieldAccess(operand, mCall.name, ctx)
         ctx.silent = false
         if (fieldType) {
             const note = `to access field \`${methodName}\`, surround operand in parentheses`
-            addError(ctx, notFoundError(ctx, identifier, vidToString(methodVid), 'method', [note]))
+            addError(ctx, notFoundError(ctx, mCall.name, vidToString(methodVid), 'method', [note]))
         } else {
-            addError(ctx, notFoundError(ctx, identifier, vidToString(methodVid), 'method'))
+            addError(ctx, notFoundError(ctx, mCall.name, vidToString(methodVid), 'method'))
         }
         return
     }
 
-    call.methodDef = ref.def
-    const genericMaps = makeMethodGenericMaps(lOperand, identifier, ref.def, call, ctx)
+    mCall.call.methodDef = ref.def
+    const genericMaps = makeMethodGenericMaps(operand, ref.def, mCall, ctx)
     const fnType = <VirtualFnType>ref.def.fn.type
 
     // TODO: check required type args (that cannot be inferred via `resolveFnGenerics`)
-    identifier.typeArgs.forEach(typeArg => checkType(typeArg, ctx))
+    mCall.typeArgs.forEach(typeArg => checkType(typeArg, ctx))
 
-    const args = ref.def.fn.static ? call.args.map(a => a.expr) : [lOperand, ...call.args.map(a => a.expr)]
+    const args = ref.def.fn.static ? mCall.call.args.map(a => a.expr) : [operand, ...mCall.call.args.map(a => a.expr)]
     const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
-    checkCallArgs(call, args, paramTypes, ctx)
+    checkCallArgs(mCall, args, paramTypes, ctx)
 
     if (ref.def.rel.instanceDef.kind === 'trait-def') {
-        call.impl = resolveMethodImpl(lOperand.type!, ref.def, ctx)
+        mCall.call.impl = resolveMethodImpl(operand.type!, ref.def, ctx)
     } else {
-        call.impl = ref.def.rel
+        mCall.call.impl = ref.def.rel
     }
-    if (call.impl) {
-        ctx.moduleStack.at(-1)!.relImports.push(call.impl)
+    if (mCall.call.impl) {
+        ctx.moduleStack.at(-1)!.relImports.push(mCall.call.impl)
     }
 
-    call.generics = fnType.generics.map(g => {
+    mCall.call.generics = fnType.generics.map(g => {
         const t = resolveType(g, [genericMaps[1]], ctx)
         if (t.kind !== 'generic') return { generic: g, impls: [] }
         const impls = resolveGenericImpls(t, ctx)
@@ -188,9 +149,8 @@ const checkMethodCallExpr = (
 
 const makeMethodGenericMaps = (
     lOperand: Operand,
-    rOperand: Identifier,
     methodDef: MethodDef,
-    call: CallOp,
+    call: MethodCallOp,
     ctx: Context
 ): Map<string, VirtualType>[] => {
     const implForType = getInstanceForType(methodDef.rel.instanceDef, ctx)
@@ -200,9 +160,9 @@ const makeMethodGenericMaps = (
     implGenericMap.delete(selfType.name)
 
     const fnType = <VirtualFnType>methodDef.fn.type
-    const typeArgs = rOperand.typeArgs.map(tp => typeToVirtual(tp, ctx))
+    const typeArgs = call.typeArgs.map(tp => typeToVirtual(tp, ctx))
     const fnTypeArgGenericMap = makeFnTypeArgGenericMap(fnType, typeArgs)
-    const fnGenericMap = makeFnGenericMap(fnType, [lOperand.type!, ...call.args.map(a => a.expr.type!)])
+    const fnGenericMap = makeFnGenericMap(fnType, [lOperand.type!, ...call.call.args.map(a => a.expr.type!)])
 
     return [fnTypeArgGenericMap, implGenericMap, fnGenericMap]
 }

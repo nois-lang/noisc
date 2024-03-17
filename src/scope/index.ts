@@ -127,7 +127,9 @@ export const fnDefScope = (ctx: Context): FnDefScope | undefined => {
 
 export const addError = (ctx: Context, error: SemanticError): void => {
     if (!ctx.silent) {
-        // console.trace(error.message)
+        // console.trace(
+        //     prettySourceMessage(error.message, getSpan(error.node.parseNode), error.module.source, error.notes)
+        // )
         ctx.errors.push(error)
     }
 }

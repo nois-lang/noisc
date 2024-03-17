@@ -49,7 +49,7 @@ import {
     unknownTypeError
 } from './error'
 import { checkExhaustion } from './exhaust'
-import { checkAccessExpr } from './instance'
+import { checkFieldAccess, checkMethodCall } from './instance'
 import { checkPattern } from './match'
 import { operatorImplMap } from './op'
 import { upcast } from './upcast'
@@ -94,10 +94,8 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
             checkClosureExpr(operand, ctx)
             break
         case 'unary-expr':
-            checkUnaryExpr(operand, ctx)
-            break
         case 'binary-expr':
-            checkBinaryExpr(operand, ctx)
+            checkExpr(operand, ctx)
             break
         case 'list-expr':
             checkListExpr(operand, ctx)
@@ -163,6 +161,12 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
 
 export const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     switch (unaryExpr.op.kind) {
+        case 'method-call-op':
+            unaryExpr.type = checkMethodCall(unaryExpr, unaryExpr.op, ctx)
+            return
+        case 'field-access-op':
+            unaryExpr.type = checkFieldAccess(unaryExpr.operand, unaryExpr.op.name, ctx)
+            return
         case 'call-op':
             checkCall(unaryExpr, ctx)
             return
@@ -176,10 +180,6 @@ export const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
 }
 
 export const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
-    if (binaryExpr.binaryOp.kind === 'access-op') {
-        checkAccessExpr(binaryExpr, ctx)
-        return
-    }
     if (binaryExpr.binaryOp.kind === 'assign-op') {
         checkAssignExpr(binaryExpr, ctx)
         return

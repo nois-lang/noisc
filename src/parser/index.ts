@@ -39,7 +39,6 @@ export const treeKinds = <const>[
     'div-op',
     'exp-op',
     'mod-op',
-    'access-op',
     'eq-op',
     'ne-op',
     'ge-op',
@@ -49,9 +48,12 @@ export const treeKinds = <const>[
     'and-op',
     'or-op',
     'assign-op',
+    'method-call-op',
+    'field-access-op',
     'call-op',
     'unwrap-op',
     'bind-op',
+    'access-op',
     'arg',
     'closure-expr',
     'closure-params',
@@ -267,8 +269,8 @@ export class Parser {
     /**
      * Check if `target` token is encountered before any other tokens *not* listed in `whitelist`
      */
-    encounter(target: TokenKind, whitelist: TokenKind[]): boolean {
-        let i = this.pos
+    encounter(target: TokenKind, whitelist: TokenKind[], from: number = 0): boolean {
+        let i = this.pos + from
         while (i < this.tokens.length) {
             const token = this.tokens.at(i)?.kind || 'eof'
             if (token === target) {

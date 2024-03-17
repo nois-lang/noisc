@@ -105,10 +105,9 @@ describe('ast', () => {
             expect(compactAstNode(ast.block)).toEqual(
 { kind: 'block',
   statements:
-   [ { kind: 'binary-expr',
-       binaryOp: { kind: 'access-op' },
-       lOperand: { kind: 'identifier', names: [{ kind: 'name', value: 'a' }], typeArgs: [] },
-       rOperand: { kind: 'identifier', names: [{ kind: 'name', value: 'b' }], typeArgs: [] } } ] }
+   [ { kind: 'unary-expr',
+       operand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] },
+       op: { kind: 'field-access-op', name: { kind: 'name', value: 'b' } } } ] }
             )
         })
     })
@@ -137,13 +136,25 @@ describe('ast', () => {
             expect(compactAstNode(ast.block)).toEqual(
 { kind: 'block',
   statements:
-   [ { kind: 'binary-expr',
-       binaryOp: { kind: 'access-op' },
-       lOperand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] },
-       rOperand:
-        { kind: 'unary-expr',
-          op: { kind: 'call-op', args: [] },
-          operand: { kind: 'identifier', names: [ { kind: 'name', value: 'b' } ], typeArgs: [] } } } ] }
+   [ { kind: 'unary-expr',
+       operand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] },
+       op: { kind: 'method-call-op', name: { kind: 'name', value: 'b' }, typeArgs: [], call: { kind: 'call-op', args: [] } } } ] }
+            )
+        })
+
+        it('method call with type args', () => {
+            const ast = buildAst('a.b<A>()')
+            // biome-ignore format: compact
+            expect(compactAstNode(ast.block)).toEqual(
+{ kind: 'block',
+  statements:
+   [ { kind: 'unary-expr',
+       operand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] },
+       op:
+        { kind: 'method-call-op',
+          name: { kind: 'name', value: 'b' },
+          typeArgs: [ { kind: 'identifier', names: [ { kind: 'name', value: 'A' } ], typeArgs: [] } ],
+          call: { kind: 'call-op', args: [] } } } ] }
             )
         })
 
@@ -153,27 +164,36 @@ describe('ast', () => {
             expect(compactAstNode(ast.block)).toEqual(
 { kind: 'block',
   statements:
-   [ { kind: 'binary-expr',
-       binaryOp: { kind: 'access-op' },
-       lOperand:
-        { kind: 'binary-expr',
-          binaryOp: { kind: 'access-op' },
-          lOperand:
-           { kind: 'binary-expr',
-             binaryOp: { kind: 'access-op' },
-             lOperand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] },
-             rOperand:
-              { kind: 'unary-expr',
-                operand: { kind: 'identifier', names: [ { kind: 'name', value: 'b' } ], typeArgs: [] },
-                op: { kind: 'call-op', args: [] } } },
-          rOperand:
-           { kind: 'unary-expr',
-             operand: { kind: 'identifier', names: [ { kind: 'name', value: 'c' } ], typeArgs: [] },
-             op: { kind: 'call-op', args: [] } } },
-       rOperand:
+   [ { kind: 'unary-expr',
+       operand:
         { kind: 'unary-expr',
-          operand: { kind: 'identifier', names: [ { kind: 'name', value: 'd' } ], typeArgs: [] },
-          op: { kind: 'call-op', args: [] } } } ] }
+          operand:
+           { kind: 'unary-expr',
+             operand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] },
+             op: { kind: 'method-call-op', name: { kind: 'name', value: 'b' }, typeArgs: [], call: { kind: 'call-op', args: [] } } },
+          op: { kind: 'method-call-op', name: { kind: 'name', value: 'c' }, typeArgs: [], call: { kind: 'call-op', args: [] } } },
+       op: { kind: 'method-call-op', name: { kind: 'name', value: 'd' }, typeArgs: [], call: { kind: 'call-op', args: [] } } } ] }
+            )
+        })
+
+        it('postfix op chain', () => {
+            const ast = buildAst('a.b()!?()')
+            // biome-ignore format: compact
+            expect(compactAstNode(ast.block)).toEqual(
+{ kind: 'block',
+  statements:
+   [ { kind: 'unary-expr',
+       operand:
+        { kind: 'unary-expr',
+          operand:
+           { kind: 'unary-expr',
+             operand:
+              { kind: 'unary-expr',
+                operand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] },
+                op: { kind: 'method-call-op', name: { kind: 'name', value: 'b' }, typeArgs: [], call: { kind: 'call-op', args: [] } } },
+             op: { kind: 'unwrap-op' } },
+          op: { kind: 'bind-op' } },
+       op: { kind: 'call-op', args: [] } } ] }
             )
         })
     })

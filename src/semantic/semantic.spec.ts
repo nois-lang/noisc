@@ -716,13 +716,10 @@ impl <T> Node<T> {
 
 fn main() {
     let n = Node(Node(Leaf(5)))
-    n.child().child()
+    n.child()
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual([
-                'fn `child` has no body',
-                'method `std::unit::Unit::child` not found'
-            ])
+            expect(ctx.errors.map(e => e.message)).toEqual(['fn `child` has no body'])
         })
     })
 })

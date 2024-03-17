@@ -26,7 +26,12 @@ export const parseExpr = (parser: Parser): void => {
 export const parseSubExpr = (parser: Parser): void => {
     const mark = parser.open()
     parseOperand(parser)
-    while (parser.at('o-paren') || (parser.at('excl') && parser.nth(1) !== 'equals') || parser.at('qmark')) {
+    while (
+        parser.at('period') ||
+        parser.at('o-paren') ||
+        (parser.at('excl') && parser.nth(1) !== 'equals') ||
+        parser.at('qmark')
+    ) {
         parsePostfixOp(parser)
     }
     parser.close(mark, 'sub-expr')

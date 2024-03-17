@@ -51,7 +51,7 @@ export const astInfixOpKinds = <const>[
     'assign-op'
 ]
 
-export const astPostfixOpKinds = <const>['call-op', 'unwrap-op', 'bind-op']
+export const astPostfixOpKinds = <const>['method-call-op', 'field-access-op', 'call-op', 'unwrap-op', 'bind-op']
 
 export const astKinds = <const>[
     'module',
