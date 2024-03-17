@@ -209,7 +209,7 @@ export const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
             ctx.moduleStack.at(-1)!.relImports.push(impl)
         }
     } else {
-        addError(ctx, typeError(binaryExpr, binaryExpr.lOperand.type!, implTargetType, ctx))
+        addError(ctx, typeError(ctx, binaryExpr, binaryExpr.lOperand.type!, implTargetType))
         binaryExpr.type = unknownType
     }
 }
@@ -221,7 +221,7 @@ export const checkIfExpr = (ifExpr: IfExpr, ctx: Context): void => {
     checkExpr(ifExpr.condition, ctx)
     const condType = ifExpr.condition.type ?? unknownType
     if (!isAssignable(condType, bool, ctx)) {
-        addError(ctx, typeError(ifExpr.condition, condType, bool, ctx))
+        addError(ctx, typeError(ctx, ifExpr.condition, condType, bool))
     }
 
     checkIfExprCommon(ifExpr, scope, ctx)
@@ -273,7 +273,7 @@ export const checkWhileExpr = (whileExpr: WhileExpr, ctx: Context): void => {
     const condType = whileExpr.condition.type
     assert(!!condType)
     if (!isAssignable(condType!, bool, ctx)) {
-        addError(ctx, typeError(whileExpr.condition, condType!, bool, ctx))
+        addError(ctx, typeError(ctx, whileExpr.condition, condType!, bool))
     }
 
     const abr = checkBlock(whileExpr.block, ctx)
@@ -342,7 +342,7 @@ export const checkMatchExpr = (matchExpr: MatchExpr, ctx: Context): void => {
             checkExpr(clause.guard, ctx)
             const guardType = clause.guard.type!
             if (guardType.kind !== 'vid-type' || !isAssignable(guardType, bool, ctx)) {
-                addError(ctx, typeError(clause.guard, guardType, bool, ctx))
+                addError(ctx, typeError(ctx, clause.guard, guardType, bool))
             }
         }
         const clauseAbr = checkBlock(clause.block, ctx)
@@ -366,7 +366,7 @@ export const checkMatchExpr = (matchExpr: MatchExpr, ctx: Context): void => {
                 matchExpr.type = firstClauseBlock.type
             }
         } else {
-            addError(ctx, unknownTypeError(firstClauseBlock, firstClauseBlock.type!, ctx))
+            addError(ctx, unknownTypeError(ctx, firstClauseBlock, firstClauseBlock.type!))
         }
     }
 
@@ -522,7 +522,7 @@ export const checkCall_ = (call: CallOp, operand: Operand, args: Expr[], ctx: Co
         operand.type = closure.type
     }
     if (operand.type?.kind === 'unknown-type') {
-        addError(ctx, unknownTypeError(operand, operand.type, ctx))
+        addError(ctx, unknownTypeError(ctx, operand, operand.type))
         return unknownType
     }
     if (operand.type?.kind !== 'fn-type') {
@@ -558,7 +558,7 @@ export const checkUnwrap = (unaryExpr: UnaryExpr, ctx: Context): void => {
     checkOperand(operand, ctx)
     const unwrapType = findUnwrapInnerType(operand.type!, ctx)
     if (!unwrapType) {
-        addError(ctx, typeError(unaryExpr, operand.type!, unwrap, ctx))
+        addError(ctx, typeError(ctx, unaryExpr, operand.type!, unwrap))
         unaryExpr.type = unknownType
         return
     }
@@ -571,7 +571,7 @@ export const checkBind = (unaryExpr: UnaryExpr, ctx: Context): void => {
     checkOperand(operand, ctx)
     const unwrapType = findUnwrapInnerType(operand.type!, ctx)
     if (!unwrapType) {
-        addError(ctx, typeError(unaryExpr, operand.type!, unwrap, ctx))
+        addError(ctx, typeError(ctx, unaryExpr, operand.type!, unwrap))
         unaryExpr.type = unknownType
         return
     }
@@ -624,7 +624,7 @@ export const checkListExpr = (listExpr: ListExpr, ctx: Context): void => {
         const expr = listExpr.exprs[i]
         const otherType = expr.type!
         if (!combine(itemType, otherType, ctx)) {
-            addError(ctx, typeError(expr, otherType, itemType, ctx))
+            addError(ctx, typeError(ctx, expr, otherType, itemType))
         }
     }
     const listVid = vidFromString('std::list::List')
@@ -644,7 +644,7 @@ export const checkAssignExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     const assigneeType = binaryExpr.lOperand.type!
     const valueType = binaryExpr.rOperand.type!
     if (!isAssignable(valueType, assigneeType, ctx)) {
-        addError(ctx, typeError(binaryExpr, valueType, assigneeType, ctx))
+        addError(ctx, typeError(ctx, binaryExpr, valueType, assigneeType))
     }
 }
 

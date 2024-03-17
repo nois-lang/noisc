@@ -31,6 +31,7 @@ import {
     expectedTraitError,
     methodNotDefinedError,
     missingMethodImplsError,
+    missingVarInitError,
     noBodyFnError,
     notFoundError,
     notInFnScopeError,
@@ -351,7 +352,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
             checkBlock(fnDef.block, ctx)
             fnScope.returns.forEach(rs => {
                 if (!isAssignable(rs.type!, returnTypeResolved, ctx)) {
-                    addError(ctx, typeError(rs, rs.type!, returnTypeResolved, ctx))
+                    addError(ctx, typeError(ctx, rs, rs.type!, returnTypeResolved))
                 }
                 upcast(rs, rs.type!, returnTypeResolved, ctx)
             })
@@ -489,7 +490,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                     const traitMap = makeGenericMapOverStructure(implDef.rel.implType, traitMethod.rel.implType)
                     const mResolvedType = resolveType(traitMethod.fn.type!, [traitMap], ctx)
                     if (!(isAssignable(m.type!, mResolvedType, ctx) && typeEq(m.type!, mResolvedType))) {
-                        addError(ctx, typeError(m.name, m.type!, mResolvedType, ctx))
+                        addError(ctx, typeError(ctx, m.name, m.type!, mResolvedType))
                     }
                 }
                 implDef.superMethods = traitMethods.filter(
@@ -598,19 +599,23 @@ const checkVarDef = (varDef: VarDef, ctx: Context): void => {
         if (varType) {
             const exprType = varDef.expr.type!
             if (!isAssignable(exprType, varType, ctx)) {
-                addError(ctx, typeError(varDef, exprType, varType, ctx))
+                addError(ctx, typeError(ctx, varDef, exprType, varType))
             }
         } else {
             if (varDef.expr.type!.kind === 'unknown-type') {
-                addError(ctx, unknownTypeError(varDef.expr, varDef.expr.type!, ctx))
+                addError(ctx, unknownTypeError(ctx, varDef.expr, varDef.expr.type!))
                 varType = unknownType
             } else {
                 varType = varDef.expr.type
             }
         }
-    }
 
-    checkPattern(varDef.pattern, varType!, ctx)
+        checkPattern(varDef.pattern, varType!, ctx)
+    } else {
+        if (!module.compiled) {
+            addError(ctx, missingVarInitError(ctx, varDef))
+        }
+    }
 }
 
 export const checkReturnStmt = (returnStmt: ReturnStmt, ctx: Context) => {
@@ -766,7 +771,7 @@ export const checkCallArgs = (node: AstNode<any>, args: Operand[], paramTypes: V
         const argType = arg.type ?? unknownType
 
         if (!isAssignable(argType, paramType, ctx)) {
-            addError(ctx, typeError(arg, argType, paramType, ctx))
+            addError(ctx, typeError(ctx, arg, argType, paramType))
         }
 
         upcast(arg, argType, paramType, ctx)

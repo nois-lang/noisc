@@ -40,7 +40,7 @@ export const notFoundError = (
 export const notImplementedError = (ctx: Context, node: AstNode<any>, message?: string): SemanticError =>
     semanticError(2, ctx, node, `not implemented:${message ? ` ${message}` : ''}`)
 
-export const unknownTypeError = (node: AstNode<any>, type: VirtualType, ctx: Context): SemanticError => {
+export const unknownTypeError = (ctx: Context, node: AstNode<any>, type: VirtualType): SemanticError => {
     if (type.kind === 'unknown-type') {
         if (type.mismatchedBranches) {
             return mismatchedBranchesError(ctx, node, type.mismatchedBranches.then, type.mismatchedBranches.else)
@@ -53,10 +53,10 @@ export const unknownTypeError = (node: AstNode<any>, type: VirtualType, ctx: Con
 }
 
 export const typeError = (
+    ctx: Context,
     node: AstNode<any>,
     actual: VirtualType,
-    expected: VirtualType,
-    ctx: Context
+    expected: VirtualType
 ): SemanticError => {
     if (actual.kind === 'unknown-type' && actual.mismatchedBranches) {
         return mismatchedBranchesError(ctx, node, actual.mismatchedBranches.then, actual.mismatchedBranches.else)
@@ -278,6 +278,11 @@ export const nonExhaustiveMatchError = (ctx: Context, match: MatchExpr, tree: Ma
     const pathsStr = ps.map(p => `    ${p} {}`).join('\n')
     const msg = `non-exhaustive match expression, unmatched paths:\n${pathsStr}`
     return semanticError(38, ctx, match, msg)
+}
+
+export const missingVarInitError = (ctx: Context, varDef: VarDef): SemanticError => {
+    const msg = `missing variable initialization`
+    return semanticError(38, ctx, varDef, msg)
 }
 
 export const errorError = (ctx: Context, name: Name): SemanticError => {

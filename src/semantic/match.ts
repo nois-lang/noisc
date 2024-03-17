@@ -49,7 +49,7 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
     }
 
     if (!isAssignable(expectedType, expr.type!, ctx)) {
-        addError(ctx, typeError(pattern.expr, expr.type!, expectedType, ctx))
+        addError(ctx, typeError(ctx, pattern.expr, expr.type!, expectedType))
     }
 }
 

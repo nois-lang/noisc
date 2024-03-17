@@ -80,7 +80,7 @@ export const buildVarDef = (node: ParseNode): VarDef => {
     // skip let-keyword
     idx++
     const pattern = buildPattern(nodes[idx++])
-    const varType = nodes[idx].kind === 'type-annot' ? buildType(filterNonAstNodes(nodes[idx++])[0]) : undefined
+    const varType = nodes.at(idx)?.kind === 'type-annot' ? buildType(filterNonAstNodes(nodes[idx++])[0]) : undefined
     const expr = nodes.at(idx)?.kind === 'expr' ? buildExpr(nodes[idx++]) : undefined
     return { kind: 'var-def', parseNode: node, pattern, varType, expr, pub }
 }

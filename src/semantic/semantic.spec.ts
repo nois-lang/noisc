@@ -602,9 +602,7 @@ impl Foo {
             expect(ctx.errors.map(e => e.message)).toEqual(['method `test::Foo::x` not found'])
 
             ctx = check(code('x: Int', '5'))
-            expect(ctx.errors.map(e => e.message)).toEqual([
-                'method `test::Foo::x` not found'
-            ])
+            expect(ctx.errors.map(e => e.message)).toEqual(['method `test::Foo::x` not found'])
         })
 
         it('field is a closure', () => {
@@ -685,6 +683,22 @@ impl Foo {
 
             ctx = check(code('x: 5, y: 6'))
             expect(ctx.errors.map(e => e.message)).toEqual(['field `y` not found', 'unknown type', 'unknown type'])
+        })
+    })
+
+    describe('var def', () => {
+        it('missing init', () => {
+            const code = `\
+type Node<T> {
+    Node(node: Node<T>),
+    Leaf(t: T)
+}
+
+fn main() {
+    let n
+}`
+            const ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual(['missing variable initialization'])
         })
     })
 })
