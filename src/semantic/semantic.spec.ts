@@ -649,12 +649,7 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `test::Foo`'])
 
             ctx = check(code('y'))
-            expect(ctx.errors.map(e => e.message)).toEqual([
-                'missing fields: `x`',
-                'field `y` not found',
-                'unknown type',
-                'unknown type'
-            ])
+            expect(ctx.errors.map(e => e.message)).toEqual(['field `y` not found', 'unknown type', 'unknown type'])
         })
 
         it('fn named call', () => {

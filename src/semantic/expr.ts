@@ -1,18 +1,9 @@
 import { checkBlock, checkCallArgs, checkIdentifier, checkParam, checkType } from '.'
-import { AstNode } from '../ast'
+import { Arg, AstNode } from '../ast'
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { MatchExpr } from '../ast/match'
 import { CallOp } from '../ast/op'
-import {
-    ClosureExpr,
-    ForExpr,
-    IfExpr,
-    IfLetExpr,
-    ListExpr,
-    Operand,
-    WhileExpr,
-    identifierFromOperand
-} from '../ast/operand'
+import { ClosureExpr, ForExpr, IfExpr, IfLetExpr, ListExpr, Name, Operand, WhileExpr } from '../ast/operand'
 import { Context, Scope, addError, fnDefScope, instanceScope } from '../scope'
 import { bool, iter, iterable, unwrap } from '../scope/std'
 import { getConcreteTrait, resolveGenericImpls, resolveMethodImpl, typeDefToVirtualType } from '../scope/trait'
@@ -461,25 +452,33 @@ export const checkVariantCall = (
     ref: VirtualIdentifierMatch<VariantDef>,
     ctx: Context
 ): VirtualType | undefined => {
+    const extractArgName = (arg: Arg): Name | undefined => {
+        if (arg.name) return arg.name
+        if (arg.expr.kind !== 'operand-expr') return undefined
+        if (arg.expr.operand.kind !== 'identifier') return undefined
+        const id = arg.expr.operand
+        if (id.names.length !== 1) return undefined
+        const name = id.names[0]
+        return name
+    }
+
     const call = <CallOp>unaryExpr.op
     call.args.forEach(a => checkExpr(a.expr, ctx))
 
-    for (const arg of call.args) {
-        if (!arg.name) {
-            const id = identifierFromOperand(arg.expr)
-            if (id) {
-                arg.name = id.names.at(-1)!
-            }
-        }
-    }
+    const namedArgsStrategy = call.args.every(arg => {
+        const name = extractArgName(arg)
+        if (!name) return false
+        if (!ref.def.variant.fieldDefs.find(f => f.name.value === name.value)) return false
+        return true
+    })
 
-    const allArgsNamed = call.args.every(arg => arg.name)
+    const errorCount = ctx.errors.length
     const orderedArgs = []
-    if (allArgsNamed) {
-        let argsHaveErrors = false
+    if (namedArgsStrategy) {
+        const argNames = new Map(call.args.map(arg => [arg, extractArgName(arg)!]))
         const missingFields = []
         for (const fieldDef of ref.def.variant.fieldDefs) {
-            const field = call.args.find(a => a.name!.value === fieldDef.name.value)
+            const field = call.args.find(a => argNames.get(a)!.value === fieldDef.name.value)
             if (!field) {
                 missingFields.push(fieldDef)
                 continue
@@ -488,24 +487,31 @@ export const checkVariantCall = (
         }
         if (missingFields.length > 0) {
             addError(ctx, missingFieldsError(ctx, call, missingFields))
-            argsHaveErrors = true
         }
         for (const arg of call.args) {
+            const name = argNames.get(arg)!
             if (!orderedArgs.includes(arg)) {
-                addError(ctx, notFoundError(ctx, arg.name!, arg.name!.value, 'field'))
-                argsHaveErrors = true
+                addError(ctx, notFoundError(ctx, name, name.value, 'field'))
             }
         }
-
-        if (argsHaveErrors) {
-            // TODO: set variant type
-            return unknownType
+    } else {
+        if (call.args.some(arg => arg.name)) {
+            for (const arg of call.args) {
+                if (arg.name && !ref.def.variant.fieldDefs.find(f => f.name.value === arg.name!.value)) {
+                    addError(ctx, notFoundError(ctx, arg, arg.name.value, 'field'))
+                }
+            }
         }
+    }
+
+    if (ctx.errors.length > errorCount) {
+        // TODO: set variant type
+        return unknownType
     }
 
     call.variantDef = ref.def
     // if there are regular positional args, call it as a regular function
-    const args = (allArgsNamed ? orderedArgs : call.args).map(a => a?.expr)
+    const args = (namedArgsStrategy ? orderedArgs : call.args).map(a => a?.expr)
     return checkCall_(call, unaryExpr.operand, args, ctx)
 }
 
