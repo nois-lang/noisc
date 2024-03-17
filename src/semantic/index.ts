@@ -357,12 +357,16 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
                 upcast(rs, rs.type!, returnTypeResolved, ctx)
             })
         } else {
-            if (!module.compiled && instScope?.rel.instanceDef.kind !== 'trait-def') {
+            if (!instScope) {
                 addWarning(ctx, noBodyFnError(ctx, fnDef))
+            } else {
+                if (instScope?.rel.instanceDef.kind !== 'trait-def') {
+                    addError(ctx, noBodyFnError(ctx, fnDef))
+                }
             }
-            if (instScope?.rel.instanceDef.kind === 'trait-def' && fnDef.pub) {
-                addWarning(ctx, unnecessaryPubMethodError(ctx, fnDef))
-            }
+        }
+        if (instScope?.rel.instanceDef.kind === 'trait-def' && fnDef.pub) {
+            addWarning(ctx, unnecessaryPubMethodError(ctx, fnDef))
         }
     }
 

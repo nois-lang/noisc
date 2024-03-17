@@ -6,7 +6,7 @@ import { VirtualFnType, VirtualType } from './index'
 import { holeType, selfType } from './type'
 
 export const makeFnGenericMap = (fnType: VirtualFnType, argTypes: VirtualType[]): Map<string, VirtualType> => {
-    assert(argTypes.length <= fnType.paramTypes.length, 'fn args > params')
+    if (argTypes.length > fnType.paramTypes.length) return new Map()
     return argTypes
         .map((argType, i) => {
             const param = fnType.paramTypes[i]
