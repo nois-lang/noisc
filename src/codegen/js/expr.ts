@@ -31,11 +31,15 @@ export const emitExpr = (expr: Expr, module: Module, ctx: Context): EmitExpr => 
 }
 
 export const emitOperandExpr = (operandExpr: OperandExpr, module: Module, ctx: Context): EmitExpr => {
-    return emitOperand(operandExpr.operand, module, ctx)
+    const operand = emitOperand(operandExpr.operand, module, ctx)
+    const upcasts = operandExpr.upcasts
+    const upcastEmit = upcasts ? emitUpcasts(operand.resultVar, upcasts) : ''
+    return { emit: emitLines([operand.emit, upcastEmit]), resultVar: operand.resultVar }
 }
 
 export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context): EmitExpr => {
     const resultVar = nextVariable(ctx)
+    const upcasts = unaryExpr.operand.upcasts
     switch (unaryExpr.op.kind) {
         case 'method-call-op': {
             const lOp = emitOperand(unaryExpr.operand, module, ctx)
@@ -49,7 +53,6 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
             const argsEmit = (
                 methodDef.fn.static ? jsArgs.map(a => a.resultVar) : [lOp.resultVar, ...jsArgs.map(a => a.resultVar)]
             ).join(', ')
-            const upcasts = unaryExpr.operand.upcasts
             const upcastEmit = upcasts ? emitUpcasts(lOp.resultVar, upcasts) : ''
             const callerEmit = call.impl ? jsRelName(call.impl) : `${lOp.resultVar}.${relTypeName(methodDef.rel)}`
             const callEmit = jsVariable(resultVar, `${callerEmit}().${methodName}(${argsEmit})`)
@@ -58,12 +61,18 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
                 resultVar
             }
         }
-        case 'field-access-op':
+        case 'field-access-op': {
             const lOp = emitOperand(unaryExpr.operand, module, ctx)
+            const upcastEmit = upcasts ? emitUpcasts(lOp.resultVar, upcasts) : ''
             return {
-                emit: emitLines([lOp.emit, jsVariable(resultVar, `${lOp.resultVar}.value.${unaryExpr.op.name.value}`)]),
+                emit: emitLines([
+                    lOp.emit,
+                    upcastEmit,
+                    jsVariable(resultVar, `${lOp.resultVar}.value.${unaryExpr.op.name.value}`)
+                ]),
                 resultVar
             }
+        }
         case 'call-op':
             const call = unaryExpr.op
             const args = call.args.map(a => {
@@ -90,17 +99,35 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
                     resultVar
                 }
             }
-        case 'unwrap-op':
+        case 'unwrap-op': {
             const operand = emitOperand(unaryExpr.operand, module, ctx)
+            const upcastEmit = upcasts ? emitUpcasts(operand.resultVar, upcasts) : ''
             return {
                 emit: emitLines([
                     operand.emit,
+                    upcastEmit,
                     jsVariable(resultVar, `${operand.resultVar}.Unwrap().unwrap(${operand.resultVar})`)
                 ]),
                 resultVar
             }
-        case 'bind-op':
-            return { emit: jsError('bind'), resultVar }
+        }
+        case 'bind-op': {
+            const operand = emitOperand(unaryExpr.operand, module, ctx)
+            const upcastEmit = upcasts ? emitUpcasts(operand.resultVar, upcasts) : ''
+            const bindVar = nextVariable(ctx)
+            return {
+                emit: emitLines([
+                    operand.emit,
+                    upcastEmit,
+                    jsVariable(bindVar, `${operand.resultVar}.Unwrap().bind(${operand.resultVar})`),
+                    `if (${bindVar}.$noisVariant === "None") {`,
+                    indent(`return ${bindVar}`),
+                    `}`,
+                    jsVariable(resultVar, `${operand.resultVar}.Unwrap().unwrap(${operand.resultVar})`)
+                ]),
+                resultVar
+            }
+        }
     }
 }
 
