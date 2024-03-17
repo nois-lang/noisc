@@ -564,6 +564,8 @@ export const checkUnwrap = (unaryExpr: UnaryExpr, ctx: Context): void => {
     }
     const innerType = (<VidType>unwrapType).typeArgs[0]
     unaryExpr.type = innerType
+
+    upcast(operand, operand.type!, unwrap, ctx)
 }
 
 export const checkBind = (unaryExpr: UnaryExpr, ctx: Context): void => {
@@ -584,6 +586,8 @@ export const checkBind = (unaryExpr: UnaryExpr, ctx: Context): void => {
         return
     }
     scope.returns.push(operand)
+
+    upcast(operand, operand.type!, unwrap, ctx)
 }
 
 export const findUnwrapInnerType = (type: VirtualType, ctx: Context): VirtualType | undefined => {

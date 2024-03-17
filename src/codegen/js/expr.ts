@@ -91,7 +91,14 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
                 }
             }
         case 'unwrap-op':
-            return { emit: jsError('unwrap-op'), resultVar }
+            const operand = emitOperand(unaryExpr.operand, module, ctx)
+            return {
+                emit: emitLines([
+                    operand.emit,
+                    jsVariable(resultVar, `${operand.resultVar}.Unwrap().unwrap(${operand.resultVar})`)
+                ]),
+                resultVar
+            }
         case 'bind-op':
             return { emit: jsError('bind'), resultVar }
     }
@@ -230,7 +237,10 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
                     }
                 }
             }
-            return { emit: '', resultVar: operand.names.at(-1)!.value }
+            const resultVar = operand.names.at(-1)!.value
+            const upcasts = operand.upcasts
+            const upcastEmit = upcasts ? emitUpcasts(resultVar, upcasts) : ''
+            return { emit: upcastEmit, resultVar }
         }
     }
 }
