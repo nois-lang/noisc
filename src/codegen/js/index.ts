@@ -82,7 +82,7 @@ export const jsString = (str: string): string => {
 
 export const jsVariable = (name: string, emit?: string, pub = false): string => {
     const assign = `let ${name}${emit !== undefined ? ` = ${emit}` : ''}`
-    return `${pub ? 'export ' : ''}${assign}`
+    return `${pub ? 'export ' : ''}${assign};`
 }
 
 export const indent = (str: string, level = 1): string => {
