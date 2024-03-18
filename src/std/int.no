@@ -1,5 +1,3 @@
-use std::io::Display
-
 pub type Int
 
 impl Int {
@@ -50,9 +48,9 @@ impl Ord for Int {
     }
 }
 
-impl Display for Int {
-    fn fmt(self): String {
-        fmtInt(self)
+impl Show for Int {
+    fn show(self): String {
+        showInt(self)
     }
 }
 
@@ -82,5 +80,5 @@ fn eqInt(a: Int, b: Int): Bool
 
 fn cmpInt(a: Int, b: Int): Ordering
 
-fn fmtInt(a: Int): String
+fn showInt(a: Int): String
 

@@ -1,9 +1,5 @@
-pub trait Display {
-    fn fmt(self): String
-}
-
-pub fn println(display: Display): Unit {
-    printlnStr(display.fmt())
+pub fn println(string: String): Unit {
+    printlnStr(string)
 }
 
 fn printlnStr(string: String): Unit

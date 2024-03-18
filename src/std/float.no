@@ -1,5 +1,3 @@
-use std::io::Display
-
 pub type Float
 
 impl Num for Float {
@@ -38,9 +36,9 @@ impl Eq for Float {
     }
 }
 
-impl Display for Float {
-    fn fmt(self): String {
-        fmtFloat(self)
+impl Show for Float {
+    fn show(self): String {
+        showFloat(self)
     }
 }
 
@@ -68,5 +66,5 @@ fn expFloat(a: Float, b: Float): Float
 
 fn eqFloat(a: Float, b: Float): Bool
 
-fn fmtFloat(a: Float): String
+fn showFloat(a: Float): String
 

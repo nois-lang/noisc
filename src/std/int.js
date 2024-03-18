@@ -101,6 +101,6 @@ function cmpInt(a, b) {
  * @param {Int} a
  * @returns {String}
  */
-function fmtInt(a) {
+function showInt(a) {
     return String.String(a.value.toString())
 }

@@ -42,7 +42,7 @@ function notBool(a) {
  * @param {Bool} a
  * @returns {String}
  */
-function fmtBool(a) {
+function showBool(a) {
     return String.String(a.value.toString())
 }
 

@@ -151,7 +151,7 @@ const getImplImplRel = (instance: ImplDef, module: Module, ctx: Context): Instan
  * Every chain corresponds to a single `impl for` where type is assignable to impl trait
  * For all, chain.length > 0
  * For example:
- *   - String   -> [Display for String], [Eq for String], ...]
+ *   - String   -> [Show for String], [Eq for String], ...]
  *   - Iter     -> [[Iterable for Iter], [PeekableAdapter for Iter], [MapAdapter for Iter], ...]
  *   - ListIter -> [[Iter for ListIter], [Iter for ListIter, Iterable for Iter], ...]
  * TODO: detect cases where impl.forType is a generic, e.g. `impl <T: B> A for T`

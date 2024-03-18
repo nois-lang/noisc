@@ -655,7 +655,7 @@ fn main() {
         it('fn named call', () => {
             const code = `\
 fn main() {
-    let foo = println(value: 5)
+    let foo = println(value: "str")
     return unit
 }`
             const ctx = check(code)

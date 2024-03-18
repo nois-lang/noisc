@@ -16,7 +16,7 @@ Char.Char = value => ({
  * @param {Char} a
  * @returns {String}
  */
-function fmtChar(a) {
+function showChar(a) {
     return String.String(a.value)
 }
 

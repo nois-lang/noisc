@@ -1,5 +1,5 @@
 // import
-use std::io::Display
+use std::io::Show
 
 // sum type
 type Vec2(x: Float, y: Float)
@@ -12,8 +12,8 @@ impl Vec2 {
 }
 
 // impl
-impl Display for Vec2 {
-    fn fmt(self): String {
+impl Show for Vec2 {
+    fn show(self): String {
         "(" + self.x + ", " + self.y + ")"
     }
 }
@@ -72,13 +72,10 @@ fn main() {
     println("hello")
 
     // method call
-    vec.fmt()
+    vec.show()
 
     // alternative call syntax
-    Vec2::fmt(vec)
-
-    // method call syntax for ambiguous methods
-    //Vec2::Display::fmt(vec)
+    Vec2::show(vec)
 
     // if
     let d = if true { 4 } else { 2 + 6 }
@@ -132,6 +129,6 @@ fn main() {
     let p = println
 
     // method reference
-    // equivalent to |v: Vec2| v.fmt()
-    let r = Vec2::fmt
+    // equivalent to |v: Vec2| v.show()
+    let r = Vec2::show
 }

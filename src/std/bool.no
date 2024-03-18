@@ -1,5 +1,3 @@
-use std::io::Display
-
 pub type Bool {
     True,
     False
@@ -19,9 +17,9 @@ impl Bool {
     }
 }
 
-impl Display for Bool {
-    fn fmt(self): String {
-        fmtBool(self)
+impl Show for Bool {
+    fn show(self): String {
+        showBool(self)
     }
 }
 
@@ -43,7 +41,7 @@ fn orBool(a: Bool, b: Bool): Bool
 
 fn notBool(a: Bool): Bool
 
-fn fmtBool(a: Bool): String
+fn showBool(a: Bool): String
 
 fn eqBool(a: Bool, b: Bool): Bool
 

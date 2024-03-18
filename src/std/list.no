@@ -1,4 +1,3 @@
-use std::io::Display
 use std::iter::{ MapAdapter, IntersperseAdapter }
 
 pub type List<T>
@@ -32,8 +31,8 @@ impl <T> Collector<T> for List<T> {
     }
 }
 
-impl Display for List<String> {
-    fn fmt(self): String {
+impl Show for List<String> {
+    fn show(self): String {
         "[".concat(self.iter().intersperse(", ").collect<String>()).concat("]")
     }
 }
@@ -44,10 +43,10 @@ impl Copy for Int {
     }
 }
 
-impl <T: Display> Display for List<T> {
-    fn fmt(self): String {
+impl <T: Show> Show for List<T> {
+    fn show(self): String {
         // TODO: method ref
-        self.iter().map(|d| { d.fmt() }).collect<List<String>>().fmt()
+        self.iter().map(|d| { d.show() }).collect<List<String>>().show()
     }
 }
 

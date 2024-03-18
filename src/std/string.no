@@ -1,5 +1,3 @@
-use std::io::Display
-
 pub type String
 
 impl String {
@@ -9,8 +7,8 @@ impl String {
     }
 }
 
-impl Display for String {
-    fn fmt(self): String {
+impl Show for String {
+    fn show(self): String {
         self
     }
 }

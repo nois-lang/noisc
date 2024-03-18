@@ -15,7 +15,7 @@ pub use std::{
     list::List,
     never::Never,
     panic::{ panic, todo },
-    io::println,
+    io::{ println, show::Show, trace::Trace },
     option::Option::{ self, Some, None },
     result::Result::{ self, Ok, Error },
 }

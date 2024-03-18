@@ -86,6 +86,6 @@ function eqFloat(a, b) {
  * @param {Float} a
  * @returns {String}
  */
-function fmtFloat(a) {
+function showFloat(a) {
     return String.String(a.value.toString())
 }
