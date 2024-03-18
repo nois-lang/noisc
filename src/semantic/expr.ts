@@ -153,10 +153,10 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
 export const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
     switch (unaryExpr.op.kind) {
         case 'method-call-op':
-            unaryExpr.type = checkMethodCall(unaryExpr, unaryExpr.op, ctx)
+            unaryExpr.type = checkMethodCall(unaryExpr, unaryExpr.op, ctx) ?? unknownType
             return
         case 'field-access-op':
-            unaryExpr.type = checkFieldAccess(unaryExpr.operand, unaryExpr.op.name, ctx)
+            unaryExpr.type = checkFieldAccess(unaryExpr.operand, unaryExpr.op.name, ctx) ?? unknownType
             return
         case 'call-op':
             checkCall(unaryExpr, ctx)
