@@ -1,4 +1,4 @@
-import { ClosureExpr, Operand } from '../ast/operand'
+import { Operand } from '../ast/operand'
 import { Generic, Type } from '../ast/type'
 import { Context, addError } from '../scope'
 import { InstanceRelation, findSuperRelChains, getConcreteTrait } from '../scope/trait'

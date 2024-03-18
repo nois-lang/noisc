@@ -1,4 +1,4 @@
-import { emitLines, emitUpcasts, extractValue, indent, jsError, jsRelName, jsString, jsVariable, nextVariable } from '.'
+import { emitUpcasts, extractValue, jsRelName, jsString, nextVariable } from '.'
 import { Module, Param } from '../../ast'
 import { BinaryExpr, Expr, OperandExpr, UnaryExpr } from '../../ast/expr'
 import { MatchExpr, Pattern, PatternExpr } from '../../ast/match'
@@ -8,15 +8,12 @@ import { relTypeName } from '../../scope/trait'
 import { operatorImplMap } from '../../semantic/op'
 import { ConcreteGeneric } from '../../typecheck'
 import { unreachable } from '../../util/todo'
+import { EmitNode, emitIntersperse, emitToken, emitTree, jsError, jsVariable } from './node'
 import { emitBlock, emitBlockStatements } from './statement'
 
 export interface EmitExpr {
-    emit: string
+    emit: EmitNode
     resultVar: string
-}
-
-export const emitExprToString = (expr: EmitExpr | string): string => {
-    return typeof expr === 'string' ? expr : expr.emit
 }
 
 export const emitExpr = (expr: Expr, module: Module, ctx: Context): EmitExpr => {
@@ -33,8 +30,8 @@ export const emitExpr = (expr: Expr, module: Module, ctx: Context): EmitExpr => 
 export const emitOperandExpr = (operandExpr: OperandExpr, module: Module, ctx: Context): EmitExpr => {
     const operand = emitOperand(operandExpr.operand, module, ctx)
     const upcasts = operandExpr.upcasts
-    const upcastEmit = upcasts ? emitUpcasts(operand.resultVar, upcasts) : ''
-    return { emit: emitLines([operand.emit, upcastEmit]), resultVar: operand.resultVar }
+    const upcastEmit = upcasts ? emitUpcasts(operand.resultVar, upcasts) : undefined
+    return { emit: emitTree([operand.emit, upcastEmit]), resultVar: operand.resultVar }
 }
 
 export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context): EmitExpr => {
@@ -52,23 +49,23 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
             const jsArgs = [...args, ...genericTypes]
             const argsEmit = (
                 methodDef.fn.static ? jsArgs.map(a => a.resultVar) : [lOp.resultVar, ...jsArgs.map(a => a.resultVar)]
-            ).join(', ')
-            const upcastEmit = upcasts ? emitUpcasts(lOp.resultVar, upcasts) : ''
+            ).join(',')
+            const upcastEmit = upcasts ? emitUpcasts(lOp.resultVar, upcasts) : undefined
             const callerEmit = call.impl ? jsRelName(call.impl) : `${lOp.resultVar}.${relTypeName(methodDef.rel)}`
-            const callEmit = jsVariable(resultVar, `${callerEmit}().${methodName}(${argsEmit})`)
+            const callEmit = jsVariable(resultVar, emitToken(`${callerEmit}().${methodName}(${argsEmit})`))
             return {
-                emit: emitLines([lOp.emit, upcastEmit, emitLines(jsArgs.map(a => a.emit)), callEmit]),
+                emit: emitTree([lOp.emit, upcastEmit, emitTree(jsArgs.map(a => a.emit)), callEmit]),
                 resultVar
             }
         }
         case 'field-access-op': {
             const lOp = emitOperand(unaryExpr.operand, module, ctx)
-            const upcastEmit = upcasts ? emitUpcasts(lOp.resultVar, upcasts) : ''
+            const upcastEmit = upcasts ? emitUpcasts(lOp.resultVar, upcasts) : undefined
             return {
-                emit: emitLines([
+                emit: emitTree([
                     lOp.emit,
                     upcastEmit,
-                    jsVariable(resultVar, `${lOp.resultVar}.value.${unaryExpr.op.name.value}`)
+                    jsVariable(resultVar, emitToken(`${lOp.resultVar}.value.${unaryExpr.op.name.value}`))
                 ]),
                 resultVar
             }
@@ -77,53 +74,57 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
             const call = unaryExpr.op
             const args = call.args.map(a => {
                 const { emit, resultVar: res } = emitExpr(a.expr, module, ctx)
-                const upcastEmit = a.expr.upcasts ? emitUpcasts(res, a.expr.upcasts) : ''
-                return { emit: emitLines([emit, upcastEmit]), resultVar: res }
+                const upcastEmit = a.expr.upcasts ? emitUpcasts(res, a.expr.upcasts) : undefined
+                return { emit: emitTree([emit, upcastEmit]), resultVar: res }
             })
             const genericTypes = call.generics?.map(g => emitGeneric(g, module, ctx)) ?? []
             const jsArgs = [...args, ...genericTypes]
-            const upcastEmit = unaryExpr.upcasts ? emitUpcasts(resultVar, unaryExpr.upcasts) : ''
+            const upcastEmit = unaryExpr.upcasts ? emitUpcasts(resultVar, unaryExpr.upcasts) : undefined
             const variantDef = call.variantDef
             if (variantDef) {
                 const variantName = `${variantDef.typeDef.name.value}.${variantDef.variant.name.value}`
-                const call = jsVariable(resultVar, `${variantName}(${jsArgs.map(a => a.resultVar).join(', ')})`)
+                const call = jsVariable(
+                    resultVar,
+                    emitToken(`${variantName}(${jsArgs.map(a => a.resultVar).join(',')})`)
+                )
                 return {
-                    emit: emitLines([...jsArgs.map(a => a.emit), call, upcastEmit]),
+                    emit: emitTree([...jsArgs.map(a => a.emit), call, upcastEmit]),
                     resultVar
                 }
             } else {
                 const operand = emitOperand(unaryExpr.operand, module, ctx)
-                const call = jsVariable(resultVar, `${operand.resultVar}(${jsArgs.map(a => a.resultVar).join(', ')})`)
+                const call = jsVariable(
+                    resultVar,
+                    emitToken(`${operand.resultVar}(${jsArgs.map(a => a.resultVar).join(',')})`)
+                )
                 return {
-                    emit: emitLines([operand.emit, ...jsArgs.map(a => a.emit), call, upcastEmit]),
+                    emit: emitTree([operand.emit, ...jsArgs.map(a => a.emit), call, upcastEmit]),
                     resultVar
                 }
             }
         case 'unwrap-op': {
             const operand = emitOperand(unaryExpr.operand, module, ctx)
-            const upcastEmit = upcasts ? emitUpcasts(operand.resultVar, upcasts) : ''
+            const upcastEmit = upcasts ? emitUpcasts(operand.resultVar, upcasts) : undefined
             return {
-                emit: emitLines([
+                emit: emitTree([
                     operand.emit,
                     upcastEmit,
-                    jsVariable(resultVar, `${operand.resultVar}.Unwrap().unwrap(${operand.resultVar})`)
+                    jsVariable(resultVar, emitToken(`${operand.resultVar}.Unwrap().unwrap(${operand.resultVar})`))
                 ]),
                 resultVar
             }
         }
         case 'bind-op': {
             const operand = emitOperand(unaryExpr.operand, module, ctx)
-            const upcastEmit = upcasts ? emitUpcasts(operand.resultVar, upcasts) : ''
+            const upcastEmit = upcasts ? emitUpcasts(operand.resultVar, upcasts) : undefined
             const bindVar = nextVariable(ctx)
             return {
-                emit: emitLines([
+                emit: emitTree([
                     operand.emit,
                     upcastEmit,
-                    jsVariable(bindVar, `${operand.resultVar}.Unwrap().bind(${operand.resultVar})`),
-                    `if (${bindVar}.$noisVariant === "None") {`,
-                    indent(`return ${bindVar}`),
-                    `}`,
-                    jsVariable(resultVar, `${operand.resultVar}.Unwrap().unwrap(${operand.resultVar})`)
+                    jsVariable(bindVar, emitToken(`${operand.resultVar}.Unwrap().bind(${operand.resultVar})`)),
+                    emitToken(`if(${bindVar}.$noisVariant==="None"){return ${bindVar}}`),
+                    jsVariable(resultVar, emitToken(`${operand.resultVar}.Unwrap().unwrap(${operand.resultVar})`))
                 ]),
                 resultVar
             }
@@ -138,12 +139,12 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
     switch (binaryExpr.binaryOp.kind) {
         case 'assign-op': {
             return {
-                emit: emitLines([
+                emit: emitTree([
                     lOp.emit,
                     rOp.emit,
-                    `${extractValue(lOp.resultVar)} = ${extractValue(rOp.resultVar)}`,
-                    `${lOp.resultVar}.$noisType = ${rOp.resultVar}.$noisType`,
-                    `${lOp.resultVar}.$noisVariant = ${rOp.resultVar}.$noisVariant`
+                    emitToken(`${extractValue(lOp.resultVar)}=${extractValue(rOp.resultVar)};`),
+                    emitToken(`${lOp.resultVar}.$noisType=${rOp.resultVar}.$noisType;`),
+                    emitToken(`${lOp.resultVar}.$noisVariant=${rOp.resultVar}.$noisVariant;`)
                 ]),
                 resultVar
             }
@@ -154,9 +155,12 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, module: Module, ctx: Cont
             const trait = methodVid.names.at(-2)!
             const method = methodVid.names.at(-1)!
             const callerEmit = binaryExpr.binaryOp.impl ? jsRelName(binaryExpr.binaryOp.impl) : trait
-            const callEmit = jsVariable(resultVar, `${callerEmit}().${method}(${lOp.resultVar}, ${rOp.resultVar})`)
+            const callEmit = jsVariable(
+                resultVar,
+                emitToken(`${callerEmit}().${method}(${lOp.resultVar}, ${rOp.resultVar})`)
+            )
             return {
-                emit: emitLines([lOp.emit, rOp.emit, callEmit]),
+                emit: emitTree([lOp.emit, rOp.emit, callEmit]),
                 resultVar
             }
         }
@@ -169,9 +173,17 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
         case 'if-expr': {
             const { emit: cEmit, resultVar: cVar } = emitExpr(operand.condition, module, ctx)
             const thenBlock = emitBlock(operand.thenBlock, module, ctx, resultVar)
-            const elseBlock = operand.elseBlock ? `else ${emitBlock(operand.elseBlock, module, ctx, resultVar)}` : ''
+            const elseBlock = operand.elseBlock
+                ? emitTree([emitToken('else'), emitBlock(operand.elseBlock, module, ctx, resultVar)])
+                : emitToken('')
             return {
-                emit: emitLines([jsVariable(resultVar), cEmit, `if (${extractValue(cVar)}) ${thenBlock} ${elseBlock}`]),
+                emit: emitTree([
+                    jsVariable(resultVar),
+                    cEmit,
+                    emitToken(`if(${extractValue(cVar)})`),
+                    thenBlock,
+                    elseBlock
+                ]),
                 resultVar
             }
         }
@@ -180,50 +192,59 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
         case 'while-expr': {
             const { emit: cEmit, resultVar: cVar } = emitExpr(operand.condition, module, ctx)
             const { emit: cEndEmit, resultVar: cEndVar } = emitExpr(operand.condition, module, ctx)
-            const block = emitLines([
-                ...emitBlockStatements(operand.block, module, ctx),
-                cEndEmit,
-                `${cVar} = ${cEndVar}`
-            ])
-            return { emit: emitLines([cEmit, `while (${extractValue(cVar)}) {\n${indent(block)}\n}`]), resultVar }
+            return {
+                emit: emitTree([
+                    cEmit,
+                    emitToken(`while (${extractValue(cVar)}) {`),
+                    ...emitBlockStatements(operand.block, module, ctx),
+                    cEndEmit,
+                    emitToken(`${cVar}=${cEndVar};`),
+                    emitToken('}')
+                ]),
+                resultVar
+            }
         }
         case 'for-expr': {
             const expr = emitExpr(operand.expr, module, ctx)
             const iteratorVar = nextVariable(ctx)
-            const upcastsEmit = operand.expr.upcasts ? emitUpcasts(expr.resultVar, operand.expr.upcasts) : ''
+            const upcastsEmit = operand.expr.upcasts ? emitUpcasts(expr.resultVar, operand.expr.upcasts) : undefined
             const iterator = {
-                emit: emitLines([
+                emit: emitTree([
                     expr.emit,
                     upcastsEmit,
                     // TODO: do not invoke `iter` if it is already Iter
-                    jsVariable(iteratorVar, `${expr.resultVar}.Iterable().iter(${expr.resultVar})`)
+                    jsVariable(iteratorVar, emitToken(`${expr.resultVar}.Iterable().iter(${expr.resultVar});`))
                 ]),
                 resultVar: iteratorVar
             }
             const iterateeVarOption = nextVariable(ctx)
             const iterateeVar = nextVariable(ctx)
-            const thenBlock = emitLines([
-                jsVariable(iterateeVar, `${extractValue(iterateeVarOption)}.value`),
+            const thenBlock = emitTree([
+                jsVariable(iterateeVar, emitToken(`${extractValue(iterateeVarOption)}.value;`)),
                 emitPattern(operand.pattern, module, ctx, `${iterateeVar}`),
                 ...emitBlockStatements(operand.block, module, ctx)
             ])
-            const block = emitLines([
-                jsVariable(iterateeVarOption, `${iterator.resultVar}.Iter().next(${iterator.resultVar})`),
-                `if (${iterateeVarOption}.$noisVariant === "Some") {`,
-                indent(thenBlock),
-                `} else {`,
-                indent(`break;`),
-                `}`
+            const block = emitTree([
+                jsVariable(iterateeVarOption, emitToken(`${iterator.resultVar}.Iter().next(${iterator.resultVar})`)),
+                emitToken(`if(${iterateeVarOption}.$noisVariant==="Some"){`),
+                thenBlock,
+                emitToken(`}else{break;}`)
             ])
-            const forEmit = emitLines([iterator.emit, 'while (true) {', indent(block), '}'])
-            return { emit: emitLines([jsVariable(resultVar), forEmit]), resultVar }
+            const forEmit = emitTree([iterator.emit, emitToken('while(true){'), block, emitToken('}')])
+            return { emit: emitTree([jsVariable(resultVar), forEmit]), resultVar }
         }
         case 'match-expr':
             return emitMatchExpr(operand, module, ctx, resultVar)
         case 'closure-expr': {
-            const params = operand.params.map(p => emitParam(p, module, ctx)).join(', ')
+            const params = emitIntersperse(
+                operand.params.map(p => emitParam(p, module, ctx)),
+                ','
+            )
             const block = emitBlock(operand.block, module, ctx, true)
-            return { emit: jsVariable(resultVar, `function(${params}) ${block}`), resultVar }
+            return {
+                emit: jsVariable(resultVar, emitTree([emitToken(`function(`), params, emitToken(')'), block])),
+                resultVar
+            }
         }
         case 'operand-expr':
         case 'unary-expr':
@@ -232,9 +253,9 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
         case 'list-expr':
             const items = operand.exprs.map(e => emitExpr(e, module, ctx))
             return {
-                emit: emitLines([
+                emit: emitTree([
                     ...items.map(i => i.emit),
-                    jsVariable(resultVar, `List.List([${items.map(i => i.resultVar).join(', ')}])`)
+                    jsVariable(resultVar, emitToken(`List.List([${items.map(i => i.resultVar).join(',')}])`))
                 ]),
                 resultVar
             }
@@ -250,7 +271,7 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
                     const typeName = operand.names.at(-2)!.value
                     const traitName = relTypeName(operand.ref.def.rel)
                     return {
-                        emit: '',
+                        emit: emitToken(''),
                         resultVar: `${typeName}.${traitName}().${operand.ref.def.fn.name.value}`
                     }
                 } else {
@@ -259,15 +280,15 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
                     const relName = jsRelName(operand.ref.def.rel)
                     const fnName = operand.ref.def.fn.name.value
                     return {
-                        emit: '',
-                        resultVar: `(function(${arg}, ...${args}) { return ${arg}.${relName}().${fnName}(${arg}, ${args}); })`
+                        emit: emitToken(''),
+                        resultVar: `(function(${arg},...${args}){return ${arg}.${relName}().${fnName}(${arg},${args});})`
                     }
                 }
             }
             const resultVar = operand.names.at(-1)!.value
             const upcasts = operand.upcasts
-            const upcastEmit = upcasts ? emitUpcasts(resultVar, upcasts) : ''
-            return { emit: upcastEmit, resultVar }
+            const upcastEmit = upcasts ? emitUpcasts(resultVar, upcasts) : undefined
+            return { emit: emitTree([upcastEmit]), resultVar }
         }
     }
 }
@@ -293,34 +314,34 @@ export const emitLiteral = (operand: Operand, module: Module, ctx: Context, resu
         default:
             return unreachable()
     }
-    return { emit: emitLines([jsVariable(resultVar, constructorEmit)]), resultVar }
+    return { emit: emitTree([jsVariable(resultVar, emitToken(constructorEmit))]), resultVar }
 }
 
 export const emitMatchExpr = (matchExpr: MatchExpr, module: Module, ctx: Context, resultVar: string): EmitExpr => {
     const { emit: sEmit, resultVar: sVar } = emitExpr(matchExpr.expr, module, ctx)
     if (matchExpr.clauses.length === 0) {
-        return { emit: '', resultVar }
+        return { emit: emitToken(''), resultVar }
     }
     const clauses = matchExpr.clauses.map(clause => {
         if (clause.patterns.length !== 1) return jsError('union clause')
         const pattern = clause.patterns[0]
         const cond = emitPatternExprCondition(pattern.expr, module, ctx, sVar)
-        const block = emitLines([
+        const block = emitTree([
             emitPattern(pattern, module, ctx, sVar),
             ...emitBlockStatements(clause.block, module, ctx, resultVar)
         ])
-        return emitLines([cond.emit, `if (${cond.resultVar}) {\n${indent(block)}\n}`])
+        return emitTree([cond.emit, emitTree([emitToken(`if(${cond.resultVar}){`), block, emitToken('}')])])
     })
     let ifElseChain = clauses[0]
     for (let i = 1; i < clauses.length; i++) {
         const clause = clauses[i]
-        ifElseChain += ` else {\n${indent(clause, i)}`
+        ifElseChain = emitTree([ifElseChain, emitToken(`else{`), clause])
     }
     for (let i = clauses.length - 2; i >= 0; i--) {
-        ifElseChain += `\n${indent('}', i)}`
+        ifElseChain = emitTree([ifElseChain, emitToken('}')])
     }
     return {
-        emit: emitLines([jsVariable(resultVar), sEmit, ifElseChain]),
+        emit: emitTree([jsVariable(resultVar), sEmit, ifElseChain]),
         resultVar
     }
 }
@@ -335,11 +356,11 @@ export const emitPatternExprCondition = (
     switch (patternExpr.kind) {
         case 'con-pattern':
             const variantName = patternExpr.identifier.names.at(-1)!.value
-            const cond = `${sVar}.$noisVariant === ${jsString(variantName)}`
+            const cond = emitToken(`${sVar}.$noisVariant===${jsString(variantName)}`, patternExpr.identifier.parseNode)
             // TODO: nested patterns
             return { emit: jsVariable(resultVar, cond), resultVar }
         case 'hole':
-            return { emit: jsVariable(resultVar, 'true'), resultVar }
+            return { emit: jsVariable(resultVar, emitToken('true')), resultVar }
         case 'string-literal':
         case 'char-literal':
         case 'int-literal':
@@ -362,11 +383,11 @@ export const emitPatternExprCondition = (
     }
 }
 
-export const emitParam = (param: Param, module: Module, ctx: Context): string => {
+export const emitParam = (param: Param, module: Module, ctx: Context): EmitNode => {
     if (param.pattern.expr.kind !== 'name') {
         return jsError('destructuring')
     }
-    return param.pattern.expr.value
+    return emitToken(param.pattern.expr.value, param.pattern.expr.parseNode)
 }
 
 export const emitPattern = (
@@ -375,20 +396,20 @@ export const emitPattern = (
     ctx: Context,
     assignVar: string,
     pub: boolean = false
-): string => {
+): EmitNode => {
     switch (pattern.expr.kind) {
         case 'name':
             const name = pattern.expr.value
-            return jsVariable(name, assignVar, pub)
+            return jsVariable(name, emitToken(assignVar), pub)
         case 'con-pattern':
             const patterns = pattern.expr.fieldPatterns.map(f => {
                 const fieldAssign = f.name.value
                 if (f.pattern) {
                     return emitPattern(f.pattern, module, ctx, `${assignVar}.value.${fieldAssign}`)
                 }
-                return jsVariable(fieldAssign, `${assignVar}.value.${fieldAssign}`)
+                return jsVariable(fieldAssign, emitToken(`${assignVar}.value.${fieldAssign}`))
             })
-            return emitLines([...patterns])
+            return emitTree([...patterns])
         case 'list-expr':
         case 'string-literal':
         case 'char-literal':
@@ -398,7 +419,7 @@ export const emitPattern = (
         case 'identifier':
             return jsError(pattern.expr.kind)
         case 'hole':
-            return ''
+            return emitToken('')
         default:
             return unreachable()
     }
@@ -407,9 +428,9 @@ export const emitPattern = (
 export const emitGeneric = (generic: ConcreteGeneric, module: Module, ctx: Context): EmitExpr => {
     const resultVar = nextVariable(ctx)
     // TODO: only insert bounded types
-    const impls: string[] = []
+    const impls: EmitNode[] = []
     for (const impl of generic.impls) {
-        impls.push(`${resultVar}.${relTypeName(impl)} = ${jsRelName(impl)};`)
+        impls.push(emitToken(`${resultVar}.${relTypeName(impl)} = ${jsRelName(impl)};`))
     }
-    return { emit: emitLines([jsVariable(resultVar, '{}'), ...impls]), resultVar }
+    return { emit: emitTree([jsVariable(resultVar, emitToken('{}')), ...impls]), resultVar }
 }

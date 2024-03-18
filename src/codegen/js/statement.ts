@@ -1,18 +1,19 @@
-import { emitLines, emitUpcasts, indent, jsRelName, jsString, jsVariable, nextVariable } from '.'
+import { emitUpcasts, jsRelName, jsString, nextVariable } from '.'
 import { Module } from '../../ast'
 import { Block, BreakStmt, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '../../ast/statement'
 import { TypeDef, Variant } from '../../ast/type-def'
 import { Context } from '../../scope'
 import { typeDefToVirtualType } from '../../scope/trait'
 import { vidToString } from '../../scope/util'
-import { EmitExpr, emitExpr, emitExprToString, emitParam, emitPattern } from './expr'
+import { EmitExpr, emitExpr, emitParam, emitPattern } from './expr'
+import { EmitNode, emitIntersperse, emitToken, emitTree, jsVariable } from './node'
 
-export const emitStatement = (statement: Statement, module: Module, ctx: Context): string | EmitExpr => {
+export const emitStatement = (statement: Statement, module: Module, ctx: Context): EmitNode | EmitExpr => {
     switch (statement.kind) {
         case 'var-def':
             return emitVarDef(statement, module, ctx)
         case 'fn-def':
-            return emitFnDef(statement, module, ctx)
+            return emitFnDef(statement, module, ctx) ?? emitToken('')
         case 'trait-def':
         case 'impl-def':
             return emitInstanceDef(statement, module, ctx)
@@ -29,50 +30,31 @@ export const emitStatement = (statement: Statement, module: Module, ctx: Context
     }
 }
 
-export const emitVarDef = (varDef: VarDef, module: Module, ctx: Context): string => {
+export const emitVarDef = (varDef: VarDef, module: Module, ctx: Context): EmitNode => {
     const { emit: exprEmit, resultVar } = emitExpr(varDef.expr!, module, ctx)
-    return emitLines([exprEmit, emitPattern(varDef.pattern, module, ctx, resultVar, varDef.pub)])
+    return emitTree([exprEmit, emitPattern(varDef.pattern, module, ctx, resultVar, varDef.pub)])
 }
 
-export const emitFnDef = (fnDef: FnDef, module: Module, ctx: Context, asProperty = false): string => {
-    if (!fnDef.block) return ''
+export const emitFnDef = (fnDef: FnDef, module: Module, ctx: Context, asProperty = false): EmitNode | undefined => {
+    if (!fnDef.block) return undefined
     const name = fnDef.name.value
     const params = fnDef.params.map(p => emitParam(p, module, ctx))
-    const generics = fnDef.generics.map(g => g.name.value)
-    const jsParams = [...params, ...generics].join(', ')
+    const generics = fnDef.generics.map(g => emitToken(g.name.value, g.name.parseNode))
+    const jsParams = emitIntersperse([...params, ...generics], ',')
     const block = emitBlock(fnDef.block, module, ctx, true)
     if (asProperty) {
-        return `${name}: function(${jsParams}) ${block}`
+        return emitTree([emitToken(`${name}: function(`), jsParams, emitToken(')'), block], fnDef.parseNode)
     } else {
-        return `${fnDef.pub ? 'export ' : ''}function ${name}(${jsParams}) ${block}`
+        return emitTree(
+            [emitToken(`${fnDef.pub ? 'export ' : ''}function ${name}(`), jsParams, emitToken(')'), block],
+            fnDef.parseNode
+        )
     }
 }
 
-export const emitInstanceDef = (instanceDef: ImplDef | TraitDef, module: Module, ctx: Context): string => {
+export const emitInstanceDef = (instanceDef: ImplDef | TraitDef, module: Module, ctx: Context): EmitNode => {
     const rel = ctx.impls.find(i => i.instanceDef === instanceDef)!
-    const impl = emitInstance(instanceDef, module, ctx)
-    return emitLines([impl.emit, jsVariable(jsRelName(rel), impl.resultVar, true)])
-}
-
-export const emitTypeDef = (typeDef: TypeDef, module: Module, ctx: Context): string => {
-    const name = typeDef.name.value
-    const variants = typeDef.variants.map(v => indent(`${v.name.value}: ${emitVariant(v, typeDef, module, ctx)}`))
-    const items_ = variants.filter(i => i.length > 0).join(',\n')
-    const items = items_.length > 0 ? `{\n${items_}\n}` : '{}'
-    return jsVariable(name, items, true)
-}
-
-export const emitReturnStmt = (returnStmt: ReturnStmt, module: Module, ctx: Context): string => {
-    const { emit: exprEmit, resultVar } = emitExpr(returnStmt.returnExpr, module, ctx)
-    return [exprEmit, `return ${resultVar};`].join('\n')
-}
-
-export const emitBreakStmt = (breakStmt: BreakStmt, module: Module, ctx: Context): string => {
-    return 'break;'
-}
-
-export const emitInstance = (instance: ImplDef | TraitDef, module: Module, ctx: Context): EmitExpr => {
-    const superMethods = instance.kind === 'impl-def' ? instance.superMethods ?? [] : []
+    const superMethods = instanceDef.kind === 'impl-def' ? instanceDef.superMethods ?? [] : []
     const ms = superMethods.map(m => {
         const params = m.fn.params.map((p, i) => {
             const pVar = nextVariable(ctx)
@@ -80,26 +62,51 @@ export const emitInstance = (instance: ImplDef | TraitDef, module: Module, ctx: 
             if (upcastMap) {
                 return { emit: emitUpcasts(pVar, upcastMap), resultVar: pVar }
             } else {
-                return { emit: '', resultVar: pVar }
+                return { emit: emitToken(''), resultVar: pVar }
             }
         })
         const mName = m.fn.name.value
-        const block = emitLines([
+        const block = emitTree([
+            emitToken('{'),
             ...params.map(p => p.emit),
-            `return ${jsRelName(m.rel)}().${mName}(${params.map(p => p.resultVar).join(', ')})`
+            emitToken(`return ${jsRelName(m.rel)}().${mName}(${params.map(p => p.resultVar).join(',')})}`)
         ])
-        return `${mName}: function(${params.map(p => p.resultVar).join(', ')}) {\n${indent(block)}\n}`
+        return emitTree([emitToken(`${mName}:function(${params.map(p => p.resultVar).join(',')}) `), block])
     })
-    const fns = instance.block.statements
+    const fns = instanceDef.block.statements
         .map(s => <FnDef>s)
         .map(f => emitFnDef(f, module, ctx, true))
-        .filter(f => f.length > 0)
+        .filter(f => f)
+        .map(f => f!)
     const all = [...ms, ...fns]
-    const generics = instance.generics.map(g => g.name.value)
+    const generics = instanceDef.generics.map(g => g.name.value)
     const cached = nextVariable(ctx)
-    const fnEmit = `{${all.length > 0 ? `\n${indent(all.join(',\n'))}\n` : ''}}`
-    const block = emitLines([`if (${cached}) { return ${cached}; }`, `${cached} = ${fnEmit}`, `return ${cached}`])
-    return { emit: jsVariable(cached), resultVar: `function(${generics.join(', ')}) {\n${indent(block)}\n}` }
+    const fnEmit = emitTree([emitToken('{'), emitIntersperse(all, ','), emitToken('};')])
+    const instanceEmit = emitTree([
+        emitToken(`function(${generics.join(',')}){if(${cached}){return ${cached};}${cached}=`),
+        fnEmit,
+        emitToken(`return ${cached};}`)
+    ])
+    return emitTree([jsVariable(cached), jsVariable(jsRelName(rel), instanceEmit, true)])
+}
+
+export const emitTypeDef = (typeDef: TypeDef, module: Module, ctx: Context): EmitNode => {
+    const name = typeDef.name.value
+    const variants = typeDef.variants.map(v =>
+        emitTree([emitToken(`${v.name.value}:`), emitVariant(v, typeDef, module, ctx)], v.parseNode)
+    )
+    const items_ = emitIntersperse(variants, ',')
+    const items = items_.nodes.length > 0 ? emitTree([emitToken('{'), items_, emitToken('}')]) : emitToken('{}')
+    return jsVariable(name, items, true)
+}
+
+export const emitReturnStmt = (returnStmt: ReturnStmt, module: Module, ctx: Context): EmitNode => {
+    const { emit: exprEmit, resultVar } = emitExpr(returnStmt.returnExpr, module, ctx)
+    return emitTree([exprEmit, emitToken(`return ${resultVar};`)], returnStmt.parseNode)
+}
+
+export const emitBreakStmt = (breakStmt: BreakStmt, module: Module, ctx: Context): EmitNode => {
+    return emitToken('break;')
 }
 
 export const emitBlockStatements = (
@@ -107,44 +114,45 @@ export const emitBlockStatements = (
     module: Module,
     ctx: Context,
     resultVar?: boolean | string
-): string[] => {
+): EmitNode[] => {
     const statements = block.statements.map(s => emitStatement(s, module, ctx))
     const last = statements.at(-1)
-    if (resultVar !== undefined && typeof last === 'object') {
+    if (resultVar !== undefined && last && 'resultVar' in last) {
         if (typeof resultVar === 'string') {
-            statements.push(`${resultVar} = ${last.resultVar};`)
+            statements.push(emitToken(`${resultVar} = ${last.resultVar};`))
         }
         if (resultVar === true) {
-            statements.push(`return ${last.resultVar};`)
+            statements.push(emitToken(`return ${last.resultVar};`))
         }
     }
-    return statements.map(emitExprToString).filter(s => s.length > 0)
+    return statements.map(s => ('resultVar' in s ? s.emit : s))
 }
 
-export const emitBlock = (block: Block, module: Module, ctx: Context, resultVar?: boolean | string): string => {
-    const statements_ = emitBlockStatements(block, module, ctx, resultVar)
-    const statements = statements_.length > 0 ? `\n${indent(statements_.join('\n'))}\n` : ''
-    return `{${statements}}`
+export const emitBlock = (block: Block, module: Module, ctx: Context, resultVar?: boolean | string): EmitNode => {
+    const statements = emitBlockStatements(block, module, ctx, resultVar)
+    return emitTree([emitToken('{'), ...statements, emitToken('}')], block.parseNode)
 }
 
-export const emitVariant = (v: Variant, typeDef: TypeDef, module: Module, ctx: Context) => {
+export const emitVariant = (v: Variant, typeDef: TypeDef, module: Module, ctx: Context): EmitNode => {
     const fieldNames = v.fieldDefs.map(f => f.name.value)
     const fields_ = fieldNames.map(f => `${f}`)
-    const fields = fields_.length > 0 ? ` ${fields_.join(', ')} ` : ''
+    const fields = fields_.length > 0 ? ` ${fields_.join(',')} ` : ''
     const type = jsString(vidToString(typeDefToVirtualType(typeDef, ctx, module).identifier))
     const name = jsString(v.name.value)
-    const props = [
-        `$noisType: ${type}`,
-        ...(typeDef.variants.length > 1 ? [`$noisVariant: ${name}`] : []),
-        `value: {${fields}}`,
-        `upcast: ${emitUpcastFn(v, typeDef, module, ctx)}`
-    ].join(',\n')
-    return `function(${fieldNames.join(', ')}) {\n${indent(`return {\n${indent(props)}\n}`)}\n}`
+    const props = emitIntersperse(
+        [
+            emitToken(`$noisType:${type}`),
+            emitToken(typeDef.variants.length > 1 ? `$noisVariant: ${name}` : ''),
+            emitToken(`value:{${fields}}`),
+            emitTree([emitToken(`upcast:`), emitUpcastFn(v, typeDef, module, ctx)])
+        ],
+        ','
+    )
+    return emitTree([emitToken(`function(${fieldNames.join(',')}) {`), emitToken('return{'), props, emitToken('}}')])
 }
 
-export const emitUpcastFn = (v: Variant, typeDef: TypeDef, module: Module, ctx: Context) => {
+export const emitUpcastFn = (v: Variant, typeDef: TypeDef, module: Module, ctx: Context): EmitNode => {
     const params = ['value', 'Self', ...typeDef.generics.map(g => g.name.value)]
-    const selfG = emitLines(['for (const [trait, impl] of Self) {', indent('value[trait] = impl;'), '}'])
-    const block = emitLines([selfG])
-    return `function(${params.join(', ')}) {\n${indent(block)}\n}`
+    const selfG = 'for(const [trait,impl] of Self){value[trait]=impl;}'
+    return emitTree([emitToken(`function(${params.join(',')}) {`), emitToken(selfG), emitToken('}')], v.parseNode)
 }

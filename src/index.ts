@@ -15,6 +15,7 @@ import { Context, pathToVid } from './scope'
 import { buildInstanceRelations } from './scope/trait'
 import { checkModule, checkTopLevelDefinition, prepareModule } from './semantic'
 import { Source } from './source'
+import { foldEmitTree } from './sourcemap'
 import { assert } from './util/todo'
 
 const dir = dirname(fileURLToPath(import.meta.url))
@@ -199,7 +200,9 @@ if (config.emit) {
                     ? m.block.statements.find(s => s.kind === 'fn-def' && s.pub && s.name.value === 'main')
                     : undefined
             const mainFnName = mainFn?.kind === 'fn-def' ? mainFn.name.value : undefined
-            const js = [emitModule(m, ctx, mainFnName), native].filter(m => m.length > 0).join('\n\n')
+            const emitNode = emitModule(m, ctx, mainFnName)
+            const { emit, map } = foldEmitTree(emitNode)
+            const js = [emit, native].filter(m => m.length > 0).join('\n\n')
             const jsPath = join(moduleOutPath.dir, moduleOutPath.name) + '.js'
             writeFile(jsPath, js).then(() => console.info(`emit: js           ${jsPath} [${js.length}B]`))
         })
@@ -211,8 +214,9 @@ if (config.emit) {
                 ? m.block.statements.find(s => s.kind === 'fn-def' && s.pub && s.name.value === 'main')
                 : undefined
         const mainFnName = mainFn?.kind === 'fn-def' ? mainFn.name.value : undefined
-        const js = emitModule(m, ctx, mainFnName)
+        const emitNode = emitModule(m, ctx, mainFnName)
+        const { emit, map } = foldEmitTree(emitNode)
         const jsPath = join(config.outPath, parse(config.pkgPath).name) + '.js'
-        writeFile(jsPath, js).then(() => console.info(`emit: js           ${jsPath} [${js.length}B]`))
+        writeFile(jsPath, emit).then(() => console.info(`emit: js           ${jsPath} [${emit.length}B]`))
     }
 }
