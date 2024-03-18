@@ -36,7 +36,13 @@ pub fn main() {
         Shape::Rect(width: 4., height: 2.),
         Shape::Circle(radius: 12.34),
     ]
-    println(shapes.iter().map(Area::area).collect<List<_>>())
+    println(
+        shapes
+            .iter()
+            .map(|s| { s.area() })
+            .collect<List<_>>()
+            .show()
+    )
 }
 ```
 
