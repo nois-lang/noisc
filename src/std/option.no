@@ -33,3 +33,6 @@ impl <T> Unwrap<T> for Option<T> {
         self
     }
 }
+
+impl <T: Trace> Trace for Option<T> {}
+

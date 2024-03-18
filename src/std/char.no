@@ -6,6 +6,8 @@ impl Show for Char {
     }
 }
 
+impl Trace for Char {}
+
 impl Eq for Char {
     fn eq(self, other: Self): Bool {
         eqChar(self, other)

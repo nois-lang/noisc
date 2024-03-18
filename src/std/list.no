@@ -44,6 +44,8 @@ impl <T: Show> Show for List<T> {
     }
 }
 
+impl <T: Trace> Trace for List<T> {}
+
 impl Copy for Int {
     fn copy(self): Self {
         copy(self)

@@ -42,6 +42,8 @@ impl Show for Float {
     }
 }
 
+impl Trace for Float {}
+
 impl Copy for Int {
     fn copy(self): Self {
         copy(self)

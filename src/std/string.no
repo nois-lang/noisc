@@ -13,6 +13,8 @@ impl Show for String {
     }
 }
 
+impl Trace for String {}
+
 impl Eq for String {
     fn eq(self, other: Self): Bool {
         eqString(self, other)

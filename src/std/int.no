@@ -54,6 +54,8 @@ impl Show for Int {
     }
 }
 
+impl Trace for Int {}
+
 impl Copy for Int {
     fn copy(self): Self {
         copy(self)

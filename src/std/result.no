@@ -37,3 +37,6 @@ impl <T> Unwrap<T> for Result<T, _> {
         self.ok()
     }
 }
+
+impl <T: Trace, E: Trace> Trace for Result<T, E> {}
+

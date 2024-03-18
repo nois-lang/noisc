@@ -23,6 +23,8 @@ impl Show for Bool {
     }
 }
 
+impl Trace for Bool {}
+
 impl Eq for Bool {
     fn eq(self, other: Self): Bool {
         eqBool(self, other)
