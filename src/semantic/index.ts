@@ -23,7 +23,7 @@ import { Definition, MethodDef, NameDef, VirtualIdentifierMatch, resolveVid, typ
 import { VirtualType, genericToVirtual, isAssignable, typeEq, typeToVirtual } from '../typecheck'
 import { instanceGenericMap, makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { holeType, neverType, selfType, unitType, unknownType } from '../typecheck/type'
-import { assert, todo } from '../util/todo'
+import { assert, todo, unreachable } from '../util/todo'
 import {
     argCountMismatchError,
     circularModuleError,
@@ -769,8 +769,15 @@ export const checkCallArgs = (node: AstNode<any>, args: Operand[], paramTypes: V
         const paramType = paramTypes[i]
         const arg = args[i]
         if (arg.type?.kind === 'malleable-type' && paramType.kind === 'fn-type') {
-            checkClosureExpr(arg.type.closure, ctx, node, paramType)
-            arg.type = arg.type.closure.type
+            switch (arg.type.operand.kind) {
+                case 'closure-expr':
+                    const closure = arg.type.operand
+                    checkClosureExpr(closure, ctx, node, paramType)
+                    arg.type = closure.type
+                    break
+                default:
+                    unreachable()
+            }
         }
         if (!isAssignable(arg.type!, paramType, ctx)) {
             addError(ctx, typeError(ctx, arg, arg.type!, paramType))

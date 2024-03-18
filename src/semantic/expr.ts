@@ -27,7 +27,7 @@ import {
     resolveType
 } from '../typecheck/generic'
 import { holeType, unitType, unknownType } from '../typecheck/type'
-import { assert } from '../util/todo'
+import { assert, unreachable } from '../util/todo'
 import {
     argCountMismatchError,
     missingFieldsError,
@@ -387,7 +387,7 @@ export const checkClosureExpr = (
     if (!inferredType && (!closureExpr.returnType || closureExpr.params.some(p => !!p.paramType))) {
         // untyped closures concrete type is defined by its first usage
         // malleable type is an indicator that concrete type is yet to be defined
-        closureExpr.type = { kind: 'malleable-type', closure: closureExpr }
+        closureExpr.type = { kind: 'malleable-type', operand: closureExpr }
         // since param/return types are unknown, no reason to perform semantic checking yet
         // TODO: semantic checking if closure is never called (if type is still malleable by the end of scope)
         return
@@ -523,9 +523,15 @@ export const checkCall_ = (call: CallOp, operand: Operand, args: Expr[], ctx: Co
             paramTypes: args.map(arg => arg.type ?? unknownType),
             returnType: unknownType
         }
-        const closure = operand.type.closure
-        checkClosureExpr(closure, ctx, operand, closureType)
-        operand.type = closure.type
+        switch (operand.type.operand.kind) {
+            case 'closure-expr':
+                const closure = operand.type.operand
+                checkClosureExpr(closure, ctx, operand, closureType)
+                operand.type = closure.type
+                break
+            default:
+                unreachable()
+        }
     }
     if (operand.type?.kind === 'unknown-type') {
         addError(ctx, unknownTypeError(ctx, operand, operand.type))

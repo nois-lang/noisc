@@ -1,4 +1,4 @@
-import { ClosureExpr } from '../ast/operand'
+import { ClosureExpr, Operand } from '../ast/operand'
 import { Generic, Type } from '../ast/type'
 import { Context, addError } from '../scope'
 import { InstanceRelation, findSuperRelChains, getConcreteTrait } from '../scope/trait'
@@ -36,7 +36,7 @@ export interface UnknownType {
  */
 export interface MalleableType {
     kind: 'malleable-type'
-    closure: ClosureExpr
+    operand: Operand
 }
 
 export interface HoleType {
