@@ -11,15 +11,7 @@ export interface Upcast {
 export const upcast = (virtual: Partial<Virtual>, type: VirtualType, traitType: VirtualType, ctx: Context): void => {
     const upcastMap = makeUpcastMap(type, traitType, ctx)
     if (upcastMap) {
-        virtual.upcasts ??= new Map()
-        upcastMap.forEach((up, k) => {
-            const existing = virtual.upcasts!.get(k)
-            if (existing) {
-                up.traits.forEach((t, tk) => existing.traits.set(tk, t))
-            } else {
-                virtual.upcasts!.set(k, up)
-            }
-        })
+        writeUpcast(virtual, upcastMap)
     }
 }
 
@@ -49,4 +41,16 @@ export const makeUpcastMap = (
     }
     ctx.moduleStack.at(-1)!.relImports.push(res.impl)
     return upcasts
+}
+
+const writeUpcast = (virtual: Partial<Virtual>, upcastMap: Map<string, Upcast>): void => {
+    virtual.upcasts ??= new Map()
+    upcastMap.forEach((up, k) => {
+        const existing = virtual.upcasts!.get(k)
+        if (existing) {
+            up.traits.forEach((t, tk) => existing.traits.set(tk, t))
+        } else {
+            virtual.upcasts!.set(k, up)
+        }
+    })
 }

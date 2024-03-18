@@ -24,6 +24,7 @@ import {
     unexpectedTypeError
 } from './error'
 import { checkExpr, checkOperand } from './expr'
+import { upcast } from './upcast'
 
 export const checkFieldAccess = (operand: Operand, name: Name, ctx: Context): VirtualType | undefined => {
     checkOperand(operand, ctx)
@@ -143,6 +144,7 @@ export const checkMethodCall = (expr: UnaryExpr, mCall: MethodCallOp, ctx: Conte
     }
     if (mCall.call.impl) {
         ctx.moduleStack.at(-1)!.relImports.push(mCall.call.impl)
+        upcast(operand, operand.type!, ref.def.rel.implType, ctx)
     }
 
     mCall.call.generics = fnType.generics.map(g => {
