@@ -43,10 +43,13 @@ describe('trait', () => {
         const formatImplTypes = (chains: InstanceRelation[][]): string[][] =>
             chains.map(c => c.map(rel => rel.implType).map(virtualTypeToString))
 
-        expect(formatImplTypes(findSuperRelChains(vidFromString('std::unit::Unit'), ctx))).toEqual([])
+        expect(formatImplTypes(findSuperRelChains(vidFromString('std::unit::Unit'), ctx))).toEqual([
+            ['std::io::trace::Trace']
+        ])
 
         expect(formatImplTypes(findSuperRelChains(vidFromString('std::string::String'), ctx))).toEqual([
             ['std::io::show::Show'],
+            ['std::io::trace::Trace'],
             ['std::eq::Eq'],
             ['std::iter::Collector<std::string::String>']
         ])
