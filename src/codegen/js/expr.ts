@@ -260,7 +260,7 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
                     const fnName = operand.ref.def.fn.name.value
                     return {
                         emit: '',
-                        resultVar: `(function(${arg}, ...${args}) { return ${relName}().${fnName}(${arg}, ${args}); })`
+                        resultVar: `(function(${arg}, ...${args}) { return ${arg}.${relName}().${fnName}(${arg}, ${args}); })`
                     }
                 }
             }
