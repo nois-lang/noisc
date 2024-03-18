@@ -277,6 +277,13 @@ export const missingVarInitError = (ctx: Context, varDef: VarDef): SemanticError
     return semanticError(38, ctx, varDef, msg)
 }
 
+export const noImplFoundError = (ctx: Context, name: Name, methodDef: MethodDef, operand: Operand): SemanticError => {
+    const traitVid = vidToString(methodDef.rel.implDef.vid)
+    const operandType = virtualTypeToString(operand.type!)
+    const msg = `no impl of trait \`${traitVid}\` found for type \`${operandType}\``
+    return semanticError(39, ctx, name, msg)
+}
+
 export const errorError = (ctx: Context, name: Name): SemanticError => {
     return semanticError(0, ctx, name, `message`)
 }

@@ -5,7 +5,7 @@ import { Name, Operand } from '../ast/operand'
 import { Context, addError } from '../scope'
 import { getInstanceForType, resolveGenericImpls, resolveMethodImpl } from '../scope/trait'
 import { vidFromString, vidToString } from '../scope/util'
-import { MethodDef, VirtualIdentifier, resolveVid } from '../scope/vid'
+import { MethodDef, VirtualIdentifier, resolveVid, typeKinds } from '../scope/vid'
 import { VirtualFnType, VirtualType, combine, genericToVirtual, typeToVirtual } from '../typecheck'
 import {
     makeFnGenericMap,
@@ -17,6 +17,7 @@ import { selfType } from '../typecheck/type'
 import { assert } from '../util/todo'
 import {
     narrowFieldAccessError,
+    noImplFoundError,
     notFoundError,
     privateAccessError,
     unexpectedNamedArgError,
@@ -117,18 +118,26 @@ export const checkMethodCall = (expr: UnaryExpr, mCall: MethodCallOp, ctx: Conte
     }
 
     mCall.call.methodDef = ref.def
-    const genericMaps = makeMethodGenericMaps(operand, ref.def, mCall, ctx)
     const fnType = <VirtualFnType>ref.def.fn.type
 
     // TODO: check required type args (that cannot be inferred via `resolveFnGenerics`)
     mCall.typeArgs.forEach(typeArg => checkType(typeArg, ctx))
 
+    const genericMaps = makeMethodGenericMaps(operand, ref.def, mCall, ctx)
     const args = ref.def.fn.static ? mCall.call.args.map(a => a.expr) : [operand, ...mCall.call.args.map(a => a.expr)]
     const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
     checkCallArgs(mCall, args, paramTypes, ctx)
 
+    const operandTypeRef = resolveVid(typeVid, ctx, typeKinds)
     if (ref.def.rel.instanceDef.kind === 'trait-def') {
-        mCall.call.impl = resolveMethodImpl(operand.type!, ref.def, ctx)
+        const resolved = resolveMethodImpl(operand.type!, ref.def, ctx)
+        if (resolved) {
+            mCall.call.impl = resolved
+        } else {
+            if (operandTypeRef && operandTypeRef.def.kind !== 'trait-def' && operandTypeRef.def.kind !== 'generic') {
+                addError(ctx, noImplFoundError(ctx, mCall.name, ref.def, operand))
+            }
+        }
     } else {
         mCall.call.impl = ref.def.rel
     }

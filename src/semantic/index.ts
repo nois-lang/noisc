@@ -772,12 +772,10 @@ export const checkCallArgs = (node: AstNode<any>, args: Operand[], paramTypes: V
             checkClosureExpr(arg.type.closure, ctx, node, paramType)
             arg.type = arg.type.closure.type
         }
-        const argType = arg.type ?? unknownType
-
-        if (!isAssignable(argType, paramType, ctx)) {
-            addError(ctx, typeError(ctx, arg, argType, paramType))
+        if (!isAssignable(arg.type!, paramType, ctx)) {
+            addError(ctx, typeError(ctx, arg, arg.type!, paramType))
         }
 
-        upcast(arg, argType, paramType, ctx)
+        upcast(arg, arg.type!, paramType, ctx)
     }
 }

@@ -37,16 +37,16 @@ impl Show for List<String> {
     }
 }
 
-impl Copy for Int {
-    fn copy(self): Self {
-        copy(self)
-    }
-}
-
 impl <T: Show> Show for List<T> {
     fn show(self): String {
         // TODO: method ref
         self.iter().map(|d| { d.show() }).collect<List<String>>().show()
+    }
+}
+
+impl Copy for Int {
+    fn copy(self): Self {
+        copy(self)
     }
 }
 
