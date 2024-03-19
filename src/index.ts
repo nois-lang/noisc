@@ -167,7 +167,7 @@ for (const warning of ctx.warnings) {
 
 if (config.emit) {
     if (isDir) {
-        if (!existsSync(config.outPath)) mkdirSync(config.outPath, { recursive: true })
+        mkdirSync(config.outPath, { recursive: true })
         const packageInfoSrc = join(config.pkgPath, 'package.json')
         if (!existsSync(packageInfoSrc)) {
             console.error(`${packageInfoSrc} not found`)
@@ -176,11 +176,11 @@ if (config.emit) {
         const packageInfoDest = join(config.outPath, 'package.json')
         copyFileSync(packageInfoSrc, packageInfoDest)
         console.info(`copy: ${packageInfoSrc} -> ${packageInfoDest}`)
-        pkg.modules.forEach(m => {
+        pkg.modules.forEach(async m => {
             ctx.variableCounter = 0
             const modulePath = relative(config.srcPath, m.source.filepath)
             const moduleOutPath = parse(join(config.outPath, modulePath))
-            if (!existsSync(moduleOutPath.dir)) mkdirSync(moduleOutPath.dir)
+            mkdirSync(moduleOutPath.dir, { recursive: true })
 
             const declaration = emitDeclaration(m)
             const declarationPath = join(moduleOutPath.dir, moduleOutPath.name) + '.no'
