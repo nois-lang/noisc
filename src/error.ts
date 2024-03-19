@@ -32,7 +32,7 @@ export const colorWarning = (message: string): string => {
 }
 
 export const prettySourceMessage = (message: string, span: Span, source: Source, notes: string[] = []): string => {
-    const start = indexToLocation(span.start, source)!
+    const start = indexToLocation(span.start, source.code)!
     const locationStr = `${source.filepath}:${locationToString(start)}`
     const locationMsg = `  at ${locationStr}`
     const notesStr = notes.length > 0 ? notes.map(n => `  note: ${n}`).join('\n') : ''

@@ -15,7 +15,7 @@ import { Context, pathToVid } from './scope'
 import { buildInstanceRelations } from './scope/trait'
 import { checkModule, checkTopLevelDefinition, prepareModule } from './semantic'
 import { Source } from './source'
-import { foldEmitTree } from './sourcemap'
+import { createSourceMap, foldEmitTree } from './sourcemap'
 import { assert } from './util/todo'
 
 const dir = dirname(fileURLToPath(import.meta.url))
@@ -202,9 +202,25 @@ if (config.emit) {
             const mainFnName = mainFn?.kind === 'fn-def' ? mainFn.name.value : undefined
             const emitNode = emitModule(m, ctx, mainFnName)
             const { emit, map } = foldEmitTree(emitNode)
-            const js = [emit, native].filter(m => m.length > 0).join('\n\n')
+
+            const sourceMapLink = `//# sourceMappingURL=${moduleOutPath.name}.js.map`
+            const js = [emit, native, sourceMapLink].filter(m => m.length > 0).join('\n\n')
             const jsPath = join(moduleOutPath.dir, moduleOutPath.name) + '.js'
             writeFile(jsPath, js).then(() => console.info(`emit: js           ${jsPath} [${js.length}B]`))
+
+            const sourceMap = JSON.stringify(
+                createSourceMap(
+                    basename(jsPath),
+                    relative(moduleOutPath.dir, m.source.filepath),
+                    m.source.code,
+                    js,
+                    map
+                )
+            )
+            const sourceMapPath = join(moduleOutPath.dir, moduleOutPath.name) + '.js.map'
+            writeFile(sourceMapPath, sourceMap).then(() =>
+                console.info(`emit: source map   ${sourceMapPath} [${sourceMap.length}B]`)
+            )
         })
     } else {
         const m = pkg.modules[0]
@@ -215,7 +231,7 @@ if (config.emit) {
                 : undefined
         const mainFnName = mainFn?.kind === 'fn-def' ? mainFn.name.value : undefined
         const emitNode = emitModule(m, ctx, mainFnName)
-        const { emit, map } = foldEmitTree(emitNode)
+        const { emit } = foldEmitTree(emitNode)
         const jsPath = join(config.outPath, parse(config.pkgPath).name) + '.js'
         writeFile(jsPath, emit).then(() => console.info(`emit: js           ${jsPath} [${emit.length}B]`))
     }

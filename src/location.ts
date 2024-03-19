@@ -17,11 +17,11 @@ export interface Location {
     column: number
 }
 
-export const indexToLocation = (index: number, source: Source): Location | undefined => {
+export const indexToLocation = (index: number, code: string): Location | undefined => {
     let line = 0
     let column = 0
     for (let i = 0; i < index; i++) {
-        if (isNewline(source.code[i])) {
+        if (isNewline(code[i])) {
             line++
             column = 0
         } else {
@@ -32,8 +32,8 @@ export const indexToLocation = (index: number, source: Source): Location | undef
 }
 
 export const prettyLineAt = (span: Span, source: Source): string => {
-    const start = indexToLocation(span.start, source)
-    const end = indexToLocation(span.end, source)
+    const start = indexToLocation(span.start, source.code)
+    const end = indexToLocation(span.end, source.code)
     if (!start || !end) return '<outside of a file>'
     const lineNumSize = start.line.toString().length
     const padSize = Math.max(6, 3 + lineNumSize)
