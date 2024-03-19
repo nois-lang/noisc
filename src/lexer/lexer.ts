@@ -125,13 +125,13 @@ export const boolMap: [TokenKind, string][] = [
 ]
 
 const floatRegex = /^((\d+(\.\d*)?e[+-]?\d+)|(\d+\.\d*)|(\d*\.\d+))/
-const escapeCharReg = /(\\[btnvfr\\'"])/
+const escapeCharReg = /(\\[tnr\\])/
 const unicodeCharReg = /(\\u{[0-9a-fA-F]{1,4}})/
 const charRegex = new RegExp(
-    `^'(${["(\\\\')", /[^\\\n\r']/.source, escapeCharReg.source, unicodeCharReg.source].join('|')})'`
+    `^'(${["(\\\\')", /[^\\\t\n\r']/.source, escapeCharReg.source, unicodeCharReg.source].join('|')})'`
 )
 const stringRegex = new RegExp(
-    `^"(${['(\\\\")', /[^\\\n\r"]/.source, escapeCharReg.source, unicodeCharReg.source].join('|')})*"`
+    `^"(${['(\\\\")', /[^\\\t\n\r"]/.source, escapeCharReg.source, unicodeCharReg.source].join('|')})*"`
 )
 
 /**
