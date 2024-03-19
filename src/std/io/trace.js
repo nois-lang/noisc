@@ -24,7 +24,8 @@ function trace_(a) {
         return `[${a.value.map(trace_).join(', ')}]`
     }
 
-    return `${a.$noisVariant}(${[...Object.entries(a.value)]
+    const variant = a.$noisVariant ?? a.$noisType.slice(a.$noisType.lastIndexOf('::') + 2)
+    return `${variant}(${[...Object.entries(a.value)]
         .map(([name, value]) => `${name}: ${trace_(value)}`)
         .join(', ')})`
 }
