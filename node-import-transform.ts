@@ -1,5 +1,5 @@
 /**
- * Assumtions:
+ * Assumptions:
  * 1. no imports from 'foo/foo' where foo/foo/index.js exists
  */
 import { spawnSync } from 'child_process'
@@ -27,7 +27,7 @@ const dirImports = exec([`find`, `dist`, `-name`, `index.js`])
     .filter(p => p.length > 2)
     .map(p => p.at(-2)!)
 dirImports.forEach(d => {
-    exec([...findCmd, `sed`, `-i`, `-E`, `s|(from '\\..+${d})(')|\\1/index\\2|g`, `{}`, `+`])
+    exec([...findCmd, `sed`, `-i`, `-E`, `s|(from '.*\./${d})(')|\\1/index\\2|g`, `{}`, `+`])
 })
 
 // fix from '.' -> from './index'
