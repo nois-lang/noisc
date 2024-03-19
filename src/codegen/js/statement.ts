@@ -43,11 +43,11 @@ export const emitFnDef = (fnDef: FnDef, module: Module, ctx: Context, asProperty
     const jsParams = emitIntersperse([...params, ...generics], ',')
     const block = emitBlock(fnDef.block, module, ctx, true)
     if (asProperty) {
-        return emitTree([emitToken(`${name}: function(`), jsParams, emitToken(')'), block], fnDef.parseNode)
+        return emitTree([emitToken(`${name}: function(`), jsParams, emitToken(')'), block], fnDef.name.parseNode)
     } else {
         return emitTree(
             [emitToken(`${fnDef.pub ? 'export ' : ''}function ${name}(`), jsParams, emitToken(')'), block],
-            fnDef.parseNode
+            fnDef.name.parseNode
         )
     }
 }
@@ -93,7 +93,7 @@ export const emitInstanceDef = (instanceDef: ImplDef | TraitDef, module: Module,
 export const emitTypeDef = (typeDef: TypeDef, module: Module, ctx: Context): EmitNode => {
     const name = typeDef.name.value
     const variants = typeDef.variants.map(v =>
-        emitTree([emitToken(`${v.name.value}:`), emitVariant(v, typeDef, module, ctx)], v.parseNode)
+        emitTree([emitToken(`${v.name.value}:`), emitVariant(v, typeDef, module, ctx)])
     )
     const items_ = emitIntersperse(variants, ',')
     const items = items_.nodes.length > 0 ? emitTree([emitToken('{'), items_, emitToken('}')]) : emitToken('{}')
@@ -102,7 +102,7 @@ export const emitTypeDef = (typeDef: TypeDef, module: Module, ctx: Context): Emi
 
 export const emitReturnStmt = (returnStmt: ReturnStmt, module: Module, ctx: Context): EmitNode => {
     const { emit: exprEmit, resultVar } = emitExpr(returnStmt.returnExpr, module, ctx)
-    return emitTree([exprEmit, emitToken(`return ${resultVar};`)], returnStmt.parseNode)
+    return emitTree([exprEmit, emitToken(`return ${resultVar};`)])
 }
 
 export const emitBreakStmt = (breakStmt: BreakStmt, module: Module, ctx: Context): EmitNode => {
@@ -130,7 +130,7 @@ export const emitBlockStatements = (
 
 export const emitBlock = (block: Block, module: Module, ctx: Context, resultVar?: boolean | string): EmitNode => {
     const statements = emitBlockStatements(block, module, ctx, resultVar)
-    return emitTree([emitToken('{'), ...statements, emitToken('}')], block.parseNode)
+    return emitTree([emitToken('{'), ...statements, emitToken('}')])
 }
 
 export const emitVariant = (v: Variant, typeDef: TypeDef, module: Module, ctx: Context): EmitNode => {
@@ -154,5 +154,5 @@ export const emitVariant = (v: Variant, typeDef: TypeDef, module: Module, ctx: C
 export const emitUpcastFn = (v: Variant, typeDef: TypeDef, module: Module, ctx: Context): EmitNode => {
     const params = ['value', 'Self', ...typeDef.generics.map(g => g.name.value)]
     const selfG = 'for(const [trait,impl] of Self){value[trait]=impl;}'
-    return emitTree([emitToken(`function(${params.join(',')}) {`), emitToken(selfG), emitToken('}')], v.parseNode)
+    return emitTree([emitToken(`function(${params.join(',')}) {`), emitToken(selfG), emitToken('}')])
 }

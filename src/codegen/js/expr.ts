@@ -54,7 +54,10 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
             const callerEmit = call.impl ? jsRelName(call.impl) : `${lOp.resultVar}.${relTypeName(methodDef.rel)}`
             const callEmit = jsVariable(resultVar, emitToken(`${callerEmit}().${methodName}(${argsEmit})`))
             return {
-                emit: emitTree([lOp.emit, upcastEmit, emitTree(jsArgs.map(a => a.emit)), callEmit]),
+                emit: emitTree(
+                    [lOp.emit, upcastEmit, emitTree(jsArgs.map(a => a.emit)), callEmit],
+                    mCall.name.parseNode
+                ),
                 resultVar
             }
         }
@@ -81,24 +84,25 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
             const jsArgs = [...args, ...genericTypes]
             const upcastEmit = unaryExpr.upcasts ? emitUpcasts(resultVar, unaryExpr.upcasts) : undefined
             const variantDef = call.variantDef
+            const parseNode = unaryExpr.operand.kind === 'identifier' ? unaryExpr.operand.parseNode : call.parseNode
             if (variantDef) {
                 const variantName = `${variantDef.typeDef.name.value}.${variantDef.variant.name.value}`
-                const call = jsVariable(
+                const callEmit = jsVariable(
                     resultVar,
                     emitToken(`${variantName}(${jsArgs.map(a => a.resultVar).join(',')})`)
                 )
                 return {
-                    emit: emitTree([...jsArgs.map(a => a.emit), call, upcastEmit]),
+                    emit: emitTree([...jsArgs.map(a => a.emit), callEmit, upcastEmit], parseNode),
                     resultVar
                 }
             } else {
                 const operand = emitOperand(unaryExpr.operand, module, ctx)
-                const call = jsVariable(
+                const callEmit = jsVariable(
                     resultVar,
-                    emitToken(`${operand.resultVar}(${jsArgs.map(a => a.resultVar).join(',')})`)
+                    emitToken(`${operand.resultVar}(${jsArgs.map(a => a.resultVar).join(',')})`, parseNode)
                 )
                 return {
-                    emit: emitTree([operand.emit, ...jsArgs.map(a => a.emit), call, upcastEmit]),
+                    emit: emitTree([operand.emit, ...jsArgs.map(a => a.emit), callEmit, upcastEmit]),
                     resultVar
                 }
             }

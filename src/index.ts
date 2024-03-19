@@ -204,7 +204,7 @@ if (config.emit) {
             const { emit, map } = foldEmitTree(emitNode)
 
             const sourceMapLink = `//# sourceMappingURL=${moduleOutPath.name}.js.map`
-            const js = [emit, native, sourceMapLink].filter(m => m.length > 0).join('\n\n')
+            const js = [emit, native, sourceMapLink].filter(m => m.length > 0).join('\n')
             const jsPath = join(moduleOutPath.dir, moduleOutPath.name) + '.js'
             writeFile(jsPath, js).then(() => console.info(`emit: js           ${jsPath} [${js.length}B]`))
 

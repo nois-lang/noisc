@@ -26,7 +26,7 @@ export const emitModule = (module: Module, ctx: Context, mainFn?: string): EmitN
                   `try{${mainFn}();}catch(e){console.error(\`\${e.message}\${e.stack.split("\\n").slice(1).join("\\n")}\`);}`
               )
             : undefined
-    return emitTree([imports, statements, mainFnInvoke], module.parseNode)
+    return emitTree([imports, statements, mainFnInvoke])
 }
 
 export const emitImports = (module: Module, ctx: Context): EmitNode => {
@@ -65,7 +65,7 @@ const makeJsImport = (vid: VirtualIdentifier, importModule: Module, module: Modu
 
 export const emitUpcasts = (resultVar: string, upcasts: Map<string, Upcast>): EmitToken => {
     const args = [...upcasts.entries()].map(
-        ([k, v]) => `[${[...v.traits.entries()].map(([tk, tv]) => `[${jsString(tk)}, ${jsRelName(tv)}]`).join(',')}]`
+        ([, v]) => `[${[...v.traits.entries()].map(([tk, tv]) => `[${jsString(tk)}, ${jsRelName(tv)}]`).join(',')}]`
     )
     args.unshift(resultVar)
     return emitToken(`${resultVar}.upcast(${args.join(',')});`)
