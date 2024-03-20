@@ -16,7 +16,11 @@ function trace(a) {
 function trace_(a) {
     if (typeof a.value !== 'object') {
         if (typeof a.value === 'string') {
-            return JSON.stringify(a.value)
+            if (a.$noisType === 'std::char::Char') {
+                return `'${JSON.stringify(a.value).slice(1, -1)}'`
+            } else {
+                return JSON.stringify(a.value)
+            }
         }
         return a.value.toString()
     }
@@ -25,7 +29,5 @@ function trace_(a) {
     }
 
     const variant = a.$noisVariant ?? a.$noisType.slice(a.$noisType.lastIndexOf('::') + 2)
-    return `${variant}(${[...Object.entries(a.value)]
-        .map(([name, value]) => `${name}: ${trace_(value)}`)
-        .join(', ')})`
+    return `${variant}(${[...Object.entries(a.value)].map(([name, value]) => `${name}: ${trace_(value)}`).join(', ')})`
 }
