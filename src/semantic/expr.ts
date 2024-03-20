@@ -27,7 +27,7 @@ import {
     resolveType
 } from '../typecheck/generic'
 import { holeType, unitType, unknownType } from '../typecheck/type'
-import { assert, unreachable } from '../util/todo'
+import { assert, todo, unreachable } from '../util/todo'
 import {
     argCountMismatchError,
     missingFieldsError,
@@ -100,6 +100,9 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
             }
             operand.type = typeDefToVirtualType(ref.def, ctx, ref.module)
             break
+        }
+        case 'string-interpolated': {
+            return todo('string interpolation')
         }
         case 'char-literal': {
             const vid = vidFromString('std::char::Char')

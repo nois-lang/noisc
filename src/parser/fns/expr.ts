@@ -42,7 +42,7 @@ export const parseSubExpr = (parser: Parser): void => {
  * | FALSE | identifier | type
  */
 export const parseOperand = (parser: Parser): void => {
-    const dynamicTokens: TokenKind[] = ['string', 'char', 'int', 'float', 'bool']
+    const dynamicTokens: TokenKind[] = ['char', 'int', 'float', 'bool']
 
     const mark = parser.open()
     if (parser.at('if-keyword') && parser.nth(1) === 'let-keyword') {
@@ -67,6 +67,8 @@ export const parseOperand = (parser: Parser): void => {
         parseIdentifier(parser)
     } else if (parser.atAny(numberFirstTokens)) {
         parseNumber(parser)
+    } else if (parser.at('d-quote')) {
+        parseString(parser)
     } else if (parser.atAny(dynamicTokens)) {
         parser.expectAny(dynamicTokens)
     } else {
@@ -181,6 +183,34 @@ export const parseNumber = (parser: Parser): void => {
         parser.advanceWithError(syntaxError(parser, 'expected number'))
     }
     parser.close(mark, 'number')
+}
+
+/**
+ * string ::= D-QUOTE string-part* D-QUOTE
+ */
+export const parseString = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('d-quote')
+    while (!parser.eof() && !parser.at('d-quote')) {
+        parseStringPart(parser)
+    }
+    parser.expect('d-quote')
+    parser.close(mark, 'string')
+}
+
+/*
+ * string-part ::= STRING | O-BRACE operand C-BRACE
+ */
+export const parseStringPart = (parser: Parser): void => {
+    const mark = parser.open()
+    if (parser.consume('string-part')) {
+        parser.close(mark, 'string-part')
+        return
+    }
+    parser.expect('o-brace')
+    parseExpr(parser)
+    parser.expect('c-brace')
+    parser.close(mark, 'string-part')
 }
 
 /**

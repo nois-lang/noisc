@@ -7,7 +7,7 @@ import { Module, buildModuleAst, compactAstNode } from './index'
 describe('ast', () => {
     /**
      * Use the following function to get compact tree output:
-     * inspect(compactAstNode(ast), { depth: null, compact: true, breakLength: 120 })
+     * inspect(compactAstNode(ast.block), { depth: null, compact: true, breakLength: 120 })
      */
     const buildAst = (code: string): Module => {
         const source = { code, filepath: 'test.no' }
@@ -18,6 +18,67 @@ describe('ast', () => {
 
         return buildModuleAst(parseTree, vidFromString('test'), source, false)
     }
+
+    describe('string', () => {
+        it('basic', () => {
+            const ast = buildAst('"str"')
+            // biome-ignore format: compact
+            expect(compactAstNode(ast.block)).toEqual(
+{ kind: 'block', statements: [ { kind: 'operand-expr', operand: { kind: 'string-literal', value: '"str"' } } ] }
+            )
+        })
+
+        it('escaped interpolated', () => {
+            const ast = buildAst('"str \\{foo}"')
+            // biome-ignore format: compact
+            expect(compactAstNode(ast.block)).toEqual(
+{ kind: 'block', statements: [ { kind: 'operand-expr', operand: { kind: 'string-literal', value: '"str \\{foo}"' } } ] }
+            )
+        })
+
+        it('interpolated', () => {
+            const ast = buildAst('"str {foo}"')
+            // biome-ignore format: compact
+            expect(compactAstNode(ast.block)).toEqual(
+{ kind: 'block',
+  statements:
+   [ { kind: 'operand-expr',
+       operand:
+        { kind: 'string-interpolated',
+          tokens:
+           [ 'str ',
+             { kind: 'operand-expr', operand: { kind: 'identifier', names: [ { kind: 'name', value: 'foo' } ], typeArgs: [] } } ] } } ] }
+            )
+        })
+
+        it('nested interpolated', () => {
+            const ast = buildAst('"str {foo("str {bar}")}"')
+            // biome-ignore format: compact
+            expect(compactAstNode(ast.block)).toEqual(
+{ kind: 'block',
+  statements:
+   [ { kind: 'operand-expr',
+       operand:
+        { kind: 'string-interpolated',
+          tokens:
+           [ 'str ',
+             { kind: 'unary-expr',
+               operand: { kind: 'identifier', names: [ { kind: 'name', value: 'foo' } ], typeArgs: [] },
+               op:
+                { kind: 'call-op',
+                  args:
+                   [ { kind: 'arg',
+                       name: undefined,
+                       expr:
+                        { kind: 'operand-expr',
+                          operand:
+                           { kind: 'string-interpolated',
+                             tokens:
+                              [ 'str ',
+                                { kind: 'operand-expr', operand: { kind: 'identifier', names: [ { kind: 'name', value: 'bar' } ], typeArgs: [] } } ] } } } ] } } ] } } ] }
+            )
+        })
+    })
 
     describe('use-stmt', () => {
         it('nested', () => {

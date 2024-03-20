@@ -18,7 +18,7 @@ describe('parser', () => {
     describe('parse use-stmt', () => {
         it('nested', () => {
             const { tree, errors } = parse('use std::iter::{self, Iter, Iterator}')
-            expect(errors.length).toEqual(0)
+            expect(errors).toEqual([])
             // biome-ignore format: compact
             expect(tree).toEqual(
 { module:
@@ -45,7 +45,7 @@ describe('parser', () => {
     describe('parse type-def', () => {
         it('empty', () => {
             const { tree, errors } = parse('type Unit')
-            expect(errors.length).toEqual(0)
+            expect(errors).toEqual([])
             expect(tree).toEqual({
                 module: [{ statement: [{ 'type-def': [{ 'type-keyword': 'type' }, { name: 'Unit' }] }] }]
             })
@@ -53,7 +53,7 @@ describe('parser', () => {
 
         it('variant type', () => {
             const { tree, errors } = parse('type Option<T> { Some(value: T), None }')
-            expect(errors.length).toEqual(0)
+            expect(errors).toEqual([])
             // biome-ignore format: compact
             expect(tree).toEqual(
 { module:
@@ -82,7 +82,7 @@ describe('parser', () => {
     describe('parse fn-def', () => {
         it('empty', () => {
             const { tree, errors } = parse('fn main() {}')
-            expect(errors.length).toEqual(0)
+            expect(errors).toEqual([])
             expect(tree).toEqual({
                 module: [
                     {
@@ -138,7 +138,7 @@ describe('parser', () => {
     describe('parse fn call', () => {
         it('qualified fn', () => {
             const { tree, errors } = parse('a(B::b(4))')
-            expect(errors.length).toEqual(0)
+            expect(errors).toEqual([])
             // biome-ignore format: compact
             expect(tree).toEqual(
 { module:
@@ -164,7 +164,7 @@ describe('parser', () => {
     describe('parse if-expr', () => {
         it('general', () => {
             const { tree, errors } = parse('if a { b } else { c }')
-            expect(errors.length).toEqual(0)
+            expect(errors).toEqual([])
             // biome-ignore format: compact
             expect(tree).toEqual(
 { module:

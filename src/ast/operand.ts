@@ -3,6 +3,7 @@ import { ParseNode, ParseTree, filterNonAstNodes } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
 import { VirtualIdentifierMatch } from '../scope/vid'
 import { Typed, Virtual } from '../semantic'
+import { assert } from '../util/todo'
 import { Expr, buildExpr } from './expr'
 import { AstNode, Param, buildParam } from './index'
 import { MatchExpr, Pattern, buildMatchExpr, buildNumber, buildPattern } from './match'
@@ -19,6 +20,7 @@ export type Operand = (
     | Expr
     | ListExpr
     | StringLiteral
+    | StringInterpolated
     | CharLiteral
     | IntLiteral
     | FloatLiteral
@@ -47,7 +49,7 @@ export const buildOperand = (node: ParseNode): Operand => {
         case 'list-expr':
             return buildListExpr(n)
         case 'string':
-            return buildStringLiteral(n)
+            return buildString(n)
         case 'char':
             return buildCharLiteral(n)
         case 'number':
@@ -174,8 +176,30 @@ export interface StringLiteral extends AstNode<'string-literal'>, Partial<Typed>
     value: string
 }
 
-export const buildStringLiteral = (node: ParseNode): StringLiteral => {
-    return { kind: 'string-literal', parseNode: node, value: (<LexerToken>node).value }
+export interface StringInterpolated extends AstNode<'string-interpolated'>, Partial<Typed> {
+    tokens: (string | Expr)[]
+}
+
+export const buildString = (node: ParseNode): StringLiteral | StringInterpolated => {
+    assert(node.kind === 'string')
+    const nodes = filterNonAstNodes(node)
+    const tokens = nodes.map(buildStringPart)
+    if (tokens.length === 0) {
+        return { kind: 'string-literal', parseNode: node, value: '' }
+    }
+    if (tokens.length === 1 && typeof tokens[0] === 'string') {
+        return { kind: 'string-literal', parseNode: node, value: `"${tokens[0]}"` }
+    }
+    return { kind: 'string-interpolated', parseNode: node, tokens }
+}
+
+export const buildStringPart = (node: ParseNode): string | Expr => {
+    const n = filterNonAstNodes(node)[0]
+    if (n.kind === 'string-part') {
+        return (<LexerToken>n).value
+    } else {
+        return buildExpr(n)
+    }
 }
 
 export interface CharLiteral extends AstNode<'char-literal'>, Partial<Typed> {

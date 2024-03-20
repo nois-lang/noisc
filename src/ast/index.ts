@@ -74,6 +74,7 @@ export const astKinds = <const>[
     'hole',
     'identifier',
     'name',
+    'string-interpolated',
     ...astExprKinds,
     ...astDefKinds,
     ...astLiteralKinds,

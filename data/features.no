@@ -110,13 +110,13 @@ fn main() {
     let b = match vec {
         Vec2::Vec2(x: 1, y: 1) { "one" }
         Vec2::Vec2(x: 1) { "x one whatever" }
-        Vec2::Vec2(x) if x != 4 { format("x is {} not 4", x) }
+        Vec2::Vec2(x) if x != 4 { "x is {x} not 4" }
         _ { "whatever"}
     }
 
     // if let
     if let Option(value) = Some(42) {
-        println("value is {}", value)
+        println("value is {value}")
     } else {
         println("no value")
     }

@@ -1,6 +1,6 @@
 import { Parser } from '..'
 import { syntaxError } from '../../error'
-import { parseExpr, parseIdentifier, parseNumber } from './expr'
+import { parseExpr, parseIdentifier, parseNumber, parseString } from './expr'
 import { fieldPatternFirstTokens, nameLikeTokens, numberFirstTokens } from './index'
 import { parseBlock } from './statement'
 
@@ -86,7 +86,8 @@ export const parsePatternExpr = (parser: Parser): void => {
         parseConPattern(parser)
     } else if (parser.atAny(nameLikeTokens)) {
         parser.expectAny(nameLikeTokens)
-    } else if (parser.consume('string')) {
+    } else if (parser.at('d-quote')) {
+        parseString(parser)
     } else if (parser.consume('char')) {
     } else if (parser.consume('bool')) {
     } else if (parser.atAny(numberFirstTokens)) {

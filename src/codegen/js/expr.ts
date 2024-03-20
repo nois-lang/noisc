@@ -7,7 +7,7 @@ import { Context } from '../../scope'
 import { relTypeName } from '../../scope/trait'
 import { operatorImplMap } from '../../semantic/op'
 import { ConcreteGeneric } from '../../typecheck'
-import { unreachable } from '../../util/todo'
+import { todo, unreachable } from '../../util/todo'
 import { EmitNode, emitIntersperse, emitToken, emitTree, jsError, jsVariable } from './node'
 import { emitBlock, emitBlockStatements } from './statement'
 
@@ -269,6 +269,8 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
         case 'float-literal':
         case 'bool-literal':
             return emitLiteral(operand, module, ctx, resultVar)
+        case 'string-interpolated':
+            return todo('string interpolation')
         case 'identifier': {
             if (operand.ref?.def.kind === 'method-def') {
                 if (operand.ref.def.fn.static === true) {
@@ -371,6 +373,8 @@ export const emitPatternExprCondition = (
         case 'float-literal':
         case 'bool-literal':
             return { emit: jsVariable(resultVar, jsError('literal')), resultVar }
+        case 'string-interpolated':
+            return { emit: jsVariable(resultVar, jsError('string-interpolated')), resultVar }
         case 'list-expr':
         case 'operand-expr':
         case 'unary-expr':

@@ -34,10 +34,10 @@ export const exprFirstTokens: TokenKind[] = [
     'match-keyword',
     ...numberFirstTokens,
     'bool',
-    'string',
     'o-paren',
     'o-bracket',
     'o-angle',
+    'd-quote',
     'pipe'
 ]
 export const paramFirstTokens: TokenKind[] = [...nameLikeTokens, 'underscore', 'pub-keyword']
