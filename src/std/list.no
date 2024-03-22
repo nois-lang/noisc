@@ -33,7 +33,7 @@ impl <T> Collector<T> for List<T> {
 
 impl Show for List<String> {
     fn show(self): String {
-        "[".concat(self.iter().intersperse(", ").collect<String>()).concat("]")
+        "[{self.iter().intersperse(", ").collect<String>()}]"
     }
 }
 

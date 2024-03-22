@@ -105,6 +105,7 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
             for (const t of operand.tokens) {
                 if (typeof t !== 'string') {
                     checkExpr(t, ctx)
+                    upcast(t, t.type!, show, ctx)
                     const type = extractConcreteSupertype(t.type!, show.identifier, ctx)
                     if (!type) {
                         addError(ctx, typeError(ctx, t, t.type!, show))
