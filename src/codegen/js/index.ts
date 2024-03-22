@@ -23,7 +23,7 @@ export const emitModule = (module: Module, ctx: Context, mainFn?: string): EmitN
     const mainFnInvoke =
         mainFn !== undefined
             ? emitToken(
-                  `try{${mainFn}();}catch(e){console.error(\`\${e.message}\${e.stack.split("\\n").slice(1).join("\\n")}\`);}`
+                  `try{${mainFn}();}catch(e){console.error(\`\${e.message}\\n\${e.stack.split("\\n").slice(1).join("\\n")}\`);}`
               )
             : undefined
     return emitTree([imports, statements, mainFnInvoke])
