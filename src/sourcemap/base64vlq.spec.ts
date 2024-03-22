@@ -1,4 +1,4 @@
-import { encode } from "./base64vlq"
+import { encode } from './base64vlq'
 
 describe('base64vlq', () => {
     it('encode', () => {

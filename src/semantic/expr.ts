@@ -5,7 +5,7 @@ import { MatchExpr } from '../ast/match'
 import { CallOp } from '../ast/op'
 import { ClosureExpr, ForExpr, IfExpr, IfLetExpr, ListExpr, Name, Operand, WhileExpr } from '../ast/operand'
 import { Context, Scope, addError, fnDefScope, instanceScope } from '../scope'
-import { bool, iter, iterable, unwrap } from '../scope/std'
+import { bool, iter, iterable, show, string, unwrap } from '../scope/std'
 import { getConcreteTrait, resolveGenericImpls, resolveMethodImpl, typeDefToVirtualType } from '../scope/trait'
 import { idToVid, vidEq, vidFromString, vidToString } from '../scope/util'
 import { MethodDef, VariantDef, VirtualIdentifierMatch, resolveVid } from '../scope/vid'
@@ -27,7 +27,7 @@ import {
     resolveType
 } from '../typecheck/generic'
 import { holeType, unitType, unknownType } from '../typecheck/type'
-import { assert, todo, unreachable } from '../util/todo'
+import { assert, unreachable } from '../util/todo'
 import {
     argCountMismatchError,
     missingFieldsError,
@@ -102,7 +102,17 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
             break
         }
         case 'string-interpolated': {
-            return todo('string interpolation')
+            for (const t of operand.tokens) {
+                if (typeof t !== 'string') {
+                    checkExpr(t, ctx)
+                    const type = extractConcreteSupertype(t.type!, show.identifier, ctx)
+                    if (!type) {
+                        addError(ctx, typeError(ctx, t, t.type!, show))
+                    }
+                }
+            }
+            operand.type = string
+            break
         }
         case 'char-literal': {
             const vid = vidFromString('std::char::Char')

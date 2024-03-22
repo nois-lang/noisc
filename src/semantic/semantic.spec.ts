@@ -717,4 +717,70 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual(['fn `child` has no body'])
         })
     })
+
+    describe('string interpolation', () => {
+        it('basic', () => {
+            const code = `\
+fn main() {
+    let foo = 5
+    let s = "{foo}"
+    s()
+    return unit
+}`
+            const ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: non-callable operand of type `std::string::String`'
+            ])
+        })
+
+        it('composite', () => {
+            const code = `\
+fn main() {
+    let foo = 5
+    let s = "a {foo} b"
+    s()
+    return unit
+}`
+            const ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: non-callable operand of type `std::string::String`'
+            ])
+        })
+
+        it('nested', () => {
+            const code = `\
+fn main() {
+    let foo = 5
+    let s = "a {"c"} b"
+    s()
+    return unit
+}`
+            const ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: non-callable operand of type `std::string::String`'
+            ])
+        })
+
+        it('operand impls Show', () => {
+            const code = (arg: string) => `\
+type Foo()
+${arg}
+fn main() {
+    let foo = Foo()
+    let s = "{foo}"
+    s()
+    return unit
+}`
+            let ctx = check(code(''))
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: expected std::io::show::Show\n            got      test::Foo',
+                'type error: non-callable operand of type `std::string::String`'
+            ])
+
+            ctx = check(code('impl Show for Foo { fn show(self): String { "" } }'))
+            expect(ctx.errors.map(e => e.message)).toEqual([
+                'type error: non-callable operand of type `std::string::String`'
+            ])
+        })
+    })
 })

@@ -274,16 +274,12 @@ export const nonExhaustiveMatchError = (ctx: Context, match: MatchExpr, tree: Ma
 
 export const missingVarInitError = (ctx: Context, varDef: VarDef): SemanticError => {
     const msg = `missing variable initialization`
-    return semanticError(38, ctx, varDef, msg)
+    return semanticError(39, ctx, varDef, msg)
 }
 
 export const noImplFoundError = (ctx: Context, name: Name, methodDef: MethodDef, operand: Operand): SemanticError => {
     const traitVid = vidToString(methodDef.rel.implDef.vid)
     const operandType = virtualTypeToString(operand.type!)
     const msg = `no impl of trait \`${traitVid}\` found for type \`${operandType}\``
-    return semanticError(39, ctx, name, msg)
-}
-
-export const errorError = (ctx: Context, name: Name): SemanticError => {
-    return semanticError(0, ctx, name, `message`)
+    return semanticError(40, ctx, name, msg)
 }
