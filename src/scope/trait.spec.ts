@@ -51,7 +51,8 @@ describe('trait', () => {
             ['std::io::show::Show'],
             ['std::io::trace::Trace'],
             ['std::eq::Eq'],
-            ['std::iter::Collector<std::string::String>']
+            ['std::iter::Collector<std::string::String>'],
+            ['std::copy::Copy']
         ])
 
         expect(formatImplTypes(findSuperRelChains(vidFromString('std::list::List'), ctx))).toEqual([
@@ -59,7 +60,8 @@ describe('trait', () => {
             ['std::iter::Collector<T>'],
             ['std::io::show::Show'],
             ['std::io::show::Show'],
-            ['std::io::trace::Trace']
+            ['std::io::trace::Trace'],
+            ['std::copy::Copy']
         ])
 
         expect(formatImplTypes(findSuperRelChains(vidFromString('std::list::ListIter'), ctx))).toEqual([
