@@ -6,6 +6,7 @@ import { Context } from '../../scope'
 import { trace } from '../../scope/std'
 import { typeDefToVirtualType } from '../../scope/trait'
 import { vidEq, vidToString } from '../../scope/util'
+import { virtualTypeToString } from '../../typecheck'
 import { EmitExpr, emitExpr, emitParam, emitPattern } from './expr'
 import { emitTraceImpl } from './native'
 import { EmitNode, emitIntersperse, emitToken, emitTree, jsVariable } from './node'
@@ -159,5 +160,12 @@ export const emitVariant = (v: Variant, typeDef: TypeDef, module: Module, ctx: C
 export const emitUpcastFn = (v: Variant, typeDef: TypeDef, module: Module, ctx: Context): EmitNode => {
     const params = ['value', 'Self', ...typeDef.generics.map(g => g.name.value)]
     const selfG = 'for(const [trait,impl] of Self){value[trait]=impl;}'
-    return emitTree([emitToken(`function(${params.join(',')}) {`), emitToken(selfG), emitToken('}')])
+    const gs = typeDef.generics.flatMap(g => {
+        const fields = v.fieldDefs.filter(f => virtualTypeToString(f.type!) === g.name.value).map(f => f.name.value)
+        if (fields.length === 0) return []
+        return [
+            `for(const [trait,impl] of ${g.name.value}){${fields.map(f => `value.value.${f}[trait]=impl;`).join('')}}`
+        ]
+    })
+    return emitToken(`function(${params.join(',')}) {${selfG}${gs.join('')}}`)
 }
