@@ -185,7 +185,7 @@ export const buildString = (node: ParseNode): StringLiteral | StringInterpolated
     const nodes = filterNonAstNodes(node)
     const tokens = nodes.map(buildStringPart)
     if (tokens.length === 0) {
-        return { kind: 'string-literal', parseNode: node, value: '' }
+        return { kind: 'string-literal', parseNode: node, value: '""' }
     }
     if (tokens.length === 1 && typeof tokens[0] === 'string') {
         return { kind: 'string-literal', parseNode: node, value: `"${tokens[0]}"` }
