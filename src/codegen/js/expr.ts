@@ -44,18 +44,24 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
             const call = mCall.call
             const methodDef = call.methodDef!
             const methodName = methodDef.fn.name.value
+
             const args = call.args.map(a => emitExpr(a.expr, module, ctx))
             const genericTypes = call.generics?.map(g => emitGeneric(g, module, ctx)) ?? []
             const jsArgs = [...args, ...genericTypes]
             const argsEmit = (
                 methodDef.fn.static ? jsArgs.map(a => a.resultVar) : [lOp.resultVar, ...jsArgs.map(a => a.resultVar)]
             ).join(',')
+
             const upcastEmit = upcasts ? emitUpcasts(lOp.resultVar, upcasts) : undefined
+
             const callerEmit = call.impl ? jsRelName(call.impl) : `${lOp.resultVar}.${relTypeName(methodDef.rel)}`
             const callEmit = jsVariable(resultVar, emitToken(`${callerEmit}().${methodName}(${argsEmit})`))
+
+            const exprUpcasts = unaryExpr.upcasts
+            const exprUpcastEmit = exprUpcasts ? emitUpcasts(resultVar, exprUpcasts) : undefined
             return {
                 emit: emitTree(
-                    [lOp.emit, upcastEmit, emitTree(jsArgs.map(a => a.emit)), callEmit],
+                    [lOp.emit, emitTree(jsArgs.map(a => a.emit)), upcastEmit, callEmit, exprUpcastEmit],
                     mCall.name.parseNode
                 ),
                 resultVar
