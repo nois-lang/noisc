@@ -6,7 +6,11 @@ impl Show for Char {
     }
 }
 
-impl Trace for Char {}
+impl Trace for Char {
+    fn trace(self): String {
+        self.show()
+    }
+}
 
 impl Eq for Char {
     fn eq(self, other: Self): Bool {

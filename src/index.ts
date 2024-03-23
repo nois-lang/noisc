@@ -178,6 +178,7 @@ if (config.emit) {
         console.info(`copy: ${packageInfoSrc} -> ${packageInfoDest}`)
         pkg.modules.forEach(async m => {
             ctx.variableCounter = 0
+            ctx.moduleStack.push(m)
             const modulePath = relative(config.srcPath, m.source.filepath)
             const moduleOutPath = parse(join(config.outPath, modulePath))
             mkdirSync(moduleOutPath.dir, { recursive: true })

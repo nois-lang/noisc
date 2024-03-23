@@ -13,7 +13,11 @@ impl Show for String {
     }
 }
 
-impl Trace for String {}
+impl Trace for String {
+    fn trace(self): String {
+        self
+    }
+}
 
 impl Eq for String {
     fn eq(self, other: Self): Bool {
@@ -31,7 +35,7 @@ impl Collector<String> for String {
     }
 }
 
-impl Copy for Int {
+impl Copy for String {
     fn copy(self): Self {
         copy(self)
     }

@@ -3,9 +3,11 @@ import { Module } from '../../ast'
 import { Block, BreakStmt, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarDef } from '../../ast/statement'
 import { TypeDef, Variant } from '../../ast/type-def'
 import { Context } from '../../scope'
+import { trace } from '../../scope/std'
 import { typeDefToVirtualType } from '../../scope/trait'
-import { vidToString } from '../../scope/util'
+import { vidEq, vidToString } from '../../scope/util'
 import { EmitExpr, emitExpr, emitParam, emitPattern } from './expr'
+import { emitTraceImpl } from './native'
 import { EmitNode, emitIntersperse, emitToken, emitTree, jsVariable } from './node'
 
 export const emitStatement = (statement: Statement, module: Module, ctx: Context): EmitNode | EmitExpr => {
@@ -54,8 +56,11 @@ export const emitFnDef = (fnDef: FnDef, module: Module, ctx: Context, asProperty
 
 export const emitInstanceDef = (instanceDef: ImplDef | TraitDef, module: Module, ctx: Context): EmitNode => {
     const rel = ctx.impls.find(i => i.instanceDef === instanceDef)!
+    if (vidEq(rel.implDef.vid, trace.identifier) && instanceDef.block.statements.length === 0) {
+        return emitTraceImpl(rel, module, ctx)
+    }
     const superMethods = instanceDef.kind === 'impl-def' ? instanceDef.superMethods ?? [] : []
-    const ms = superMethods.map(m => {
+    const superMs = superMethods.map(m => {
         const params = m.fn.params.map((p, i) => {
             const pVar = nextVariable(ctx)
             const upcastMap = m.paramUpcasts ? m.paramUpcasts[i] : undefined
@@ -73,18 +78,18 @@ export const emitInstanceDef = (instanceDef: ImplDef | TraitDef, module: Module,
         ])
         return emitTree([emitToken(`${mName}:function(${params.map(p => p.resultVar).join(',')}) `), block])
     })
-    const fns = instanceDef.block.statements
+    const ms = instanceDef.block.statements
         .map(s => <FnDef>s)
         .map(f => emitFnDef(f, module, ctx, true))
         .filter(f => f)
         .map(f => f!)
-    const all = [...ms, ...fns]
+    const all = [...superMs, ...ms]
     const generics = instanceDef.generics.map(g => g.name.value)
     const cached = nextVariable(ctx)
-    const fnEmit = emitTree([emitToken('{'), emitIntersperse(all, ','), emitToken('};')])
+    const methodEmit = emitTree([emitToken('{'), emitIntersperse(all, ','), emitToken('};')])
     const instanceEmit = emitTree([
         emitToken(`function(${generics.join(',')}){if(${cached}){return ${cached};}${cached}=`),
-        fnEmit,
+        methodEmit,
         emitToken(`return ${cached};}`)
     ])
     return emitTree([jsVariable(cached), jsVariable(jsRelName(rel), instanceEmit, true)])

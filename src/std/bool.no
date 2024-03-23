@@ -23,7 +23,11 @@ impl Show for Bool {
     }
 }
 
-impl Trace for Bool {}
+impl Trace for Bool {
+    fn trace(self): String {
+        self.show()
+    }
+}
 
 impl Eq for Bool {
     fn eq(self, other: Self): Bool {

@@ -42,9 +42,13 @@ impl Show for Float {
     }
 }
 
-impl Trace for Float {}
+impl Trace for Float {
+    fn trace(self): String {
+        self.show()
+    }
+}
 
-impl Copy for Int {
+impl Copy for Float {
     fn copy(self): Self {
         copy(self)
     }

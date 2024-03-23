@@ -39,14 +39,17 @@ impl Show for List<String> {
 
 impl <T: Show> Show for List<T> {
     fn show(self): String {
-        // TODO: method ref
-        self.iter().map(|d| { d.show() }).collect<List<String>>().show()
+        self.iter().map(Show::show).collect<List<String>>().show()
     }
 }
 
-impl <T: Trace> Trace for List<T> {}
+impl <T: Trace> Trace for List<T> {
+    fn trace(self): String {
+        "[{self.iter().map(Trace::trace).intersperse(", ").collect<String>()}]"
+    }
+}
 
-impl Copy for Int {
+impl <T: Copy> Copy for List<T> {
     fn copy(self): Self {
         copy(self)
     }

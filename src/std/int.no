@@ -54,7 +54,11 @@ impl Show for Int {
     }
 }
 
-impl Trace for Int {}
+impl Trace for Int {
+    fn trace(self): String {
+        self.show()
+    }
+}
 
 impl Copy for Int {
     fn copy(self): Self {

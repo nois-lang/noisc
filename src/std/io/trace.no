@@ -1,7 +1,6 @@
 pub trait Trace {
     fn trace(self): String {
-        trace(self)
+        panic("default impl of `Trace::trace` is created for each implementing type by the compiler")
     }
 }
 
-fn trace<T>(value: T): String
