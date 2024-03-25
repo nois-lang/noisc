@@ -15,7 +15,7 @@ impl Show for String {
 
 impl Trace for String {
     fn trace(self): String {
-        self
+        "\"{self}\""
     }
 }
 
