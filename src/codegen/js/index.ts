@@ -63,9 +63,13 @@ const makeJsImport = (vid: VirtualIdentifier, importModule: Module, module: Modu
     return { def, path: [...vid.names.slice(0, -1), ...(importModule.mod ? ['mod'] : [])].join('/') }
 }
 
-export const emitUpcasts = (resultVar: string, upcasts: Map<string, Upcast>): EmitToken => {
+export const emitUpcasts = (resultVar: string, upcasts: Upcast[] | undefined): EmitToken | undefined => {
+    if (!upcasts || upcasts.length === 0) return undefined
     const args = [...upcasts.entries()].map(
-        ([, v]) => `[${[...v.traits.entries()].map(([tk, tv]) => `[${jsString(tk)}, ${jsRelName(tv)}]`).join(',')}]`
+        ([, v]) =>
+            `[${Object.entries(v)
+                .map(([tk, tv]) => `[${jsString(tk)}, ${jsRelName(tv)}]`)
+                .join(',')}]`
     )
     args.unshift(resultVar)
     return emitToken(`${resultVar}.upcast(${args.join(',')});`)

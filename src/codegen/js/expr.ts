@@ -29,8 +29,7 @@ export const emitExpr = (expr: Expr, module: Module, ctx: Context): EmitExpr => 
 
 export const emitOperandExpr = (operandExpr: OperandExpr, module: Module, ctx: Context): EmitExpr => {
     const operand = emitOperand(operandExpr.operand, module, ctx)
-    const upcasts = operandExpr.upcasts
-    const upcastEmit = upcasts ? emitUpcasts(operand.resultVar, upcasts) : undefined
+    const upcastEmit = emitUpcasts(operand.resultVar, operandExpr.upcasts)
     return { emit: emitTree([operand.emit, upcastEmit]), resultVar: operand.resultVar }
 }
 
@@ -52,13 +51,12 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
                 methodDef.fn.static ? jsArgs.map(a => a.resultVar) : [lOp.resultVar, ...jsArgs.map(a => a.resultVar)]
             ).join(',')
 
-            const upcastEmit = upcasts ? emitUpcasts(lOp.resultVar, upcasts) : undefined
+            const upcastEmit = emitUpcasts(lOp.resultVar, upcasts)
 
             const callerEmit = call.impl ? jsRelName(call.impl) : `${lOp.resultVar}.${relTypeName(methodDef.rel)}`
             const callEmit = jsVariable(resultVar, emitToken(`${callerEmit}().${methodName}(${argsEmit})`))
 
-            const exprUpcasts = unaryExpr.upcasts
-            const exprUpcastEmit = exprUpcasts ? emitUpcasts(resultVar, exprUpcasts) : undefined
+            const exprUpcastEmit = emitUpcasts(resultVar, unaryExpr.upcasts)
             return {
                 emit: emitTree(
                     [lOp.emit, emitTree(jsArgs.map(a => a.emit)), upcastEmit, callEmit, exprUpcastEmit],
@@ -69,7 +67,7 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
         }
         case 'field-access-op': {
             const lOp = emitOperand(unaryExpr.operand, module, ctx)
-            const upcastEmit = upcasts ? emitUpcasts(lOp.resultVar, upcasts) : undefined
+            const upcastEmit = emitUpcasts(lOp.resultVar, upcasts)
             return {
                 emit: emitTree([
                     lOp.emit,
@@ -83,12 +81,12 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
             const call = unaryExpr.op
             const args = call.args.map(a => {
                 const { emit, resultVar: res } = emitExpr(a.expr, module, ctx)
-                const upcastEmit = a.expr.upcasts ? emitUpcasts(res, a.expr.upcasts) : undefined
+                const upcastEmit = emitUpcasts(res, a.expr.upcasts)
                 return { emit: emitTree([emit, upcastEmit]), resultVar: res }
             })
             const genericTypes = call.generics?.map(g => emitGeneric(g, module, ctx)) ?? []
             const jsArgs = [...args, ...genericTypes]
-            const upcastEmit = unaryExpr.upcasts ? emitUpcasts(resultVar, unaryExpr.upcasts) : undefined
+            const upcastEmit = emitUpcasts(resultVar, unaryExpr.upcasts)
             const variantDef = call.variantDef
             const parseNode = unaryExpr.operand.kind === 'identifier' ? unaryExpr.operand.parseNode : call.parseNode
             if (variantDef) {
@@ -114,7 +112,7 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
             }
         case 'unwrap-op': {
             const operand = emitOperand(unaryExpr.operand, module, ctx)
-            const upcastEmit = upcasts ? emitUpcasts(operand.resultVar, upcasts) : undefined
+            const upcastEmit = emitUpcasts(operand.resultVar, upcasts)
             return {
                 emit: emitTree([
                     operand.emit,
@@ -126,7 +124,7 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, module: Module, ctx: Context
         }
         case 'bind-op': {
             const operand = emitOperand(unaryExpr.operand, module, ctx)
-            const upcastEmit = upcasts ? emitUpcasts(operand.resultVar, upcasts) : undefined
+            const upcastEmit = emitUpcasts(operand.resultVar, upcasts)
             const bindVar = nextVariable(ctx)
             return {
                 emit: emitTree([
@@ -217,7 +215,7 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
         case 'for-expr': {
             const expr = emitExpr(operand.expr, module, ctx)
             const iteratorVar = nextVariable(ctx)
-            const upcastsEmit = operand.expr.upcasts ? emitUpcasts(expr.resultVar, operand.expr.upcasts) : undefined
+            const upcastsEmit = emitUpcasts(expr.resultVar, operand.expr.upcasts)
             const iterator = {
                 emit: emitTree([
                     expr.emit,
@@ -314,7 +312,7 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
             }
             const resultVar = operand.names.at(-1)!.value
             const upcasts = operand.upcasts
-            const upcastEmit = upcasts ? emitUpcasts(resultVar, upcasts) : undefined
+            const upcastEmit = emitUpcasts(resultVar, upcasts)
             return { emit: emitTree([upcastEmit]), resultVar }
         }
     }

@@ -54,7 +54,7 @@ import {
 import { checkClosureExpr, checkExpr } from './expr'
 import { checkPattern } from './match'
 import { typeNames } from './type-def'
-import { Upcast, makeUpcastMap, upcast } from './upcast'
+import { Upcast, makeUpcasts, upcast } from './upcast'
 import { VirtualUseExpr, useExprToVids } from './use-expr'
 
 export interface Checked {
@@ -74,7 +74,7 @@ export interface Static {
 }
 
 export interface Virtual {
-    upcasts: Map<string, Upcast>
+    upcasts: Upcast[]
 }
 
 export const prepareModule = (module: Module): void => {
@@ -505,7 +505,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                     m.paramUpcasts = m.fn.params.map(p => {
                         const genericMaps = [makeGenericMapOverStructure(implDef.rel!.forType, p.type!)]
                         const resolvedType = resolveType(p.type!, genericMaps, ctx)
-                        return makeUpcastMap(resolvedType, m.rel.forType, ctx)
+                        return makeUpcasts(resolvedType, m.rel.forType, ctx)
                     })
                 }
                 module.relImports.push(...implDef.superMethods.map(i => i.rel))
