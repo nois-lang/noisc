@@ -2,7 +2,7 @@ import { tokenize } from './lexer'
 
 /**
  * Use this command to print lexer output
- * console.log(inspect(tokenize(code), { depth: null, compact: true }))
+ * inspect(tokenize(code), { depth: null, compact: true })
  */
 describe('lexer', () => {
     it('tokenize basic', () => {
