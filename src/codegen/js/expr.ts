@@ -411,10 +411,17 @@ export const emitPatternExprCondition = (
 }
 
 export const emitParam = (param: Param, module: Module, ctx: Context): EmitNode => {
-    if (param.pattern.expr.kind !== 'name') {
-        return jsError('destructuring')
+    switch (param.pattern.expr.kind) {
+        case 'name':
+            return emitToken(param.pattern.expr.value, param.pattern.expr.parseNode)
+        case 'hole':
+            return emitToken(nextVariable(ctx))
+        case 'con-pattern':
+            // TODO
+            return emitToken('/*destructuring*/')
+        default:
+            return unreachable()
     }
-    return emitToken(param.pattern.expr.value, param.pattern.expr.parseNode)
 }
 
 export const emitPattern = (
