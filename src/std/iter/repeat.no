@@ -1,0 +1,21 @@
+use std::iter::range::RangeIter
+
+pub type RepeatIter<T> (
+    range: RangeIter,
+    item: T
+)
+
+impl <T> Iter<T> for RepeatIter<T> {
+    fn next(self): Option<T> {
+        let n = self.range.next()
+        match n {
+            Some() { Some(self.item) }
+            None() { None() }
+        }
+    }
+}
+
+pub fn repeat<T>(item: T, count: Int): RepeatIter<T> {
+    RepeatIter(range: RangeIter(0, count), item)
+}
+

@@ -12,6 +12,7 @@ pub use std::{
     ord::{ Ordering, Ord },
     iter::{ Iterable, Iter, Collector },
     iter::range::{ range },
+    iter::repeat::{ repeat },
     list::List,
     never::Never,
     panic::{ panic, todo },
