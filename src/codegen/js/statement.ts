@@ -71,13 +71,15 @@ export const emitInstanceDef = (instanceDef: ImplDef | TraitDef, module: Module,
                 return { emit: emitToken(''), resultVar: pVar }
             }
         })
+        const generics = m.fn.generics.map(g => g.name.value)
+        const jsParams = [...params.map(p => p.resultVar), ...generics]
         const mName = m.fn.name.value
         const block = emitTree([
             emitToken('{'),
             ...params.map(p => p.emit),
-            emitToken(`return ${jsRelName(m.rel)}().${mName}(${params.map(p => p.resultVar).join(',')})}`)
+            emitToken(`return ${jsRelName(m.rel)}().${mName}(${jsParams.join(',')})}`)
         ])
-        return emitTree([emitToken(`${mName}:function(${params.map(p => p.resultVar).join(',')}) `), block])
+        return emitTree([emitToken(`${mName}:function(${jsParams.join(',')}) `), block])
     })
     const ms = instanceDef.block.statements
         .map(s => <FnDef>s)
