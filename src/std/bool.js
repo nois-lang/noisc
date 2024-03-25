@@ -6,9 +6,7 @@ Bool.Bool = value => ({
     $noisType: 'std::bool::Bool',
     value,
     upcast: (value, self) => {
-        for (const [trait, impl] of self) {
-            value[trait] = impl
-        }
+        Object.assign(value, self)
     }
 })
 

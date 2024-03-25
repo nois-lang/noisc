@@ -7,14 +7,10 @@ List.List = value => ({
     $noisType: 'std::list::List',
     value,
     upcast: (value, self, t) => {
-        for (const [trait, impl] of self) {
-            value[trait] = impl
-        }
+        Object.assign(value, self)
         if (t !== undefined) {
             for (const item of value.value) {
-                for (const [itemTrait, itemImpl] of t) {
-                    item[itemTrait] = itemImpl
-                }
+                item.upcast(item, ...t)
             }
         }
     }

@@ -4,49 +4,43 @@ import { InstanceRelation, relTypeName, resolveTypeImpl } from '../scope/trait'
 import { VirtualType } from '../typecheck'
 import { makeGenericMapOverStructure } from '../typecheck/generic'
 
-export type Upcast = { [trait: string]: InstanceRelation }
+export interface Upcast {
+    self: { [trait: string]: InstanceRelation }
+    generics: Upcast[]
+}
 
 export const upcast = (virtual: Partial<Virtual>, type: VirtualType, traitType: VirtualType, ctx: Context): void => {
-    const upcastMap = makeUpcasts(type, traitType, ctx)
+    const upcastMap = makeUpcast(type, traitType, ctx)
     if (upcastMap) {
-        writeUpcasts(virtual, upcastMap)
+        writeUpcast(virtual, upcastMap)
     }
 }
 
-export const makeUpcasts = (type: VirtualType, traitType: VirtualType, ctx: Context): Upcast[] => {
+export const makeUpcast = (type: VirtualType, traitType: VirtualType, ctx: Context): Upcast | undefined => {
     const res = resolveTypeImpl(type, traitType, ctx)
-    if (!res) return []
+    if (!res) return undefined
     const genericMap = makeGenericMapOverStructure(type, res.impl.forType)
-    const upcasts = []
-    upcasts.push({ [relTypeName(res.trait)]: res.impl })
+    const upcast: Upcast = { self: { [relTypeName(res.trait)]: res.impl }, generics: [] }
     for (const g of res.impl.generics) {
-        const gUpcast: Upcast = {}
+        const gUpcast: Upcast = { self: {}, generics: [] }
         const concreteG = genericMap.get(g.name)
         if (concreteG) {
             for (const b of g.bounds) {
-                const gRes = resolveTypeImpl(concreteG, b, ctx)
-                if (gRes) {
-                    gUpcast[relTypeName(gRes.trait)] = gRes.impl
-                    ctx.moduleStack.at(-1)!.relImports.push(gRes.impl)
+                const gUp = makeUpcast(concreteG, b, ctx)
+                if (gUp) {
+                    upcast.generics.push(gUp)
+                } else {
+                    // upcast.generics.push({ self: {}, generics: [] })
                 }
             }
         }
-        upcasts.push(gUpcast)
+        upcast.generics.push(gUpcast)
     }
     ctx.moduleStack.at(-1)!.relImports.push(res.impl)
-    return upcasts
+    return upcast
 }
 
-const writeUpcasts = (virtual: Partial<Virtual>, upcasts: Upcast[]): void => {
+const writeUpcast = (virtual: Partial<Virtual>, upcast: Upcast): void => {
     virtual.upcasts ??= []
-    for (let i = 0; i < upcasts.length; i++) {
-        const up = upcasts[i]
-        if (virtual.upcasts.length > i) {
-            for (const [k, v] of Object.entries(up)) {
-                virtual.upcasts[i][k] = v
-            }
-        } else {
-            virtual.upcasts.push(up)
-        }
-    }
+    virtual.upcasts.push(upcast)
 }

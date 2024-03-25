@@ -6,9 +6,7 @@ Char.Char = value => ({
     $noisType: 'std::char::Char',
     value,
     upcast: (value, self) => {
-        for (const [trait, impl] of self) {
-            value[trait] = impl
-        }
+        Object.assign(value, self)
     }
 })
 

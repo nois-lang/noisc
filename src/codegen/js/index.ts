@@ -65,14 +65,19 @@ const makeJsImport = (vid: VirtualIdentifier, importModule: Module, module: Modu
 
 export const emitUpcasts = (resultVar: string, upcasts: Upcast[] | undefined): EmitToken | undefined => {
     if (!upcasts || upcasts.length === 0) return undefined
-    const args = [...upcasts.entries()].map(
-        ([, v]) =>
-            `[${Object.entries(v)
-                .map(([tk, tv]) => `[${jsString(tk)}, ${jsRelName(tv)}]`)
-                .join(',')}]`
-    )
-    args.unshift(resultVar)
-    return emitToken(`${resultVar}.upcast(${args.join(',')});`)
+    return emitToken(upcasts.map(u => emitUpcast(resultVar, u)).join(''))
+}
+
+const emitUpcast = (resultVar: string, upcast: Upcast): string | undefined => {
+    if (Object.keys(upcast.self).length === 0 && upcast.generics.length === 0) return undefined
+    return `${resultVar}.upcast(${resultVar}, ...${upcastToArgString(upcast)});`
+}
+
+const upcastToArgString = (upcast: Upcast): string => {
+    if (Object.keys(upcast.self).length === 0) return ''
+    const gs = upcast.generics.length > 0 ? upcast.generics.map(upcastToArgString).join('') : ''
+    const self = `{${Object.entries(upcast.self).map(([k, v]) => `${jsString(k)}:${jsRelName(v)}`)}}`
+    return `[${[self, gs].filter(t => t.length > 0).join(',')}]`
 }
 
 export const extractValue = (str: string): string => {

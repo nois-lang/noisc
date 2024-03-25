@@ -54,7 +54,7 @@ import {
 import { checkClosureExpr, checkExpr } from './expr'
 import { checkPattern } from './match'
 import { typeNames } from './type-def'
-import { Upcast, makeUpcasts, upcast } from './upcast'
+import { Upcast, makeUpcast, upcast } from './upcast'
 import { VirtualUseExpr, useExprToVids } from './use-expr'
 
 export interface Checked {
@@ -505,7 +505,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                     m.paramUpcasts = m.fn.params.map(p => {
                         const genericMaps = [makeGenericMapOverStructure(implDef.rel!.forType, p.type!)]
                         const resolvedType = resolveType(p.type!, genericMaps, ctx)
-                        return makeUpcasts(resolvedType, m.rel.forType, ctx)
+                        return makeUpcast(resolvedType, m.rel.forType, ctx)
                     })
                 }
                 module.relImports.push(...implDef.superMethods.map(i => i.rel))

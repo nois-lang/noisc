@@ -66,7 +66,7 @@ export const emitInstanceDef = (instanceDef: ImplDef | TraitDef, module: Module,
             const pVar = nextVariable(ctx)
             const upcastMap = m.paramUpcasts ? m.paramUpcasts[i] : undefined
             if (upcastMap) {
-                return { emit: emitUpcasts(pVar, upcastMap), resultVar: pVar }
+                return { emit: emitUpcasts(pVar, [upcastMap]), resultVar: pVar }
             } else {
                 return { emit: emitToken(''), resultVar: pVar }
             }
@@ -159,13 +159,17 @@ export const emitVariant = (v: Variant, typeDef: TypeDef, module: Module, ctx: C
 
 export const emitUpcastFn = (v: Variant, typeDef: TypeDef, module: Module, ctx: Context): EmitNode => {
     const params = ['value', 'Self', ...typeDef.generics.map(g => g.name.value)]
-    const selfG = 'for(const [trait,impl] of Self){value[trait]=impl;}'
+    const selfG = 'Object.assign(value, Self);'
     const gs = typeDef.generics.flatMap(g => {
         const fields = v.fieldDefs.filter(f => virtualTypeToString(f.type!) === g.name.value).map(f => f.name.value)
         if (fields.length === 0) return []
-        return [
-            `for(const [trait,impl] of ${g.name.value}){${fields.map(f => `value.value.${f}[trait]=impl;`).join('')}}`
-        ]
+        const fs = fields
+            .map(f => {
+                const fAccess = `value.value.${f}`
+                return `${fAccess}.upcast(${fAccess}, ...${g.name.value});`
+            })
+            .join('')
+        return [`if(${g.name.value}!==undefined){${fs}}`]
     })
     return emitToken(`function(${params.join(',')}) {${selfG}${gs.join('')}}`)
 }

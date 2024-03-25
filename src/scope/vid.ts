@@ -66,7 +66,7 @@ export interface MethodDef {
     kind: 'method-def'
     fn: FnDef
     rel: InstanceRelation
-    paramUpcasts?: (Upcast[] | undefined)[]
+    paramUpcasts?: (Upcast | undefined)[]
 }
 
 export interface VirtualIdentifierMatch<D = Definition> {

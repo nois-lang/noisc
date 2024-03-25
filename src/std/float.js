@@ -6,9 +6,7 @@ Float.Float = value => ({
     $noisType: 'std::float::Float',
     value,
     upcast: (value, self) => {
-        for (const [trait, impl] of self) {
-            value[trait] = impl
-        }
+        Object.assign(value, self)
     }
 })
 
