@@ -165,10 +165,12 @@ export const tokenize = (code: string): LexerToken[] => {
     }
 
     while (ctx.pos < ctx.code.length) {
-        if (isWhitespace(ctx.code[ctx.pos]) || isNewline(ctx.code[ctx.pos])) {
-            ctx.pos++
-            flushUnknown()
-            continue
+        if (ctx.inString <= ctx.inIntepolation) {
+            if (isWhitespace(ctx.code[ctx.pos]) || isNewline(ctx.code[ctx.pos])) {
+                ctx.pos++
+                flushUnknown()
+                continue
+            }
         }
 
         const fns = [

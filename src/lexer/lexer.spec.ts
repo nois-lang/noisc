@@ -164,6 +164,15 @@ let main = (): Unit {
   { kind: 'eof', value: '', span: { start: 2, end: 3 } } ]
             )
         })
+
+        it('space', () => {
+            const code = `' '`
+            // biome-ignore format: compact
+            expect(tokenize(code)).toEqual(
+[ { kind: 'char', value: "' '", span: { start: 0, end: 3 } },
+  { kind: 'eof', value: '', span: { start: 3, end: 4 } } ]
+            )
+        })
     })
 
     describe('tokenize string', () => {
@@ -174,6 +183,17 @@ let main = (): Unit {
 [ { kind: 'd-quote', value: '"', span: { start: 0, end: 1 } },
   { kind: 'd-quote', value: '"', span: { start: 1, end: 2 } },
   { kind: 'eof', value: '', span: { start: 2, end: 3 } } ]
+            )
+        })
+
+        it('space', () => {
+            const code = `" "`
+            // biome-ignore format: compact
+            expect(tokenize(code)).toEqual(
+[ { kind: 'd-quote', value: '"', span: { start: 0, end: 1 } },
+  { kind: 'string-part', value: ' ', span: { start: 1, end: 2 } },
+  { kind: 'd-quote', value: '"', span: { start: 2, end: 3 } },
+  { kind: 'eof', value: '', span: { start: 3, end: 4 } } ]
             )
         })
 
