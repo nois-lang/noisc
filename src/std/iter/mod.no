@@ -11,6 +11,26 @@ pub trait Iterable<T> {
 pub trait Iter<T> {
     fn next(self): Option<T>
 
+    fn count(self): Int {
+        self.fold(|acc, _| { acc + 1 }, 0)
+    }
+
+    fn last(self): Option<T> {
+        let res = None()
+        for item in self {
+            res = Some(item)
+        }
+        return res
+    }
+
+    fn fold<U>(self, f: |U, T|: U, initial: U): U {
+        let res = initial
+        for item in self {
+            res = f(res, item)
+        }
+        return res
+    }
+
     fn collect<C: Collector<T>>(self): C {
         C::fromIter(self)
     }
