@@ -3,7 +3,7 @@ import { UnaryExpr } from '../ast/expr'
 import { MethodCallOp } from '../ast/op'
 import { Name, Operand } from '../ast/operand'
 import { Context, addError } from '../scope'
-import { getInstanceForType, resolveGenericImpls, resolveMethodImpl } from '../scope/trait'
+import { getInstanceForType, resolveMethodImpl, resolveTypeImpl } from '../scope/trait'
 import { vidFromString, vidToString } from '../scope/util'
 import { MethodDef, VirtualIdentifier, resolveVid, typeKinds } from '../scope/vid'
 import { VirtualFnType, VirtualType, combine, genericToVirtual, typeToVirtual } from '../typecheck'
@@ -147,10 +147,19 @@ export const checkMethodCall = (expr: UnaryExpr, mCall: MethodCallOp, ctx: Conte
         upcast(operand, operand.type!, ref.def.rel.implType, ctx)
     }
 
-    mCall.call.generics = fnType.generics.map(g => {
+    mCall.call.generics = fnType.generics.map((g, i) => {
+        const typeArg = mCall.typeArgs.at(i)
+        if (!typeArg) return { generic: g, impls: [] }
+        const vTypeArg = typeToVirtual(typeArg, ctx)
         const t = resolveType(g, [genericMaps[1]], ctx)
         if (t.kind !== 'generic') return { generic: g, impls: [] }
-        const impls = resolveGenericImpls(t, ctx)
+        const impls = g.bounds.flatMap(b => {
+            const res = resolveTypeImpl(vTypeArg, b, ctx)
+            if (res) {
+                return [res.impl]
+            }
+            return []
+        })
         ctx.moduleStack.at(-1)!.relImports.push(...impls)
         return { generic: g, impls }
     })

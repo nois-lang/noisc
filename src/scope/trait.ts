@@ -226,15 +226,6 @@ export const relTypeName = (rel: InstanceRelation): string => {
     }
 }
 
-export const resolveGenericImpls = (generic: VirtualGeneric, ctx: Context): InstanceRelation[] => {
-    return generic.bounds.flatMap(b => {
-        const candidates = ctx.impls
-            .filter(i => isAssignable(b, i.implType, ctx))
-            .toSorted((a_, b_) => relComparator(b_, ctx, b) - relComparator(a_, ctx, b))
-        return candidates.length > 0 ? [candidates.at(0)!] : []
-    })
-}
-
 export const resolveTypeImpl = (
     type: VirtualType,
     traitType: VirtualType,

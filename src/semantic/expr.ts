@@ -6,7 +6,7 @@ import { CallOp } from '../ast/op'
 import { ClosureExpr, ForExpr, IfExpr, IfLetExpr, ListExpr, Name, Operand, WhileExpr } from '../ast/operand'
 import { Context, Scope, addError, fnDefScope, instanceScope } from '../scope'
 import { bool, iter, iterable, show, string, unwrap } from '../scope/std'
-import { getConcreteTrait, resolveGenericImpls, resolveMethodImpl, typeDefToVirtualType } from '../scope/trait'
+import { getConcreteTrait, resolveMethodImpl, resolveTypeImpl, typeDefToVirtualType } from '../scope/trait'
 import { idToVid, vidEq, vidFromString, vidToString } from '../scope/util'
 import { MethodDef, VariantDef, VirtualIdentifierMatch, resolveVid } from '../scope/vid'
 import {
@@ -567,13 +567,21 @@ export const checkCall_ = (call: CallOp, operand: Operand, args: Expr[], ctx: Co
     const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
     checkCallArgs(call, args, paramTypes, ctx)
 
-    call.generics = fnType.generics.map(g => {
-        const impls = resolveGenericImpls(g, ctx)
+    call.generics = fnType.generics.map((g, i) => {
+        const typeArg = operand.kind === 'identifier' ? operand.typeArgs.at(i) : undefined
+        if (!typeArg) return { generic: g, impls: [] }
+        const vTypeArg = typeToVirtual(typeArg, ctx)
+        const t = resolveType(g, [genericMaps[1]], ctx)
+        if (t.kind !== 'generic') return { generic: g, impls: [] }
+        const impls = g.bounds.flatMap(b => {
+            const res = resolveTypeImpl(vTypeArg, b, ctx)
+            if (res) {
+                return [res.impl]
+            }
+            return []
+        })
         ctx.moduleStack.at(-1)!.relImports.push(...impls)
-        return {
-            generic: g,
-            impls
-        }
+        return { generic: g, impls }
     })
 
     return replaceGenericsWithHoles(resolveType(fnType.returnType, genericMaps, ctx))
