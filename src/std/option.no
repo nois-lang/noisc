@@ -20,6 +20,13 @@ impl <T> Option<T> {
         }
     }
 
+    pub fn or(self, other: Option<T>): Option<T> {
+        match self {
+            Some() { self }
+            None() { other }
+        }
+    }
+
     pub fn unwrap(self): T {
         match self {
             Some(value) { value }
