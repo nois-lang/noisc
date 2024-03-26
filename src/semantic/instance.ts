@@ -6,7 +6,7 @@ import { Context, addError } from '../scope'
 import { getInstanceForType, resolveMethodImpl, resolveTypeImpl } from '../scope/trait'
 import { vidFromString, vidToString } from '../scope/util'
 import { MethodDef, VirtualIdentifier, resolveVid, typeKinds } from '../scope/vid'
-import { VirtualFnType, VirtualType, combine, genericToVirtual, typeToVirtual } from '../typecheck'
+import { VirtualFnType, VirtualType, combine, genericToVirtual, typeToVirtual, virtualTypeToString } from '../typecheck'
 import {
     makeFnGenericMap,
     makeFnTypeArgGenericMap,
@@ -139,14 +139,18 @@ export const checkMethodCall = (expr: UnaryExpr, mCall: MethodCallOp, ctx: Conte
     }
     if (mCall.call.impl) {
         ctx.moduleStack.at(-1)!.relImports.push(mCall.call.impl)
+        // TODO: upcast only happen to the direct implType, but not its supertypes
+        // Use case: std::range has to return Iter<T> instead of RangeIter. When RangeIter is passed into a method
+        // where MapIter is expected, upcast of RangeIter for MapIter does not upcast it to Iter
         upcast(operand, operand.type!, ref.def.rel.implType, ctx)
     }
 
-    const genericMaps = makeMethodGenericMaps(operand, ref.def, mCall, ctx)
+    let genericMaps = makeMethodGenericMaps(operand, ref.def, mCall, ctx)
     const args = ref.def.fn.static ? mCall.call.args.map(a => a.expr) : [operand, ...mCall.call.args.map(a => a.expr)]
     const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
-    console.log('check method', methodName)
     checkCallArgs(mCall, args, paramTypes, ctx)
+    // recalculate generic maps since malleable args might've been updated
+    genericMaps = makeMethodGenericMaps(operand, ref.def, mCall, ctx)
 
     const implForType = getInstanceForType(ref.def.rel.instanceDef, ctx)
     const implForGenericMap = makeGenericMapOverStructure(operand.type!, implForType)

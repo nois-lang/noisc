@@ -27,7 +27,7 @@ import {
     resolveType
 } from '../typecheck/generic'
 import { holeType, unitType, unknownType } from '../typecheck/type'
-import { assert, unreachable } from '../util/todo'
+import { assert, todo, unreachable } from '../util/todo'
 import {
     argCountMismatchError,
     missingFieldsError,
@@ -439,9 +439,7 @@ export const checkClosureExpr = (
     }
 
     checkBlock(closureExpr.block, ctx)
-    if (closureExpr.type.returnType.kind === 'unknown-type') {
-        closureExpr.type.returnType = closureExpr.block.type!
-    }
+    closureExpr.type.returnType = closureExpr.block.type!
 
     module.scopeStack.pop()
 }
