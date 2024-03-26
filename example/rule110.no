@@ -1,0 +1,40 @@
+use std::iter::MapAdapter
+
+pub fn main() {
+    let n = 30
+    rule110(n)
+}
+
+fn rule110(n: Int) {
+    range(1, n).fold(|gen, _| {
+        let ng = nextGen(gen)
+        println(fmtGen(ng, n))
+        ng
+    }, [true])
+    unit
+}
+
+fn nextGen(prev: List<Bool>): List<Bool> {
+    range(-1, prev.iter().count())
+        .map(|i| {
+            let left = prev.at(i - 1).or(Some(false))!
+            let mid = prev.at(i).or(Some(false))!
+            let right = prev.at(i + 1).or(Some(false))!
+            return (
+                (left && mid && right) ||
+                (left && mid.not() && right.not()) ||
+                (left.not() && mid.not() && right.not())
+            ).not()
+        })
+        .collect<List<Bool>>()
+}
+
+fn fmtGen(gen: List<Bool>, total: Int): String {
+    let pad = repeat(" ", total - gen.iter().count()).collect<String>()
+    let g = gen
+        .iter()
+        .map(|b| { if b { "x" } else { " " } })
+        .collect<String>()
+    pad.concat(g)
+}
+
