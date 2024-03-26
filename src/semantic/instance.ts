@@ -124,11 +124,6 @@ export const checkMethodCall = (expr: UnaryExpr, mCall: MethodCallOp, ctx: Conte
     // TODO: check required type args (that cannot be inferred via `resolveFnGenerics`)
     mCall.typeArgs.forEach(typeArg => checkType(typeArg, ctx))
 
-    const genericMaps = makeMethodGenericMaps(operand, ref.def, mCall, ctx)
-    const args = ref.def.fn.static ? mCall.call.args.map(a => a.expr) : [operand, ...mCall.call.args.map(a => a.expr)]
-    const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
-    checkCallArgs(mCall, args, paramTypes, ctx)
-
     const operandTypeRef = resolveVid(typeVid, ctx, typeKinds)
     if (ref.def.rel.instanceDef.kind === 'trait-def') {
         const resolved = resolveMethodImpl(operand.type!, ref.def, ctx)
@@ -147,11 +142,19 @@ export const checkMethodCall = (expr: UnaryExpr, mCall: MethodCallOp, ctx: Conte
         upcast(operand, operand.type!, ref.def.rel.implType, ctx)
     }
 
+    const genericMaps = makeMethodGenericMaps(operand, ref.def, mCall, ctx)
+    const args = ref.def.fn.static ? mCall.call.args.map(a => a.expr) : [operand, ...mCall.call.args.map(a => a.expr)]
+    const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
+    console.log('check method', methodName)
+    checkCallArgs(mCall, args, paramTypes, ctx)
+
+    const implForType = getInstanceForType(ref.def.rel.instanceDef, ctx)
+    const implForGenericMap = makeGenericMapOverStructure(operand.type!, implForType)
     mCall.call.generics = fnType.generics.map((g, i) => {
         const typeArg = mCall.typeArgs.at(i)
         if (!typeArg) return { generic: g, impls: [] }
         const vTypeArg = typeToVirtual(typeArg, ctx)
-        const t = resolveType(g, [genericMaps[1]], ctx)
+        const t = resolveType(g, [implForGenericMap], ctx)
         if (t.kind !== 'generic') return { generic: g, impls: [] }
         const impls = g.bounds.flatMap(b => {
             const res = resolveTypeImpl(vTypeArg, b, ctx)
@@ -173,16 +176,30 @@ const makeMethodGenericMaps = (
     call: MethodCallOp,
     ctx: Context
 ): Map<string, VirtualType>[] => {
-    const implForType = getInstanceForType(methodDef.rel.instanceDef, ctx)
-    const implGenericMap = makeGenericMapOverStructure(lOperand.type!, implForType)
-    // if Self type param is explicit, `resolveGenericsOverStructure` treats it as regular generic and interrupts
-    // further mapping in `fnGenericMap`, thus should be removed
-    implGenericMap.delete(selfType.name)
+    const maps = []
+
+    if (call.call.impl) {
+        const operandRel = resolveTypeImpl(lOperand.type!, call.call.impl.forType, ctx)
+        if (operandRel) {
+            const operandImplGenericMap = makeGenericMapOverStructure(operandRel.impl.implType, call.call.impl.forType)
+            maps.push(operandImplGenericMap)
+        }
+    }
 
     const fnType = <VirtualFnType>methodDef.fn.type
     const typeArgs = call.typeArgs.map(tp => typeToVirtual(tp, ctx))
     const fnTypeArgGenericMap = makeFnTypeArgGenericMap(fnType, typeArgs)
-    const fnGenericMap = makeFnGenericMap(fnType, [lOperand.type!, ...call.call.args.map(a => a.expr.type!)])
+    maps.push(fnTypeArgGenericMap)
 
-    return [fnTypeArgGenericMap, implGenericMap, fnGenericMap]
+    const implForType = getInstanceForType(methodDef.rel.instanceDef, ctx)
+    const implForGenericMap = makeGenericMapOverStructure(lOperand.type!, implForType)
+    // if Self type param is explicit, `resolveGenericsOverStructure` treats it as regular generic and interrupts
+    // further mapping in `fnGenericMap`, thus should be removed
+    implForGenericMap.delete(selfType.name)
+    maps.push(implForGenericMap)
+
+    const fnGenericMap = makeFnGenericMap(fnType, [lOperand.type!, ...call.call.args.map(a => a.expr.type!)])
+    maps.push(fnGenericMap)
+
+    return maps
 }
