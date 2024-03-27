@@ -96,21 +96,30 @@ const compileStd = async (): Promise<void> => {
 
     mkdirSync(pkg.path, { recursive: true })
     await emitPackage(true, pkg, ctx)
+
+    symlinkSync('dist', 'tmp/node_modules')
 }
 
 const run = (ctx: Context): SpawnSyncReturns<Buffer> => {
-    symlinkSync('dist', 'tmp/node_modules')
     return spawnSync('node', ['dist/test/mod.js'], { cwd: 'tmp' })
 }
 
 describe('e2e', () => {
-    afterEach(() => {
+    beforeAll(async () => {
+        await compileStd()
+    })
+
+    afterAll(() => {
         rmdirSync('tmp', { recursive: true })
+    })
+
+    afterEach(() => {
+        rmdirSync('tmp/test', { recursive: true })
+        rmdirSync('tmp/dist/test', { recursive: true })
     })
 
     it('minimal', async () => {
         const files = { 'mod.no': 'pub fn main() {}' }
-        await compileStd()
         const res = run(await compile(files))
         expect(res.stdout.toString()).toEqual('')
         expect(res.stderr.toString()).toEqual('')
@@ -118,12 +127,11 @@ describe('e2e', () => {
 
     it('hello', async () => {
         const files = {
-            'mod.no': `
+            'mod.no': `\
 pub fn main(): Unit {
     println("Hello, World!")
 }`
         }
-        await compileStd()
         const res = run(await compile(files))
         expect(res.stdout.toString()).toEqual('Hello, World!\n')
         expect(res.stderr.toString()).toEqual('')
@@ -131,7 +139,7 @@ pub fn main(): Unit {
 
     it('example', async () => {
         const files = {
-            'mod.no': `
+            'mod.no': `\
 use std::{ math::pi, iter::MapAdapter }
 
 trait Area {
@@ -166,7 +174,6 @@ pub fn main() {
     )
 }`
         }
-        await compileStd()
         const res = run(await compile(files))
         expect(res.stdout.toString()).toEqual('[8, 478.3879062809779]\n')
         expect(res.stderr.toString()).toEqual('')
@@ -174,7 +181,7 @@ pub fn main() {
 
     it('rule110', async () => {
         const files = {
-            'mod.no': `
+            'mod.no': `\
 use std::iter::MapAdapter
 
 pub fn main() {
@@ -215,7 +222,6 @@ fn fmtGen(gen: List<Bool>, total: Int): String {
     pad.concat(g)
 }`
         }
-        await compileStd()
         const res = run(await compile(files))
         expect(res.stdout.toString()).toEqual(
             '        xx\n       xxx\n      xx x\n     xxxxx\n    xx   x\n   xxx  xx\n  xx x xxx\n xxxxxxx x\nxx     xxx\n'
