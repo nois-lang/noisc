@@ -1,21 +1,18 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync } from 'fs'
-import { basename, dirname, join, parse, relative } from 'path'
+import { existsSync, readFileSync, statSync } from 'fs'
+import { basename, dirname, join } from 'path'
 import { fileURLToPath } from 'url'
-import { writeFile } from 'fs/promises'
 import { parseOption } from './cli'
-import { emitDeclaration } from './codegen/declaration'
-import { emitModule } from './codegen/js'
 import { fromCmd } from './config'
 import { colorError, colorWarning, prettySourceMessage } from './error'
 import { Package } from './package'
 import { buildModule } from './package/build'
+import { emitPackage } from './package/emit'
 import { buildPackage } from './package/io'
 import { getSpan } from './parser'
 import { Context, pathToVid } from './scope'
 import { buildInstanceRelations } from './scope/trait'
 import { checkModule, checkTopLevelDefinition, prepareModule } from './semantic'
 import { Source } from './source'
-import { createSourceMap, foldEmitTree } from './sourcemap'
 import { assert } from './util/todo'
 
 const dir = dirname(fileURLToPath(import.meta.url))
@@ -166,74 +163,5 @@ for (const warning of ctx.warnings) {
 }
 
 if (config.emit) {
-    if (isDir) {
-        mkdirSync(config.outPath, { recursive: true })
-        const packageInfoSrc = join(config.pkgPath, 'package.json')
-        if (!existsSync(packageInfoSrc)) {
-            console.error(`${packageInfoSrc} not found`)
-            process.exit(1)
-        }
-        const packageInfoDest = join(config.outPath, 'package.json')
-        copyFileSync(packageInfoSrc, packageInfoDest)
-        console.info(`copy: ${packageInfoSrc} -> ${packageInfoDest}`)
-        pkg.modules.forEach(async m => {
-            ctx.variableCounter = 0
-            ctx.moduleStack.push(m)
-            const modulePath = relative(config.srcPath, m.source.filepath)
-            const moduleOutPath = parse(join(config.outPath, modulePath))
-            mkdirSync(moduleOutPath.dir, { recursive: true })
-
-            const declaration = emitDeclaration(m)
-            const declarationPath = join(moduleOutPath.dir, moduleOutPath.name) + '.no'
-            writeFile(declarationPath, declaration).then(() => {
-                console.info(`emit: declaration  ${declarationPath} [${declaration.length}B]`)
-            })
-
-            const nativePath = m.source.filepath.replace(/\.no$/, '.js')
-            const native = existsSync(nativePath)
-                ? readFileSync(nativePath)
-                      .toString()
-                      .replace(/^[ \t]*(\/\/|\/\*|\*).*\s/gm, '')
-                : ''
-            // TODO: custom main module and main fn name
-            const mainFn =
-                m.mod && m.identifier.names.length === 1
-                    ? m.block.statements.find(s => s.kind === 'fn-def' && s.pub && s.name.value === 'main')
-                    : undefined
-            const mainFnName = mainFn?.kind === 'fn-def' ? mainFn.name.value : undefined
-            const emitNode = emitModule(m, ctx, mainFnName)
-            const { emit, map } = foldEmitTree(emitNode)
-
-            const sourceMapLink = `//# sourceMappingURL=${moduleOutPath.name}.js.map`
-            const js = [emit, native, sourceMapLink].filter(m => m.length > 0).join('\n')
-            const jsPath = join(moduleOutPath.dir, moduleOutPath.name) + '.js'
-            writeFile(jsPath, js).then(() => console.info(`emit: js           ${jsPath} [${js.length}B]`))
-
-            const sourceMap = JSON.stringify(
-                createSourceMap(
-                    basename(jsPath),
-                    relative(moduleOutPath.dir, m.source.filepath),
-                    m.source.code,
-                    js,
-                    map
-                )
-            )
-            const sourceMapPath = join(moduleOutPath.dir, moduleOutPath.name) + '.js.map'
-            writeFile(sourceMapPath, sourceMap).then(() =>
-                console.info(`emit: source map   ${sourceMapPath} [${sourceMap.length}B]`)
-            )
-        })
-    } else {
-        const m = pkg.modules[0]
-        // TODO: custom main module and main fn name
-        const mainFn =
-            m.mod && m.identifier.names.length === 1
-                ? m.block.statements.find(s => s.kind === 'fn-def' && s.pub && s.name.value === 'main')
-                : undefined
-        const mainFnName = mainFn?.kind === 'fn-def' ? mainFn.name.value : undefined
-        const emitNode = emitModule(m, ctx, mainFnName)
-        const { emit } = foldEmitTree(emitNode)
-        const jsPath = join(config.outPath, parse(config.pkgPath).name) + '.js'
-        writeFile(jsPath, emit).then(() => console.info(`emit: js           ${jsPath} [${emit.length}B]`))
-    }
+    await emitPackage(isDir, pkg, ctx)
 }
