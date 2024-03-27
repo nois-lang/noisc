@@ -1,3 +1,5 @@
+use std::iter::MapAdapter
+
 pub type String
 
 impl String {
@@ -32,6 +34,13 @@ impl Collector<String> for String {
             res = res.concat(i)
         }
         res
+    }
+}
+
+impl Collector<Char> for String {
+    fn fromIter(iter: Iter<Char>): Self {
+        // TODO: method ref
+        iter.map(|c| { c.show() }).collect<String>()
     }
 }
 

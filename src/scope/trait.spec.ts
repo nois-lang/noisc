@@ -52,6 +52,7 @@ describe('trait', () => {
             ['std::io::trace::Trace'],
             ['std::eq::Eq'],
             ['std::iter::Collector<std::string::String>'],
+            ['std::iter::Collector<std::char::Char>'],
             ['std::copy::Copy']
         ])
 
