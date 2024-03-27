@@ -101,6 +101,7 @@ const compileStd = async (): Promise<void> => {
 }
 
 const run = (ctx: Context): SpawnSyncReturns<Buffer> => {
+    if (ctx.errors.length > 0) throw Error('semantic errors')
     return spawnSync('node', ['dist/test/mod.js'], { cwd: 'tmp' })
 }
 
@@ -121,8 +122,8 @@ describe('e2e', () => {
     it('minimal', async () => {
         const files = { 'mod.no': 'pub fn main() {}' }
         const res = run(await compile(files))
-        expect(res.stdout.toString()).toEqual('')
         expect(res.stderr.toString()).toEqual('')
+        expect(res.stdout.toString()).toEqual('')
     })
 
     it('hello', async () => {
@@ -133,8 +134,8 @@ pub fn main(): Unit {
 }`
         }
         const res = run(await compile(files))
-        expect(res.stdout.toString()).toEqual('Hello, World!\n')
         expect(res.stderr.toString()).toEqual('')
+        expect(res.stdout.toString()).toEqual('Hello, World!\n')
     })
 
     it('example', async () => {
@@ -190,11 +191,13 @@ pub fn main() {
 }
 
 fn rule110(n: Int) {
+    let init = [true]
+    println(fmtGen(init, n))
     range(1, n).fold(|gen, _| {
         let ng = nextGen(gen)
         println(fmtGen(ng, n))
         ng
-    }, [true])
+    }, init)
     unit
 }
 
@@ -223,9 +226,29 @@ fn fmtGen(gen: List<Bool>, total: Int): String {
 }`
         }
         const res = run(await compile(files))
-        expect(res.stdout.toString()).toEqual(
-            '        xx\n       xxx\n      xx x\n     xxxxx\n    xx   x\n   xxx  xx\n  xx x xxx\n xxxxxxx x\nxx     xxx\n'
-        )
         expect(res.stderr.toString()).toEqual('')
+        expect(res.stdout.toString()).toEqual(
+            '         x\n        xx\n       xxx\n      xx x\n     xxxxx\n    xx   x\n   xxx  xx\n  xx x xxx\n xxxxxxx x\nxx     xxx\n'
+        )
+    })
+
+    describe('param destructuring', () => {
+        it('con pattern', async () => {
+            const files = {
+                'mod.no': `\
+type Foo(x: Int, y: String)
+
+pub fn main() {
+    println(foo(Foo(1, "y")))
+}
+
+fn foo(Foo(y ): Foo): String {
+    y
+}`
+            }
+            const res = run(await compile(files))
+            expect(res.stderr.toString()).toEqual('')
+            expect(res.stdout.toString()).toEqual('y\n')
+        })
     })
 })

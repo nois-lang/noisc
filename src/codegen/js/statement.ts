@@ -42,14 +42,15 @@ export const emitFnDef = (fnDef: FnDef, module: Module, ctx: Context, asProperty
     if (!fnDef.block) return undefined
     const name = fnDef.name.value
     const params = fnDef.params.map(p => emitParam(p, module, ctx))
-    const generics = fnDef.generics.map(g => emitToken(g.name.value, g.name.parseNode))
-    const jsParams = emitIntersperse([...params, ...generics], ',')
-    const block = emitBlock(fnDef.block, module, ctx, true)
+    const generics = fnDef.generics.map(g => g.name.value)
+    const jsParams = [...params.map(p => p.resultVar), ...generics].join(',')
+    const statements = emitBlockStatements(fnDef.block, module, ctx, true)
+    const block = emitTree([emitToken('{'), ...params.map(p => p.emit), ...statements, emitToken('}')])
     if (asProperty) {
-        return emitTree([emitToken(`${name}: function(`), jsParams, emitToken(')'), block], fnDef.name.parseNode)
+        return emitTree([emitToken(`${name}: function(${jsParams})`), block], fnDef.name.parseNode)
     } else {
         return emitTree(
-            [emitToken(`${fnDef.pub ? 'export ' : ''}function ${name}(`), jsParams, emitToken(')'), block],
+            [emitToken(`${fnDef.pub ? 'export ' : ''}function ${name}(${jsParams})`), block],
             fnDef.name.parseNode
         )
     }

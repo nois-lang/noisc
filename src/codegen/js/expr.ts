@@ -8,7 +8,7 @@ import { relTypeName } from '../../scope/trait'
 import { operatorImplMap } from '../../semantic/op'
 import { ConcreteGeneric } from '../../typecheck'
 import { unreachable } from '../../util/todo'
-import { EmitNode, emitIntersperse, emitToken, emitTree, jsError, jsVariable } from './node'
+import { EmitNode, emitToken, emitTree, jsError, jsVariable } from './node'
 import { emitBlock, emitBlockStatements } from './statement'
 
 export interface EmitExpr {
@@ -244,13 +244,14 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
         case 'match-expr':
             return emitMatchExpr(operand, module, ctx, resultVar)
         case 'closure-expr': {
-            const params = emitIntersperse(
-                operand.params.map(p => emitParam(p, module, ctx)),
-                ','
-            )
-            const block = emitBlock(operand.block, module, ctx, true)
+            const params = operand.params.map(p => emitParam(p, module, ctx))
+            const statements = emitBlockStatements(operand.block, module, ctx, true)
+            const block = emitTree([emitToken('{'), ...params.map(p => p.emit), ...statements, emitToken('}')])
             return {
-                emit: jsVariable(resultVar, emitTree([emitToken(`function(`), params, emitToken(')'), block])),
+                emit: jsVariable(
+                    resultVar,
+                    emitTree([emitToken(`function(${params.map(p => p.resultVar).join(',')})`), block])
+                ),
                 resultVar
             }
         }
@@ -410,15 +411,21 @@ export const emitPatternExprCondition = (
     }
 }
 
-export const emitParam = (param: Param, module: Module, ctx: Context): EmitNode => {
+export const emitParam = (param: Param, module: Module, ctx: Context): EmitExpr => {
     switch (param.pattern.expr.kind) {
         case 'name':
-            return emitToken(param.pattern.expr.value, param.pattern.expr.parseNode)
+            return { emit: emitToken(''), resultVar: param.pattern.expr.value }
         case 'hole':
-            return emitToken(nextVariable(ctx))
+            return { emit: emitToken(''), resultVar: nextVariable(ctx) }
         case 'con-pattern':
-            // TODO
-            return emitToken('/*destructuring*/')
+            const paramVar = nextVariable(ctx)
+            const fields = param.pattern.expr.fieldPatterns.map(f => {
+                if (!f.name || f.pattern) {
+                    return jsError('/*con pattern destructuring*/')
+                }
+                return jsVariable(f.name.value, emitToken(`${extractValue(paramVar)}.${f.name.value}`))
+            })
+            return { emit: emitTree(fields), resultVar: paramVar }
         default:
             return unreachable()
     }
