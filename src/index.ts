@@ -57,16 +57,15 @@ if (!existsSync(config.pkgPath)) {
 }
 const isDir = statSync(config.pkgPath).isDirectory()
 if (isDir) {
-    const srcPath = join(config.pkgPath, config.srcPath)
-    if (!existsSync(srcPath)) {
-        console.error(`no such file \`${srcPath}\``)
+    if (!existsSync(config.srcPath)) {
+        console.error(`no such file \`${config.srcPath}\``)
         process.exit(1)
     }
     if (config.pkgName === undefined) {
         console.error(`missing required option \`--name=\``)
         process.exit(1)
     }
-    const res = buildPackage(srcPath, config.pkgName)
+    const res = buildPackage(config.srcPath, config.pkgName)
     if (!res) process.exit(1)
     pkg = res
 

@@ -23,7 +23,7 @@ export const emitPackage = async (isDir: boolean, pkg: Package, ctx: Context): P
             ctx.variableCounter = 0
             ctx.moduleStack.push(m)
             const modulePath = relative(ctx.config.srcPath, m.source.filepath)
-            const moduleOutPath = parse(join(ctx.config.outPath, basename(modulePath)))
+            const moduleOutPath = parse(join(ctx.config.outPath, modulePath))
             mkdirSync(moduleOutPath.dir, { recursive: true })
             const ps = []
 
