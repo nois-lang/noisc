@@ -128,4 +128,98 @@ pub fn main(): Unit {
         expect(res.stdout.toString()).toEqual('Hello, World!\n')
         expect(res.stderr.toString()).toEqual('')
     })
+
+    it('example', async () => {
+        const files = {
+            'mod.no': `
+use std::{ math::pi, iter::MapAdapter }
+
+trait Area {
+    fn area(self): Float
+}
+
+type Shape {
+    Rect(width: Float, height: Float),
+    Circle(radius: Float),
+}
+
+impl Area for Shape {
+    fn area(self): Float {
+        match self {
+            Shape::Rect(width, height) { width * height }
+            Shape::Circle(radius) { pi * radius ^ 2. }
+        }
+    }
+}
+
+pub fn main() {
+    let shapes: List<Shape> = [
+        Shape::Rect(width: 4., height: 2.),
+        Shape::Circle(radius: 12.34),
+    ]
+    println(
+        shapes
+            .iter()
+            .map(|s| { s.area() })
+            .collect<List<_>>()
+            .show()
+    )
+}`
+        }
+        await compileStd()
+        const res = run(await compile(files))
+        expect(res.stdout.toString()).toEqual('[8, 478.3879062809779]\n')
+        expect(res.stderr.toString()).toEqual('')
+    })
+
+    it('rule110', async () => {
+        const files = {
+            'mod.no': `
+use std::iter::MapAdapter
+
+pub fn main() {
+    let n = 10
+    rule110(n)
+}
+
+fn rule110(n: Int) {
+    range(1, n).fold(|gen, _| {
+        let ng = nextGen(gen)
+        println(fmtGen(ng, n))
+        ng
+    }, [true])
+    unit
+}
+
+fn nextGen(prev: List<Bool>): List<Bool> {
+    range(-1, prev.iter().count())
+        .map(|i| {
+            let left = prev.at(i - 1).or(Some(false))!
+            let mid = prev.at(i).or(Some(false))!
+            let right = prev.at(i + 1).or(Some(false))!
+            return (
+                (left && mid && right) ||
+                (left && mid.not() && right.not()) ||
+                (left.not() && mid.not() && right.not())
+            ).not()
+        })
+        .collect<List<Bool>>()
+}
+
+fn fmtGen(gen: List<Bool>, total: Int): String {
+    let pad = repeat(" ", total - gen.iter().count()).collect<String>()
+    let g = gen
+        .iter()
+        .map(|b| { if b { "x" } else { " " } })
+        .collect<String>()
+    pad.concat(g)
+}`
+        }
+        await compileStd()
+        const res = run(await compile(files))
+        expect(res.stdout.toString()).toEqual(
+            '        xx\n       xxx\n      xx x\n     xxxxx\n    xx   x\n   xxx  xx\n  xx x xxx\n xxxxxxx x\nxx     xxx\n'
+        )
+        expect(res.stderr.toString()).toEqual('')
+    })
 })
