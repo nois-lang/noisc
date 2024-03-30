@@ -707,6 +707,12 @@ type Foo {
             const ctx = check(code)
             expect(ctx.errors.map(e => e.message)).toEqual(['duplicate variant `A`'])
         })
+
+        it('duplicate field', () => {
+            const code = `type Foo(a: Int, a: String)`
+            const ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual(['duplicate field `a`'])
+        })
     })
 
     describe('fn def', () => {

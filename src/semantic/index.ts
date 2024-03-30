@@ -549,10 +549,13 @@ const checkVariant = (variant: Variant, ctx: Context) => {
 
     const module = ctx.moduleStack.at(-1)!
     const typeDefScope = <TypeDefScope>module.scopeStack.at(-1)!
-    variant.fieldDefs.forEach(fieldDef => {
+    variant.fieldDefs.forEach((fieldDef, i) => {
         checkType(fieldDef.fieldType, ctx)
         fieldDef.type = typeToVirtual(fieldDef.fieldType, ctx)
-        // TODO: check duplicate field defs
+
+        if (variant.fieldDefs.slice(0, i).some(f => f.name.value === fieldDef.name.value)) {
+            addError(ctx, duplicateError(ctx, fieldDef.name, fieldDef.name.value, 'field'))
+        }
     })
 
     const generics = [...typeDefScope.definitions.values()].map(d => <Generic>d).map(g => genericToVirtual(g, ctx))
