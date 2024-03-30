@@ -27,7 +27,7 @@ import { assert, todo, unreachable } from '../util/todo'
 import {
     argCountMismatchError,
     circularModuleError,
-    duplicateImportError,
+    duplicateError,
     expectedTraitError,
     methodNotDefinedError,
     missingMethodImplsError,
@@ -128,7 +128,7 @@ export const checkModule = (module: Module, ctx: Context): void => {
         const name = <Name>useExpr.useExpr.expr
         if (resolvedRefs.filter(e => vidEq(e.vid, ref.vid)).length > 0) {
             // TODO: reference first occurrence
-            addWarning(ctx, duplicateImportError(ctx, name))
+            addWarning(ctx, duplicateError(ctx, name, name.value, 'import'))
             continue
         }
         if (ref.module === module) {
@@ -533,8 +533,13 @@ export const checkTypeDef = (typeDef: TypeDef, ctx: Context) => {
     const definitions = new Map(typeDef.generics.map(g => [defKey(g), g]))
     module.scopeStack.push({ kind: 'type', def: typeDef, vid, definitions })
 
-    typeDef.variants.forEach(v => checkVariant(v, ctx))
-    // TODO: check duplicate variants
+    typeDef.variants.forEach((v, i) => {
+        checkVariant(v, ctx)
+
+        if (typeDef.variants.slice(0, i).some(ov => ov.name.value === v.name.value)) {
+            addError(ctx, duplicateError(ctx, v.name, v.name.value, 'variant'))
+        }
+    })
 
     module.scopeStack.pop()
 }

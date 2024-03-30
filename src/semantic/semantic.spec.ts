@@ -697,6 +697,18 @@ fn main() {
         })
     })
 
+    describe('type def', () => {
+        it('duplicate variant', () => {
+            const code = `\
+type Foo {
+    A(),
+    A()
+}`
+            const ctx = check(code)
+            expect(ctx.errors.map(e => e.message)).toEqual(['duplicate variant `A`'])
+        })
+    })
+
     describe('fn def', () => {
         it('fn no body', () => {
             const code = `\

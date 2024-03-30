@@ -98,9 +98,13 @@ export const circularModuleError = (ctx: Context, module: Module): SemanticError
     return semanticError(7, ctx, module, `circular module reference: ${refChain}`)
 }
 
-export const duplicateImportError = (ctx: Context, name: Name): SemanticError => {
-    return semanticError(8, ctx, name, `duplicate import`)
-}
+export const duplicateError = (
+    ctx: Context,
+    node: AstNode<any>,
+    id: string,
+    kind: string = 'identifier',
+    notes?: string[]
+): SemanticError => semanticError(8, ctx, node, `duplicate ${kind} \`${id}\``, notes)
 
 export const selfImportError = (ctx: Context, name: Name): SemanticError => {
     return semanticError(9, ctx, name, `unnecessary self import`)
@@ -288,3 +292,4 @@ export const unexpectedRefutablePatternError = (ctx: Context, patternExpr: Patte
     const msg = `unexpected refutable pattern`
     return semanticError(41, ctx, patternExpr, msg)
 }
+
