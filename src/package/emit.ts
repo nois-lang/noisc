@@ -5,6 +5,7 @@ import { Package } from '.'
 import { emitDeclaration } from '../codegen/declaration'
 import { emitModule } from '../codegen/js'
 import { Context } from '../scope'
+import { findMain } from '../scope/util'
 import { createSourceMap, foldEmitTree } from '../sourcemap'
 
 export const emitPackage = async (isDir: boolean, pkg: Package, ctx: Context): Promise<void> => {
@@ -41,13 +42,7 @@ export const emitPackage = async (isDir: boolean, pkg: Package, ctx: Context): P
                       .toString()
                       .replace(/^[ \t]*(\/\/|\/\*|\*).*\s/gm, '')
                 : ''
-            // TODO: custom main module and main fn name
-            const mainFn =
-                m.mod && m.identifier.names.length === 1
-                    ? m.block.statements.find(s => s.kind === 'fn-def' && s.pub && s.name.value === 'main')
-                    : undefined
-            const mainFnName = mainFn?.kind === 'fn-def' ? mainFn.name.value : undefined
-            const emitNode = emitModule(m, ctx, mainFnName)
+            const emitNode = emitModule(m, ctx, findMain(m) !== undefined)
             const { emit, map } = foldEmitTree(emitNode)
 
             const sourceMapLink = `//# sourceMappingURL=${moduleOutPath.name}.js.map`
@@ -75,13 +70,7 @@ export const emitPackage = async (isDir: boolean, pkg: Package, ctx: Context): P
         await Promise.all(ps)
     } else {
         const m = pkg.modules[0]
-        // TODO: custom main module and main fn name
-        const mainFn =
-            m.mod && m.identifier.names.length === 1
-                ? m.block.statements.find(s => s.kind === 'fn-def' && s.pub && s.name.value === 'main')
-                : undefined
-        const mainFnName = mainFn?.kind === 'fn-def' ? mainFn.name.value : undefined
-        const emitNode = emitModule(m, ctx, mainFnName)
+        const emitNode = emitModule(m, ctx, findMain(m) !== undefined)
         const { emit } = foldEmitTree(emitNode)
         const jsPath = join(ctx.config.outPath, parse(ctx.config.pkgPath).name) + '.js'
         await writeFile(jsPath, emit).then(() => console.info(`emit: js           ${jsPath} [${emit.length}B]`))

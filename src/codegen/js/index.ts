@@ -15,16 +15,12 @@ export interface JsImport {
     path: string
 }
 
-export const emitModule = (module: Module, ctx: Context, mainFn?: string): EmitNode => {
+export const emitModule = (module: Module, ctx: Context, main: boolean = false): EmitNode => {
     const statements = emitTree(
         module.block.statements.map(s => emitStatement(s, module, ctx)).map(s => ('resultVar' in s ? s.emit : s))
     )
-    const mainFnInvoke =
-        mainFn !== undefined
-            ? emitToken(
-                  `try{${mainFn}();}catch(e){console.error(\`\${e.message}\\n\${e.stack.split("\\n").slice(1).join("\\n")}\`);}`
-              )
-            : undefined
+    const mainStr = `try{main();}catch(e){console.error(\`\${e.message}\\n\${e.stack.split("\\n").slice(1).join("\\n")}\`);}`
+    const mainFnInvoke = main ? emitToken(mainStr) : undefined
     const imports = emitImports(module, ctx)
     return emitTree([imports, statements, mainFnInvoke])
 }

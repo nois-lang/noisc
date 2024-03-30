@@ -1,4 +1,6 @@
+import { Module } from '../ast'
 import { Identifier } from '../ast/operand'
+import { Statement } from '../ast/statement'
 import { VirtualIdentifier } from './vid'
 
 export const vidFromString = (str: string): VirtualIdentifier => ({ names: str.split('::') })
@@ -20,3 +22,10 @@ export const idToVid = (id: Identifier): VirtualIdentifier => ({ names: id.names
 export const concatVid = (a: VirtualIdentifier, b: VirtualIdentifier): VirtualIdentifier => ({
     names: [...a.names, ...b.names]
 })
+
+export const findMain = (module: Module): Statement | undefined => {
+    if (module.mod && module.identifier.names.length === 1) {
+        return module.block.statements.find(s => s.kind === 'fn-def' && s.pub && s.name.value === 'main')
+    }
+    return undefined
+}
