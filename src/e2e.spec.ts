@@ -242,7 +242,7 @@ pub fn main() {
     println(foo(Foo(1, "y")))
 }
 
-fn foo(Foo(y ): Foo): String {
+fn foo(Foo(y): Foo): String {
     y
 }`
             }

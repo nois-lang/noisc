@@ -51,7 +51,7 @@ import {
     unspecifiedParamTypeError,
     vidResolveToModuleError
 } from './error'
-import { checkClosureExpr, checkExpr } from './expr'
+import { checkExpr, checkResolvedClosureExpr } from './expr'
 import { checkPattern } from './match'
 import { typeNames } from './type-def'
 import { Upcast, makeUpcast, upcast } from './upcast'
@@ -780,8 +780,7 @@ export const checkCallArgs = (node: AstNode<any>, args: Operand[], paramTypes: V
             switch (arg.type.operand.kind) {
                 case 'closure-expr':
                     const closure = arg.type.operand
-                    checkClosureExpr(closure, ctx, node, paramType)
-                    arg.type = closure.type
+                    arg.type = checkResolvedClosureExpr(closure, ctx, node, paramType)
                     break
                 default:
                     unreachable()

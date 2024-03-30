@@ -63,8 +63,10 @@ export const checkPattern = (
         scope.definitions.set(defKey(nameDef), nameDef)
     }
 
-    if (!isAssignable(expectedType, expr.type!, ctx)) {
-        addError(ctx, typeError(ctx, pattern.expr, expr.type!, expectedType))
+    if (expectedType.kind !== 'malleable-type') {
+        if (!isAssignable(expectedType, expr.type!, ctx)) {
+            addError(ctx, typeError(ctx, pattern.expr, expr.type!, expectedType))
+        }
     }
 }
 

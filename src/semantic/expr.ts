@@ -27,7 +27,7 @@ import {
     resolveType
 } from '../typecheck/generic'
 import { holeType, unitType, unknownType } from '../typecheck/type'
-import { assert, todo, unreachable } from '../util/todo'
+import { assert, unreachable } from '../util/todo'
 import {
     argCountMismatchError,
     missingFieldsError,
@@ -390,15 +390,10 @@ export const checkMatchExpr = (matchExpr: MatchExpr, ctx: Context): void => {
  * TODO: better error reporting when inferredType is provided
  * TODO: closure generics
  */
-export const checkClosureExpr = (
-    closureExpr: ClosureExpr,
-    ctx: Context,
-    caller?: AstNode<any>,
-    inferredType?: VirtualFnType
-): void => {
+export const checkClosureExpr = (closureExpr: ClosureExpr, ctx: Context): void => {
     if (closureExpr.type && closureExpr.type.kind !== 'malleable-type') return
 
-    if (!inferredType && (!closureExpr.returnType || closureExpr.params.some(p => !!p.paramType))) {
+    if (!closureExpr.returnType || closureExpr.params.some(p => !!p.paramType)) {
         // untyped closures concrete type is defined by its first usage
         // malleable type is an indicator that concrete type is yet to be defined
         closureExpr.type = { kind: 'malleable-type', operand: closureExpr }
@@ -410,38 +405,50 @@ export const checkClosureExpr = (
     const module = ctx.moduleStack.at(-1)!
     module.scopeStack.push({ kind: 'fn', definitions: new Map(), def: closureExpr, returns: [] })
 
-    if (caller && inferredType) {
-        if (closureExpr.params.length > inferredType.paramTypes.length) {
-            addError(ctx, argCountMismatchError(ctx, caller, closureExpr.params.length, inferredType.paramTypes.length))
-            return
-        }
-        for (let i = 0; i < closureExpr.params.length; i++) {
-            const param = closureExpr.params[i]
-            param.type = inferredType.paramTypes[i]
-            checkPattern(param.pattern, param.type, ctx)
-        }
-
-        closureExpr.type = {
-            kind: 'fn-type',
-            paramTypes: closureExpr.params.map(p => p.type!),
-            returnType: inferredType.returnType,
-            generics: []
-        }
-    } else {
-        closureExpr.params.forEach((p, i) => checkParam(p, i, ctx))
-        checkType(closureExpr.returnType!, ctx)
-        closureExpr.type = {
-            kind: 'fn-type',
-            paramTypes: closureExpr.params.map(p => typeToVirtual(p.paramType!, ctx)),
-            returnType: typeToVirtual(closureExpr.returnType!, ctx),
-            generics: []
-        }
+    closureExpr.params.forEach((p, i) => checkParam(p, i, ctx))
+    checkType(closureExpr.returnType!, ctx)
+    closureExpr.type = {
+        kind: 'fn-type',
+        paramTypes: closureExpr.params.map(p => typeToVirtual(p.paramType!, ctx)),
+        returnType: typeToVirtual(closureExpr.returnType!, ctx),
+        generics: []
     }
 
     checkBlock(closureExpr.block, ctx)
     closureExpr.type.returnType = closureExpr.block.type!
 
     module.scopeStack.pop()
+}
+
+export const checkResolvedClosureExpr = (
+    closureExpr: ClosureExpr,
+    ctx: Context,
+    caller: AstNode<any>,
+    inferredType: VirtualFnType
+): VirtualType => {
+    if (closureExpr.params.length > inferredType.paramTypes.length) {
+        addError(ctx, argCountMismatchError(ctx, caller, closureExpr.params.length, inferredType.paramTypes.length))
+        return unknownType
+    }
+
+    const module = ctx.moduleStack.at(-1)!
+    module.scopeStack.push({ kind: 'fn', definitions: new Map(), def: closureExpr, returns: [] })
+
+    for (let i = 0; i < closureExpr.params.length; i++) {
+        const param = closureExpr.params[i]
+        param.type = inferredType.paramTypes[i]
+        checkPattern(param.pattern, param.type, ctx)
+    }
+
+    checkBlock(closureExpr.block, ctx)
+
+    module.scopeStack.pop()
+    return {
+        kind: 'fn-type',
+        paramTypes: closureExpr.params.map(p => p.type!),
+        returnType: closureExpr.block.type!,
+        generics: []
+    }
 }
 
 export const checkCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
@@ -538,8 +545,7 @@ export const checkCall_ = (call: CallOp, operand: Operand, args: Expr[], ctx: Co
         switch (operand.type.operand.kind) {
             case 'closure-expr':
                 const closure = operand.type.operand
-                checkClosureExpr(closure, ctx, operand, closureType)
-                operand.type = closure.type
+                operand.type = checkResolvedClosureExpr(closure, ctx, operand, closureType)
                 break
             default:
                 unreachable()
