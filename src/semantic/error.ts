@@ -283,3 +283,8 @@ export const noImplFoundError = (ctx: Context, name: Name, methodDef: MethodDef,
     const msg = `no impl of trait \`${traitVid}\` found for type \`${operandType}\``
     return semanticError(40, ctx, name, msg)
 }
+
+export const unexpectedRefutablePatternError = (ctx: Context, patternExpr: PatternExpr): SemanticError => {
+    const msg = `unexpected refutable pattern`
+    return semanticError(41, ctx, patternExpr, msg)
+}

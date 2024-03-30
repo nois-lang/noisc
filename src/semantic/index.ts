@@ -403,7 +403,7 @@ export const checkParam = (param: Param, index: number, ctx: Context): void => {
             addError(ctx, unexpectedPatternKindError(ctx, param))
             break
         default:
-            checkPattern(param.pattern, param.type, ctx)
+            checkPattern(param.pattern, param.type, ctx, false)
             break
     }
 }
@@ -614,7 +614,7 @@ const checkVarDef = (varDef: VarDef, ctx: Context): void => {
             }
         }
 
-        checkPattern(varDef.pattern, varType!, ctx)
+        checkPattern(varDef.pattern, varType!, ctx, false)
     } else {
         if (!module.compiled) {
             addError(ctx, missingVarInitError(ctx, varDef))
