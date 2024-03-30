@@ -412,16 +412,24 @@ export const emitPatternExprCondition = (
 }
 
 export const emitParam = (param: Param, module: Module, ctx: Context): EmitExpr => {
-    switch (param.pattern.expr.kind) {
+    return emitDestructurePattern(param.pattern, module, ctx)
+}
+
+export const emitDestructurePattern = (pattern: Pattern, module: Module, ctx: Context): EmitExpr => {
+    switch (pattern.expr.kind) {
         case 'name':
-            return { emit: emitToken(''), resultVar: param.pattern.expr.value }
+            return { emit: emitToken(''), resultVar: pattern.expr.value }
         case 'hole':
             return { emit: emitToken(''), resultVar: nextVariable(ctx) }
         case 'con-pattern':
             const paramVar = nextVariable(ctx)
-            const fields = param.pattern.expr.fieldPatterns.map(f => {
-                if (!f.name || f.pattern) {
-                    return jsError('/*con pattern destructuring*/')
+            const fields = pattern.expr.fieldPatterns.map(f => {
+                if (f.pattern) {
+                    const inner = emitDestructurePattern(f.pattern, module, ctx)
+                    return emitTree([
+                        jsVariable(inner.resultVar, emitToken(`${extractValue(paramVar)}.${f.name.value}`)),
+                        inner.emit
+                    ])
                 }
                 return jsVariable(f.name.value, emitToken(`${extractValue(paramVar)}.${f.name.value}`))
             })
