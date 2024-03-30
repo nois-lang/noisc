@@ -6,10 +6,21 @@ import { NameDef, resolveVid } from '../scope/vid'
 import { VidType, VirtualFnType, VirtualType, isAssignable } from '../typecheck'
 import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { unknownType } from '../typecheck/type'
-import { nonDestructurableTypeError, notFoundError, privateAccessError, typeError, unexpectedRefutablePatternError } from './error'
+import {
+    nonDestructurableTypeError,
+    notFoundError,
+    privateAccessError,
+    typeError,
+    unexpectedRefutablePatternError
+} from './error'
 import { checkOperand } from './expr'
 
-export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: Context, refutable: boolean = true): void => {
+export const checkPattern = (
+    pattern: Pattern,
+    expectedType: VirtualType,
+    ctx: Context,
+    refutable: boolean = true
+): void => {
     const module = ctx.moduleStack.at(-1)!
     const scope = module.scopeStack.at(-1)!
     const expr = pattern.expr
@@ -24,6 +35,10 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
             expr.type = expectedType
             break
         case 'operand-expr':
+            if (!refutable) {
+                addError(ctx, unexpectedRefutablePatternError(ctx, pattern.expr))
+                break
+            }
             checkOperand(expr.operand, ctx)
             expr.type = expr.operand.type
             break
@@ -56,7 +71,12 @@ export const checkPattern = (pattern: Pattern, expectedType: VirtualType, ctx: C
 /**
  * @returns a list of defined names within con pattern (including recursive)
  */
-const checkConPattern = (pattern: ConPattern, expectedType: VidType, ctx: Context, refutable: boolean = true): Name[] => {
+const checkConPattern = (
+    pattern: ConPattern,
+    expectedType: VidType,
+    ctx: Context,
+    refutable: boolean = true
+): Name[] => {
     const defs: Name[] = []
     const conVid = idToVid(pattern.identifier)
     const ref = resolveVid(conVid, ctx, ['variant'])
