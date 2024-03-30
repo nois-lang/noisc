@@ -6,7 +6,7 @@ import { Context, addError } from '../scope'
 import { getInstanceForType, resolveMethodImpl, resolveTypeImpl } from '../scope/trait'
 import { vidFromString, vidToString } from '../scope/util'
 import { MethodDef, VirtualIdentifier, resolveVid, typeKinds } from '../scope/vid'
-import { VirtualFnType, VirtualType, combine, genericToVirtual, typeToVirtual, virtualTypeToString } from '../typecheck'
+import { VirtualFnType, VirtualType, combine, genericToVirtual, typeToVirtual } from '../typecheck'
 import {
     makeFnGenericMap,
     makeFnTypeArgGenericMap,
@@ -174,6 +174,7 @@ export const checkMethodCall = (expr: UnaryExpr, mCall: MethodCallOp, ctx: Conte
     return resolveType(fnType.returnType, genericMaps, ctx)
 }
 
+// TODO: disambiguate clashing generic names
 const makeMethodGenericMaps = (
     lOperand: Operand,
     methodDef: MethodDef,
@@ -204,6 +205,10 @@ const makeMethodGenericMaps = (
 
     const fnGenericMap = makeFnGenericMap(fnType, [lOperand.type!, ...call.call.args.map(a => a.expr.type!)])
     maps.push(fnGenericMap)
+
+    // needed to resolve generics in closure return type
+    // TODO: might also be required in other generic map builders
+    maps.push(implForGenericMap)
 
     return maps
 }
