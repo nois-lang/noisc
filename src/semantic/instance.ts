@@ -177,7 +177,6 @@ export const checkMethodCall = (expr: UnaryExpr, mCall: MethodCallOp, ctx: Conte
     return resolveType(fnType.returnType, genericMaps, ctx)
 }
 
-// TODO: disambiguate clashing generic names
 export const makeMethodGenericMaps = (
     lOperand: Operand,
     methodDef: MethodDef,
@@ -199,6 +198,7 @@ export const makeMethodGenericMaps = (
     const fnTypeArgGenericMap = makeFnTypeArgGenericMap(fnType, typeArgs)
     maps.push(fnTypeArgGenericMap)
 
+    // TODO: only for non-static methods
     const implForType = getInstanceForType(methodDef.rel.instanceDef, ctx)
     const implForGenericMap = makeGenericMapOverStructure(lOperand.type!, implForType)
     // if Self type param is explicit, `resolveGenericsOverStructure` treats it as regular generic and interrupts

@@ -54,7 +54,7 @@ import {
 import { checkExpr, checkResolvedClosureExpr } from './expr'
 import { checkPattern } from './match'
 import { typeNames } from './type-def'
-import { Upcast, makeUpcast, upcast } from './upcast'
+import { Upcast, UpcastFn, makeUpcast, upcast } from './upcast'
 import { VirtualUseExpr, useExprToVids } from './use-expr'
 
 export interface Checked {
@@ -75,6 +75,7 @@ export interface Static {
 
 export interface Virtual {
     upcasts: Upcast[]
+    upcastFn: UpcastFn
 }
 
 export const prepareModule = (module: Module): void => {

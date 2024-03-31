@@ -8,7 +8,7 @@ import { relTypeName } from '../../scope/trait'
 import { operatorImplMap } from '../../semantic/op'
 import { ConcreteGeneric } from '../../typecheck'
 import { unreachable } from '../../util/todo'
-import { EmitNode, emitToken, emitTree, jsError, jsVariable } from './node'
+import { EmitNode, EmitToken, emitToken, emitTree, jsError, jsVariable } from './node'
 import { emitBlock, emitBlockStatements } from './statement'
 
 export interface EmitExpr {
@@ -301,13 +301,20 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
                         resultVar: `${typeName}.${traitName}().${operand.ref.def.fn.name.value}`
                     }
                 } else {
-                    const arg = nextVariable(ctx)
-                    const args = nextVariable(ctx)
+                    const args = operand.ref.def.fn.params.map((_, i) => {
+                        const v = nextVariable(ctx)
+                        const upcast = operand.upcastFn?.paramUpcasts.at(i)
+                        return { emit: upcast ? emitUpcasts(v, [upcast]) : emitToken(''), resultVar: v }
+                    })
                     const relName = jsRelName(operand.ref.def.rel)
                     const fnName = operand.ref.def.fn.name.value
+                    const delegate = `return ${args[0].resultVar}.${relName}().${fnName}(${args.map(
+                        a => a.resultVar
+                    )});`
+                    const block = `${args.map(a => (<EmitToken>a.emit).value)}${delegate}`
                     return {
                         emit: emitToken(''),
-                        resultVar: `(function(${arg},...${args}){return ${arg}.${relName}().${fnName}(${arg},${args});})`
+                        resultVar: `(function(${args.map(a => a.resultVar)}){${block}})`
                     }
                 }
             }

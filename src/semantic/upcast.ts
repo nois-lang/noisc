@@ -1,18 +1,40 @@
 import { Virtual } from '.'
+import { Operand } from '../ast/operand'
 import { Context } from '../scope'
 import { InstanceRelation, relTypeName, resolveTypeImpl } from '../scope/trait'
 import { VirtualType } from '../typecheck'
 import { makeGenericMapOverStructure } from '../typecheck/generic'
+import { zip } from '../util/array'
 
 export interface Upcast {
     self: { [trait: string]: InstanceRelation }
     generics: Upcast[]
 }
 
-export const upcast = (virtual: Partial<Virtual>, type: VirtualType, traitType: VirtualType, ctx: Context): void => {
+export interface UpcastFn {
+    paramUpcasts: (Upcast | undefined)[]
+    returnUpcast?: Upcast
+}
+
+export const upcast = (operand: Operand, type: VirtualType, traitType: VirtualType, ctx: Context): void => {
+    if (type.kind === 'fn-type' && traitType.kind === 'fn-type') {
+        // TODO: why params are swapped?
+        const paramUpcasts = zip(type.paramTypes, traitType.paramTypes, (a, p) => makeUpcast(p, a, ctx))
+        const returnUpcast = makeUpcast(type.returnType, traitType.returnType, ctx)
+        if (paramUpcasts.some(p => p) || returnUpcast) {
+            const upcastFn = { paramUpcasts, returnUpcast }
+            // TODO: less ugly, upcastFn should only apply to method defs?
+            if (operand.kind === 'operand-expr') {
+                operand.operand.upcastFn = upcastFn
+            } else {
+                operand.upcastFn = upcastFn
+            }
+        }
+        return
+    }
     const upcastMap = makeUpcast(type, traitType, ctx)
     if (upcastMap) {
-        writeUpcast(virtual, upcastMap)
+        writeUpcast(operand, upcastMap)
     }
 }
 
