@@ -1,7 +1,7 @@
 import { Context, InstanceScope } from '../scope'
 import { getInstanceForType } from '../scope/trait'
 import { merge } from '../util/map'
-import { assert, unreachable } from '../util/todo'
+import { assert } from '../util/todo'
 import { VirtualFnType, VirtualType } from './index'
 import { holeType, selfType } from './type'
 
@@ -54,7 +54,7 @@ export const makeGenericMapOverStructure = (arg: VirtualType, param: VirtualType
             const paramType = param.paramTypes[i]
             const argType = arg.paramTypes.at(i)
             if (!argType) break
-            makeGenericMapOverStructure(argType, paramType).forEach((v, k) => map.set(k, v))
+            makeGenericMapOverStructure(paramType, argType).forEach((v, k) => map.set(k, v))
         }
         makeGenericMapOverStructure(arg.returnType, param.returnType).forEach((v, k) => map.set(k, v))
     } else {
@@ -222,7 +222,7 @@ const resolveGenericMap = (
             }
         case 'hole-type':
         case 'unknown-type':
+        case 'malleable-type':
             return undefined
     }
-    return unreachable()
 }

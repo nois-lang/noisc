@@ -147,6 +147,9 @@ export const checkMethodCall = (expr: UnaryExpr, mCall: MethodCallOp, ctx: Conte
 
     let genericMaps = makeMethodGenericMaps(operand, ref.def, mCall, ctx)
     const args = ref.def.fn.static ? mCall.call.args.map(a => a.expr) : [operand, ...mCall.call.args.map(a => a.expr)]
+    args.forEach(a => {
+        a.type = resolveType(a.type!, genericMaps, ctx)
+    })
     const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
     checkCallArgs(mCall, args, paramTypes, ctx)
     // recalculate generic maps since malleable args might've been updated
@@ -203,7 +206,8 @@ export const makeMethodGenericMaps = (
     implForGenericMap.delete(selfType.name)
     maps.push(implForGenericMap)
 
-    const fnGenericMap = makeFnGenericMap(fnType, [lOperand.type!, ...call.call.args.map(a => a.expr.type!)])
+    const args = [lOperand.type!, ...call.call.args.map(a => a.expr.type!)]
+    const fnGenericMap = makeFnGenericMap(fnType, args)
     maps.push(fnGenericMap)
 
     return maps
