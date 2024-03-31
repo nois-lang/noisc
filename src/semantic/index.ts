@@ -701,14 +701,8 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
                 ) {
                     addError(ctx, privateAccessError(ctx, identifier, 'method', ref.def.fn.name.value))
                 }
-                const instScope: InstanceScope = {
-                    kind: 'instance',
-                    rel: ref.def.rel,
-                    def: ref.def.rel.instanceDef,
-                    definitions: new Map(ref.def.rel.instanceDef.generics.map(g => [defKey(g), g]))
-                }
 
-                identifier.type = resolveType(ref.def.fn.type!, [instanceGenericMap(instScope, ctx)], ctx)
+                identifier.type = { kind: 'malleable-type', operand: identifier }
                 break
             case 'variant':
                 identifier.type = ref.def.variant.type
@@ -779,6 +773,10 @@ export const resolveMallebleType = (arg: Operand, paramType: VirtualType, ctx: C
             case 'closure-expr':
                 const closure = arg.type!.operand
                 arg.type! = checkResolvedClosureExpr(closure, ctx, arg, paramType)
+                break
+            case 'identifier':
+                // TODO
+                arg.type! = unknownType
                 break
             default:
                 unreachable()
