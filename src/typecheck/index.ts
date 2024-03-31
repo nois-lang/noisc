@@ -1,6 +1,5 @@
 import { Operand } from '../ast/operand'
 import { Generic, Type } from '../ast/type'
-import { jsRelName } from '../codegen/js'
 import { Context, addError } from '../scope'
 import { InstanceRelation, findSuperRelChains, getConcreteTrait } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
@@ -127,10 +126,13 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
 }
 
 export const genericToVirtual = (generic: Generic, ctx: Context): VirtualGeneric => {
+    if (!generic.key) {
+        generic.key = genericKey(generic, ctx)
+    }
     return {
         kind: 'generic',
         name: generic.name.value,
-        key: genericKey(generic, ctx),
+        key: generic.key,
         bounds: generic.bounds.map(b => typeToVirtual(b, ctx))
     }
 }
@@ -151,10 +153,11 @@ export const genericKey = (generic: Generic, ctx: Context): string => {
                             return `closure`
                     }
                 case 'instance':
-                    if (s.rel) {
-                        return `instance_${jsRelName(s.rel)}`
-                    } else {
-                        return `instance`
+                    switch (s.def.kind) {
+                        case 'trait-def':
+                            return `trait_${s.def.name.value}`
+                        case 'impl-def':
+                            return `impl`
                     }
                 default:
                     return undefined
@@ -162,10 +165,11 @@ export const genericKey = (generic: Generic, ctx: Context): string => {
         })
         .filter(s => !!s)
         .join('_')
-    return `${scopeName}_${generic}`
+    return `${scopeName}_${generic.name.value}`
 }
 
 export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context): boolean => {
+    if (t === target) return true
     if (t.kind === 'unknown-type' || target.kind === 'unknown-type') return true
     if (t.kind === 'hole-type' || target.kind === 'hole-type') return true
     if (t.kind === 'vid-type' && vidToString(t.identifier) === 'std::never::Never') return true

@@ -67,7 +67,7 @@ export const buildInstanceRelations = (ctx: Context): InstanceRelation[] => {
         )
     return impls.flatMap(([module, impl]) => {
         ctx.moduleStack.push(module)
-        const implRel = getImplRel(impl, ctx)
+        const implRel = getRel(impl, ctx)
         ctx.moduleStack.pop()
         return implRel ? [implRel] : []
     })
@@ -76,19 +76,23 @@ export const buildInstanceRelations = (ctx: Context): InstanceRelation[] => {
 /**
  * Construct instance relation from instance definition
  */
-const getImplRel = (instance: TraitDef | ImplDef, ctx: Context): InstanceRelation | undefined => {
+const getRel = (instance: TraitDef | ImplDef, ctx: Context): InstanceRelation | undefined => {
     const module = ctx.moduleStack.at(-1)!
-    module.scopeStack.push({ kind: 'instance', definitions: new Map(instance.generics.map(g => [defKey(g), g])) })
+    module.scopeStack.push({
+        kind: 'instance',
+        def: instance,
+        definitions: new Map(instance.generics.map(g => [defKey(g), g]))
+    })
 
     const implRel =
-        instance.kind === 'trait-def' ? getTraitImplRel(instance, module, ctx) : getImplImplRel(instance, module, ctx)
+        instance.kind === 'trait-def' ? getTraitRel(instance, module, ctx) : getImplRel(instance, module, ctx)
 
     module.scopeStack.pop()
 
     return implRel
 }
 
-const getTraitImplRel = (instance: TraitDef, module: Module, ctx: Context): InstanceRelation | undefined => {
+const getTraitRel = (instance: TraitDef, module: Module, ctx: Context): InstanceRelation | undefined => {
     const generics = instance.generics.filter(g => g.name.value !== 'Self').map(g => genericToVirtual(g, ctx))
     const traitType: VirtualType = {
         kind: 'vid-type',
@@ -111,7 +115,8 @@ const getTraitImplRel = (instance: TraitDef, module: Module, ctx: Context): Inst
     }
 }
 
-const getImplImplRel = (instance: ImplDef, module: Module, ctx: Context): InstanceRelation | undefined => {
+const getImplRel = (instance: ImplDef, module: Module, ctx: Context): InstanceRelation | undefined => {
+    const generics = instance.generics.filter(g => g.name.value !== 'Self').map(g => genericToVirtual(g, ctx))
     const implVid = idToVid(instance.identifier)
     const ref = resolveVid(implVid, ctx, ['trait-def', 'type-def'])
     if (!ref || (ref.def.kind !== 'trait-def' && ref.def.kind !== 'type-def')) {
@@ -140,7 +145,7 @@ const getImplImplRel = (instance: ImplDef, module: Module, ctx: Context): Instan
         implDef: <VirtualIdentifierMatch<TypeDef | TraitDef>>ref,
         forDef: forDef,
         instanceDef: instance,
-        generics: instance.generics.map(g => genericToVirtual(g, ctx)),
+        generics,
         inherent: !instance.forTrait
     }
 }

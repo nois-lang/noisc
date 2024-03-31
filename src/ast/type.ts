@@ -36,6 +36,7 @@ export const buildTypeBounds = (node: ParseNode): TypeBounds => {
 
 export interface Generic extends AstNode<'generic'> {
     name: Name
+    key?: string
     bounds: Identifier[]
 }
 

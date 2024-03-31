@@ -421,6 +421,7 @@ const checkTraitDef = (traitDef: TraitDef, ctx: Context) => {
 
     const scope: InstanceScope = {
         kind: 'instance',
+        def: rel.instanceDef,
         rel,
         definitions: new Map(traitDef.generics.map(g => [defKey(g), g]))
     }
@@ -448,7 +449,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
 
     const scope: InstanceScope = {
         kind: 'instance',
-        rel: implDef.rel,
+        def: implDef,
         definitions: new Map(implDef.generics.map(g => [defKey(g), g]))
     }
     module.scopeStack.push(scope)
@@ -699,6 +700,7 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
                 const instScope: InstanceScope = {
                     kind: 'instance',
                     rel: ref.def.rel,
+                    def: ref.def.rel.instanceDef,
                     definitions: new Map(ref.def.rel.instanceDef.generics.map(g => [defKey(g), g]))
                 }
 

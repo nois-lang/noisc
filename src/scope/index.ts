@@ -47,6 +47,7 @@ export type DefinitionMap = Map<string, Definition>
 export interface InstanceScope {
     kind: 'instance'
     definitions: DefinitionMap
+    def: TraitDef | ImplDef
     rel?: InstanceRelation
 }
 

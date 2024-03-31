@@ -292,4 +292,3 @@ export const unexpectedRefutablePatternError = (ctx: Context, patternExpr: Patte
     const msg = `unexpected refutable pattern`
     return semanticError(41, ctx, patternExpr, msg)
 }
-

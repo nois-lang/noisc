@@ -23,7 +23,7 @@ export const makeUpcast = (type: VirtualType, traitType: VirtualType, ctx: Conte
     const upcast: Upcast = { self: { [relTypeName(res.trait)]: res.impl }, generics: [] }
     for (const g of res.impl.generics) {
         const gUpcast: Upcast = { self: {}, generics: [] }
-        const concreteG = genericMap.get(g.name)
+        const concreteG = genericMap.get(g.key)
         if (concreteG) {
             for (const b of g.bounds) {
                 const gUp = makeUpcast(concreteG, b, ctx)

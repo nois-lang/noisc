@@ -1,4 +1,5 @@
 import { Context, InstanceScope } from '../scope'
+import { getInstanceForType } from '../scope/trait'
 import { fold } from '../util/array'
 import { merge } from '../util/map'
 import { assert, unreachable } from '../util/todo'
@@ -43,7 +44,7 @@ export const makeGenericMapOverStructure = (arg: VirtualType, param: VirtualType
                 break
             }
         }
-        map.set(param.name, arg)
+        map.set(param.key, arg)
         return map
     }
     if (arg.kind === 'unknown-type' || param.kind === 'unknown-type') {
@@ -146,7 +147,7 @@ export const getTypeParams = (virtualType: VirtualType): VirtualType[] => {
 }
 
 export const instanceGenericMap = (instScope: InstanceScope, ctx: Context): Map<string, VirtualType> => {
-    return new Map([[selfType.name, instScope.rel!.forType]])
+    return new Map([[selfType.key, getInstanceForType(instScope.def, ctx)]])
 }
 
 /**
@@ -174,7 +175,7 @@ const resolveGenericMap = (
                 typeArgs: virtualType.typeArgs.map(g => resolveGenericMap(g, genericMap, ctx))
             }
         case 'generic':
-            const mapped = genericMap.get(virtualType.name)
+            const mapped = genericMap.get(virtualType.key)
             const res = mapped ?? virtualType
             if (res.kind === 'generic') {
                 return {
