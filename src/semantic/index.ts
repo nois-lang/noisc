@@ -20,8 +20,8 @@ import {
 import { InstanceRelation, findSuperRelChains } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
 import { Definition, MethodDef, NameDef, VirtualIdentifierMatch, resolveVid, typeKinds } from '../scope/vid'
-import { VirtualType, genericToVirtual, isAssignable, typeEq, typeToVirtual } from '../typecheck'
-import { instanceGenericMap, makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
+import { VirtualFnType, VirtualType, genericToVirtual, isAssignable, typeEq, typeToVirtual } from '../typecheck'
+import { instanceGenericMap, makeFnGenericMap, makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { holeType, neverType, selfType, unitType, unknownType } from '../typecheck/type'
 import { assert, todo, unreachable } from '../util/todo'
 import {
@@ -492,8 +492,11 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
                     }
                     checkTopLevelDefinition(traitMethod.rel.module, traitMethod, ctx)
 
-                    const traitMap = makeGenericMapOverStructure(implDef.rel.implType, traitMethod.rel.implType)
-                    const mResolvedType = resolveType(traitMethod.fn.type!, [traitMap], ctx)
+                    const genericMaps = [
+                        makeFnGenericMap(<VirtualFnType>traitMethod.fn.type!, (<VirtualFnType>m.type!).paramTypes),
+                        makeGenericMapOverStructure(implDef.rel.implType, traitMethod.rel.implType)
+                    ]
+                    const mResolvedType = resolveType(traitMethod.fn.type!, genericMaps, ctx)
                     if (!(isAssignable(m.type!, mResolvedType, ctx) && typeEq(m.type!, mResolvedType))) {
                         addError(ctx, typeError(ctx, m.name, m.type!, mResolvedType))
                     }
@@ -769,6 +772,19 @@ export const checkType = (type: Type, ctx: Context) => {
     }
 }
 
+export const resolveMallebleType = (arg: Operand, paramType: VirtualType, ctx: Context): void => {
+    if (arg.type!.kind === 'malleable-type' && paramType.kind === 'fn-type') {
+        switch (arg.type!.operand.kind) {
+            case 'closure-expr':
+                const closure = arg.type!.operand
+                arg.type! = checkResolvedClosureExpr(closure, ctx, arg, paramType)
+                break
+            default:
+                unreachable()
+        }
+    }
+}
+
 export const checkCallArgs = (node: AstNode<any>, args: Operand[], paramTypes: VirtualType[], ctx: Context): void => {
     if (args.length !== paramTypes.length) {
         addError(ctx, argCountMismatchError(ctx, node, paramTypes.length, args.length))
@@ -778,16 +794,7 @@ export const checkCallArgs = (node: AstNode<any>, args: Operand[], paramTypes: V
     for (let i = 0; i < paramTypes.length; i++) {
         const paramType = paramTypes[i]
         const arg = args[i]
-        if (arg.type?.kind === 'malleable-type' && paramType.kind === 'fn-type') {
-            switch (arg.type.operand.kind) {
-                case 'closure-expr':
-                    const closure = arg.type.operand
-                    arg.type = checkResolvedClosureExpr(closure, ctx, node, paramType)
-                    break
-                default:
-                    unreachable()
-            }
-        }
+        resolveMallebleType(arg, paramType, ctx)
         if (!isAssignable(arg.type!, paramType, ctx)) {
             addError(ctx, typeError(ctx, arg, arg.type!, paramType))
         }

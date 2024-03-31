@@ -1,6 +1,5 @@
 import { Context, InstanceScope } from '../scope'
 import { getInstanceForType } from '../scope/trait'
-import { fold } from '../util/array'
 import { merge } from '../util/map'
 import { assert, unreachable } from '../util/todo'
 import { VirtualFnType, VirtualType } from './index'
@@ -151,51 +150,79 @@ export const instanceGenericMap = (instScope: InstanceScope, ctx: Context): Map<
 }
 
 /**
- * Recursively go through type and it's arguments and replace generics with types found in @param genericMaps.
- * Will keep generic as-is if not found in generic maps
+ * Iteratively go through every generic map and replace generics with types found.
+ * Will keep generic as-is if not found in generic maps.
+ * Stop iteration once no new resolutions found in generic maps
  */
 export const resolveType = (
     virtualType: VirtualType,
     genericMaps: Map<string, VirtualType>[],
     ctx: Context
 ): VirtualType => {
-    return fold(genericMaps, (t, map) => resolveGenericMap(t, map, ctx), virtualType)
+    let depth = 0
+    let t = virtualType
+    let changed = true
+    while (changed) {
+        changed = false
+        depth++
+        for (const m of genericMaps) {
+            const nt = resolveGenericMap(t, m, ctx)
+            if (nt) {
+                // infinite recursion
+                if (depth > 8) {
+                    // console.warn(`resolve type recursion ${virtualTypeToString(t)} ${virtualTypeToString(nt)}`)
+                    // TODO: throw semantic error when depth reached
+                    return nt
+                }
+                t = nt
+                changed = true
+            }
+        }
+    }
+    return t
 }
 
 const resolveGenericMap = (
     virtualType: VirtualType,
     genericMap: Map<string, VirtualType>,
     ctx: Context
-): VirtualType => {
+): VirtualType | undefined => {
     switch (virtualType.kind) {
         case 'vid-type':
+            const typeArgs = virtualType.typeArgs.map(t => <const>[resolveGenericMap(t, genericMap, ctx), t])
+            if (typeArgs.every(([t]) => !t)) return undefined
             return {
                 kind: 'vid-type',
                 identifier: virtualType.identifier,
-                typeArgs: virtualType.typeArgs.map(g => resolveGenericMap(g, genericMap, ctx))
+                typeArgs: typeArgs.map(([nt, t]) => nt ?? t)
             }
         case 'generic':
             const mapped = genericMap.get(virtualType.key)
-            const res = mapped ?? virtualType
-            if (res.kind === 'generic') {
+            if (!mapped) return undefined
+            if (mapped.kind === 'generic') {
+                const bounds = mapped.bounds.map(b => <const>[resolveGenericMap(b, genericMap, ctx), b])
+                if (bounds.every(([t]) => !t)) return mapped
                 return {
                     kind: 'generic',
-                    key: res.key,
-                    name: res.name,
-                    bounds: res.bounds.map(b => resolveGenericMap(b, genericMap, ctx))
+                    key: mapped.key,
+                    name: mapped.name,
+                    bounds: bounds.map(([nt, t]) => nt ?? t)
                 }
             }
-            return res
+            return mapped
         case 'fn-type':
+            const paramTypes = virtualType.paramTypes.map(pt => <const>[resolveGenericMap(pt, genericMap, ctx), pt])
+            const returnType = resolveGenericMap(virtualType.returnType, genericMap, ctx)
+            if (paramTypes.every(([t]) => !t) && !returnType) return undefined
             return {
                 kind: 'fn-type',
-                paramTypes: virtualType.paramTypes.map(pt => resolveGenericMap(pt, genericMap, ctx)),
-                returnType: resolveGenericMap(virtualType.returnType, genericMap, ctx),
+                paramTypes: paramTypes.map(([nt, t]) => nt ?? t),
+                returnType: returnType ?? virtualType.returnType,
                 generics: virtualType.generics
             }
         case 'hole-type':
         case 'unknown-type':
-            return virtualType
+            return undefined
     }
     return unreachable()
 }

@@ -175,7 +175,7 @@ export const checkMethodCall = (expr: UnaryExpr, mCall: MethodCallOp, ctx: Conte
 }
 
 // TODO: disambiguate clashing generic names
-const makeMethodGenericMaps = (
+export const makeMethodGenericMaps = (
     lOperand: Operand,
     methodDef: MethodDef,
     call: MethodCallOp,
@@ -205,10 +205,6 @@ const makeMethodGenericMaps = (
 
     const fnGenericMap = makeFnGenericMap(fnType, [lOperand.type!, ...call.call.args.map(a => a.expr.type!)])
     maps.push(fnGenericMap)
-
-    // needed to resolve generics in closure return type
-    // TODO: might also be required in other generic map builders
-    maps.push(implForGenericMap)
 
     return maps
 }

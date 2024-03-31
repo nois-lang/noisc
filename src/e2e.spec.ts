@@ -176,8 +176,8 @@ pub fn main() {
 }`
         }
         const res = run(await compile(files))
-        expect(res.stdout.toString()).toEqual('[8, 478.3879062809779]\n')
         expect(res.stderr.toString()).toEqual('')
+        expect(res.stdout.toString()).toEqual('[8, 478.3879062809779]\n')
     })
 
     it('rule110', async () => {

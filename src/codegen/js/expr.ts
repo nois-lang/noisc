@@ -312,8 +312,7 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
                 }
             }
             const resultVar = operand.names.at(-1)!.value
-            const upcasts = operand.upcasts
-            const upcastEmit = emitUpcasts(resultVar, upcasts)
+            const upcastEmit = emitUpcasts(resultVar, operand.upcasts)
             return { emit: emitTree([upcastEmit]), resultVar }
         }
     }
