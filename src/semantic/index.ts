@@ -360,12 +360,12 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
             if (!instScope) {
                 addWarning(ctx, noBodyFnError(ctx, fnDef))
             } else {
-                if (instScope?.rel.instanceDef.kind !== 'trait-def') {
+                if (instScope?.rel?.instanceDef.kind !== 'trait-def') {
                     addError(ctx, noBodyFnError(ctx, fnDef))
                 }
             }
         }
-        if (instScope?.rel.instanceDef.kind === 'trait-def' && fnDef.pub) {
+        if (instScope?.rel?.instanceDef.kind === 'trait-def' && fnDef.pub) {
             addWarning(ctx, unnecessaryPubMethodError(ctx, fnDef))
         }
     }
@@ -669,7 +669,7 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
         identifier.ref = ref
         switch (ref.def.kind) {
             case 'self':
-                identifier.type = instanceScope(ctx)!.rel.forType
+                identifier.type = instanceScope(ctx)?.rel?.forType ?? unknownType
                 break
             case 'name-def':
                 const name = ref.def.name

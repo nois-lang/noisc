@@ -146,7 +146,7 @@ export const getTypeParams = (virtualType: VirtualType): VirtualType[] => {
 }
 
 export const instanceGenericMap = (instScope: InstanceScope, ctx: Context): Map<string, VirtualType> => {
-    return new Map([[selfType.name, instScope.rel.forType]])
+    return new Map([[selfType.name, instScope.rel!.forType]])
 }
 
 /**
@@ -179,6 +179,7 @@ const resolveGenericMap = (
             if (res.kind === 'generic') {
                 return {
                     kind: 'generic',
+                    key: res.key,
                     name: res.name,
                     bounds: res.bounds.map(b => resolveGenericMap(b, genericMap, ctx))
                 }

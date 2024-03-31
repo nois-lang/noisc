@@ -47,7 +47,7 @@ export type DefinitionMap = Map<string, Definition>
 export interface InstanceScope {
     kind: 'instance'
     definitions: DefinitionMap
-    rel: InstanceRelation
+    rel?: InstanceRelation
 }
 
 export interface TypeDefScope {
@@ -72,7 +72,7 @@ export interface BlockScope {
 }
 
 export interface CommonScope {
-    kind: 'module' | 'impl' | 'trait'
+    kind: 'module'
     definitions: DefinitionMap
 }
 

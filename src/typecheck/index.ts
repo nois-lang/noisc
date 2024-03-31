@@ -1,5 +1,6 @@
 import { Operand } from '../ast/operand'
 import { Generic, Type } from '../ast/type'
+import { jsRelName } from '../codegen/js'
 import { Context, addError } from '../scope'
 import { InstanceRelation, findSuperRelChains, getConcreteTrait } from '../scope/trait'
 import { idToVid, vidEq, vidToString } from '../scope/util'
@@ -46,6 +47,7 @@ export interface HoleType {
 export interface VirtualGeneric {
     kind: 'generic'
     name: string
+    key: string
     bounds: VirtualType[]
 }
 
@@ -128,8 +130,39 @@ export const genericToVirtual = (generic: Generic, ctx: Context): VirtualGeneric
     return {
         kind: 'generic',
         name: generic.name.value,
+        key: genericKey(generic, ctx),
         bounds: generic.bounds.map(b => typeToVirtual(b, ctx))
     }
+}
+
+export const genericKey = (generic: Generic, ctx: Context): string => {
+    const module = ctx.moduleStack.at(-1)!
+    const scopeName = module.scopeStack
+        .map(s => {
+            switch (s.kind) {
+                case 'type':
+                case 'fn':
+                    switch (s.def.kind) {
+                        case 'type-def':
+                            return `type_${s.def.name.value}`
+                        case 'fn-def':
+                            return `fn_${s.def.name.value}`
+                        case 'closure-expr':
+                            return `closure`
+                    }
+                case 'instance':
+                    if (s.rel) {
+                        return `instance_${jsRelName(s.rel)}`
+                    } else {
+                        return `instance`
+                    }
+                default:
+                    return undefined
+            }
+        })
+        .filter(s => !!s)
+        .join('_')
+    return `${scopeName}_${generic}`
 }
 
 export const isAssignable = (t: VirtualType, target: VirtualType, ctx: Context): boolean => {

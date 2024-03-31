@@ -78,7 +78,7 @@ export const buildInstanceRelations = (ctx: Context): InstanceRelation[] => {
  */
 const getImplRel = (instance: TraitDef | ImplDef, ctx: Context): InstanceRelation | undefined => {
     const module = ctx.moduleStack.at(-1)!
-    module.scopeStack.push({ kind: 'impl', definitions: new Map(instance.generics.map(g => [defKey(g), g])) })
+    module.scopeStack.push({ kind: 'instance', definitions: new Map(instance.generics.map(g => [defKey(g), g])) })
 
     const implRel =
         instance.kind === 'trait-def' ? getTraitImplRel(instance, module, ctx) : getImplImplRel(instance, module, ctx)
