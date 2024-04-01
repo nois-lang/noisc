@@ -451,6 +451,17 @@ export const checkResolvedClosureExpr = (
     }
 }
 
+export const checkQualifiedMethodCall = (
+    def: MethodDef,
+    ctx: Context,
+    operand: Operand,
+    inferredType: VirtualFnType
+): VirtualType => {
+    const genericMaps = [instanceGenericMap(def.rel.instanceDef, ctx)]
+    const fnType = def.fn.type!
+    return resolveType(fnType, genericMaps, ctx)
+}
+
 export const checkCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const call = <CallOp>unaryExpr.op
     const operand = unaryExpr.operand
@@ -536,7 +547,7 @@ export const checkVariantCall = (
 
 export const checkCall_ = (call: CallOp, operand: Operand, args: Expr[], ctx: Context): VirtualType => {
     if (operand.type?.kind === 'malleable-type') {
-        const closureType: VirtualFnType = {
+        const inferredType: VirtualFnType = {
             kind: 'fn-type',
             generics: [],
             paramTypes: args.map(arg => arg.type ?? unknownType),
@@ -545,10 +556,16 @@ export const checkCall_ = (call: CallOp, operand: Operand, args: Expr[], ctx: Co
         switch (operand.type.operand.kind) {
             case 'closure-expr':
                 const closure = operand.type.operand
-                operand.type = checkResolvedClosureExpr(closure, ctx, operand, closureType)
+                operand.type = checkResolvedClosureExpr(closure, ctx, operand, inferredType)
+                break
+            case 'identifier':
+                // TODO: properly
+                const ref = operand.type!.operand.ref
+                if (ref?.def.kind !== 'method-def') return unreachable()
+                operand.type = checkQualifiedMethodCall(ref.def, ctx, operand, inferredType)
                 break
             default:
-                unreachable()
+                unreachable(operand.type.operand.kind)
         }
     }
     if (operand.type?.kind === 'unknown-type') {
@@ -698,7 +715,7 @@ export const makeFnGenericMaps = (
 ): Map<string, VirtualType>[] => {
     const fnTypeArgMap = makeFnTypeArgGenericMap(fnType, typeArgs)
     const instScope = instanceScope(ctx)
-    const instanceMap = instScope ? instanceGenericMap(instScope, ctx) : new Map()
+    const instanceMap = instScope ? instanceGenericMap(instScope.def, ctx) : new Map()
     const fnMap = makeFnGenericMap(fnType, args)
     return [instanceMap, fnTypeArgMap, fnMap]
 }

@@ -51,7 +51,7 @@ import {
     unspecifiedParamTypeError,
     vidResolveToModuleError
 } from './error'
-import { checkExpr, checkResolvedClosureExpr } from './expr'
+import { checkExpr, checkQualifiedMethodCall, checkResolvedClosureExpr } from './expr'
 import { checkPattern } from './match'
 import { typeNames } from './type-def'
 import { Upcast, UpcastFn, makeUpcast, upcast } from './upcast'
@@ -345,7 +345,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
     }
 
     const instScope = instanceScope(ctx)
-    const genericMaps = instScope ? [instanceGenericMap(instScope, ctx)] : []
+    const genericMaps = instScope ? [instanceGenericMap(instScope.def, ctx)] : []
     const returnTypeResolved = resolveType(returnType, genericMaps, ctx)
 
     if (ctx.check && !module.compiled) {
@@ -605,7 +605,7 @@ const checkVarDef = (varDef: VarDef, ctx: Context): void => {
         const instScope = instanceScope(ctx)
         varType = resolveType(
             typeToVirtual(varDef.varType, ctx),
-            instScope ? [instanceGenericMap(instScope, ctx)] : [],
+            instScope ? [instanceGenericMap(instScope.def, ctx)] : [],
             ctx
         )
     }
@@ -688,7 +688,11 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
                 }
                 if (name.type === selfType) {
                     const instScope = instanceScope(ctx)
-                    identifier.type = resolveType(name.type, instScope ? [instanceGenericMap(instScope, ctx)] : [], ctx)
+                    identifier.type = resolveType(
+                        name.type,
+                        instScope ? [instanceGenericMap(instScope.def, ctx)] : [],
+                        ctx
+                    )
                 } else {
                     identifier.type = name.type
                 }
@@ -775,8 +779,10 @@ export const resolveMallebleType = (arg: Operand, paramType: VirtualType, ctx: C
                 arg.type! = checkResolvedClosureExpr(closure, ctx, arg, paramType)
                 break
             case 'identifier':
-                // TODO
-                arg.type! = unknownType
+                // TODO: properly
+                const ref = arg.type!.operand.ref
+                if (ref?.def.kind !== 'method-def') return unreachable()
+                arg.type = checkQualifiedMethodCall(ref.def, ctx, arg, paramType)
                 break
             default:
                 unreachable()

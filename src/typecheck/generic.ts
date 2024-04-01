@@ -1,4 +1,5 @@
-import { Context, InstanceScope } from '../scope'
+import { ImplDef, TraitDef } from '../ast/statement'
+import { Context } from '../scope'
 import { getInstanceForType } from '../scope/trait'
 import { merge } from '../util/map'
 import { assert } from '../util/todo'
@@ -145,8 +146,8 @@ export const getTypeParams = (virtualType: VirtualType): VirtualType[] => {
     }
 }
 
-export const instanceGenericMap = (instScope: InstanceScope, ctx: Context): Map<string, VirtualType> => {
-    return new Map([[selfType.key, getInstanceForType(instScope.def, ctx)]])
+export const instanceGenericMap = (def: ImplDef | TraitDef, ctx: Context): Map<string, VirtualType> => {
+    return new Map([[selfType.key, getInstanceForType(def, ctx)]])
 }
 
 /**
