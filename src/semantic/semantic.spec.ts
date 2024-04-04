@@ -724,7 +724,7 @@ type Node<T> {
 }
 
 impl <T> Node<T> {
-    fn child()
+    fn child(self)
 }
 
 fn main() {

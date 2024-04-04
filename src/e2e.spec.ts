@@ -56,6 +56,8 @@ const compile = async (files: { [path: string]: string }): Promise<Context> => {
     ctx.check = true
     pkg.modules.forEach(m => checkModule(m, ctx))
 
+    if (ctx.errors.length > 0) return ctx
+
     mkdirSync(pkg.path, { recursive: true })
     writeFileSync(join(pkg.path, 'package.json'), JSON.stringify({ name: 'test', type: 'module' }))
     await emitPackage(true, pkg, ctx)
@@ -101,7 +103,7 @@ const compileStd = async (): Promise<void> => {
 }
 
 const run = (ctx: Context): SpawnSyncReturns<Buffer> => {
-    if (ctx.errors.length > 0) throw Error('semantic errors')
+    if (ctx.errors.length > 0) throw Error(`semantic errors:\n${ctx.errors.map(e => `\t${e.message}`).join('\n')}`)
     return spawnSync('node', ['dist/test/mod.js'], { cwd: 'tmp' })
 }
 
