@@ -782,7 +782,12 @@ export const resolveMallebleType = (arg: Operand, paramType: VirtualType, ctx: C
                 // TODO: properly
                 const ref = arg.type!.operand.ref
                 if (ref?.def.kind !== 'method-def') return unreachable()
-                arg.type = checkQualifiedMethodCall(ref.def, ctx, arg, paramType)
+                arg.type = checkQualifiedMethodCall(
+                    arg.type!.operand,
+                    <VirtualIdentifierMatch<MethodDef>>ref,
+                    ctx,
+                    paramType
+                )
                 break
             default:
                 unreachable()

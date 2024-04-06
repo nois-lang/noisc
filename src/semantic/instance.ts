@@ -138,7 +138,7 @@ export const checkMethodCall_ = (
             upcast(self, self.type!, ref.def.rel.implType, ctx)
         } else {
             if (operandTypeRef && operandTypeRef.def.kind !== 'trait-def' && operandTypeRef.def.kind !== 'generic') {
-                addError(ctx, noImplFoundError(ctx, call, ref.def, self))
+                addError(ctx, noImplFoundError(ctx, call, ref.def, self.type!))
             }
         }
     } else {

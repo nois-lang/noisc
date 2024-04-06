@@ -3,12 +3,19 @@ import { Arg, AstNode } from '../ast'
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { MatchExpr } from '../ast/match'
 import { CallOp } from '../ast/op'
-import { ClosureExpr, ForExpr, IfExpr, IfLetExpr, ListExpr, Name, Operand, WhileExpr } from '../ast/operand'
+import { ClosureExpr, ForExpr, Identifier, IfExpr, IfLetExpr, ListExpr, Name, Operand, WhileExpr } from '../ast/operand'
 import { Context, Scope, addError, fnDefScope, instanceScope } from '../scope'
 import { bool, iter, iterable, show, string, unwrap } from '../scope/std'
-import { getConcreteTrait, resolveMethodImpl, resolveTypeImpl, typeDefToVirtualType } from '../scope/trait'
+import {
+    InstanceRelation,
+    getConcreteTrait,
+    getInstanceForType,
+    resolveMethodImpl,
+    resolveTypeImpl,
+    typeDefToVirtualType
+} from '../scope/trait'
 import { idToVid, vidEq, vidFromString, vidToString } from '../scope/util'
-import { MethodDef, VariantDef, VirtualIdentifierMatch, resolveVid } from '../scope/vid'
+import { MethodDef, VariantDef, VirtualIdentifierMatch, resolveVid, typeKinds } from '../scope/vid'
 import {
     VidType,
     VirtualFnType,
@@ -26,11 +33,12 @@ import {
     replaceGenericsWithHoles,
     resolveType
 } from '../typecheck/generic'
-import { holeType, unitType, unknownType } from '../typecheck/type'
+import { holeType, selfType, unitType, unknownType } from '../typecheck/type'
 import { assert, unreachable } from '../util/todo'
 import {
     argCountMismatchError,
     missingFieldsError,
+    noImplFoundError,
     nonCallableError,
     notFoundError,
     notInFnScopeError,
@@ -452,14 +460,61 @@ export const checkResolvedClosureExpr = (
 }
 
 export const checkQualifiedMethodCall = (
-    def: MethodDef,
+    identifier: Identifier,
+    ref: VirtualIdentifierMatch<MethodDef>,
     ctx: Context,
-    operand: Operand,
     inferredType: VirtualFnType
 ): VirtualType => {
-    const genericMaps = [instanceGenericMap(def.rel.instanceDef, ctx)]
-    const fnType = def.fn.type!
-    return resolveType(fnType, genericMaps, ctx)
+    const fnType = <VirtualFnType>ref.def.fn.type
+    const self = !ref.def.fn.static ? inferredType.paramTypes[0] : undefined
+
+    let impl: InstanceRelation | undefined = undefined
+    if (ref.def.rel.instanceDef.kind === 'trait-def' && self && self.kind === 'vid-type') {
+        const operandTypeRef = resolveVid(self.identifier, ctx, typeKinds)
+        const resolved = resolveMethodImpl(self, ref.def, ctx)
+        if (resolved) {
+            impl = resolved
+            ctx.moduleStack.at(-1)!.relImports.push(impl)
+        } else {
+            if (operandTypeRef && operandTypeRef.def.kind !== 'trait-def' && operandTypeRef.def.kind !== 'generic') {
+                addError(ctx, noImplFoundError(ctx, identifier, ref.def, self))
+            }
+        }
+    } else {
+        impl = ref.def.rel
+        ctx.moduleStack.at(-1)!.relImports.push(impl)
+    }
+
+    // TODO
+    const maps: Map<string, VirtualType>[] = []
+
+    if (impl && self) {
+        const operandRel = resolveTypeImpl(self, impl.forType, ctx)
+        if (operandRel) {
+            const operandImplGenericMap = makeGenericMapOverStructure(operandRel.impl.implType, impl.forType)
+            maps.push(operandImplGenericMap)
+        }
+    }
+
+    const implForType = getInstanceForType(ref.def.rel.instanceDef, ctx)
+    if (self) {
+        const implForGenericMap = makeGenericMapOverStructure(self, implForType)
+        // if Self type param is explicit, `resolveGenericsOverStructure` treats it as regular generic and interrupts
+        // further mapping in `fnGenericMap`, thus should be removed
+        implForGenericMap.delete(selfType.name)
+        maps.push(implForGenericMap)
+    } else {
+        maps.push(new Map([[selfType.name, implForType]]))
+    }
+    const fnGenericMap = makeFnGenericMap(fnType, inferredType.paramTypes)
+    maps.push(fnGenericMap)
+
+    return {
+        kind: 'fn-type',
+        paramTypes: inferredType.paramTypes.map(pt => resolveType(pt, maps, ctx)),
+        returnType: resolveType(fnType.returnType, maps, ctx),
+        generics: inferredType.generics
+    }
 }
 
 export const checkCall = (unaryExpr: UnaryExpr, ctx: Context): void => {
@@ -562,7 +617,12 @@ export const checkCall_ = (call: CallOp, operand: Operand, args: Expr[], ctx: Co
                 // TODO: properly
                 const ref = operand.type!.operand.ref
                 if (ref?.def.kind !== 'method-def') return unreachable()
-                operand.type = checkQualifiedMethodCall(ref.def, ctx, operand, inferredType)
+                operand.type = checkQualifiedMethodCall(
+                    operand.type.operand,
+                    <VirtualIdentifierMatch<MethodDef>>ref,
+                    ctx,
+                    inferredType
+                )
                 break
             default:
                 unreachable(operand.type.operand.kind)

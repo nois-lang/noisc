@@ -285,11 +285,10 @@ export const noImplFoundError = (
     ctx: Context,
     node: AstNode<any>,
     methodDef: MethodDef,
-    operand: Operand
+    operandType: VirtualType
 ): SemanticError => {
     const traitVid = vidToString(methodDef.rel.implDef.vid)
-    const operandType = virtualTypeToString(operand.type!)
-    const msg = `no impl of trait \`${traitVid}\` found for type \`${operandType}\``
+    const msg = `no impl of trait \`${traitVid}\` found for type \`${virtualTypeToString(operandType)}\``
     return semanticError(40, ctx, node, msg)
 }
 
