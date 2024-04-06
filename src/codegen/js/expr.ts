@@ -308,9 +308,8 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
                     })
                     const relName = jsRelName(operand.ref.def.rel)
                     const fnName = operand.ref.def.fn.name.value
-                    const delegate = `return ${args[0].resultVar}.${relName}().${fnName}(${args.map(
-                        a => a.resultVar
-                    )});`
+                    const callerEmit = operand.impl ? jsRelName(operand.impl) : `${args[0].resultVar}.${relName}`
+                    const delegate = `return ${callerEmit}().${fnName}(${args.map(a => a.resultVar)});`
                     const block = `${args.map(a => (<EmitToken>a.emit).value)}${delegate}`
                     return {
                         emit: emitToken(''),

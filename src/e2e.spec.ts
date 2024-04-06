@@ -109,40 +109,38 @@ const run = (ctx: Context): SpawnSyncReturns<Buffer> => {
 
 describe('e2e', () => {
     beforeAll(async () => {
+        rmdirSync('tmp', { recursive: true })
         await compileStd()
     })
 
-    afterAll(() => {
-        rmdirSync('tmp', { recursive: true })
-    })
-
-    afterEach(() => {
+    beforeEach(() => {
         rmdirSync('tmp/test', { recursive: true })
         rmdirSync('tmp/dist/test', { recursive: true })
     })
 
-    it('minimal', async () => {
-        const files = { 'mod.no': 'pub fn main() {}' }
-        const res = run(await compile(files))
-        expect(res.stderr.toString()).toEqual('')
-        expect(res.stdout.toString()).toEqual('')
-    })
+    describe('general', () => {
+        it('minimal', async () => {
+            const files = { 'mod.no': 'pub fn main() {}' }
+            const res = run(await compile(files))
+            expect(res.stderr.toString()).toEqual('')
+            expect(res.stdout.toString()).toEqual('')
+        })
 
-    it('hello', async () => {
-        const files = {
-            'mod.no': `\
+        it('hello', async () => {
+            const files = {
+                'mod.no': `\
 pub fn main(): Unit {
     println("Hello, World!")
 }`
-        }
-        const res = run(await compile(files))
-        expect(res.stderr.toString()).toEqual('')
-        expect(res.stdout.toString()).toEqual('Hello, World!\n')
-    })
+            }
+            const res = run(await compile(files))
+            expect(res.stderr.toString()).toEqual('')
+            expect(res.stdout.toString()).toEqual('Hello, World!\n')
+        })
 
-    it('example', async () => {
-        const files = {
-            'mod.no': `\
+        it('example', async () => {
+            const files = {
+                'mod.no': `\
 use std::{ math::pi, iter::MapAdapter }
 
 trait Area {
@@ -176,15 +174,15 @@ pub fn main() {
             .show()
     )
 }`
-        }
-        const res = run(await compile(files))
-        expect(res.stderr.toString()).toEqual('')
-        expect(res.stdout.toString()).toEqual('[8, 478.3879062809779]\n')
-    })
+            }
+            const res = run(await compile(files))
+            expect(res.stderr.toString()).toEqual('')
+            expect(res.stdout.toString()).toEqual('[8, 478.3879062809779]\n')
+        })
 
-    it('rule110', async () => {
-        const files = {
-            'mod.no': `\
+        it('rule110', async () => {
+            const files = {
+                'mod.no': `\
 use std::iter::MapAdapter
 
 pub fn main() {
@@ -226,18 +224,18 @@ fn fmtGen(gen: List<Bool>, total: Int): String {
         .collect<String>()
     pad.concat(g)
 }`
-        }
-        const res = run(await compile(files))
-        expect(res.stderr.toString()).toEqual('')
-        expect(res.stdout.toString()).toEqual(
-            '         x\n        xx\n       xxx\n      xx x\n     xxxxx\n    xx   x\n   xxx  xx\n  xx x xxx\n xxxxxxx x\nxx     xxx\n'
-        )
-    })
+            }
+            const res = run(await compile(files))
+            expect(res.stderr.toString()).toEqual('')
+            expect(res.stdout.toString()).toEqual(
+                '         x\n        xx\n       xxx\n      xx x\n     xxxxx\n    xx   x\n   xxx  xx\n  xx x xxx\n xxxxxxx x\nxx     xxx\n'
+            )
+        })
 
-    describe('param destructuring', () => {
-        it('con pattern', async () => {
-            const files = {
-                'mod.no': `\
+        describe('param destructuring', () => {
+            it('con pattern', async () => {
+                const files = {
+                    'mod.no': `\
 type Foo(x: Int, y: String)
 
 pub fn main() {
@@ -247,10 +245,27 @@ pub fn main() {
 fn foo(Foo(y): Foo): String {
     y
 }`
+                }
+                const res = run(await compile(files))
+                expect(res.stderr.toString()).toEqual('')
+                expect(res.stdout.toString()).toEqual('y\n')
+            })
+        })
+    })
+
+    describe('method call', () => {
+        it('qualified', async () => {
+            const files = {
+                'mod.no': `\
+use std::unwrap::Unwrap
+
+pub fn main() {
+    println(Unwrap::unwrap(Some(4)).trace())
+}`
             }
             const res = run(await compile(files))
             expect(res.stderr.toString()).toEqual('')
-            expect(res.stdout.toString()).toEqual('y\n')
+            expect(res.stdout.toString()).toEqual('4\n')
         })
     })
 })

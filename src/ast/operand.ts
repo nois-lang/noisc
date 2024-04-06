@@ -2,7 +2,7 @@ import { LexerToken } from '../lexer/lexer'
 import { ParseNode, ParseTree, filterNonAstNodes } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
 import { VirtualIdentifierMatch } from '../scope/vid'
-import { Typed, Virtual } from '../semantic'
+import { Static, Typed, Virtual } from '../semantic'
 import { assert } from '../util/todo'
 import { Expr, buildExpr } from './expr'
 import { AstNode, Param, buildParam } from './index'
@@ -234,7 +234,7 @@ export const buildBoolLiteral = (node: ParseNode): BoolLiteral => {
     return { kind: 'bool-literal', parseNode: node, value: (<LexerToken>node).value }
 }
 
-export interface Identifier extends AstNode<'identifier'>, Partial<Typed> {
+export interface Identifier extends AstNode<'identifier'>, Partial<Typed>, Partial<Static> {
     names: Name[]
     typeArgs: Type[]
     ref?: VirtualIdentifierMatch

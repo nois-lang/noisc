@@ -484,6 +484,7 @@ export const checkQualifiedMethodCall = (
         impl = ref.def.rel
         ctx.moduleStack.at(-1)!.relImports.push(impl)
     }
+    identifier.impl = impl
 
     // TODO
     const maps: Map<string, VirtualType>[] = []

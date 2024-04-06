@@ -6,7 +6,7 @@ import { idToVid, vidEq, vidToString } from '../scope/util'
 import { VirtualIdentifier, resolveVid, typeKinds } from '../scope/vid'
 import { expectedTypeError } from '../semantic/error'
 import { zip } from '../util/array'
-import { todo } from '../util/todo'
+import { todo, unreachable } from '../util/todo'
 import { holeType, selfType, unknownType } from './type'
 
 export type VirtualType = VidType | VirtualFnType | VirtualGeneric | UnknownType | MalleableType | HoleType
@@ -151,6 +151,8 @@ export const genericKey = (generic: Generic, ctx: Context): string => {
                             return `fn_${s.def.name.value}`
                         case 'closure-expr':
                             return `closure`
+                        default:
+                            return unreachable()
                     }
                 case 'instance':
                     switch (s.def.kind) {
@@ -158,6 +160,8 @@ export const genericKey = (generic: Generic, ctx: Context): string => {
                             return `trait_${s.def.name.value}`
                         case 'impl-def':
                             return `impl`
+                        default:
+                            return unreachable()
                     }
                 default:
                     return undefined
