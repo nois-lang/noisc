@@ -164,7 +164,7 @@ export const parseIdentifier = (parser: Parser): void => {
     }
     if (
         parser.at('o-angle') &&
-        parser.encounter('c-angle', [...nameLikeTokens, 'colon', 'comma', 'o-angle', 'underscore'])
+        parser.encounter('c-angle', [...nameLikeTokens, 'colon', 'comma', 'o-angle', 'underscore', 'pipe'])
     ) {
         parseTypeArgs(parser)
     }

@@ -64,7 +64,7 @@ export const parseFnType = (parser: Parser): void => {
 export const parseFnTypeParams = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('pipe')
-    while (!parser.at('pipe') && !parser.eof()) {
+    while (!(parser.at('pipe') && parser.nth(1) === 'colon') && !parser.eof()) {
         parseType(parser)
         if (!parser.at('pipe')) {
             parser.expect('comma')
