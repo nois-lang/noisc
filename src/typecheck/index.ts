@@ -159,7 +159,9 @@ export const genericKey = (generic: Generic, ctx: Context): string => {
                         case 'trait-def':
                             return `trait_${s.def.name.value}`
                         case 'impl-def':
-                            return `impl`
+                            const implName = s.def.identifier.names.at(-1)!.value
+                            const forName = s.def.forTrait ? s.def.forTrait.names.at(-1)!.value : ''
+                            return `impl_${implName}_${forName}`
                         default:
                             return unreachable()
                     }
