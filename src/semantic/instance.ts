@@ -1,4 +1,5 @@
 import { checkCallArgs } from '.'
+import { AstNode } from '../ast'
 import { UnaryExpr } from '../ast/expr'
 import { CallOp, MethodCallOp } from '../ast/op'
 import { Name, Operand } from '../ast/operand'
@@ -104,7 +105,7 @@ export const checkMethodCall = (expr: UnaryExpr, mCall: MethodCallOp, ctx: Conte
 
     const methodVid = { names: [...typeVid.names, mCall.name.value] }
     const args = [expr.operand, ...mCall.call.args.map(a => a.expr)]
-    return checkMethodCall_(args, mCall.call, methodVid, ctx, mCall.typeArgs)
+    return checkMethodCall_(args, mCall.call, methodVid, ctx, mCall.typeArgs, mCall.name)
 }
 
 export const checkMethodCall_ = (
@@ -112,12 +113,13 @@ export const checkMethodCall_ = (
     call: CallOp,
     methodVid: VirtualIdentifier,
     ctx: Context,
-    typeArgs?: Type[]
+    typeArgs?: Type[],
+    node: AstNode<any> = call
 ): VirtualType | undefined => {
     const typeVid = vidFromScope(methodVid)
     const ref = resolveVid(methodVid, ctx, ['method-def'])
     if (!ref || ref.def.kind !== 'method-def') {
-        addError(ctx, notFoundError(ctx, call, vidToString(methodVid), 'method'))
+        addError(ctx, notFoundError(ctx, node ?? call, vidToString(methodVid), 'method'))
         return
     }
 
