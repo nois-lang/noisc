@@ -481,7 +481,8 @@ export const checkQualifiedMethodCall = (
             }
         }
     } else {
-        if (ref.def.fn.block) {
+        // TODO: probably incorrect
+        if (ref.def.fn.static && ref.def.fn.block) {
             impl = ref.def.rel
             ctx.moduleStack.at(-1)!.relImports.push(impl)
         }
