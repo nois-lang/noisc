@@ -148,6 +148,7 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): EmitExpr =
         case 'assign-op': {
             return {
                 emit: emitTree([
+                    jsVariable(resultVar),
                     lOp.emit,
                     rOp.emit,
                     emitToken(`${extractValue(lOp.resultVar)}=${extractValue(rOp.resultVar)};`),
@@ -355,27 +356,35 @@ export const emitLiteral = (operand: Operand, ctx: Context, resultVar: string): 
 }
 
 export const emitMatchExpr = (matchExpr: MatchExpr, ctx: Context, resultVar: string): EmitExpr => {
+    const breakLabel = nextVariable(ctx)
     const { emit: sEmit, resultVar: sVar } = emitExpr(matchExpr.expr, ctx)
     if (matchExpr.clauses.length === 0) {
         return { emit: emitToken(''), resultVar }
     }
     const clauses = matchExpr.clauses.map(clause => {
         if (clause.patterns.length !== 1) return jsError('union clause')
+        // TODO: union clauses
         const pattern = clause.patterns[0]
         const cond = emitPatternExprCondition(pattern.expr, ctx, sVar)
-        const block = emitTree([emitPattern(pattern, ctx, sVar), ...emitBlockStatements(clause.block, ctx, resultVar)])
+        const condGuarded: EmitExpr | undefined = clause.guard ? emitExpr(clause.guard, ctx) : undefined
+        const block = emitTree([
+            emitPattern(pattern, ctx, sVar),
+            condGuarded?.emit,
+            condGuarded ? emitToken(`if(${extractValue(condGuarded.resultVar)}){`) : undefined,
+            ...emitBlockStatements(clause.block, ctx, resultVar),
+            emitToken(`break ${breakLabel};`),
+            condGuarded ? emitToken('}') : undefined
+        ])
         return emitTree([cond.emit, emitTree([emitToken(`if(${cond.resultVar}){`), block, emitToken('}')])])
     })
-    let ifElseChain = clauses[0]
-    for (let i = 1; i < clauses.length; i++) {
-        const clause = clauses[i]
-        ifElseChain = emitTree([ifElseChain, emitToken(`else{`), clause])
-    }
-    for (let i = clauses.length - 2; i >= 0; i--) {
-        ifElseChain = emitTree([ifElseChain, emitToken('}')])
-    }
     return {
-        emit: emitTree([jsVariable(resultVar), sEmit, ifElseChain]),
+        emit: emitTree([
+            jsVariable(resultVar),
+            emitToken(`${breakLabel}:if(true){`),
+            sEmit,
+            ...clauses,
+            emitToken('}')
+        ]),
         resultVar
     }
 }
