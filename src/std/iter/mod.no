@@ -2,6 +2,7 @@ pub use std::iter::{
     intersperseIter::{ IntersperseIter, IntersperseAdapter },
     mapIter::{ MapIter, MapAdapter },
     peekable::{ PeekableIter, PeekableAdapter },
+    takeWhile::{ TakeWhileIter, TakeWhileAdapter },
 }
 
 pub trait Iterable<T> {

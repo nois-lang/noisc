@@ -1,0 +1,32 @@
+pub type TakeWhileIter<T>(
+    iter: Iter<T>,
+    f: |T|: Bool,
+    done: Bool
+)
+
+impl <T> Iter<T> for TakeWhileIter<T> {
+    fn next(self): Option<T> {
+        if self.done { return None() }
+        match self.iter.next() {
+            Some(value) {
+                if (self.f)(value).not() {
+                    self.done = true
+                    return None()
+                }
+                Some(value)
+            }
+            _ { None() }
+        }
+    }
+}
+
+pub trait TakeWhileAdapter<T> {
+    fn takeWhile(self, f: |T|: Bool): Iter<T>
+}
+
+impl <T> TakeWhileAdapter<T> for Iter<T> {
+    fn takeWhile(self, f: |T|: Bool): Iter<T> {
+        TakeWhileIter(iter: self, f, false)
+    }
+}
+
