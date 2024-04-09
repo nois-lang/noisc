@@ -5,5 +5,5 @@
  * @returns {Bool}
  */
 export function eqRef(a, b) {
-    return a === b
+    return Bool.Bool(a === b)
 }
