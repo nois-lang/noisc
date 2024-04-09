@@ -15,7 +15,7 @@ pub trait MapAdapter<T> {
 
 impl <T> MapAdapter<T> for Iter<T> {
     fn map<U>(self, f: |T|: U): Iter<U> {
-        MapIter(iter: self, f: f)
+        MapIter(iter: self, f)
     }
 }
 

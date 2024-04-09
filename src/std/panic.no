@@ -3,7 +3,7 @@ pub fn panic(message: String): Never {
 }
 
 pub fn todo(message: String): Never {
-    panic("TODO: ".concat(message))
+    panic("TODO: {message}")
 }
 
 pub fn throwError(message: String): Never

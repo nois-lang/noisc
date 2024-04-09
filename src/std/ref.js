@@ -4,6 +4,6 @@
  * @param {T} b
  * @returns {Bool}
  */
-function eqRef(a, b) {
+export function eqRef(a, b) {
     return a === b
 }
