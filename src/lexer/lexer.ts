@@ -223,7 +223,7 @@ const parseComment = (ctx: LexerContext): boolean => {
     if (ctx.code.slice(ctx.pos, ctx.pos + 2) === '//') {
         const start = ctx.pos
         const buffer: string[] = []
-        while (ctx.code.length > ctx.pos && !isNewline(ctx.code[ctx.pos])) {
+        while (ctx.pos < ctx.code.length && !isNewline(ctx.code[ctx.pos])) {
             buffer.push(ctx.code[ctx.pos])
             ctx.pos++
         }
@@ -256,7 +256,7 @@ const parseName = (ctx: LexerContext): boolean => {
     if (!isAlpha(ctx.code[ctx.pos])) return false
     const start = ctx.pos
     const name: string[] = []
-    while (isAlpha(ctx.code[ctx.pos]) || isNumeric(ctx.code[ctx.pos])) {
+    while (ctx.pos < ctx.code.length && (isAlpha(ctx.code[ctx.pos]) || isNumeric(ctx.code[ctx.pos]))) {
         name.push(ctx.code[ctx.pos])
         ctx.pos++
     }
@@ -283,7 +283,7 @@ const parseInt = (ctx: LexerContext): boolean => {
     if (!isNumeric(ctx.code[ctx.pos])) return false
     const start = ctx.pos
     let int = ''
-    while (isNumeric(ctx.code[ctx.pos])) {
+    while (ctx.pos < ctx.code.length && isNumeric(ctx.code[ctx.pos])) {
         int += ctx.code[ctx.pos]
         ctx.pos++
     }
