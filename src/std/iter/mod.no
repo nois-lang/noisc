@@ -32,7 +32,23 @@ pub trait Iter<T> {
     }
 
     fn position(self, f: |T|: Bool): Option<Int> {
-        todo("Iter::position")
+        let i = 0
+        for n in self {
+            if f(n) {
+                return Some(i)
+            }
+            i = i + 1
+        }
+        None()
+    }
+
+    fn find(self, f: |T|: Bool): Option<T> {
+        for n in self {
+            if f(n) {
+                return Some(n)
+            }
+        }
+        None()
     }
 
     fn collect<C: Collector<T>>(self): C {
