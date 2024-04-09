@@ -17,7 +17,7 @@ export interface JsImport {
 
 export const emitModule = (module: Module, ctx: Context, main: boolean = false): EmitNode => {
     const statements = emitTree(
-        module.block.statements.map(s => emitStatement(s, module, ctx)).map(s => ('resultVar' in s ? s.emit : s))
+        module.block.statements.map(s => emitStatement(s, ctx)).map(s => ('resultVar' in s ? s.emit : s))
     )
     const mainStr = `try{main();}catch(e){console.error(\`\${e.message}\\n\${e.stack.split("\\n").slice(1).join("\\n")}\`);}`
     const mainFnInvoke = main ? emitToken(mainStr) : undefined

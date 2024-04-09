@@ -1,12 +1,11 @@
 import { extractValue, jsRelName, nextVariable } from '.'
-import { Module } from '../../ast'
 import { Context } from '../../scope'
 import { trace } from '../../scope/std'
 import { InstanceRelation, resolveTypeImpl } from '../../scope/trait'
 import { todo } from '../../util/todo'
 import { EmitNode, emitToken, emitTree, jsVariable } from './node'
 
-export const emitTraceImpl = (rel: InstanceRelation, module: Module, ctx: Context): EmitNode => {
+export const emitTraceImpl = (rel: InstanceRelation, ctx: Context): EmitNode => {
     const typeDef = rel.forDef.def
     if (typeDef.kind === 'trait-def') {
         return todo('default Trace for trait type')
