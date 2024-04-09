@@ -10,6 +10,29 @@ impl <T> List<T> {
     pub fn add(self, item: T): Unit {
         listAdd(self, item)
     }
+
+    pub fn count(self): Int {
+        self.iter().count()
+    }
+
+    pub fn popAt(self, index: Int): Option<T> {
+        listPopAt(self, index)
+    }
+
+    pub fn pop(self): Option<T> {
+        self.popAt(self.count() - 1)
+    }
+    
+    pub fn popFront(self): Option<T> {
+        self.popAt(0)
+    }
+
+    pub fn clear(self): Self {
+        while self.count() > 0 {
+            self.popFront()
+        }
+        self
+    }
 }
 
 impl <T> Iterable<T> for List<T> {
@@ -78,3 +101,5 @@ impl <T> Iter<T> for ListIter<T> {
 fn listAt<T>(list: List<T>, index: Int): Option<T>
 
 fn listAdd<T>(list: List<T>, item: T): Unit
+
+fn listPopAt<T>(list: List<T>, index: Int): Option<T>
