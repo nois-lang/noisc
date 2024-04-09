@@ -31,6 +31,10 @@ pub trait Iter<T> {
         return res
     }
 
+    fn position(self, f: |T|: Bool): Option<Int> {
+        todo("Iter::position")
+    }
+
     fn collect<C: Collector<T>>(self): C {
         C::fromIter(self)
     }
