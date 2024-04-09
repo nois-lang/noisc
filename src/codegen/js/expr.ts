@@ -293,12 +293,14 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
             return { emit: emitTree([...ts.map(t => t.emit), concatEmit]), resultVar }
         case 'identifier': {
             if (operand.ref?.def.kind === 'method-def') {
+                const staticCallEmit = operand.impl ? jsRelName(operand.impl) : undefined
                 if (operand.ref.def.fn.static === true) {
                     const typeName = operand.names.at(-2)!.value
                     const traitName = relTypeName(operand.ref.def.rel)
+                    const callerEmit = staticCallEmit ?? `${typeName}.${traitName}`
                     return {
                         emit: emitToken(''),
-                        resultVar: `${typeName}.${traitName}().${operand.ref.def.fn.name.value}`
+                        resultVar: `${callerEmit}().${operand.ref.def.fn.name.value}`
                     }
                 } else {
                     const args = operand.ref.def.fn.params.map((_, i) => {
@@ -308,11 +310,7 @@ export const emitOperand = (operand: Operand, module: Module, ctx: Context): Emi
                     })
                     const relName = jsRelName(operand.ref.def.rel)
                     const fnName = operand.ref.def.fn.name.value
-                    // TODO: this is probably wrong
-                    const callerEmit =
-                        operand.impl && operand.impl.instanceDef.kind === 'impl-def'
-                            ? jsRelName(operand.impl)
-                            : `${args[0].resultVar}.${relName}`
+                    const callerEmit = staticCallEmit ?? `${args[0].resultVar}.${relName}`
                     const delegate = `return ${callerEmit}().${fnName}(${args.map(a => a.resultVar)});`
                     const block = `${args.map(a => (<EmitToken>a.emit).value)}${delegate}`
                     return {

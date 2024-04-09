@@ -481,8 +481,10 @@ export const checkQualifiedMethodCall = (
             }
         }
     } else {
-        impl = ref.def.rel
-        ctx.moduleStack.at(-1)!.relImports.push(impl)
+        if (ref.def.fn.block) {
+            impl = ref.def.rel
+            ctx.moduleStack.at(-1)!.relImports.push(impl)
+        }
     }
     identifier.impl = impl
 
