@@ -102,11 +102,9 @@ export const emitFieldDef = (fieldDef: FieldDef): string | undefined => {
 }
 
 export const emitParseNode = (node: ParseNode): string => {
+    if (node.kind === 'comment') return ''
     if ('value' in node) {
         return node.value
-    }
-    if (node.kind === 'block') {
-        return node.nodes.map(emitParseNode).join('\n')
     }
     return node.nodes.map(emitParseNode).join('')
 }
