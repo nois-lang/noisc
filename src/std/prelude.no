@@ -19,4 +19,5 @@ pub use std::{
     io::{ println, show::Show, trace::Trace },
     option::Option::{ self, Some, None },
     result::Result::{ self, Ok, Error },
+    future::Future,
 }

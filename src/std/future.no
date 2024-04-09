@@ -1,0 +1,89 @@
+use std::ref::eqRef
+
+pub type Future<T>(
+    f: ||T|: Unit|: Unit, 
+    subscribers: List<|T|: Unit>, 
+    state: FutureState<T>,
+)
+
+// TODO: should be private, but there is a bug with visibility in impls
+pub type FutureState<T> {
+    Created(),
+    Queued(),
+    Pending(),
+    Resolved(value: T),
+}
+
+impl <T> Trace for FutureState<T> {}
+
+impl <T> Future<T> {
+    pub fn new(f: ||T|: Unit|: Unit): Self {
+        Future(f, [], Created())
+    }
+
+    pub fn onResolve(self, f: |T|: Unit): Self {
+        match self.state {
+            Resolved(value) {
+                f(value)
+                return self
+            }
+            _ {}
+        }
+        self.subscribers.add(f)
+        self
+    }
+
+    pub fn spawn(self, runtime: Runtime): Self {
+        runtime.spawn(self)
+    }
+}
+
+pub type Runtime(
+    // TODO: use std::time::Duration
+    pollingRate: Int,
+    queue: List<Future<_>>,
+    pending: List<Future<_>>,
+)
+
+impl Runtime {
+    pub fn new(): Runtime {
+        Runtime::withPollingRate(10)
+    }
+
+    pub fn withPollingRate(pollingRate: Int): Runtime {
+        Runtime(pollingRate, [], [])
+    }
+
+    pub fn loop(self): Unit {
+        while self.queue.count() > 0 {
+            let next = self.queue.popFront()!
+            next.state = Pending()
+            self.pending.add(next)
+            let _ = (next.f)(|res| {
+                next.state = Resolved(res)
+                for s in next.subscribers {
+                    s(res)
+                }
+                next.subscribers.clear()
+                self.pending.popAt(self.pending.iter().position(|e| { eqRef(next, e) })!)
+                unit
+            })
+        }
+        if self.queue.count() > 0 || self.pending.count() > 0 {
+            deferFor(|| { self.loop() }, self.pollingRate)
+        }
+    }
+
+    pub fn spawn<T>(self, future: Future<T>): Future<T> {
+        self.queue.add(future)
+        future.state = Queued()
+        future
+    }
+}
+
+pub fn defer(f: ||: Unit): Unit {
+    deferFor(f, 0)
+}
+
+pub fn deferFor(f: ||: Unit, delay: Int): Unit
+
