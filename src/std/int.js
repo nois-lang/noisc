@@ -74,6 +74,15 @@ function expInt(a, b) {
 /**
  * @param {Int} a
  * @param {Int} b
+ * @returns {Int}
+ */
+function modInt(a, b) {
+    return Int.Int(a.value % b.value)
+}
+
+/**
+ * @param {Int} a
+ * @param {Int} b
  * @returns {Bool}
  */
 function eqInt(a, b) {

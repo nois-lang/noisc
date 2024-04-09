@@ -1,8 +1,8 @@
 pub type Int
 
 impl Int {
-    fn mod(self, other: Self): Self {
-        todo("mod")
+    pub fn mod(self, divisor: Self): Self {
+        modInt(self, divisor)
     }
 }
 
@@ -81,6 +81,8 @@ fn multInt(a: Int, b: Int): Int
 fn divInt(a: Int, b: Int): Int
 
 fn expInt(a: Int, b: Int): Int
+
+fn modInt(a: Int, b: Int): Int
 
 fn eqInt(a: Int, b: Int): Bool
 
