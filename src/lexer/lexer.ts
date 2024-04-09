@@ -223,7 +223,7 @@ const parseComment = (ctx: LexerContext): boolean => {
     if (ctx.code.slice(ctx.pos, ctx.pos + 2) === '//') {
         const start = ctx.pos
         const buffer: string[] = []
-        while (!isNewline(ctx.code[ctx.pos])) {
+        while (ctx.code.length > ctx.pos && !isNewline(ctx.code[ctx.pos])) {
             buffer.push(ctx.code[ctx.pos])
             ctx.pos++
         }
