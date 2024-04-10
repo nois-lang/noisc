@@ -1,8 +1,8 @@
 /**
- * @param {function(): Unit} f
+ * @param {||: Unit} f
  * @param {Int} delay
  * @returns {Unit}
  */
-function deferFor(f, delay) {
-    setTimeout(f, delay)
+export function deferFor(f, delay) {
+    setTimeout(f, delay.value)
 }
