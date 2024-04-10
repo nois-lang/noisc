@@ -649,8 +649,7 @@ export const checkCall_ = (call: CallOp, operand: Operand, args: Expr[], ctx: Co
         args.map(a => a.type!),
         ctx
     )
-    const paramTypes = fnType.paramTypes.map(pt => resolveType(pt, genericMaps, ctx))
-    checkCallArgs(call, args, paramTypes, ctx)
+    checkCallArgs(call, args, fnType.paramTypes, ctx)
 
     call.generics = fnType.generics.map((g, i) => {
         const typeArg = operand.kind === 'identifier' ? operand.typeArgs.at(i) : undefined
