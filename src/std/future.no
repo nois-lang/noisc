@@ -65,12 +65,12 @@ impl Runtime {
                     s(res)
                 }
                 next.subscribers.clear()
-                self.pending.popAt(self.pending.iter().position(|e| { eqRef(next, e) })!)
+                self.pending.popAt(self.pending.iter().position(|e| eqRef(next, e))!)
                 unit
             })
         }
         if self.queue.count() > 0 || self.pending.count() > 0 {
-            deferFor(|| { self.loop() }, self.pollingRate)
+            deferFor(|| self.loop(), self.pollingRate)
         }
     }
 

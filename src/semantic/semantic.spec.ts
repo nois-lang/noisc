@@ -562,7 +562,7 @@ fn main() {
             const code = `\
 fn main() {
     while true {
-        (|| { break })()
+        (|| break)()
     }
 }`
             const ctx = check(code)
@@ -611,7 +611,7 @@ type Foo(x: ||: Int)
 
 impl Foo {
     fn main() {
-        let foo = Foo::Foo(|| { 5 })
+        let foo = Foo::Foo(|| 5)
         let a = (foo.x)()
         a()
         return unit

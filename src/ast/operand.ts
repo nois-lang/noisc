@@ -7,7 +7,7 @@ import { assert } from '../util/todo'
 import { Expr, buildExpr } from './expr'
 import { AstNode, Param, buildParam } from './index'
 import { MatchExpr, Pattern, buildMatchExpr, buildNumber, buildPattern } from './match'
-import { Block, buildBlock } from './statement'
+import { Block, buildBlock, buildStatement } from './statement'
 import { Type, buildType } from './type'
 
 export type Operand = (
@@ -158,7 +158,10 @@ export const buildClosureExpr = (node: ParseNode): ClosureExpr => {
         .filter(n => n.kind === 'param')
         .map(n => buildParam(n))
     const returnType = nodes.at(idx)?.kind === 'type-annot' ? buildType(nodes[idx++]) : undefined
-    const block = buildBlock(nodes[idx++])
+    const block: Block =
+        nodes[idx].kind === 'block'
+            ? buildBlock(nodes[idx++])
+            : { kind: 'block', parseNode: nodes[idx], statements: [buildStatement(nodes[idx++])] }
     return { kind: 'closure-expr', parseNode: node, params, block, returnType }
 }
 

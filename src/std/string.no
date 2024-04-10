@@ -40,7 +40,7 @@ impl Collector<String> for String {
 impl Collector<Char> for String {
     fn fromIter(iter: Iter<Char>): Self {
         // TODO: method ref
-        iter.map(|c| { c.show() }).collect<String>()
+        iter.map(|c| c.show()).collect<String>()
     }
 }
 

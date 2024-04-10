@@ -101,7 +101,7 @@ type                  ::= type-bounds | fn-type | hole
                       ;
 block                 ::= O-BRACE statement* C-BRACE
                       ;
-closure-expr          ::= closure-params type-annot? block
+closure-expr          ::= closure-params type-annot? (block | statement)
                       ;
   closure-params      ::= PIPE (param (COMMA param)*)? COMMA? PIPE
                       ;

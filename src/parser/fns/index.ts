@@ -1,5 +1,4 @@
 import { Parser } from '..'
-import { syntaxError } from '../../error'
 import { TokenKind, lexerKeywordKinds } from '../../lexer/lexer'
 import { parseBlock, parseParam, parseStatement, parseUseStmt } from './statement'
 import { parseTypeAnnot } from './type'
@@ -60,7 +59,7 @@ export const parseModule = (parser: Parser): void => {
 
 /**
  * TODO: closure generics
- * closure-expr ::= closure-params type-annot? block
+ * closure-expr ::= closure-params type-annot? (block | statement)
  */
 export const parseClosureExpr = (parser: Parser): void => {
     const mark = parser.open()
@@ -71,7 +70,7 @@ export const parseClosureExpr = (parser: Parser): void => {
     if (parser.at('o-brace')) {
         parseBlock(parser)
     } else {
-        parser.advanceWithError(syntaxError(parser, 'expected block'))
+        parseStatement(parser)
     }
     parser.close(mark, 'closure-expr')
 }

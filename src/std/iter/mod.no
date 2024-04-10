@@ -13,7 +13,7 @@ pub trait Iter<T> {
     fn next(self): Option<T>
 
     fn count(self): Int {
-        self.fold(|acc, _| { acc + 1 }, 0)
+        self.fold(|acc, _| acc + 1, 0)
     }
 
     fn last(self): Option<T> {

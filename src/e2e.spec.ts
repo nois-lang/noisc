@@ -169,7 +169,7 @@ pub fn main() {
     println(
         shapes
             .iter()
-            .map(|s| { s.area() })
+            .map(|s| s.area())
             .collect<List<_>>()
             .show()
     )
@@ -220,7 +220,7 @@ fn fmtGen(gen: List<Bool>, total: Int): String {
     let pad = repeat(" ", total - gen.iter().count()).collect<String>()
     let g = gen
         .iter()
-        .map(|b| { if b { "x" } else { " " } })
+        .map(|b| if b { "x" } else { " " })
         .collect<String>()
     pad.concat(g)
 }`
