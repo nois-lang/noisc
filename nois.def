@@ -1,0 +1,5 @@
+Nois
+    filter rm_comments_in_strings ' // 
+    filter call_regexp_common C++
+    extension no
+    3rd_gen_scale 1.48
