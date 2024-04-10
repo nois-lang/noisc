@@ -14,7 +14,7 @@ Int.Int = value => ({
  * @param {Int} a
  * @returns {Int}
  */
-function negInt(a) {
+export function negInt(a) {
     return Int.Int(-a.value)
 }
 
@@ -22,7 +22,7 @@ function negInt(a) {
  * @param {Int} a
  * @returns {Int}
  */
-function absInt(a) {
+export function absInt(a) {
     return Int.Int(Math.abs(a.value))
 }
 
@@ -31,7 +31,7 @@ function absInt(a) {
  * @param {Int} b
  * @returns {Int}
  */
-function addInt(a, b) {
+export function addInt(a, b) {
     return Int.Int(a.value + b.value)
 }
 
@@ -40,7 +40,7 @@ function addInt(a, b) {
  * @param {Int} b
  * @returns {Int}
  */
-function subInt(a, b) {
+export function subInt(a, b) {
     return Int.Int(a.value - b.value)
 }
 
@@ -49,7 +49,7 @@ function subInt(a, b) {
  * @param {Int} b
  * @returns {Int}
  */
-function multInt(a, b) {
+export function multInt(a, b) {
     return Int.Int(a.value * b.value)
 }
 
@@ -58,7 +58,7 @@ function multInt(a, b) {
  * @param {Int} b
  * @returns {Int}
  */
-function divInt(a, b) {
+export function divInt(a, b) {
     return Int.Int(a.value / b.value)
 }
 
@@ -67,7 +67,7 @@ function divInt(a, b) {
  * @param {Int} b
  * @returns {Int}
  */
-function expInt(a, b) {
+export function expInt(a, b) {
     return Int.Int(a.value ** b.value)
 }
 
@@ -76,7 +76,7 @@ function expInt(a, b) {
  * @param {Int} b
  * @returns {Int}
  */
-function modInt(a, b) {
+export function modInt(a, b) {
     return Int.Int(a.value % b.value)
 }
 
@@ -85,7 +85,7 @@ function modInt(a, b) {
  * @param {Int} b
  * @returns {Bool}
  */
-function eqInt(a, b) {
+export function eqInt(a, b) {
     return Bool.Bool(a.value === b.value)
 }
 
@@ -94,7 +94,7 @@ function eqInt(a, b) {
  * @param {Int} b
  * @returns {Ordering}
  */
-function cmpInt(a, b) {
+export function cmpInt(a, b) {
     if (a.value === b.value) {
         return Ordering.Equal()
     }
@@ -108,6 +108,6 @@ function cmpInt(a, b) {
  * @param {Int} a
  * @returns {String}
  */
-function showInt(a) {
+export function showInt(a) {
     return String.String(a.value.toString())
 }

@@ -14,7 +14,7 @@ Char.Char = value => ({
  * @param {Char} a
  * @returns {String}
  */
-function showChar(a) {
+export function showChar(a) {
     return String.String(a.value)
 }
 
@@ -23,6 +23,6 @@ function showChar(a) {
  * @param {Char} b
  * @returns {Bool}
  */
-function eqChar(a, b) {
+export function eqChar(a, b) {
     return Bool.Bool(a.value === b.value)
 }

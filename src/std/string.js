@@ -15,7 +15,7 @@ String.String = value => ({
  * @param {String} b
  * @returns {String}
  */
-function concatString(a, b) {
+export function concatString(a, b) {
     return String.String(a.value + b.value)
 }
 
@@ -24,6 +24,6 @@ function concatString(a, b) {
  * @param {String} b
  * @returns {Bool}
  */
-function eqString(a, b) {
+export function eqString(a, b) {
     return String.String(a.value === b.value)
 }

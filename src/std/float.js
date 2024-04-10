@@ -14,7 +14,7 @@ Float.Float = value => ({
  * @param {Float} a
  * @returns {Float}
  */
-function negFloat(a) {
+export function negFloat(a) {
     return Float.Float(-a.value)
 }
 
@@ -22,7 +22,7 @@ function negFloat(a) {
  * @param {Float} a
  * @returns {Float}
  */
-function absFloat(a) {
+export function absFloat(a) {
     return Float.Float(Math.abs(a.value))
 }
 
@@ -31,7 +31,7 @@ function absFloat(a) {
  * @param {Float} b
  * @returns {Float}
  */
-function addFloat(a, b) {
+export function addFloat(a, b) {
     return Float.Float(a.value + b.value)
 }
 
@@ -40,7 +40,7 @@ function addFloat(a, b) {
  * @param {Float} b
  * @returns {Float}
  */
-function subFloat(a, b) {
+export function subFloat(a, b) {
     return Float.Float(a.value - b.value)
 }
 
@@ -49,7 +49,7 @@ function subFloat(a, b) {
  * @param {Float} b
  * @returns {Float}
  */
-function multFloat(a, b) {
+export function multFloat(a, b) {
     return Float.Float(a.value * b.value)
 }
 
@@ -58,7 +58,7 @@ function multFloat(a, b) {
  * @param {Float} b
  * @returns {Float}
  */
-function divFloat(a, b) {
+export function divFloat(a, b) {
     return Float.Float(a.value / b.value)
 }
 
@@ -67,7 +67,7 @@ function divFloat(a, b) {
  * @param {Float} b
  * @returns {Float}
  */
-function expFloat(a, b) {
+export function expFloat(a, b) {
     return Float.Float(a.value ** b.value)
 }
 
@@ -76,7 +76,7 @@ function expFloat(a, b) {
  * @param {Float} b
  * @returns {Bool}
  */
-function eqFloat(a, b) {
+export function eqFloat(a, b) {
     return Bool.Bool(a.value === b.value)
 }
 
@@ -84,6 +84,6 @@ function eqFloat(a, b) {
  * @param {Float} a
  * @returns {String}
  */
-function showFloat(a) {
+export function showFloat(a) {
     return String.String(a.value.toString())
 }

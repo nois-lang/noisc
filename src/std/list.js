@@ -22,7 +22,7 @@ List.List = value => ({
  * @param {Int} index
  * @returns {Option<T>}
  */
-function listAt(list, index) {
+export function listAt(list, index) {
     const i = index.value
     if (i < 0 || i >= list.value.length) {
         return Option.None()
@@ -37,7 +37,7 @@ function listAt(list, index) {
  * @param {T} item
  * @returns {Unit}
  */
-function listAdd(list, item) {
+export function listAdd(list, item) {
     list.value.push(item)
 }
 
@@ -47,7 +47,7 @@ function listAdd(list, item) {
  * @param {Int} index
  * @returns {Option<T>}
  */
-function listPopAt(list, index) {
+export function listPopAt(list, index) {
     const i = index.value
     if (i < 0 || i >= list.value.length) {
         return Option.None()

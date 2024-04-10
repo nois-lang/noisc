@@ -2,6 +2,6 @@
  * @param {String} message
  * @returns {Never}
  */
-function throwError(message) {
+export function throwError(message) {
     throw Error(message.value)
 }

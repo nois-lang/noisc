@@ -15,7 +15,7 @@ Bool.Bool = value => ({
  * @param {Bool} b
  * @returns {Bool}
  */
-function andBool(a, b) {
+export function andBool(a, b) {
     return Bool.Bool(a.value && b.value)
 }
 
@@ -24,7 +24,7 @@ function andBool(a, b) {
  * @param {Bool} b
  * @returns {Bool}
  */
-function orBool(a, b) {
+export function orBool(a, b) {
     return Bool.Bool(a.value || b.value)
 }
 
@@ -32,7 +32,7 @@ function orBool(a, b) {
  * @param {Bool} a
  * @returns {Bool}
  */
-function notBool(a) {
+export function notBool(a) {
     return Bool.Bool(!a.value)
 }
 
@@ -40,7 +40,7 @@ function notBool(a) {
  * @param {Bool} a
  * @returns {String}
  */
-function showBool(a) {
+export function showBool(a) {
     return String.String(a.value.toString())
 }
 
@@ -49,6 +49,6 @@ function showBool(a) {
  * @param {Bool} b
  * @returns {Bool}
  */
-function eqBool(a, b) {
+export function eqBool(a, b) {
     return Bool.Bool(a.value === b.value)
 }
