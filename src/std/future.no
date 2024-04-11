@@ -81,6 +81,11 @@ impl Runtime {
     }
 }
 
+// TODO: use std::time::Duration
+pub fn delay(delay: Int): Future<Unit> {
+    Future::new(|resolve| deferFor(|| resolve(unit), delay))
+}
+
 pub fn defer(f: ||: Unit): Unit {
     deferFor(f, 0)
 }
