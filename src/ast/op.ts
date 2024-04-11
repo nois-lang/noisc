@@ -6,7 +6,7 @@ import { Arg, AstNode, AstNodeKind, buildArg } from './index'
 import { Name, buildName } from './operand'
 import { Type, buildType } from './type'
 
-export type PostfixOp = MethodCallOp | FieldAccessOp | CallOp | UnwrapOp | BindOp
+export type PostfixOp = MethodCallOp | FieldAccessOp | CallOp | UnwrapOp | BindOp | AwaitOp
 
 export const isPostfixOp = (op: AstNode<AstNodeKind>): op is PostfixOp => {
     return (
@@ -14,7 +14,8 @@ export const isPostfixOp = (op: AstNode<AstNodeKind>): op is PostfixOp => {
         op.kind === 'field-access-op' ||
         op.kind === 'call-op' ||
         op.kind === 'unwrap-op' ||
-        op.kind === 'bind-op'
+        op.kind === 'bind-op' ||
+        op.kind === 'await-op'
     )
 }
 
@@ -28,6 +29,7 @@ export const buildPostfixOp = (node: ParseNode): PostfixOp => {
             return buildCallOp(node)
         case 'unwrap-op':
         case 'bind-op':
+        case 'await-op':
             return { kind: node.kind, parseNode: node }
         default:
             throw Error(`expected postfix-op, got ${node.kind}`)
@@ -41,7 +43,6 @@ export type BinaryOp = (
     | DivOp
     | ExpOp
     | ModOp
-    | AccessOp
     | EqOp
     | NeOp
     | GeOp
@@ -162,6 +163,8 @@ export interface UnwrapOp extends AstNode<'unwrap-op'> {}
 
 export interface BindOp extends AstNode<'bind-op'> {}
 
+export interface AwaitOp extends AstNode<'await-op'> {}
+
 export interface AddOp extends AstNode<'add-op'> {}
 
 export interface SubOp extends AstNode<'sub-op'> {}
@@ -173,8 +176,6 @@ export interface DivOp extends AstNode<'div-op'> {}
 export interface ExpOp extends AstNode<'exp-op'> {}
 
 export interface ModOp extends AstNode<'mod-op'> {}
-
-export interface AccessOp extends AstNode<'access-op'> {}
 
 export interface EqOp extends AstNode<'eq-op'> {}
 

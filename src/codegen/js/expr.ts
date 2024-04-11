@@ -137,6 +137,9 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): EmitExpr => {
                 resultVar
             }
         }
+        case 'await-op': {
+            return { emit: emitToken(''), resultVar: jsError('bind-op').value }
+        }
     }
 }
 

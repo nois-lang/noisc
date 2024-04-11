@@ -48,7 +48,8 @@ export const lexerKeywordKinds = <const>[
     'for-keyword',
     'in-keyword',
     'match-keyword',
-    'pub-keyword'
+    'pub-keyword',
+    'await-keyword',
 ]
 
 export const lexerDynamicKinds = <const>['name', 'string-part', 'char', 'int', 'float', 'bool']
@@ -92,6 +93,7 @@ export const lexerKeywordMap: [TokenKind, string][] = [
     ['in-keyword', 'in'],
     ['match-keyword', 'match'],
     ['pub-keyword', 'pub'],
+    ['await-keyword', 'await'],
 
     ['o-paren', '('],
     ['c-paren', ')'],

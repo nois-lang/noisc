@@ -1,5 +1,5 @@
 import { Parser } from '..'
-import { TokenKind, lexerKeywordKinds } from '../../lexer/lexer'
+import { TokenKind } from '../../lexer/lexer'
 import { parseBlock, parseParam, parseStatement, parseUseStmt } from './statement'
 import { parseTypeAnnot } from './type'
 
@@ -7,7 +7,24 @@ import { parseTypeAnnot } from './type'
  * Tokens that can be used as a name AST node depending on context.
  * Includes 'name' itself and all keyword tokens
  */
-export const nameLikeTokens: TokenKind[] = ['name', ...lexerKeywordKinds]
+export const nameLikeTokens: TokenKind[] = [
+    'name',
+    'use-keyword',
+    'type-keyword',
+    'trait-keyword',
+    'impl-keyword',
+    'let-keyword',
+    'fn-keyword',
+    'if-keyword',
+    'else-keyword',
+    'return-keyword',
+    'break-keyword',
+    'while-keyword',
+    'for-keyword',
+    'in-keyword',
+    'match-keyword',
+    'pub-keyword'
+]
 
 export const infixOpFirstTokens: TokenKind[] = [
     'ampersand',

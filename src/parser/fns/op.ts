@@ -80,7 +80,7 @@ export const parseInfixOp = (parser: Parser): void => {
 }
 
 /**
- * postfix-op ::= call-op | unwrap-op | bind-op
+ * postfix-op ::= method-call-op | field-access-op | call-op | unwrap-op | bind-op | await-op
  */
 export const parsePostfixOp = (parser: Parser): void => {
     if (parser.at('o-paren')) {
@@ -88,7 +88,10 @@ export const parsePostfixOp = (parser: Parser): void => {
         return
     }
     if (parser.at('period')) {
-        if (
+        if (parser.nth(1) === 'await-keyword') {
+            const mark = parser.open()
+            parser.close(mark, 'await-op')
+        } else if (
             parser.nth(2) === 'o-paren' ||
             (parser.nth(2) === 'o-angle' &&
                 parser.encounter('c-angle', [...nameLikeTokens, 'comma', 'o-angle', 'underscore'], 2))

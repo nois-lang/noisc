@@ -5,7 +5,7 @@ import { MatchExpr } from '../ast/match'
 import { CallOp } from '../ast/op'
 import { ClosureExpr, ForExpr, Identifier, IfExpr, IfLetExpr, ListExpr, Name, Operand, WhileExpr } from '../ast/operand'
 import { Context, Scope, addError, fnDefScope, instanceScope } from '../scope'
-import { bool, iter, iterable, show, string, unwrap } from '../scope/std'
+import { bool, future, iter, iterable, show, string, unwrap } from '../scope/std'
 import {
     InstanceRelation,
     getConcreteTrait,
@@ -15,7 +15,7 @@ import {
     typeDefToVirtualType
 } from '../scope/trait'
 import { idToVid, vidEq, vidFromString, vidToString } from '../scope/util'
-import { MethodDef, VariantDef, VirtualIdentifierMatch, resolveVid, typeKinds } from '../scope/vid'
+import { MethodDef, VariantDef, VirtualIdentifier, VirtualIdentifierMatch, resolveVid, typeKinds } from '../scope/vid'
 import {
     VidType,
     VirtualFnType,
@@ -188,6 +188,9 @@ export const checkUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): void => {
             return
         case 'bind-op':
             checkBind(unaryExpr, ctx)
+            return
+        case 'await-op':
+            checkAwait(unaryExpr, ctx)
             return
     }
 }
@@ -674,7 +677,7 @@ export const checkCall_ = (call: CallOp, operand: Operand, args: Expr[], ctx: Co
 export const checkUnwrap = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const operand = unaryExpr.operand
     checkOperand(operand, ctx)
-    const unwrapType = findUnwrapInnerType(operand.type!, ctx)
+    const unwrapType = findTraitInnerType(operand.type!, unwrap.identifier, ctx)
     if (!unwrapType) {
         addError(ctx, typeError(ctx, unaryExpr, operand.type!, unwrap))
         unaryExpr.type = unknownType
@@ -689,7 +692,7 @@ export const checkUnwrap = (unaryExpr: UnaryExpr, ctx: Context): void => {
 export const checkBind = (unaryExpr: UnaryExpr, ctx: Context): void => {
     const operand = unaryExpr.operand
     checkOperand(operand, ctx)
-    const unwrapType = findUnwrapInnerType(operand.type!, ctx)
+    const unwrapType = findTraitInnerType(operand.type!, unwrap.identifier, ctx)
     if (!unwrapType) {
         addError(ctx, typeError(ctx, unaryExpr, operand.type!, unwrap))
         unaryExpr.type = unknownType
@@ -708,17 +711,42 @@ export const checkBind = (unaryExpr: UnaryExpr, ctx: Context): void => {
     upcast(operand, operand.type!, unwrap, ctx)
 }
 
-export const findUnwrapInnerType = (type: VirtualType, ctx: Context): VirtualType | undefined => {
-    const unwrapRel = ctx.impls.find(
+export const checkAwait = (unaryExpr: UnaryExpr, ctx: Context): void => {
+    const operand = unaryExpr.operand
+    checkOperand(operand, ctx)
+    if (!(operand.type?.kind === 'vid-type' && vidEq(operand.type.identifier, future.identifier))) {
+        addError(ctx, typeError(ctx, unaryExpr.op, operand.type!, future))
+        unaryExpr.type = unknownType
+        return
+    }
+    const innerType = operand.type.typeArgs[0]
+    unaryExpr.type = innerType
+
+    const scope = fnDefScope(ctx)
+    if (!scope) {
+        addError(ctx, notInFnScopeError(ctx, unaryExpr.op))
+        return
+    }
+    scope.returns.push(operand)
+
+    upcast(operand, operand.type!, future, ctx)
+}
+
+export const findTraitInnerType = (
+    type: VirtualType,
+    trait: VirtualIdentifier,
+    ctx: Context
+): VirtualType | undefined => {
+    const traitRel = ctx.impls.find(
         i =>
-            vidEq(i.implDef.vid, unwrap.identifier) &&
+            vidEq(i.implDef.vid, trait) &&
             // TODO: properly handle generics
             isAssignable(type, replaceGenericsWithHoles(i.forType), ctx)
     )
-    if (!unwrapRel) {
+    if (!traitRel) {
         return undefined
     }
-    return getConcreteTrait(type, unwrapRel, ctx)
+    return getConcreteTrait(type, traitRel, ctx)
 }
 
 export const variantCallRef = (operand: Operand, ctx: Context): VirtualIdentifierMatch<VariantDef> | undefined => {

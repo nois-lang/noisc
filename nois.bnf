@@ -58,7 +58,7 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
                       | bool
                       | identifier
                       ;
-    infix-op          ::= add-op | sub-op | mult-op | div-op | exp-op | mod-op | access-op | eq-op | ne-op
+    infix-op          ::= add-op | sub-op | mult-op | div-op | exp-op | mod-op | eq-op | ne-op
                       | ge-op | le-op | gt-op | lt-op | and-op | or-op | assign-op;
       add-op          ::= PLUS;
       sub-op          ::= MINUS;
@@ -77,7 +77,11 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
       or-op           ::= PIPE PIPE;
       assign-op       ::= EQUALS;
 
-    postfix-op        ::= call-op | unwrap-op | bind-op
+    postfix-op        ::= method-call-op | field-access-op | call-op | unwrap-op | bind-op | await-op
+                      ;                                                                                                                                                                                                                                                                                                
+      method-call-op  ::= PERIOD NAME type-args? call-op
+                      ;
+      field-access-op ::= PERIOD NAME
                       ;
       call-op         ::= O-PAREN (arg (COMMA arg)*)? COMMA? C-PAREN
                       ;
@@ -86,6 +90,8 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
       unwrap-op       ::= EXCL
                       ;
       bind-op         ::= QMARK
+                      ;
+      await-op        ::= PERIOD AWAIT-KEYWORD
                       ;
 identifier            ::= (NAME COLON COLON)* NAME type-args?
                       ;

@@ -4,6 +4,7 @@ import { vidFromString } from './util'
 
 export const preludeVid = vidFromString('std::prelude')
 
+// TODO: lack of std types must throw notFoundError
 export const bool: VidType = { kind: 'vid-type', identifier: vidFromString('std::bool::Bool'), typeArgs: [] }
 export const string: VidType = { kind: 'vid-type', identifier: vidFromString('std::string::String'), typeArgs: [] }
 
@@ -19,5 +20,10 @@ export const iterable: VidType = {
 export const unwrap: VidType = {
     kind: 'vid-type',
     identifier: vidFromString('std::unwrap::Unwrap'),
+    typeArgs: [holeType]
+}
+export const future: VidType = {
+    kind: 'vid-type',
+    identifier: vidFromString('std::future::Future'),
     typeArgs: [holeType]
 }
