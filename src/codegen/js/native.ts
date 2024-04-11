@@ -1,7 +1,8 @@
 import { extractValue, jsRelName, nextVariable } from '.'
 import { Context } from '../../scope'
-import { trace } from '../../scope/std'
+import { string, trace } from '../../scope/std'
 import { InstanceRelation, resolveTypeImpl } from '../../scope/trait'
+import { resolveVid } from '../../scope/vid'
 import { todo } from '../../util/todo'
 import { EmitNode, emitToken, emitTree, jsVariable } from './node'
 
@@ -10,6 +11,7 @@ export const emitTraceImpl = (rel: InstanceRelation, ctx: Context): EmitNode => 
     if (typeDef.kind === 'trait-def') {
         return todo('default Trace for trait type')
     }
+    ctx.moduleStack.at(-1)!.imports.push(resolveVid(string.identifier, ctx)!)
     const variants = typeDef.variants.map(v => {
         const fields = v.fieldDefs.map(f => {
             const impl = resolveTypeImpl(f.type!, trace, ctx)
@@ -24,10 +26,13 @@ export const emitTraceImpl = (rel: InstanceRelation, ctx: Context): EmitNode => 
         })
         const variantStr =
             fields.length > 0 ? [`"${v.name.value}("`, fields.join('+", "+'), '")"'].join('+') : `"${v.name.value}()"`
-        return `if(self.$noisVariant==="${v.name.value}"){return String.String(${variantStr});}`
+        return { v: v.name.value, str: variantStr }
     })
-    const fnStr = `function(self){${variants.join('')}}`
-    const fnBodyEmit = emitToken(`trace: ${fnStr}`)
+    const variantsStr =
+        variants.length === 1
+            ? `return String.String(${variants[0].str})`
+            : variants.map(({ v, str }) => `if(self.$noisVariant==="${v}"){return String.String(${str});}`).join('')
+    const fnBodyEmit = emitToken(`trace: function(self){${variantsStr}}`)
     const fnEmit = emitTree([emitToken('{'), fnBodyEmit, emitToken('};')])
 
     const cached = nextVariable(ctx)
