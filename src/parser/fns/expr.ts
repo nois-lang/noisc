@@ -199,7 +199,7 @@ export const parseString = (parser: Parser): void => {
 }
 
 /*
- * string-part ::= STRING | O-BRACE operand C-BRACE
+ * string-part ::= STRING | O-BRACE expr C-BRACE
  */
 export const parseStringPart = (parser: Parser): void => {
     const mark = parser.open()

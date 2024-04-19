@@ -66,7 +66,6 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
       div-op          ::= SLASH;
       exp-op          ::= CARET;
       mod-op          ::= PERCENT;
-      access-op       ::= PERIOD;
       eq-op           ::= EQUALS EQUALS;
       ne-op           ::= EXCL EQUALS;
       ge-op           ::= C-ANGLE EQUALS;
@@ -141,7 +140,7 @@ pattern               ::= pattern-bind? pattern-expr
                       ;
     con-pattern       ::= identifier con-pattern-params
                       ;
-    con-pattern-parms ::= O-PAREN (field-pattern (COMMA field-pattern)*)? COMMA? C-PAREN
+    con-pattern-params::= O-PAREN (field-pattern (COMMA field-pattern)*)? COMMA? C-PAREN
                       ;
       field-pattern   ::= NAME (COLON pattern)?
                       ;
@@ -153,7 +152,7 @@ number                ::= MINUS? (INT | FLOAT)
                       ;
 string                ::= D-QUOTE string-part* D-QUOTE
                       ;
-string-part           ::= STRING | O-BRACE operand C-BRACE
+string-part           ::= STRING | O-BRACE expr C-BRACE
                       ;
 bool                  ::= TRUE | FALSE
                       ;

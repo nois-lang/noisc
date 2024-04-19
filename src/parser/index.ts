@@ -54,7 +54,6 @@ export const treeKinds = <const>[
     'unwrap-op',
     'bind-op',
     'await-op',
-    'access-op',
     'arg',
     'closure-expr',
     'closure-params',

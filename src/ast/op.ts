@@ -106,7 +106,6 @@ export const buildBinaryOp = (node: ParseNode): BinaryOp => {
             'div-op',
             'exp-op',
             'mod-op',
-            'access-op',
             'eq-op',
             'ne-op',
             'ge-op',
