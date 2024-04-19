@@ -21,16 +21,32 @@ impl <T> Future<T> {
         Future(f, [], Created())
     }
 
-    pub fn onResolve(self, f: |T|: Unit): Self {
+    pub fn onResolve(self, f: |T|: Unit): Unit {
         match self.state {
             Resolved(value) {
                 f(value)
-                return self
+                return unit
+            }
+            Created() {
+                self.spawn(runtime)
             }
             _ {}
         }
         self.subscribers.add(f)
-        self
+    }
+
+    // TODO: belongs to std::control::Functor
+    pub fn map<U>(self, f: |T|: U): Future<U> {
+        // TODO: use .await
+        Future::new(|resolve| self.onResolve(|res| resolve(f(res))))
+    }
+
+    // TODO: belongs to std::control::Monad
+    pub fn flatMap<U>(self, f: |T|: Future<U>): Future<U> {
+        // TODO: use .await
+        Future::new(|resolve| {
+            self.onResolve(|res| f(res).onResolve(|inner| resolve(inner)))
+        })
     }
 
     pub fn spawn(self, runtime: Runtime): Self {
@@ -44,6 +60,8 @@ pub type Runtime(
     queue: List<Future<_>>,
     pending: List<Future<_>>,
 )
+
+pub let runtime: Runtime = Runtime::new()
 
 impl Runtime {
     pub fn new(): Runtime {

@@ -335,6 +335,8 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
     }
     enterScope(module, fnScope, ctx)
 
+    // TODO: find await-ops and decide whether fn is awaiting
+
     const paramTypes = fnDef.params.map((p, i) => {
         checkParam(p, i, ctx)
         return p.type!
