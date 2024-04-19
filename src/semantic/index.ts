@@ -9,12 +9,15 @@ import {
     DefinitionMap,
     FnDefScope,
     InstanceScope,
+    Scope,
     TypeDefScope,
     addError,
     addWarning,
     defKey,
+    enterScope,
     fnDefScope,
     instanceScope,
+    leaveScope,
     unwindScope
 } from '../scope'
 import { InstanceRelation, findSuperRelChains } from '../scope/trait'
@@ -108,7 +111,7 @@ export const prepareModule = (module: Module): void => {
                 break
         }
     })
-    module.topScope = { kind: 'module', definitions: defMap }
+    module.topScope = { kind: 'module', definitions: defMap, closures: [] }
 
     module.references = module.useExprs.filter(e => !e.pub).flatMap(e => useExprToVids(e))
     module.reExports = module.useExprs.filter(e => e.pub).flatMap(e => useExprToVids(e))
@@ -214,8 +217,14 @@ export const checkTopLevelDefinition = (module: Module, definition: Definition, 
 
 export const checkBlock = (block: Block, ctx: Context): boolean => {
     const module = ctx.moduleStack.at(-1)!
-    const scope: BlockScope = { kind: 'block', definitions: new Map(), isLoop: false, allBranchesReturned: false }
-    module.scopeStack.push(scope)
+    const scope: BlockScope = {
+        kind: 'block',
+        definitions: new Map(),
+        closures: [],
+        isLoop: false,
+        allBranchesReturned: false
+    }
+    enterScope(module, scope, ctx)
 
     // TODO: check for unreachable statements after return statement or fns returning `Never`
     for (const s of block.statements) {
@@ -250,7 +259,7 @@ export const checkBlock = (block: Block, ctx: Context): boolean => {
         }
     }
 
-    module.scopeStack.pop()
+    leaveScope(module, ctx)
 
     return scope.allBranchesReturned
 }
@@ -320,10 +329,11 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
     const fnScope: FnDefScope = {
         kind: 'fn',
         definitions: new Map(fnDef.generics.map(g => [defKey(g), g])),
+        closures: [],
         def: fnDef,
         returns: []
     }
-    module.scopeStack.push(fnScope)
+    enterScope(module, fnScope, ctx)
 
     const paramTypes = fnDef.params.map((p, i) => {
         checkParam(p, i, ctx)
@@ -374,7 +384,7 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
         }
     }
 
-    module.scopeStack.pop()
+    leaveScope(module, ctx)
 }
 
 export const checkParam = (param: Param, index: number, ctx: Context): void => {
@@ -426,15 +436,16 @@ const checkTraitDef = (traitDef: TraitDef, ctx: Context) => {
     const scope: InstanceScope = {
         kind: 'instance',
         def: rel.instanceDef,
+        closures: [],
         rel,
         definitions: new Map(traitDef.generics.map(g => [defKey(g), g]))
     }
-    module.scopeStack.push(scope)
+    enterScope(module, scope, ctx)
 
     checkBlock(traitDef.block, ctx)
     // TODO: make sure method signature matches with its trait
 
-    module.scopeStack.pop()
+    leaveScope(module, ctx)
 }
 
 const checkImplDef = (implDef: ImplDef, ctx: Context) => {
@@ -454,9 +465,10 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
     const scope: InstanceScope = {
         kind: 'instance',
         def: implDef,
-        definitions: new Map(implDef.generics.map(g => [defKey(g), g]))
+        definitions: new Map(implDef.generics.map(g => [defKey(g), g])),
+        closures: []
     }
-    module.scopeStack.push(scope)
+    enterScope(module, scope, ctx)
 
     checkBlock(implDef.block, ctx)
 
@@ -528,7 +540,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
         // e.g. `impl Ord for Foo` requires `impl Eq for Foo` since `trait Ord<Self: Eq>`
     }
 
-    module.scopeStack.pop()
+    leaveScope(module, ctx)
 }
 
 export const checkTypeDef = (typeDef: TypeDef, ctx: Context) => {
@@ -539,7 +551,8 @@ export const checkTypeDef = (typeDef: TypeDef, ctx: Context) => {
 
     const vid = { names: [...module.identifier.names, typeDef.name.value] }
     const definitions = new Map(typeDef.generics.map(g => [defKey(g), g]))
-    module.scopeStack.push({ kind: 'type', def: typeDef, vid, definitions })
+    const scope: Scope = { kind: 'type', def: typeDef, vid, definitions, closures: [] }
+    enterScope(module, scope, ctx)
 
     typeDef.variants.forEach((v, i) => {
         checkVariant(v, ctx)
@@ -549,7 +562,7 @@ export const checkTypeDef = (typeDef: TypeDef, ctx: Context) => {
         }
     })
 
-    module.scopeStack.pop()
+    leaveScope(module, ctx)
 }
 
 const checkVariant = (variant: Variant, ctx: Context) => {

@@ -13,7 +13,7 @@ import {
 } from '../typecheck'
 import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { assert } from '../util/todo'
-import { Context, addError, defKey } from './index'
+import { Context, Scope, addError, defKey, enterScope, leaveScope } from './index'
 import { concatVid, idToVid, vidEq, vidFromString, vidToString } from './util'
 import { MethodDef, VirtualIdentifier, VirtualIdentifierMatch, resolveVid, typeKinds } from './vid'
 
@@ -78,16 +78,18 @@ export const buildInstanceRelations = (ctx: Context): InstanceRelation[] => {
  */
 const getRel = (instance: TraitDef | ImplDef, ctx: Context): InstanceRelation | undefined => {
     const module = ctx.moduleStack.at(-1)!
-    module.scopeStack.push({
+    const scope: Scope = {
         kind: 'instance',
         def: instance,
-        definitions: new Map(instance.generics.map(g => [defKey(g), g]))
-    })
+        definitions: new Map(instance.generics.map(g => [defKey(g), g])),
+        closures: []
+    }
+    enterScope(module, scope, ctx)
 
     const implRel =
         instance.kind === 'trait-def' ? getTraitRel(instance, module, ctx) : getImplRel(instance, module, ctx)
 
-    module.scopeStack.pop()
+    leaveScope(module, ctx)
 
     return implRel
 }

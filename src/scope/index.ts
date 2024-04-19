@@ -34,7 +34,7 @@ export interface Context {
     relChainsMemo: Map<string, InstanceRelation[][]>
 }
 
-export type Scope = InstanceScope | TypeDefScope | FnDefScope | BlockScope | CommonScope
+export type Scope = InstanceScope | TypeDefScope | FnDefScope | BlockScope | ModuleScope
 
 /**
  * Map id has to be composite, since different defs might have the same vid, e.g.
@@ -44,37 +44,37 @@ export type Scope = InstanceScope | TypeDefScope | FnDefScope | BlockScope | Com
  */
 export type DefinitionMap = Map<string, Definition>
 
-export interface InstanceScope {
+export interface InstanceScope extends BaseScope {
     kind: 'instance'
-    definitions: DefinitionMap
     def: TraitDef | ImplDef
     rel?: InstanceRelation
 }
 
-export interface TypeDefScope {
+export interface TypeDefScope extends BaseScope {
     kind: 'type'
-    definitions: DefinitionMap
     def: TypeDef
     vid: VirtualIdentifier
 }
 
-export interface FnDefScope {
+export interface FnDefScope extends BaseScope {
     kind: 'fn'
-    definitions: DefinitionMap
     def: FnDef | ClosureExpr
     returns: Operand[]
 }
 
-export interface BlockScope {
+export interface BlockScope extends BaseScope {
     kind: 'block'
-    definitions: DefinitionMap
     isLoop: boolean
     allBranchesReturned: boolean
 }
 
-export interface CommonScope {
+export interface ModuleScope extends BaseScope {
     kind: 'module'
+}
+
+export interface BaseScope {
     definitions: DefinitionMap
+    closures: ClosureExpr[]
 }
 
 export const defKey = (def: Definition): string => {
@@ -139,4 +139,13 @@ export const addWarning = (ctx: Context, error: SemanticError): void => {
     if (!ctx.silent) {
         ctx.warnings.push(error)
     }
+}
+
+export const enterScope = (module: Module, scope: Scope, ctx: Context): void => {
+    module.scopeStack.push(scope)
+}
+
+export const leaveScope = (module: Module, ctx: Context): void => {
+    // TODO: check malleable closures getting out of scope
+    module.scopeStack.pop()
 }

@@ -4,7 +4,7 @@ import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { MatchExpr } from '../ast/match'
 import { CallOp } from '../ast/op'
 import { ClosureExpr, ForExpr, Identifier, IfExpr, IfLetExpr, ListExpr, Name, Operand, WhileExpr } from '../ast/operand'
-import { Context, Scope, addError, fnDefScope, instanceScope } from '../scope'
+import { Context, Scope, addError, enterScope, fnDefScope, instanceScope, leaveScope } from '../scope'
 import { bool, future, iter, iterable, show, string, unwrap } from '../scope/std'
 import {
     InstanceRelation,
@@ -245,17 +245,24 @@ export const checkIfExpr = (ifExpr: IfExpr, ctx: Context): void => {
 
 export const checkIfLetExpr = (ifLetExpr: IfLetExpr, ctx: Context): void => {
     const module = ctx.moduleStack.at(-1)!
-    const scope = module.scopeStack.at(-1)!
-    module.scopeStack.push({ kind: 'block', definitions: new Map(), isLoop: false, allBranchesReturned: false })
+    const scopeOuter = module.scopeStack.at(-1)!
+    const scope: Scope = {
+        kind: 'block',
+        definitions: new Map(),
+        closures: [],
+        isLoop: false,
+        allBranchesReturned: false
+    }
+    enterScope(module, scope, ctx)
 
     checkExpr(ifLetExpr.expr, ctx)
     assert(!!ifLetExpr.expr.type)
     // pattern definitions should only be available in `then` block
     checkPattern(ifLetExpr.pattern, ifLetExpr.expr.type!, ctx)
 
-    checkIfExprCommon(ifLetExpr, scope, ctx)
+    checkIfExprCommon(ifLetExpr, scopeOuter, ctx)
 
-    module.scopeStack.pop()
+    leaveScope(module, ctx)
 }
 
 export const checkIfExprCommon = (ifExpr: IfExpr | IfLetExpr, scope: Scope, ctx: Context): void => {
@@ -282,8 +289,15 @@ export const checkIfExprCommon = (ifExpr: IfExpr | IfLetExpr, scope: Scope, ctx:
 
 export const checkWhileExpr = (whileExpr: WhileExpr, ctx: Context): void => {
     const module = ctx.moduleStack.at(-1)!
-    const scope = module.scopeStack.at(-1)!
-    module.scopeStack.push({ kind: 'block', definitions: new Map(), isLoop: true, allBranchesReturned: false })
+    const outerScope = module.scopeStack.at(-1)!
+    const scope: Scope = {
+        kind: 'block',
+        definitions: new Map(),
+        closures: [],
+        isLoop: true,
+        allBranchesReturned: false
+    }
+    enterScope(module, scope, ctx)
 
     checkExpr(whileExpr.condition, ctx)
     const condType = whileExpr.condition.type
@@ -294,20 +308,27 @@ export const checkWhileExpr = (whileExpr: WhileExpr, ctx: Context): void => {
 
     const abr = checkBlock(whileExpr.block, ctx)
 
-    if (scope.kind === 'block' && abr) {
-        scope.allBranchesReturned = true
+    if (outerScope.kind === 'block' && abr) {
+        outerScope.allBranchesReturned = true
     }
 
     // TODO: break with a value
     whileExpr.type = unknownType
 
-    module.scopeStack.pop()
+    leaveScope(module, ctx)
 }
 
 export const checkForExpr = (forExpr: ForExpr, ctx: Context): void => {
     const module = ctx.moduleStack.at(-1)!
-    const scope = module.scopeStack.at(-1)!
-    module.scopeStack.push({ kind: 'block', definitions: new Map(), isLoop: true, allBranchesReturned: false })
+    const outerScope = module.scopeStack.at(-1)!
+    const scope: Scope = {
+        kind: 'block',
+        definitions: new Map(),
+        closures: [],
+        isLoop: true,
+        allBranchesReturned: false
+    }
+    enterScope(module, scope, ctx)
 
     checkExpr(forExpr.expr, ctx)
     assert(!!forExpr.expr.type)
@@ -331,8 +352,8 @@ export const checkForExpr = (forExpr: ForExpr, ctx: Context): void => {
     const abr = checkBlock(forExpr.block, ctx)
     assert(!!forExpr.block.type)
 
-    if (scope.kind === 'block' && abr) {
-        scope.allBranchesReturned = true
+    if (outerScope.kind === 'block' && abr) {
+        outerScope.allBranchesReturned = true
     }
 
     // TODO: break with a value
@@ -342,7 +363,7 @@ export const checkForExpr = (forExpr: ForExpr, ctx: Context): void => {
     upcast(forExpr.expr, forExpr.expr.type!, iter, ctx)
     upcast(forExpr.expr, forExpr.expr.type!, iterable, ctx)
 
-    module.scopeStack.pop()
+    leaveScope(module, ctx)
 }
 
 export const checkMatchExpr = (matchExpr: MatchExpr, ctx: Context): void => {
@@ -409,12 +430,14 @@ export const checkClosureExpr = (closureExpr: ClosureExpr, ctx: Context): void =
         // malleable type is an indicator that concrete type is yet to be defined
         closureExpr.type = { kind: 'malleable-type', operand: closureExpr }
         // since param/return types are unknown, no reason to perform semantic checking yet
-        // TODO: semantic checking if closure is never called (if type is still malleable by the end of scope)
+        // if closure is never called statically, semantic checking is performed when it goes out of scope
+        ctx.moduleStack.at(-1)!.scopeStack.at(-1)!.closures.push(closureExpr)
         return
     }
 
     const module = ctx.moduleStack.at(-1)!
-    module.scopeStack.push({ kind: 'fn', definitions: new Map(), def: closureExpr, returns: [] })
+    const scope: Scope = { kind: 'fn', definitions: new Map(), closures: [], def: closureExpr, returns: [] }
+    enterScope(module, scope, ctx)
 
     closureExpr.params.forEach((p, i) => checkParam(p, i, ctx))
     checkType(closureExpr.returnType!, ctx)
@@ -428,7 +451,7 @@ export const checkClosureExpr = (closureExpr: ClosureExpr, ctx: Context): void =
     checkBlock(closureExpr.block, ctx)
     closureExpr.type.returnType = closureExpr.block.type!
 
-    module.scopeStack.pop()
+    leaveScope(module, ctx)
 }
 
 export const checkResolvedClosureExpr = (
@@ -443,7 +466,8 @@ export const checkResolvedClosureExpr = (
     }
 
     const module = ctx.moduleStack.at(-1)!
-    module.scopeStack.push({ kind: 'fn', definitions: new Map(), def: closureExpr, returns: [] })
+    const scope: Scope = { kind: 'fn', definitions: new Map(), closures: [], def: closureExpr, returns: [] }
+    enterScope(module, scope, ctx)
 
     for (let i = 0; i < closureExpr.params.length; i++) {
         const param = closureExpr.params[i]
@@ -453,7 +477,7 @@ export const checkResolvedClosureExpr = (
 
     checkBlock(closureExpr.block, ctx)
 
-    module.scopeStack.pop()
+    leaveScope(module, ctx)
     return {
         kind: 'fn-type',
         paramTypes: closureExpr.params.map(p => p.type!),
