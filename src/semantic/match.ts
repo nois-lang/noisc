@@ -6,6 +6,7 @@ import { NameDef, resolveVid } from '../scope/vid'
 import { VidType, VirtualFnType, VirtualType, isAssignable } from '../typecheck'
 import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { unknownType } from '../typecheck/type'
+import { unreachable } from '../util/todo'
 import {
     nonDestructurableTypeError,
     notFoundError,
@@ -42,6 +43,13 @@ export const checkPattern = (
             checkOperand(expr.operand, ctx)
             expr.type = expr.operand.type
             break
+        case 'list-pattern':
+            if (!refutable) {
+                addError(ctx, unexpectedRefutablePatternError(ctx, pattern.expr))
+                break
+            }
+            // TODO: check item patterns
+            break
         case 'con-pattern':
             if (expectedType.kind !== 'vid-type') {
                 addError(ctx, nonDestructurableTypeError(ctx, pattern.expr, expectedType))
@@ -55,6 +63,8 @@ export const checkPattern = (
             })
             expr.type ??= unknownType
             break
+        default:
+            unreachable()
     }
 
     if (pattern.name) {

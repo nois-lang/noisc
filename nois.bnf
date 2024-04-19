@@ -137,13 +137,15 @@ pattern               ::= pattern-bind? pattern-expr
                       ;
   pattern-bind        ::= NAME AT
                       ;
-  pattern-expr        ::= string | CHAR | number | bool | hole | NAME | con-pattern
+  pattern-expr        ::= string | CHAR | number | bool | hole | NAME | con-pattern | list-pattern
                       ;
     con-pattern       ::= identifier con-pattern-params
                       ;
     con-pattern-parms ::= O-PAREN (field-pattern (COMMA field-pattern)*)? COMMA? C-PAREN
                       ;
       field-pattern   ::= NAME (COLON pattern)?
+                      ;
+    list-pattern      ::= O-BRACKET (pattern (COMMA pattern)*)? COMMA? C-BRACKET
                       ;
     hole              ::= UNDERSCORE
                       ;

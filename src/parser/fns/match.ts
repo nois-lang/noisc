@@ -77,13 +77,15 @@ export const parsePatternBind = (parser: Parser): void => {
 }
 
 /**
- * pattern-expr ::= STRING | CHAR | number | bool | hole | NAME | con-pattern
+ * pattern-expr ::= STRING | CHAR | number | bool | hole | NAME | con-pattern | list-pattern
  */
 export const parsePatternExpr = (parser: Parser): void => {
     const mark = parser.open()
     const isCon = (parser.nth(1) === 'colon' && parser.nth(2) === 'colon') || parser.nth(1) === 'o-paren'
     if (parser.atAny(nameLikeTokens) && isCon) {
         parseConPattern(parser)
+    } else if (parser.at('o-bracket')) {
+        parseListPattern(parser)
     } else if (parser.atAny(nameLikeTokens)) {
         parser.expectAny(nameLikeTokens)
     } else if (parser.at('d-quote')) {
@@ -108,6 +110,22 @@ export const parseConPattern = (parser: Parser): void => {
     parseIdentifier(parser)
     parseConPatternParams(parser)
     parser.close(mark, 'con-pattern')
+}
+
+/**
+ * list-pattern ::= O-BRACKET (pattern (COMMA pattern)*)? COMMA? C-BRACKET
+ */
+export const parseListPattern = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('o-bracket')
+    while (!parser.eof()) {
+        parsePattern(parser)
+        if (!parser.at('c-bracket')) {
+            parser.expect('comma')
+        }
+    }
+    parser.expect('c-bracket')
+    parser.close(mark, 'list-pattern')
 }
 
 /**

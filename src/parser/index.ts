@@ -81,6 +81,7 @@ export const treeKinds = <const>[
     'pattern-expr',
     'con-pattern',
     'con-pattern-params',
+    'list-pattern',
     'field-pattern',
     'hole',
     'number',

@@ -400,6 +400,8 @@ export const emitPatternExprCondition = (patternExpr: PatternExpr, ctx: Context,
             const cond = emitToken(`${sVar}.$noisVariant===${jsString(variantName)}`, patternExpr.identifier.parseNode)
             // TODO: nested patterns
             return { emit: jsVariable(resultVar, cond), resultVar }
+        case 'list-pattern':
+            return { emit: jsVariable(resultVar, jsError('list-pattern')), resultVar }
         case 'hole':
             return { emit: jsVariable(resultVar, emitToken('true')), resultVar }
         case 'string-literal':

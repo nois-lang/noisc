@@ -50,7 +50,7 @@ export const buildPattern = (node: ParseNode): Pattern => {
     return { kind: 'pattern', parseNode: node, name, expr }
 }
 
-export type PatternExpr = Name | ConPattern | Operand | Hole
+export type PatternExpr = Name | ConPattern | ListPattern | Operand | Hole
 
 export const buildPatternExpr = (node: ParseNode): PatternExpr => {
     const n = filterNonAstNodes(node)[0]
@@ -79,6 +79,15 @@ export const buildConPattern = (node: ParseNode): ConPattern => {
     const identifier = buildIdentifier(nodes[0])
     const fieldPatterns = filterNonAstNodes(nodes[1]).map(buildFieldPattern)
     return { kind: 'con-pattern', parseNode: node, identifier, fieldPatterns }
+}
+
+export interface ListPattern extends AstNode<'list-pattern'>, Partial<Typed> {
+    itemPatterns: Pattern[]
+}
+
+export const buildListPattern = (node: ParseNode): ListPattern => {
+    const nodes = filterNonAstNodes(node)
+    return { kind: 'list-pattern', parseNode: node, itemPatterns: nodes.map(buildPattern) }
 }
 
 export interface FieldPattern extends AstNode<'field-pattern'> {

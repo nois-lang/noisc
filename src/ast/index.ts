@@ -76,6 +76,7 @@ export const astKinds = <const>[
     'match-clause',
     'pattern',
     'con-pattern',
+    'list-pattern',
     'field-pattern',
     'hole',
     'identifier',
