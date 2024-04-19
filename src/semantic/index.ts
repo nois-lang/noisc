@@ -787,22 +787,23 @@ export const checkType = (type: Type, ctx: Context) => {
     }
 }
 
-export const resolveMallebleType = (arg: Operand, paramType: VirtualType, ctx: Context): void => {
-    if (arg.type!.kind === 'malleable-type' && paramType.kind === 'fn-type') {
-        switch (arg.type!.operand.kind) {
+export const resolveMallebleType = (operand: Operand, inferred: VirtualType, ctx: Context): void => {
+    if (operand.type!.kind === 'malleable-type' && inferred.kind === 'fn-type') {
+        switch (operand.type!.operand.kind) {
             case 'closure-expr':
-                const closure = arg.type!.operand
-                arg.type! = checkResolvedClosureExpr(closure, ctx, arg, paramType)
+                const closure = operand.type!.operand
+                operand.type! = checkResolvedClosureExpr(closure, ctx, operand, inferred)
                 break
             case 'identifier':
                 // TODO: properly
-                const ref = arg.type!.operand.ref
+                const ref = operand.type!.operand.ref
                 if (ref?.def.kind !== 'method-def') return unreachable()
-                arg.type = checkQualifiedMethodCall(
-                    arg.type!.operand,
+                operand.type = checkQualifiedMethodCall(
+                    operand.type!.operand,
                     <VirtualIdentifierMatch<MethodDef>>ref,
                     ctx,
-                    paramType
+                    undefined,
+                    inferred
                 )
                 break
             default:

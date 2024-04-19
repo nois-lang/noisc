@@ -490,10 +490,12 @@ export const checkQualifiedMethodCall = (
     identifier: Identifier,
     ref: VirtualIdentifierMatch<MethodDef>,
     ctx: Context,
-    inferredType: VirtualFnType
+    call?: CallOp,
+    inferred?: VirtualFnType
 ): VirtualType => {
+    assert(!!call || !!inferred)
     const fnType = <VirtualFnType>ref.def.fn.type
-    const self = !ref.def.fn.static ? inferredType.paramTypes[0] : undefined
+    const self = !ref.def.fn.static ? call?.args[0].expr.type! ?? inferred : undefined
 
     let impl: InstanceRelation | undefined = undefined
     if (ref.def.rel.instanceDef.kind === 'trait-def' && self && self.kind === 'vid-type') {
@@ -537,14 +539,25 @@ export const checkQualifiedMethodCall = (
     } else {
         maps.push(new Map([[selfType.name, implForType]]))
     }
-    const fnGenericMap = makeFnGenericMap(fnType, inferredType.paramTypes)
+    const fnGenericMap = makeFnGenericMap(fnType, call?.args.map(a => a.expr.type!) ?? inferred!.paramTypes)
     maps.push(fnGenericMap)
 
+    if (call) {
+        checkCallArgs(
+            call,
+            call.args.map(a => a.expr),
+            fnType.paramTypes,
+            ctx
+        )
+    }
+
+    const argTypes = call?.args.map(a => a.expr.type!) ?? inferred!.paramTypes
     return {
         kind: 'fn-type',
-        paramTypes: inferredType.paramTypes.map(pt => resolveType(pt, maps, ctx)),
+        paramTypes: argTypes.map(t => resolveType(t, maps, ctx)),
         returnType: resolveType(fnType.returnType, maps, ctx),
-        generics: inferredType.generics
+        // TODO: generics
+        generics: []
     }
 }
 
@@ -648,11 +661,12 @@ export const checkCall_ = (call: CallOp, operand: Operand, args: Expr[], ctx: Co
                 // TODO: properly
                 const ref = operand.type!.operand.ref
                 if (ref?.def.kind !== 'method-def') return unreachable()
+                call.methodDef = ref.def
                 operand.type = checkQualifiedMethodCall(
                     operand.type.operand,
                     <VirtualIdentifierMatch<MethodDef>>ref,
                     ctx,
-                    inferredType
+                    call
                 )
                 break
             default:
