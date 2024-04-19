@@ -49,7 +49,7 @@ export const lexerKeywordKinds = <const>[
     'in-keyword',
     'match-keyword',
     'pub-keyword',
-    'await-keyword',
+    'await-keyword'
 ]
 
 export const lexerDynamicKinds = <const>['name', 'string-part', 'char', 'int', 'float', 'bool']

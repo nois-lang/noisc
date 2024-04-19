@@ -789,7 +789,7 @@ export const checkType = (type: Type, ctx: Context) => {
     }
 }
 
-export const resolveMallebleType = (operand: Operand, inferred: VirtualType, ctx: Context): void => {
+export const resolveMalleableType = (operand: Operand, inferred: VirtualType, ctx: Context): void => {
     if (operand.type!.kind === 'malleable-type' && inferred.kind === 'fn-type') {
         switch (operand.type!.operand.kind) {
             case 'closure-expr':
@@ -799,7 +799,7 @@ export const resolveMallebleType = (operand: Operand, inferred: VirtualType, ctx
             case 'identifier':
                 // TODO: properly
                 const ref = operand.type!.operand.ref
-                if (ref?.def.kind !== 'method-def') return unreachable()
+                assert(ref?.def.kind === 'method-def')
                 operand.type = checkQualifiedMethodCall(
                     operand.type!.operand,
                     <VirtualIdentifierMatch<MethodDef>>ref,
@@ -823,7 +823,7 @@ export const checkCallArgs = (node: AstNode<any>, args: Operand[], paramTypes: V
     for (let i = 0; i < paramTypes.length; i++) {
         const paramType = paramTypes[i]
         const arg = args[i]
-        resolveMallebleType(arg, paramType, ctx)
+        resolveMalleableType(arg, paramType, ctx)
         if (!isAssignable(arg.type!, paramType, ctx)) {
             addError(ctx, typeError(ctx, arg, arg.type!, paramType))
         }
