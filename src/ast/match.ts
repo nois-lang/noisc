@@ -2,17 +2,23 @@ import { LexerToken } from '../lexer/lexer'
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
 import { Typed } from '../semantic'
+import { unreachable } from '../util/todo'
 import { Expr, buildExpr } from './expr'
 import { AstNode } from './index'
 import {
+    BoolLiteral,
+    CharLiteral,
     FloatLiteral,
     Identifier,
     IntLiteral,
     Name,
-    Operand,
+    StringInterpolated,
+    StringLiteral,
+    buildBool,
+    buildChar,
     buildIdentifier,
     buildName,
-    buildOperand
+    buildString
 } from './operand'
 import { Block, buildBlock } from './statement'
 
@@ -59,23 +65,43 @@ export const buildPattern = (node: ParseNode): Pattern => {
     return { kind: 'pattern', parseNode: node, name, expr }
 }
 
-export type PatternExpr = Name | ConPattern | ListPattern | Operand | Hole
+export type PatternExpr =
+    | Name
+    | ConPattern
+    | ListPattern
+    | Hole
+    | StringLiteral
+    | StringInterpolated
+    | CharLiteral
+    | IntLiteral
+    | FloatLiteral
+    | BoolLiteral
 
 export const buildPatternExpr = (node: ParseNode): PatternExpr => {
     const n = filterNonAstNodes(node)[0]
     if (nameLikeTokens.includes((<LexerToken>n).kind)) {
         return buildName(n)
     }
-    if (n.kind === 'con-pattern') {
-        return buildConPattern(n)
+    switch (n.kind) {
+        case 'name':
+            return buildName(n)
+        case 'con-pattern':
+            return buildConPattern(n)
+        case 'list-pattern':
+            return buildListPattern(n)
+        case 'hole':
+            return buildHole(n)
+        case 'number':
+            return buildNumber(n)
+        case 'string':
+            return buildString(n)
+        case 'char':
+            return buildChar(n)
+        case 'bool':
+            return buildBool(n)
+        default:
+            return unreachable(n.kind)
     }
-    if (n.kind === 'hole') {
-        return buildHole(n)
-    }
-    if (n.kind === 'number') {
-        return buildNumber(n)
-    }
-    return buildOperand(node)
 }
 
 export interface ConPattern extends AstNode<'con-pattern'>, Partial<Typed> {

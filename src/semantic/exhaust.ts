@@ -29,7 +29,7 @@ import { MatchExpr, PatternExpr } from '../ast/match'
 import { Context, addError, addWarning } from '../scope'
 import { concatVid, idToVid, vidFromScope, vidFromString, vidToString } from '../scope/util'
 import { VariantDef, VirtualIdentifierMatch, resolveVid } from '../scope/vid'
-import { assert, unreachable } from '../util/todo'
+import { assert } from '../util/todo'
 import { nonExhaustiveMatchError, unreachableMatchClauseError } from './error'
 
 export interface MatchTree {
@@ -92,14 +92,11 @@ const matchPattern = (pattern: PatternExpr, tree: MatchTree, ctx: Context): bool
             return true
         case 'string-literal':
         case 'char-literal':
-        case 'unary-expr':
         case 'string-interpolated':
         case 'int-literal':
         case 'float-literal':
         case 'bool-literal':
-        case 'identifier':
         case 'list-pattern':
-        case 'operand-expr':
             // match the node
             return true
         case 'con-pattern':
@@ -161,8 +158,6 @@ const matchPattern = (pattern: PatternExpr, tree: MatchTree, ctx: Context): bool
                 }
             }
             return matched
-        default:
-            return unreachable(pattern.kind)
     }
 }
 

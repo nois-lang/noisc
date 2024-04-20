@@ -417,18 +417,7 @@ export const emitPatternExprCondition = (patternExpr: PatternExpr, ctx: Context,
         }
         case 'string-interpolated':
             return { emit: jsVariable(resultVar, jsError('string-interpolated')), resultVar }
-        case 'list-expr':
-        case 'operand-expr':
-        case 'unary-expr':
-        case 'binary-expr':
-        case 'identifier':
         case 'name':
-        case 'if-expr':
-        case 'if-let-expr':
-        case 'while-expr':
-        case 'for-expr':
-        case 'match-expr':
-        case 'closure-expr':
             return unreachable()
     }
 }
@@ -476,14 +465,13 @@ export const emitPattern = (pattern: Pattern, ctx: Context, assignVar: string, p
             })
             return emitTree([...patterns])
         case 'string-interpolated':
-        case 'list-expr':
+        case 'list-pattern':
             return emitToken(`${jsError(pattern.expr.kind).value};`)
         case 'string-literal':
         case 'char-literal':
         case 'int-literal':
         case 'float-literal':
         case 'bool-literal':
-        case 'identifier':
         case 'hole':
             return emitToken('')
         default:

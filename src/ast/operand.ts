@@ -51,11 +51,11 @@ export const buildOperand = (node: ParseNode): Operand => {
         case 'string':
             return buildString(n)
         case 'char':
-            return buildCharLiteral(n)
+            return buildChar(n)
         case 'number':
             return buildNumber(n)
         case 'bool':
-            return buildBoolLiteral(n)
+            return buildBool(n)
         case 'identifier':
             return buildIdentifier(n)
     }
@@ -209,7 +209,7 @@ export interface CharLiteral extends AstNode<'char-literal'>, Partial<Typed> {
     value: string
 }
 
-export const buildCharLiteral = (node: ParseNode): CharLiteral => {
+export const buildChar = (node: ParseNode): CharLiteral => {
     return { kind: 'char-literal', parseNode: node, value: (<LexerToken>node).value }
 }
 
@@ -217,23 +217,15 @@ export interface IntLiteral extends AstNode<'int-literal'>, Partial<Typed> {
     value: string
 }
 
-export const buildIntLiteral = (node: ParseNode): IntLiteral => {
-    return { kind: 'int-literal', parseNode: node, value: (<LexerToken>node).value }
-}
-
 export interface FloatLiteral extends AstNode<'float-literal'>, Partial<Typed> {
     value: string
-}
-
-export const buildFloatLiteral = (node: ParseNode): FloatLiteral => {
-    return { kind: 'float-literal', parseNode: node, value: (<LexerToken>node).value }
 }
 
 export interface BoolLiteral extends AstNode<'bool-literal'>, Partial<Typed> {
     value: string
 }
 
-export const buildBoolLiteral = (node: ParseNode): BoolLiteral => {
+export const buildBool = (node: ParseNode): BoolLiteral => {
     return { kind: 'bool-literal', parseNode: node, value: (<LexerToken>node).value }
 }
 

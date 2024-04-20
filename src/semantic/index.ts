@@ -46,7 +46,6 @@ import {
     typeArgCountMismatchError,
     typeError,
     unexpectedInInstanceScopeError,
-    unexpectedPatternKindError,
     unexpectedTopLevelStatementError,
     unknownTypeError,
     unnecessaryPubMethodError,
@@ -412,16 +411,7 @@ export const checkParam = (param: Param, index: number, ctx: Context): void => {
         }
     }
 
-    switch (param.pattern.expr.kind) {
-        case 'operand-expr':
-        case 'unary-expr':
-        case 'binary-expr':
-            addError(ctx, unexpectedPatternKindError(ctx, param))
-            break
-        default:
-            checkPattern(param.pattern, param.type, ctx, false)
-            break
-    }
+    checkPattern(param.pattern, param.type, ctx, false)
 }
 
 const checkTraitDef = (traitDef: TraitDef, ctx: Context) => {
