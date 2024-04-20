@@ -41,6 +41,7 @@ export const checkPattern = (
                 break
             }
             // TODO: check item patterns
+            expr.type = unknownType
             break
         case 'con-pattern':
             if (expectedType.kind !== 'vid-type') {
