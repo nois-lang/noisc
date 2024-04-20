@@ -477,7 +477,7 @@ export const emitPattern = (pattern: Pattern, ctx: Context, assignVar: string, p
         case 'float-literal':
         case 'bool-literal':
         case 'identifier':
-            return jsError(pattern.expr.kind)
+            return emitToken(`${jsError(pattern.expr.kind).value};`)
         case 'hole':
             return emitToken('')
         default:

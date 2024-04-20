@@ -35,14 +35,6 @@ export const checkPattern = (
             // TODO: typed hole reporting, Haskell style: https://wiki.haskell.org/GHC/Typed_holes
             expr.type = expectedType
             break
-        case 'operand-expr':
-            if (!refutable) {
-                addError(ctx, unexpectedRefutablePatternError(ctx, pattern.expr))
-                break
-            }
-            checkOperand(expr.operand, ctx)
-            expr.type = expr.operand.type
-            break
         case 'list-pattern':
             if (!refutable) {
                 addError(ctx, unexpectedRefutablePatternError(ctx, pattern.expr))
@@ -63,8 +55,18 @@ export const checkPattern = (
             })
             expr.type ??= unknownType
             break
+        case 'int-literal':
+        case 'float-literal':
+        case 'string-literal':
+        case 'bool-literal':
+            if (!refutable) {
+                addError(ctx, unexpectedRefutablePatternError(ctx, pattern.expr))
+                break
+            }
+            checkOperand(expr, ctx)
+            break
         default:
-            unreachable()
+            unreachable(expr.kind)
     }
 
     if (pattern.name) {
@@ -73,10 +75,8 @@ export const checkPattern = (
         scope.definitions.set(defKey(nameDef), nameDef)
     }
 
-    if (expectedType.kind !== 'malleable-type') {
-        if (!isAssignable(expectedType, expr.type!, ctx)) {
-            addError(ctx, typeError(ctx, pattern.expr, expr.type!, expectedType))
-        }
+    if (!isAssignable(expectedType, expr.type!, ctx)) {
+        addError(ctx, typeError(ctx, pattern.expr, expr.type!, expectedType))
     }
 }
 

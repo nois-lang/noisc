@@ -93,6 +93,12 @@ const matchPattern = (pattern: PatternExpr, tree: MatchTree, ctx: Context): bool
         case 'string-literal':
         case 'char-literal':
         case 'unary-expr':
+        case 'string-interpolated':
+        case 'int-literal':
+        case 'float-literal':
+        case 'bool-literal':
+        case 'identifier':
+        case 'list-pattern':
         case 'operand-expr':
             // match the node
             return true

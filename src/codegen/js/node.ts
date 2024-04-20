@@ -50,7 +50,8 @@ export const jsVariable = (name: string, emit?: EmitNode, pub = false): EmitNode
 }
 
 export const jsError = (message?: string): EmitToken => {
-    return emitToken(`(() => { throw Error(${jsString(message ?? '')}); })()`)
+    const msg = `codegen error: ${message ?? ''}`
+    return emitToken(`(() => { throw Error(${jsString(msg)}); })()`)
 }
 
 export const emitIntersperse = (
