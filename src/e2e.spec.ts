@@ -268,4 +268,75 @@ pub fn main() {
             expect(res.stdout.toString()).toEqual('4\n')
         })
     })
+
+    describe('match', () => {
+        it('int', async () => {
+            const files = {
+                'mod.no': `\
+pub fn main() {
+    let a = match 4 {
+        2 { false }
+        4 { true }
+        _ { false }
+    }
+    println(a.trace())
+}`
+            }
+            const res = run(await compile(files))
+            expect(res.stderr.toString()).toEqual('')
+            expect(res.stdout.toString()).toEqual('true\n')
+        })
+
+        it('float', async () => {
+            const files = {
+                'mod.no': `\
+pub fn main() {
+    let a = match 4.5 {
+        2. { false }
+        4.5 { true }
+        _ { false }
+    }
+    println(a.trace())
+}`
+            }
+            const res = run(await compile(files))
+            expect(res.stderr.toString()).toEqual('')
+            expect(res.stdout.toString()).toEqual('true\n')
+        })
+
+        it('string', async () => {
+            const files = {
+                'mod.no': `\
+pub fn main() {
+    let a = match "foo" {
+        "" { false }
+        "bar" { false }
+        "foo" { true }
+        _ { false }
+    }
+    println(a.trace())
+}`
+            }
+            const res = run(await compile(files))
+            expect(res.stderr.toString()).toEqual('')
+            expect(res.stdout.toString()).toEqual('true\n')
+        })
+
+        it('char', async () => {
+            const files = {
+                'mod.no': `\
+pub fn main() {
+    let a = match 'a' {
+        'b' { false }
+        'a' { true }
+        _ { false }
+    }
+    println(a.trace())
+}`
+            }
+            const res = run(await compile(files))
+            expect(res.stderr.toString()).toEqual('')
+            expect(res.stdout.toString()).toEqual('true\n')
+        })
+    })
 })

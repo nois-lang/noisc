@@ -2,9 +2,18 @@ import { LexerToken } from '../lexer/lexer'
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
 import { Typed } from '../semantic'
-import { Expr, buildExpr, buildOperandExpr } from './expr'
+import { Expr, buildExpr } from './expr'
 import { AstNode } from './index'
-import { FloatLiteral, Identifier, IntLiteral, Name, Operand, buildIdentifier, buildName } from './operand'
+import {
+    FloatLiteral,
+    Identifier,
+    IntLiteral,
+    Name,
+    Operand,
+    buildIdentifier,
+    buildName,
+    buildOperand
+} from './operand'
 import { Block, buildBlock } from './statement'
 
 export interface MatchExpr extends AstNode<'match-expr'>, Partial<Typed> {
@@ -66,7 +75,7 @@ export const buildPatternExpr = (node: ParseNode): PatternExpr => {
     if (n.kind === 'number') {
         return buildNumber(n)
     }
-    return buildOperandExpr(node)
+    return buildOperand(node)
 }
 
 export interface ConPattern extends AstNode<'con-pattern'>, Partial<Typed> {

@@ -58,6 +58,7 @@ export const checkPattern = (
         case 'int-literal':
         case 'float-literal':
         case 'string-literal':
+        case 'char-literal':
         case 'bool-literal':
             if (!refutable) {
                 addError(ctx, unexpectedRefutablePatternError(ctx, pattern.expr))

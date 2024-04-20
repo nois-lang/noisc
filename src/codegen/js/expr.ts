@@ -395,11 +395,12 @@ export const emitMatchExpr = (matchExpr: MatchExpr, ctx: Context, resultVar: str
 export const emitPatternExprCondition = (patternExpr: PatternExpr, ctx: Context, sVar: string): EmitExpr => {
     const resultVar = nextVariable(ctx)
     switch (patternExpr.kind) {
-        case 'con-pattern':
+        case 'con-pattern': {
             const variantName = patternExpr.identifier.names.at(-1)!.value
             const cond = emitToken(`${sVar}.$noisVariant===${jsString(variantName)}`, patternExpr.identifier.parseNode)
             // TODO: nested patterns
             return { emit: jsVariable(resultVar, cond), resultVar }
+        }
         case 'list-pattern':
             return { emit: jsVariable(resultVar, jsError('list-pattern')), resultVar }
         case 'hole':
@@ -408,8 +409,12 @@ export const emitPatternExprCondition = (patternExpr: PatternExpr, ctx: Context,
         case 'char-literal':
         case 'int-literal':
         case 'float-literal':
-        case 'bool-literal':
-            return { emit: jsVariable(resultVar, jsError('literal')), resultVar }
+        case 'bool-literal': {
+            const operandEmit = emitOperand(patternExpr, ctx)
+            // safe value equality check, since it is limited to builtin types
+            const cond = emitToken(`${sVar}.value===${operandEmit.resultVar}.value`)
+            return { emit: emitTree([operandEmit.emit, jsVariable(resultVar, cond)]), resultVar }
+        }
         case 'string-interpolated':
             return { emit: jsVariable(resultVar, jsError('string-interpolated')), resultVar }
         case 'list-expr':
@@ -470,14 +475,15 @@ export const emitPattern = (pattern: Pattern, ctx: Context, assignVar: string, p
                 return jsVariable(fieldAssign, emitToken(`${assignVar}.value.${fieldAssign}`))
             })
             return emitTree([...patterns])
+        case 'string-interpolated':
         case 'list-expr':
+            return emitToken(`${jsError(pattern.expr.kind).value};`)
         case 'string-literal':
         case 'char-literal':
         case 'int-literal':
         case 'float-literal':
         case 'bool-literal':
         case 'identifier':
-            return emitToken(`${jsError(pattern.expr.kind).value};`)
         case 'hole':
             return emitToken('')
         default:
