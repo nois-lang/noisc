@@ -1,9 +1,9 @@
 pub fn panic(message: String): Never {
-    throwError(message)
+    throwError("panic: {message}")
 }
 
 pub fn todo(message: String): Never {
-    panic("TODO: {message}")
+    panic("todo: {message}")
 }
 
 pub fn throwError(message: String): Never
