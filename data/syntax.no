@@ -9,7 +9,7 @@ trait Baz<U> { fn a(self): Unit fn f<T>(self): T {} }
 impl <T> Baz<Option<T>> for Bar<T> { fn f(self): T {} }
 fn foo<T: std::io::Show + U, U>(b: T): Option<U> {
     let a = [1, "str", 'c', true, Option::None(), Option::Some(value: 1), Option::Some(2)]
-    let s = "interp {foo("nest {'b'}")}"
+    let s = "interp {foo("nest {bar('b')}")}"
     let Foo::Foo(x) = Foo::Foo(4)
     let b = if a.next().isSome() { a } else { [] }
     let b2 = a.next()!.await?
