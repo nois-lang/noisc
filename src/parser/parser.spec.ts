@@ -15,7 +15,7 @@ describe('parser', () => {
         return { tree: compactParseNode(tree), errors: p.errors }
     }
 
-    describe('parse use-stmt', () => {
+    describe('use-stmt', () => {
         it('nested', () => {
             const { tree, errors } = parse('use std::iter::{self, Iter, Iterator}')
             expect(errors).toEqual([])
@@ -79,7 +79,7 @@ describe('parser', () => {
         })
     })
 
-    describe('parse fn-def', () => {
+    describe('fn-def', () => {
         it('empty', () => {
             const { tree, errors } = parse('fn main() {}')
             expect(errors).toEqual([])
@@ -123,7 +123,7 @@ describe('parser', () => {
         })
     })
 
-    describe('parse var-def', () => {
+    describe('var-def', () => {
         it('miss identifier', () => {
             const { errors } = parse('let = 4')
             expect(errors.length).toEqual(1)
@@ -161,7 +161,7 @@ describe('parser', () => {
         })
     })
 
-    describe('parse if-expr', () => {
+    describe('if-expr', () => {
         it('general', () => {
             const { tree, errors } = parse('if a { b } else { c }')
             expect(errors).toEqual([])
@@ -207,7 +207,43 @@ describe('parser', () => {
             })
         })
     })
-    describe('parse comments', () => {
+
+    describe('match', () => {
+        it('list-pattern', () => {
+            const { tree, errors } = parse('match a { [] {} [b, tail] {} }')
+            expect(errors).toEqual([])
+            // biome-ignore format: compact
+            expect(tree).toEqual(
+{ module:
+   [ { statement:
+        [ { expr:
+             [ { 'sub-expr':
+                  [ { operand:
+                       [ { 'match-expr':
+                            [ { 'match-keyword': 'match' },
+                              { expr: [ { 'sub-expr': [ { operand: [ { identifier: [ { name: 'a' } ] } ] } ] } ] },
+                              { 'match-clauses':
+                                 [ { 'o-brace': '{' },
+                                   { 'match-clause':
+                                      [ { patterns: [ { pattern: [ { 'pattern-expr': [ { 'list-pattern': [ { 'o-bracket': '[' }, { 'c-bracket': ']' } ] } ] } ] } ] },
+                                        { block: [ { 'o-brace': '{' }, { 'c-brace': '}' } ] } ] },
+                                   { 'match-clause':
+                                      [ { patterns:
+                                           [ { pattern:
+                                                [ { 'pattern-expr':
+                                                     [ { 'list-pattern':
+                                                          [ { 'o-bracket': '[' },
+                                                            { pattern: [ { 'pattern-expr': [ { name: 'b' } ] } ] },
+                                                            { comma: ',' },
+                                                            { pattern: [ { 'pattern-expr': [ { name: 'tail' } ] } ] },
+                                                            { 'c-bracket': ']' } ] } ] } ] } ] },
+                                        { block: [ { 'o-brace': '{' }, { 'c-brace': '}' } ] } ] },
+                                   { 'c-brace': '}' } ] } ] } ] } ] } ] } ] } ] }
+             )
+        })
+    })
+
+    describe('comments', () => {
         const { tree } = parse('foo\n// comment here\nbar')
         // biome-ignore format: compact
         expect(tree).toEqual(

@@ -118,7 +118,7 @@ export const parseConPattern = (parser: Parser): void => {
 export const parseListPattern = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('o-bracket')
-    while (!parser.eof()) {
+    while (!parser.eof() && !parser.at('c-bracket')) {
         parsePattern(parser)
         if (!parser.at('c-bracket')) {
             parser.expect('comma')
