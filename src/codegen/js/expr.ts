@@ -138,6 +138,7 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): EmitExpr => {
             }
         }
         case 'await-op': {
+            // TODO
             return { emit: emitToken(''), resultVar: jsError('bind-op').value }
         }
     }
@@ -200,6 +201,7 @@ export const emitOperand = (operand: Operand, ctx: Context): EmitExpr => {
             }
         }
         case 'if-let-expr':
+            // TODO
             return { emit: jsError('if-let'), resultVar }
         case 'while-expr': {
             const { emit: cEmit, resultVar: cVar } = emitExpr(operand.condition, ctx)
@@ -334,7 +336,7 @@ export const emitIdentifier = (identifier: Identifier, ctx: Context): EmitExpr =
     return { emit: emitTree([upcastEmit]), resultVar }
 }
 
-export const emitLiteral = (operand: Operand, ctx: Context, resultVar: string): EmitExpr => {
+export const emitLiteral = (operand: Operand, ctx: Context, resultVar?: string): EmitExpr => {
     let constructorEmit: string
     switch (operand.kind) {
         case 'string-literal':
@@ -355,7 +357,11 @@ export const emitLiteral = (operand: Operand, ctx: Context, resultVar: string): 
         default:
             return unreachable()
     }
-    return { emit: emitTree([jsVariable(resultVar, emitToken(constructorEmit))]), resultVar }
+    if (resultVar) {
+        return { emit: emitTree([jsVariable(resultVar, emitToken(constructorEmit))]), resultVar }
+    } else {
+        return { emit: emitToken(''), resultVar: constructorEmit }
+    }
 }
 
 export const emitMatchExpr = (matchExpr: MatchExpr, ctx: Context, resultVar: string): EmitExpr => {
@@ -365,8 +371,8 @@ export const emitMatchExpr = (matchExpr: MatchExpr, ctx: Context, resultVar: str
         return { emit: emitToken(''), resultVar }
     }
     const clauses = matchExpr.clauses.map(clause => {
-        if (clause.patterns.length !== 1) return jsError('union clause')
         // TODO: union clauses
+        if (clause.patterns.length !== 1) return jsError('union clause')
         const pattern = clause.patterns[0]
         const cond = emitPatternExprCondition(pattern.expr, ctx, sVar)
         const condGuarded: EmitExpr | undefined = clause.guard ? emitExpr(clause.guard, ctx) : undefined
@@ -378,7 +384,7 @@ export const emitMatchExpr = (matchExpr: MatchExpr, ctx: Context, resultVar: str
             emitToken(`break ${breakLabel};`),
             condGuarded ? emitToken('}') : undefined
         ])
-        return emitTree([cond.emit, emitTree([emitToken(`if(${cond.resultVar}){`), block, emitToken('}')])])
+        return emitTree([emitToken(`if(${cond}){`), block, emitToken('}')])
     })
     return {
         emit: emitTree([
@@ -392,31 +398,38 @@ export const emitMatchExpr = (matchExpr: MatchExpr, ctx: Context, resultVar: str
     }
 }
 
-export const emitPatternExprCondition = (patternExpr: PatternExpr, ctx: Context, sVar: string): EmitExpr => {
-    const resultVar = nextVariable(ctx)
+export const emitPatternExprCondition = (patternExpr: PatternExpr, ctx: Context, sVar: string): string => {
     switch (patternExpr.kind) {
         case 'con-pattern': {
             const variantName = patternExpr.identifier.names.at(-1)!.value
-            const cond = emitToken(`${sVar}.$noisVariant===${jsString(variantName)}`, patternExpr.identifier.parseNode)
+            const cond = `${sVar}.$noisVariant===${jsString(variantName)}`
             // TODO: nested patterns
-            return { emit: jsVariable(resultVar, cond), resultVar }
+            return cond
         }
         case 'list-pattern':
-            return { emit: jsVariable(resultVar, jsError('list-pattern')), resultVar }
+            // TODO
+            const conds = [
+                `${sVar}.value.length===${patternExpr.itemPatterns.length}`,
+                ...patternExpr.itemPatterns.map((p, i) => {
+                    // TODO: equality is too strict, needs a special case for con patterns
+                    return emitPatternExprCondition(p.expr, ctx, `${sVar}.value[${i}]`)
+                })
+            ]
+            return conds.join('&&')
         case 'hole':
-            return { emit: jsVariable(resultVar, emitToken('true')), resultVar }
+            return 'true'
         case 'string-literal':
         case 'char-literal':
         case 'int-literal':
         case 'float-literal':
         case 'bool-literal': {
-            const operandEmit = emitOperand(patternExpr, ctx)
+            const literalEmit = emitLiteral(patternExpr, ctx)
             // safe value equality check, since it is limited to builtin types
-            const cond = emitToken(`${sVar}.value===${operandEmit.resultVar}.value`)
-            return { emit: emitTree([operandEmit.emit, jsVariable(resultVar, cond)]), resultVar }
+            return `${sVar}.value===${literalEmit.resultVar}.value`
         }
         case 'string-interpolated':
-            return { emit: jsVariable(resultVar, jsError('string-interpolated')), resultVar }
+            // TODO
+            return jsError('string-interpolated').value
         case 'name':
             return unreachable()
     }
@@ -466,6 +479,7 @@ export const emitPattern = (pattern: Pattern, ctx: Context, assignVar: string, p
             return emitTree([...patterns])
         case 'string-interpolated':
         case 'list-pattern':
+            // TODO
             return emitToken(`${jsError(pattern.expr.kind).value};`)
         case 'string-literal':
         case 'char-literal':
