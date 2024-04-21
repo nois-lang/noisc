@@ -1,7 +1,8 @@
 import { ConPattern, Pattern } from '../ast/match'
 import { Name } from '../ast/operand'
 import { Context, addError, defKey } from '../scope'
-import { idToVid, vidToString } from '../scope/util'
+import { list } from '../scope/std'
+import { idToVid, vidEq, vidToString } from '../scope/util'
 import { NameDef, resolveVid } from '../scope/vid'
 import { VidType, VirtualFnType, VirtualType, isAssignable } from '../typecheck'
 import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
@@ -40,8 +41,18 @@ export const checkPattern = (
                 addError(ctx, unexpectedRefutablePatternError(ctx, pattern.expr))
                 break
             }
-            // TODO: check item patterns
-            expr.type = unknownType
+            if (!(expectedType.kind === 'vid-type' && vidEq(expectedType.identifier, list.identifier))) {
+                addError(ctx, typeError(ctx, pattern, expectedType, list))
+                expr.type = unknownType
+                break
+            }
+            expr.type = expectedType
+
+            const itemType = expectedType.typeArgs[0]
+            expr.itemPatterns.forEach(p => {
+                checkPattern(p, itemType, ctx, refutable)
+            })
+
             break
         case 'con-pattern':
             if (expectedType.kind !== 'vid-type') {
