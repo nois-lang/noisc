@@ -243,7 +243,7 @@ const parseConstToken =
             if (ctx.code[ctx.pos] !== value[0]) continue
             const actual = ctx.code.slice(ctx.pos, ctx.pos + value.length)
             const trailing = ctx.code.at(ctx.pos + value.length)
-            if (actual === value && (!isAlpha(value[0]) || !trailing || !isAlpha(trailing))) {
+            if (actual === value && (!isAlpha(value[0]) || !trailing || (!isAlpha(trailing) && !isNumeric(trailing)))) {
                 const start = ctx.pos
                 ctx.pos += value.length
                 ctx.tokens.push(createToken(kind, value, ctx.pos, start))
