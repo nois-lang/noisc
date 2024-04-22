@@ -90,6 +90,8 @@ export const parsePostfixOp = (parser: Parser): void => {
     if (parser.at('period')) {
         if (parser.nth(1) === 'await-keyword') {
             const mark = parser.open()
+            parser.advance()
+            parser.advance()
             parser.close(mark, 'await-op')
         } else if (
             parser.nth(2) === 'o-paren' ||
