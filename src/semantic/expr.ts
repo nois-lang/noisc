@@ -765,7 +765,6 @@ export const checkAwait = (unaryExpr: UnaryExpr, ctx: Context): void => {
         addError(ctx, notInFnScopeError(ctx, unaryExpr.op))
         return
     }
-    scope.returns.push(operand)
 
     upcast(operand, operand.type!, future, ctx)
 }
