@@ -1,3 +1,5 @@
+import { Config } from "./config"
+
 let colorOutput = true
 
 export const useColoredOutput = (flag: boolean): void => {
@@ -12,3 +14,9 @@ const format = {
 export const red = (str: string): string => (colorOutput ? format.red + str + format.reset : str)
 
 export const yellow = (str: string): string => (colorOutput ? format.yellow + str + format.reset : str)
+
+export const info = (config: Config, message: string): void => {
+    if (config.output.write) {
+        console.info(message)
+    }
+}

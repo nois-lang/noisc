@@ -4,6 +4,7 @@ import { writeFile } from 'fs/promises'
 import { Package } from '.'
 import { emitDeclaration } from '../codegen/declaration'
 import { emitModule } from '../codegen/js'
+import { info } from '../output'
 import { Context } from '../scope'
 import { findMain } from '../scope/util'
 import { createSourceMap, foldEmitTree } from '../sourcemap'
@@ -18,7 +19,7 @@ export const emitPackage = async (isDir: boolean, pkg: Package, ctx: Context): P
         }
         const packageInfoDest = join(ctx.config.outPath, 'package.json')
         copyFileSync(packageInfoSrc, packageInfoDest)
-        console.info(`copy: ${packageInfoSrc} -> ${packageInfoDest}`)
+        info(ctx.config, `copy: ${packageInfoSrc} -> ${packageInfoDest}`)
 
         const ps = pkg.modules.flatMap(m => {
             ctx.variableCounter = 0
@@ -26,13 +27,13 @@ export const emitPackage = async (isDir: boolean, pkg: Package, ctx: Context): P
             const modulePath = relative(ctx.config.srcPath, m.source.filepath)
             const moduleOutPath = parse(join(ctx.config.outPath, modulePath))
             mkdirSync(moduleOutPath.dir, { recursive: true })
-            const ps = []
+            const ps: Promise<void>[] = []
 
             const declaration = emitDeclaration(m)
             const declarationPath = join(moduleOutPath.dir, moduleOutPath.name) + '.no'
             ps.push(
                 writeFile(declarationPath, declaration).then(() => {
-                    console.info(`emit: declaration  ${declarationPath} [${declaration.length}B]`)
+                    info(ctx.config, `emit: declaration  ${declarationPath} [${declaration.length}B]`)
                 })
             )
 
@@ -48,7 +49,7 @@ export const emitPackage = async (isDir: boolean, pkg: Package, ctx: Context): P
             const sourceMapLink = `//# sourceMappingURL=${moduleOutPath.name}.js.map`
             const js = [emit, native, sourceMapLink].filter(m => m.length > 0).join('\n')
             const jsPath = join(moduleOutPath.dir, moduleOutPath.name) + '.js'
-            ps.push(writeFile(jsPath, js).then(() => console.info(`emit: js           ${jsPath} [${js.length}B]`)))
+            ps.push(writeFile(jsPath, js).then(() => info(ctx.config, `emit: js           ${jsPath} [${js.length}B]`)))
 
             const sourceMap = JSON.stringify(
                 createSourceMap(
@@ -62,7 +63,7 @@ export const emitPackage = async (isDir: boolean, pkg: Package, ctx: Context): P
             const sourceMapPath = join(moduleOutPath.dir, moduleOutPath.name) + '.js.map'
             ps.push(
                 writeFile(sourceMapPath, sourceMap).then(() =>
-                    console.info(`emit: source map   ${sourceMapPath} [${sourceMap.length}B]`)
+                    info(ctx.config, `emit: source map   ${sourceMapPath} [${sourceMap.length}B]`)
                 )
             )
             return ps
@@ -73,6 +74,6 @@ export const emitPackage = async (isDir: boolean, pkg: Package, ctx: Context): P
         const emitNode = emitModule(m, ctx, findMain(m) !== undefined)
         const { emit } = foldEmitTree(emitNode)
         const jsPath = join(ctx.config.outPath, parse(ctx.config.pkgPath).name) + '.js'
-        await writeFile(jsPath, emit).then(() => console.info(`emit: js           ${jsPath} [${emit.length}B]`))
+        await writeFile(jsPath, emit).then(() => info(ctx.config, `emit: js           ${jsPath} [${emit.length}B]`))
     }
 }
