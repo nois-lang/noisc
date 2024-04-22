@@ -476,7 +476,7 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
             } else if (ref.def.kind === 'trait-def') {
                 const traitRels = [
                     ctx.impls.find(rel => rel.instanceDef === ref.def)!,
-                    ...findSuperRelChains(ref.vid, ctx).flatMap(chain => chain)
+                    ...findSuperRelChains(ref.vid, ctx).flat()
                 ]
                 const traitMethods: MethodDef[] = traitRels.flatMap(t => {
                     const methods = <FnDef[]>t.instanceDef.block.statements.filter(s => s.kind === 'fn-def')

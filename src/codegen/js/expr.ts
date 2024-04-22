@@ -407,7 +407,6 @@ export const emitPatternExprCondition = (patternExpr: PatternExpr, ctx: Context,
             return cond
         }
         case 'list-pattern':
-            // TODO
             const conds = [
                 `${sVar}.value.length===${patternExpr.itemPatterns.length}`,
                 ...patternExpr.itemPatterns.map((p, i) => {
@@ -464,11 +463,12 @@ export const emitDestructurePattern = (pattern: Pattern, ctx: Context): EmitExpr
 }
 
 export const emitPattern = (pattern: Pattern, ctx: Context, assignVar: string, pub: boolean = false): EmitNode => {
+    const bindEmit = pattern.name ? jsVariable(pattern.name.value, jsVariable(assignVar)) : undefined
     switch (pattern.expr.kind) {
         case 'name':
             const name = pattern.expr.value
-            return jsVariable(name, emitToken(assignVar), pub)
-        case 'con-pattern':
+            return emitTree([bindEmit, jsVariable(name, emitToken(assignVar), pub)])
+        case 'con-pattern': {
             const patterns = pattern.expr.fieldPatterns.map(f => {
                 const fieldAssign = f.name.value
                 if (f.pattern) {
@@ -476,18 +476,22 @@ export const emitPattern = (pattern: Pattern, ctx: Context, assignVar: string, p
                 }
                 return jsVariable(fieldAssign, emitToken(`${assignVar}.value.${fieldAssign}`))
             })
-            return emitTree([...patterns])
+            return emitTree([bindEmit, ...patterns])
+        }
         case 'string-interpolated':
-        case 'list-pattern':
             // TODO
-            return emitToken(`${jsError(pattern.expr.kind).value};`)
+            return emitTree([bindEmit, emitToken(`${jsError(pattern.expr.kind).value};`)])
+        case 'list-pattern': {
+            const patterns = pattern.expr.itemPatterns.map((p, i) => emitPattern(p, ctx, `${assignVar}.value[${i}]`))
+            return emitTree([bindEmit, ...patterns])
+        }
         case 'string-literal':
         case 'char-literal':
         case 'int-literal':
         case 'float-literal':
         case 'bool-literal':
         case 'hole':
-            return emitToken('')
+            return emitTree([bindEmit])
         default:
             return unreachable()
     }
