@@ -368,9 +368,6 @@ const checkFnDef = (fnDef: FnDef, ctx: Context): void => {
                 }
                 upcast(rs, rs.type!, returnTypeResolved, ctx)
             })
-            if (!isAssignable(fnDef.block.type!, returnTypeResolved, ctx)) {
-                addError(ctx, typeError(ctx, fnDef.returnType ?? fnDef.block, fnDef.block.type!, returnTypeResolved))
-            }
         } else {
             if (!instScope) {
                 addWarning(ctx, noBodyFnError(ctx, fnDef))
