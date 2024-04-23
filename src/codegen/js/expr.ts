@@ -402,9 +402,14 @@ export const emitPatternExprCondition = (patternExpr: PatternExpr, ctx: Context,
     switch (patternExpr.kind) {
         case 'con-pattern': {
             const variantName = patternExpr.identifier.names.at(-1)!.value
-            const cond = `${sVar}.$noisVariant===${jsString(variantName)}`
-            // TODO: nested patterns
-            return cond
+            const conds = [
+                `${sVar}.$noisVariant===${jsString(variantName)}`,
+                ...patternExpr.fieldPatterns.flatMap(f => {
+                    if (!f.pattern) return []
+                    return [emitPatternExprCondition(f.pattern.expr, ctx, `${sVar}.value.${f.name.value}`)]
+                })
+            ]
+            return conds.join('&&')
         }
         case 'list-pattern':
             const conds = [

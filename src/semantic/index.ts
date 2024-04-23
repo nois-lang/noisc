@@ -124,7 +124,7 @@ export const checkModule = (module: Module, ctx: Context): void => {
     }
     ctx.moduleStack.push(module)
 
-    const resolvedRefs = []
+    const resolvedRefs: VirtualUseExpr[] = []
     for (const useExpr of module.references!) {
         const ref = checkUseExpr(useExpr, ctx)
         if (!ref) continue

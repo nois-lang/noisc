@@ -356,5 +356,24 @@ pub fn main() {
             expect(res.stderr.toString()).toEqual('')
             expect(res.stdout.toString()).toEqual('true\n')
         })
+
+        it('con-pattern', async () => {
+            const files = {
+                'mod.no': `\
+type Foo { A(), B(b: Int) }
+pub fn main() {
+    let a = match B(6) {
+        A() { false }
+        B(b: 5) { false }
+        B(b) { true }
+        _ { false }
+    }
+    println(a.trace())
+}`
+            }
+            const res = run(await compile(files))
+            expect(res.stderr.toString()).toEqual('')
+            expect(res.stdout.toString()).toEqual('true\n')
+        })
     })
 })
