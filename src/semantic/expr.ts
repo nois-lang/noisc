@@ -4,6 +4,7 @@ import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { MatchExpr } from '../ast/match'
 import { CallOp } from '../ast/op'
 import { ClosureExpr, ForExpr, Identifier, IfExpr, IfLetExpr, ListExpr, Name, Operand, WhileExpr } from '../ast/operand'
+import { FieldDef } from '../ast/type-def'
 import { Context, Scope, addError, enterScope, fnDefScope, instanceScope, leaveScope } from '../scope'
 import { bool, future, iter, iterable, show, string, unwrap } from '../scope/std'
 import {
@@ -33,7 +34,7 @@ import {
     replaceGenericsWithHoles,
     resolveType
 } from '../typecheck/generic'
-import { holeType, selfType, unitType, unknownType } from '../typecheck/type'
+import { holeType, selfType, unknownType } from '../typecheck/type'
 import { assert, unreachable } from '../util/todo'
 import {
     argCountMismatchError,
@@ -312,7 +313,6 @@ export const checkWhileExpr = (whileExpr: WhileExpr, ctx: Context): void => {
         outerScope.allBranchesReturned = true
     }
 
-    // TODO: break with a value
     whileExpr.type = unknownType
 
     leaveScope(module, ctx)
@@ -356,7 +356,6 @@ export const checkForExpr = (forExpr: ForExpr, ctx: Context): void => {
         outerScope.allBranchesReturned = true
     }
 
-    // TODO: break with a value
     forExpr.type = unknownType
 
     // TODO: only one needed
@@ -602,10 +601,10 @@ export const checkVariantCall = (
     })
 
     const errorCount = ctx.errors.length
-    const orderedArgs = []
+    const orderedArgs: Arg[] = []
     if (namedArgsStrategy) {
         const argNames = new Map(call.args.map(arg => [arg, extractArgName(arg)!]))
-        const missingFields = []
+        const missingFields: FieldDef[] = []
         for (const fieldDef of ref.def.variant.fieldDefs) {
             const field = call.args.find(a => argNames.get(a)!.value === fieldDef.name.value)
             if (!field) {
@@ -825,7 +824,8 @@ export const checkListExpr = (listExpr: ListExpr, ctx: Context): void => {
 }
 
 export const checkAssignExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
-    binaryExpr.type = unitType
+    // TODO: make a special type that is not allowed to be used, same for loop expr return type
+    binaryExpr.type = unknownType
     checkOperand(binaryExpr.lOperand, ctx)
     checkOperand(binaryExpr.rOperand, ctx)
     const assigneeType = binaryExpr.lOperand.type!
