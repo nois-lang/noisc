@@ -1,5 +1,5 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
-import { Scope } from '../scope'
+import { Context, Scope } from '../scope'
 import { InstanceRelation } from '../scope/trait'
 import { VirtualIdentifier, VirtualIdentifierMatch } from '../scope/vid'
 import { Typed } from '../semantic'
@@ -144,11 +144,12 @@ export const buildModuleAst = (
     id: VirtualIdentifier,
     source: Source,
     mod: boolean,
+    ctx: Context,
     compiled = false
 ): Module => {
     const nodes = filterNonAstNodes(node)
-    const useExprs = nodes.filter(n => n.kind === 'use-stmt').map(buildUseExpr)
-    const statements = nodes.filter(n => n.kind === 'statement').map(buildStatement)
+    const useExprs = nodes.filter(n => n.kind === 'use-stmt').map(n => buildUseExpr(n, ctx))
+    const statements = nodes.filter(n => n.kind === 'statement').map(n => buildStatement(n, ctx))
     const block: Block = { kind: 'block', parseNode: node, statements }
     return {
         kind: 'module',
@@ -170,11 +171,11 @@ export interface Param extends AstNode<'param'>, Partial<Typed> {
     paramType?: Type
 }
 
-export const buildParam = (node: ParseNode): Param => {
+export const buildParam = (node: ParseNode, ctx: Context): Param => {
     const nodes = filterNonAstNodes(node)
-    const pattern = buildPattern(nodes[0])
+    const pattern = buildPattern(nodes[0], ctx)
     const typeNode = nodes.at(1)
-    return { kind: 'param', parseNode: node, pattern, paramType: typeNode ? buildType(typeNode) : undefined }
+    return { kind: 'param', parseNode: node, pattern, paramType: typeNode ? buildType(typeNode, ctx) : undefined }
 }
 
 export interface Arg extends AstNode<'arg'> {
@@ -182,10 +183,10 @@ export interface Arg extends AstNode<'arg'> {
     expr: Expr
 }
 
-export const buildArg = (node: ParseNode): Arg => {
+export const buildArg = (node: ParseNode, ctx: Context): Arg => {
     const nodes = filterNonAstNodes(node)
     let i = 0
-    const name = nodes[i].kind === 'name' ? buildName(nodes[i++]) : undefined
-    const expr = buildExpr(nodes[i++])
+    const name = nodes[i].kind === 'name' ? buildName(nodes[i++], ctx) : undefined
+    const expr = buildExpr(nodes[i++], ctx)
     return { kind: 'arg', parseNode: node, name, expr }
 }

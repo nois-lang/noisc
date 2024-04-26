@@ -1,8 +1,10 @@
 import { readFileSync } from 'fs'
 import { buildModuleAst } from './ast'
+import { makeConfig } from './config'
 import { tokenize } from './lexer/lexer'
 import { Parser } from './parser'
 import { parseModule } from './parser/fns'
+import { Context } from './scope'
 
 describe('nois', () => {
     it('parse features', () => {
@@ -21,7 +23,19 @@ describe('nois', () => {
 
         expect(root.kind).toEqual('module')
 
-        const astRoot = buildModuleAst(root, { names: ['test'] }, source, false)
+        const ctx: Context = {
+            config: makeConfig('test', 'test.no'),
+            moduleStack: [],
+            packages: [],
+            impls: [],
+            errors: [],
+            warnings: [],
+            check: false,
+            silent: false,
+            variableCounter: 0,
+            relChainsMemo: new Map()
+        }
+        const astRoot = buildModuleAst(root, { names: ['test'] }, source, false, ctx)
 
         expect(astRoot.kind).toEqual('module')
     })

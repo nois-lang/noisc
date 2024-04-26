@@ -19,24 +19,10 @@ const compile = async (files: { [path: string]: string }): Promise<Context> => {
     config.libPath = 'tmp/dist'
     config.outPath = join(config.libPath, pkgName)
 
-    const modules = Object.entries(files).map(([filepath, code]) => {
-        const source: Source = { code, filepath: join(config.srcPath, filepath) }
-        return buildModule(source, pathToVid(join('test', filepath)))!
-    })
-    const pkg: Package = {
-        path: pkgPath,
-        name: pkgName,
-        modules: modules,
-        compiled: false
-    }
-
-    const std = buildPackage('tmp/dist/std', 'std', true)!
-
     const ctx: Context = {
         config,
         moduleStack: [],
-        packages: [std, pkg],
-        prelude: std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!,
+        packages: [],
         impls: [],
         errors: [],
         warnings: [],
@@ -45,6 +31,22 @@ const compile = async (files: { [path: string]: string }): Promise<Context> => {
         variableCounter: 0,
         relChainsMemo: new Map()
     }
+
+    const modules = Object.entries(files).map(([filepath, code]) => {
+        const source: Source = { code, filepath: join(config.srcPath, filepath) }
+        return buildModule(source, pathToVid(join('test', filepath)), ctx)!
+    })
+    const pkg: Package = {
+        path: pkgPath,
+        name: pkgName,
+        modules: modules,
+        compiled: false
+    }
+
+    const std = buildPackage('tmp/dist/std', 'std', ctx, true)!
+
+    ctx.packages = [std, pkg]
+    ctx.prelude = std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!
 
     ctx.packages.forEach(p => {
         p.modules.forEach(m => {
@@ -66,17 +68,14 @@ const compile = async (files: { [path: string]: string }): Promise<Context> => {
 }
 
 const compileStd = async (): Promise<void> => {
-    const pkg = buildPackage('./src/std', 'std')!
-
-    const config = makeConfig(pkg.name, pkg.path)
-    config.srcPath = pkg.path
+    const config = makeConfig('std', './src/std')
+    config.srcPath = config.pkgPath
     config.libPath = './tmp/dist'
-    config.outPath = join(config.libPath, pkg.name)
+    config.outPath = join(config.libPath, config.pkgName!)
     const ctx: Context = {
         config,
         moduleStack: [],
-        packages: [pkg],
-        prelude: pkg.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!,
+        packages: [],
         impls: [],
         errors: [],
         warnings: [],
@@ -85,7 +84,10 @@ const compileStd = async (): Promise<void> => {
         variableCounter: 0,
         relChainsMemo: new Map()
     }
+    const pkg = buildPackage(config.pkgPath, config.pkgName!, ctx)!
 
+    ctx.packages = [pkg]
+    ctx.prelude = pkg.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!
     ctx.packages.forEach(p => {
         p.modules.forEach(m => {
             prepareModule(m)

@@ -1,6 +1,8 @@
+import { makeConfig } from '../config'
 import { tokenize } from '../lexer/lexer'
 import { Parser } from '../parser'
 import { parseModule } from '../parser/fns'
+import { Context } from '../scope'
 import { vidFromString } from '../scope/util'
 import { Module, buildModuleAst, compactAstNode } from './index'
 
@@ -16,7 +18,19 @@ describe('ast', () => {
         parseModule(p)
         const parseTree = p.buildTree()
 
-        return buildModuleAst(parseTree, vidFromString('test'), source, false)
+        const ctx: Context = {
+            config: makeConfig('test', 'test.no'),
+            moduleStack: [],
+            packages: [],
+            impls: [],
+            errors: [],
+            warnings: [],
+            check: false,
+            silent: false,
+            variableCounter: 0,
+            relChainsMemo: new Map()
+        }
+        return buildModuleAst(parseTree, vidFromString('test'), source, false, ctx)
     }
 
     describe('string', () => {

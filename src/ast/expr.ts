@@ -1,4 +1,5 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
+import { Context } from '../scope'
 import { Typed, Virtual } from '../semantic'
 import { assert } from '../util/todo'
 import { AstNode } from './index'
@@ -11,11 +12,11 @@ export interface OperandExpr extends AstNode<'operand-expr'>, Partial<Typed>, Pa
     operand: Operand
 }
 
-export const buildOperandExpr = (node: ParseNode): OperandExpr => {
+export const buildOperandExpr = (node: ParseNode, ctx: Context): OperandExpr => {
     return {
         kind: 'operand-expr',
         parseNode: node,
-        operand: buildOperand(node)
+        operand: buildOperand(node, ctx)
     }
 }
 
@@ -30,14 +31,14 @@ export interface BinaryExpr extends AstNode<'binary-expr'>, Partial<Typed>, Part
     rOperand: Operand
 }
 
-export const buildExpr = (node: ParseNode): Expr => {
+export const buildExpr = (node: ParseNode, ctx: Context): Expr => {
     const nodes = filterNonAstNodes(node)
     const operatorStack: BinaryOp[] = []
     const exprStack: (Expr | Operand)[] = []
 
     for (const n of nodes) {
         if (n.kind === 'sub-expr') {
-            const expr = buildSubExpr(n)
+            const expr = buildSubExpr(n, ctx)
             exprStack.push(expr)
         } else {
             const o1 = buildBinaryOp(n)
@@ -89,10 +90,10 @@ export const buildExpr = (node: ParseNode): Expr => {
     return result
 }
 
-export const buildSubExpr = (node: ParseNode): UnaryExpr | Operand => {
+export const buildSubExpr = (node: ParseNode, ctx: Context): UnaryExpr | Operand => {
     const nodes = filterNonAstNodes(node)
-    const operand = buildOperand(nodes[0])
-    const ops = nodes.slice(1).map(buildPostfixOp)
+    const operand = buildOperand(nodes[0], ctx)
+    const ops = nodes.slice(1).map(n => buildPostfixOp(n, ctx))
     if (ops.length === 0) {
         return operand
     }

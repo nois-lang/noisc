@@ -3,10 +3,16 @@ import { prettyLexerError, prettySourceMessage, prettySyntaxError } from '../err
 import { erroneousTokenKinds, tokenize } from '../lexer/lexer'
 import { Parser } from '../parser'
 import { parseModule } from '../parser/fns'
+import { Context } from '../scope'
 import { VirtualIdentifier } from '../scope/vid'
 import { Source } from '../source'
 
-export const buildModule = (source: Source, vid: VirtualIdentifier, compiled = false): Module | undefined => {
+export const buildModule = (
+    source: Source,
+    vid: VirtualIdentifier,
+    ctx: Context,
+    compiled = false
+): Module | undefined => {
     const tokens = tokenize(source.code)
     const errorTokens = tokens.filter(t => erroneousTokenKinds.includes(t.kind))
     if (errorTokens.length > 0) {
@@ -28,5 +34,5 @@ export const buildModule = (source: Source, vid: VirtualIdentifier, compiled = f
     }
 
     const mod = /mod\.no$/.test(source.filepath)
-    return buildModuleAst(root, vid, source, mod, compiled)
+    return buildModuleAst(root, vid, source, mod, ctx, compiled)
 }

@@ -10,14 +10,11 @@ import { vidFromString } from './util'
 
 describe('trait', () => {
     const makeCtx = (): Context => {
-        const std = buildPackage(join(dirname(fileURLToPath(import.meta.url)), '..', 'std'), 'std')!
-
         const config = makeConfig('test', 'test.no')
         const ctx: Context = {
             config,
             moduleStack: [],
-            packages: [std],
-            prelude: std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!,
+            packages: [],
             impls: [],
             errors: [],
             warnings: [],
@@ -26,6 +23,10 @@ describe('trait', () => {
             variableCounter: 0,
             relChainsMemo: new Map()
         }
+
+        const std = buildPackage(join(dirname(fileURLToPath(import.meta.url)), '..', 'std'), 'std', ctx)!
+        ctx.packages = [std]
+        ctx.prelude = std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!
 
         ctx.packages.forEach(p => {
             p.modules.forEach(m => {

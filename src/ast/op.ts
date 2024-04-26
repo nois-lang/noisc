@@ -1,4 +1,5 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
+import { Context } from '../scope'
 import { MethodDef, VariantDef } from '../scope/vid'
 import { Static } from '../semantic'
 import { ConcreteGeneric } from '../typecheck'
@@ -19,14 +20,14 @@ export const isPostfixOp = (op: AstNode<AstNodeKind>): op is PostfixOp => {
     )
 }
 
-export const buildPostfixOp = (node: ParseNode): PostfixOp => {
+export const buildPostfixOp = (node: ParseNode, ctx: Context): PostfixOp => {
     switch (node.kind) {
         case 'method-call-op':
-            return buildMethodCallOp(node)
+            return buildMethodCallOp(node, ctx)
         case 'field-access-op':
-            return buildFieldAccessOp(node)
+            return buildFieldAccessOp(node, ctx)
         case 'call-op':
-            return buildCallOp(node)
+            return buildCallOp(node, ctx)
         case 'unwrap-op':
         case 'bind-op':
         case 'await-op':
@@ -128,12 +129,12 @@ export interface MethodCallOp extends AstNode<'method-call-op'> {
     call: CallOp
 }
 
-export const buildMethodCallOp = (node: ParseNode): MethodCallOp => {
+export const buildMethodCallOp = (node: ParseNode, ctx: Context): MethodCallOp => {
     const nodes = filterNonAstNodes(node)
     let i = 0
-    const name = buildName(nodes[i++])
-    const typeArgs = nodes[i].kind === 'type-args' ? filterNonAstNodes(nodes[i++]).map(buildType) : []
-    const call = buildCallOp(nodes[i++])
+    const name = buildName(nodes[i++], ctx)
+    const typeArgs = nodes[i].kind === 'type-args' ? filterNonAstNodes(nodes[i++]).map(n => buildType(n, ctx)) : []
+    const call = buildCallOp(nodes[i++], ctx)
     return { kind: 'method-call-op', parseNode: node, name, typeArgs, call }
 }
 
@@ -141,8 +142,8 @@ export interface FieldAccessOp extends AstNode<'field-access-op'> {
     name: Name
 }
 
-export const buildFieldAccessOp = (node: ParseNode): FieldAccessOp => {
-    const name = buildName(filterNonAstNodes(node)[0])
+export const buildFieldAccessOp = (node: ParseNode, ctx: Context): FieldAccessOp => {
+    const name = buildName(filterNonAstNodes(node)[0], ctx)
     return { kind: 'field-access-op', parseNode: node, name }
 }
 
@@ -153,8 +154,8 @@ export interface CallOp extends AstNode<'call-op'>, Partial<Static> {
     generics?: ConcreteGeneric[]
 }
 
-export const buildCallOp = (node: ParseNode): CallOp => {
-    const args = filterNonAstNodes(node).map(n => buildArg(n))
+export const buildCallOp = (node: ParseNode, ctx: Context): CallOp => {
+    const args = filterNonAstNodes(node).map(n => buildArg(n, ctx))
     return { kind: 'call-op', parseNode: node, args }
 }
 

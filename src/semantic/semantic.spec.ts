@@ -13,22 +13,10 @@ import { checkModule, checkTopLevelDefinition, prepareModule } from './index'
 describe('semantic', () => {
     const check = (code: string, checkStd: boolean = false): Context => {
         const source: Source = { code, filepath: 'test.no' }
-
-        const moduleAst = buildModule(source, pathToVid(source.filepath))!
-        const pkg: Package = {
-            path: source.filepath,
-            name: moduleAst?.identifier.names.at(-1)!,
-            modules: [moduleAst],
-            compiled: false
-        }
-
-        const std = buildPackage(join(dirname(fileURLToPath(import.meta.url)), '..', 'std'), 'std')!
-
         const ctx: Context = {
             config: makeConfig('test', 'test.no'),
             moduleStack: [],
-            packages: [std, pkg],
-            prelude: std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!,
+            packages: [],
             impls: [],
             errors: [],
             warnings: [],
@@ -37,6 +25,19 @@ describe('semantic', () => {
             variableCounter: 0,
             relChainsMemo: new Map()
         }
+
+        const moduleAst = buildModule(source, pathToVid(source.filepath), ctx)!
+        const pkg: Package = {
+            path: source.filepath,
+            name: moduleAst?.identifier.names.at(-1)!,
+            modules: [moduleAst],
+            compiled: false
+        }
+
+        const std = buildPackage(join(dirname(fileURLToPath(import.meta.url)), '..', 'std'), 'std', ctx)!
+
+        ctx.packages = [std, pkg]
+        ctx.prelude = std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!
 
         ctx.packages.forEach(p => {
             p.modules.forEach(m => {

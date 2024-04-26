@@ -48,6 +48,18 @@ if (parseOption('version') !== undefined) {
     process.exit()
 }
 const config = fromCmd()
+const ctx: Context = {
+    config,
+    moduleStack: [],
+    packages: [],
+    impls: [],
+    errors: [],
+    warnings: [],
+    check: false,
+    silent: false,
+    variableCounter: 0,
+    relChainsMemo: new Map()
+}
 
 let pkg: Package
 let lib: Package[]
@@ -65,7 +77,7 @@ if (isDir) {
         console.error(`missing required option \`--name=\``)
         process.exit(1)
     }
-    const res = buildPackage(config.srcPath, config.pkgName)
+    const res = buildPackage(config.srcPath, config.pkgName, ctx)
     if (!res) process.exit(1)
     pkg = res
 
@@ -76,13 +88,13 @@ if (isDir) {
             console.error(`no such file \`${depPath}\``)
             process.exit(1)
         }
-        const p = buildPackage(depPath, depName, true)
+        const p = buildPackage(depPath, depName, ctx, true)
         if (!p) process.exit(1)
         return p
     })
 } else {
     const source: Source = { code: readFileSync(config.pkgPath).toString(), filepath: config.pkgPath }
-    const moduleAst = buildModule(source, pathToVid(basename(config.pkgPath)))
+    const moduleAst = buildModule(source, pathToVid(basename(config.pkgPath)), ctx)
     if (!moduleAst) {
         process.exit(1)
     }
@@ -92,7 +104,7 @@ if (isDir) {
         modules: [moduleAst],
         compiled: false
     }
-    const std = buildPackage(join(dir, 'std'), 'std')
+    const std = buildPackage(join(dir, 'std'), 'std', ctx)
     if (!std) {
         process.exit(1)
     }
@@ -107,19 +119,8 @@ if (!std) {
     process.exit(1)
 }
 
-const ctx: Context = {
-    config,
-    moduleStack: [],
-    packages,
-    prelude: std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!,
-    impls: [],
-    errors: [],
-    warnings: [],
-    check: false,
-    silent: false,
-    variableCounter: 0,
-    relChainsMemo: new Map()
-}
+ctx.packages = packages
+ctx.prelude = std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!
 
 ctx.packages.forEach(p => p.modules.forEach(m => prepareModule(m)))
 ctx.impls = buildInstanceRelations(ctx)

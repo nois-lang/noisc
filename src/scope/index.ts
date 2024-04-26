@@ -17,7 +17,7 @@ export interface Context {
     /**
      * `std::prelude` module
      */
-    prelude: Module
+    prelude?: Module
     impls: InstanceRelation[]
     errors: SemanticError[]
     warnings: SemanticError[]
