@@ -17,7 +17,7 @@ export interface OutConfig {
 }
 
 export const makeConfig = (pkgName: string, pkgPath: string): Config => {
-    const libPath = 'dist'
+    const libPath = `${pkgPath}/dist`
     return {
         pkgName,
         pkgPath,
