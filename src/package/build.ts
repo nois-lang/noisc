@@ -10,9 +10,12 @@ import { Source } from '../source'
 export const buildModule = (
     source: Source,
     vid: VirtualIdentifier,
+    // TODO: might be better off being separate `AstContext` with only errors and source
     ctx: Context,
     compiled = false
 ): Module | undefined => {
+    const dummyModule: Module = <any>{ source: source }
+    ctx.moduleStack.push(dummyModule)
     const tokens = tokenize(source.code)
     const errorTokens = tokens.filter(t => erroneousTokenKinds.includes(t.kind))
     if (errorTokens.length > 0) {
@@ -34,5 +37,8 @@ export const buildModule = (
     }
 
     const mod = /mod\.no$/.test(source.filepath)
-    return buildModuleAst(root, vid, source, mod, ctx, compiled)
+    const ast = buildModuleAst(root, vid, source, mod, ctx, compiled)
+
+    ctx.moduleStack.pop()
+    return ast
 }

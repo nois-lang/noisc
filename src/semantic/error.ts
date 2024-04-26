@@ -1,7 +1,7 @@
 import { Arg, AstNode, Module, Param } from '../ast'
 import { Expr } from '../ast/expr'
 import { MatchClause, MatchExpr, PatternExpr } from '../ast/match'
-import { CallOp } from '../ast/op'
+import { BinaryOp, CallOp } from '../ast/op'
 import { Identifier, Name, Operand } from '../ast/operand'
 import { FnDef, ImplDef, Statement, VarDef } from '../ast/statement'
 import { Type } from '../ast/type'
@@ -9,13 +9,14 @@ import { FieldDef } from '../ast/type-def'
 import { Context } from '../scope'
 import { vidToString } from '../scope/util'
 import { MethodDef } from '../scope/vid'
+import { Source } from '../source'
 import { VirtualFnType, VirtualType, virtualTypeToString } from '../typecheck'
-import { unreachable } from '../util/todo'
+import { assert, unreachable } from '../util/todo'
 import { MatchTree, unmatchedPaths } from './exhaust'
 
 export interface SemanticError {
     code: number
-    module: Module
+    source: Source
     node: AstNode<any>
     message: string
     notes: string[]
@@ -27,7 +28,10 @@ export const semanticError = (
     node: AstNode<any>,
     message: string,
     notes: string[] = []
-): SemanticError => ({ code, module: ctx.moduleStack.at(-1)!, node, message, notes })
+): SemanticError => {
+    assert(ctx.moduleStack.length > 0)
+    return { code, source: ctx.moduleStack.at(-1)!.source, node, message, notes }
+}
 
 export const notFoundError = (
     ctx: Context,
@@ -248,6 +252,12 @@ export const nonDestructurableTypeError = (
 ): SemanticError => {
     const msg = `non-destructurable type \`${virtualTypeToString(type)}\``
     return semanticError(32, ctx, patternExpr, msg)
+}
+
+export const invalidOperatorChainError = (ctx: Context, o1: BinaryOp, o2: BinaryOp): SemanticError => {
+    const msg = `invalid operator chaining: \`${o1.kind}\` and \`${o2.kind}\``
+    // TODO: composite location spans
+    return semanticError(33, ctx, o1, msg)
 }
 
 export const unexpectedTypeError = (

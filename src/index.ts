@@ -1,9 +1,9 @@
 import { existsSync, readFileSync, statSync } from 'fs'
 import { basename, dirname, join } from 'path'
 import { fileURLToPath } from 'url'
-import { parseOption } from './cli'
+import { parseOption, reportErrors } from './cli'
 import { fromCmd } from './config'
-import { colorError, colorWarning, prettySourceMessage } from './error'
+import { colorWarning, prettySourceMessage } from './error'
 import { Package } from './package'
 import { buildModule } from './package/build'
 import { emitPackage } from './package/emit'
@@ -111,6 +111,8 @@ if (isDir) {
     lib = [std]
 }
 
+reportErrors(ctx)
+
 const packages = [...lib, pkg]
 
 const std = packages.find(pkg => pkg.name === 'std')
@@ -137,26 +139,14 @@ if (ctx.config.libCheck) {
 }
 assert(ctx.moduleStack.length === 0, ctx.moduleStack.length.toString())
 
-if (ctx.errors.length > 0) {
-    for (const error of ctx.errors) {
-        console.error(
-            prettySourceMessage(
-                colorError(error.message),
-                getSpan(error.node.parseNode),
-                error.module.source,
-                error.notes
-            )
-        )
-    }
-    process.exit(1)
-}
+reportErrors(ctx)
 
 for (const warning of ctx.warnings) {
     console.error(
         prettySourceMessage(
             colorWarning(warning.message),
             getSpan(warning.node.parseNode),
-            warning.module.source,
+            warning.source,
             warning.notes
         )
     )

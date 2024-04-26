@@ -1,6 +1,7 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
-import { Context } from '../scope'
+import { Context, addError } from '../scope'
 import { Typed, Virtual } from '../semantic'
+import { invalidOperatorChainError } from '../semantic/error'
 import { assert } from '../util/todo'
 import { AstNode } from './index'
 import { BinaryOp, PostfixOp, associativityMap, buildBinaryOp, buildPostfixOp, precedenceMap } from './op'
@@ -49,7 +50,8 @@ export const buildExpr = (node: ParseNode, ctx: Context): Expr => {
                 const o1Assoc = associativityMap.get(o1.kind)!
                 const o2Assoc = associativityMap.get(o2.kind)!
                 if (o1Prec === o2Prec && o1Assoc === 'none' && o2Assoc === 'none') {
-                    throw Error(`cannot chain operators \`${o1.kind}\` and \`${o2.kind}\``)
+                    addError(ctx, invalidOperatorChainError(ctx, o1, o2))
+                    break
                 }
                 if ((o1Assoc !== 'right' && o1Prec === o2Prec) || o1Prec < o2Prec) {
                     operatorStack.pop()
