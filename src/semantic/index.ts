@@ -440,8 +440,10 @@ const checkTraitDef = (traitDef: TraitDef, ctx: Context) => {
 const checkImplDef = (implDef: ImplDef, ctx: Context) => {
     if (!implDef.rel) {
         const rel = ctx.impls.find(i => i.instanceDef === implDef)
-        assert(!!rel)
-        implDef.rel = rel!
+        // error is handled when preparing ctx.impls
+        if (!rel) return
+
+        implDef.rel = rel
     }
 
     const module = ctx.moduleStack.at(-1)!

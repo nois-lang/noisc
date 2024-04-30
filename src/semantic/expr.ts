@@ -338,8 +338,7 @@ export const checkForExpr = (forExpr: ForExpr, ctx: Context): void => {
 
     const iterableType = [iter, iterable]
         .map(t => extractConcreteSupertype(forExpr.expr.type!, t.identifier, ctx))
-        .filter(t => !!t)
-        .at(0)
+        .find(t => !!t)
     if (iterableType) {
         assert(iterableType!.kind === 'vid-type', `iterable type is ${iterableType!.kind}`)
         const itemType = (<VidType>iterableType).typeArgs.at(0)
