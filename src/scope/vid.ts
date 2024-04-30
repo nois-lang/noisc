@@ -146,10 +146,10 @@ const resolveVid_ = (
     }
 
     // check if vid is partially qualified with use exprs
-    const matchedUseExpr = [...module.references!, ...ctx.prelude!.reExports!].find(
+    const matchedUseExprs = [...module.references!, ...ctx.prelude!.reExports!].filter(
         r => r.vid.names.at(-1)! === vid.names[0]
     )
-    if (matchedUseExpr) {
+    for (const matchedUseExpr of matchedUseExprs) {
         const qualifiedVid = { names: [...matchedUseExpr.vid.names.slice(0, -1), ...vid.names] }
         const matchedRef = resolveMatchedVid(qualifiedVid, ctx, ofKind)
         if (matchedRef) {
