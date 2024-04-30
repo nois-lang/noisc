@@ -271,6 +271,10 @@ export const extractConcreteSupertype = (
 ): VirtualType | undefined => {
     if (type.kind !== 'vid-type') return undefined
 
+    if (vidEq(type.identifier, superVid)) {
+        return type
+    }
+
     const chain = findSuperRelChains(type.identifier, ctx)
         .filter(c => {
             const implType = <VidType>c.at(-1)!.implType
