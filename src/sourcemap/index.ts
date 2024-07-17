@@ -3,7 +3,7 @@ import { Span, indexToLocation } from '../location'
 import { getSpan } from '../parser'
 import { encode } from './base64vlq'
 
-export interface SourceMap {
+export type SourceMap = {
     version: number
     file: string
     sourceRoot: string

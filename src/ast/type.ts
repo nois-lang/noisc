@@ -1,7 +1,7 @@
+import { BaseAstNode } from '.'
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { Context } from '../scope'
 import { Checked } from '../semantic'
-import { AstNode } from './index'
 import { Hole, buildHole } from './match'
 import { Identifier, Name, buildIdentifier, buildName } from './operand'
 
@@ -25,7 +25,8 @@ export const buildType = (node: ParseNode, ctx: Context): Type => {
     }
 }
 
-export interface TypeBounds extends AstNode<'type-bounds'> {
+export type TypeBounds = BaseAstNode & {
+    kind: 'type-bounds'
     bounds: Identifier[]
 }
 
@@ -35,7 +36,8 @@ export const buildTypeBounds = (node: ParseNode, ctx: Context): TypeBounds => {
     return { kind: 'type-bounds', parseNode: node, bounds }
 }
 
-export interface Generic extends AstNode<'generic'> {
+export type Generic = BaseAstNode & {
+    kind: 'generic'
     name: Name
     key?: string
     bounds: Identifier[]
@@ -48,7 +50,8 @@ export const buildGeneric = (node: ParseNode, ctx: Context): Generic => {
     return { kind: 'generic', parseNode: node, name, bounds: bounds }
 }
 
-export interface FnType extends AstNode<'fn-type'> {
+export type FnType = BaseAstNode & {
+    kind: 'fn-type'
     generics: Generic[]
     paramTypes: Type[]
     returnType: Type

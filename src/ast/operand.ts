@@ -1,12 +1,12 @@
 import { LexerToken } from '../lexer/lexer'
 import { ParseNode, ParseTree, filterNonAstNodes } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
-import { Context } from '../scope'
+import { Context, Definition } from '../scope'
 import { VirtualIdentifierMatch } from '../scope/vid'
-import { Static, Typed, Virtual } from '../semantic'
+import { Virtual } from '../semantic'
 import { assert } from '../util/todo'
 import { Expr, buildExpr } from './expr'
-import { AstNode, Param, buildParam } from './index'
+import { BaseAstNode, Param, buildParam } from './index'
 import { MatchExpr, Pattern, buildMatchExpr, buildNumber, buildPattern } from './match'
 import { Block, buildBlock, buildStatement } from './statement'
 import { Type, buildType } from './type'
@@ -71,7 +71,8 @@ export const identifierFromOperand = (operand: Operand): Identifier | undefined 
     return undefined
 }
 
-export interface IfExpr extends AstNode<'if-expr'>, Partial<Typed> {
+export type IfExpr = BaseAstNode & {
+    kind: 'if-expr'
     condition: Expr
     thenBlock: Block
     elseBlock?: Block
@@ -90,7 +91,8 @@ export const buildIfExpr = (node: ParseNode, ctx: Context): IfExpr => {
     return { kind: 'if-expr', parseNode: node, condition, thenBlock, elseBlock }
 }
 
-export interface IfLetExpr extends AstNode<'if-let-expr'>, Partial<Typed> {
+export type IfLetExpr = BaseAstNode & {
+    kind: 'if-let-expr'
     pattern: Pattern
     expr: Expr
     thenBlock: Block
@@ -112,7 +114,8 @@ export const buildIfLetExpr = (node: ParseNode, ctx: Context): IfLetExpr => {
     return { kind: 'if-let-expr', parseNode: node, pattern, expr, thenBlock, elseBlock }
 }
 
-export interface WhileExpr extends AstNode<'while-expr'>, Partial<Typed> {
+export type WhileExpr = BaseAstNode & {
+    kind: 'while-expr'
     condition: Expr
     block: Block
 }
@@ -127,7 +130,8 @@ export const buildWhileExpr = (node: ParseNode, ctx: Context): WhileExpr => {
     return { kind: 'while-expr', parseNode: node, condition, block }
 }
 
-export interface ForExpr extends AstNode<'for-expr'>, Partial<Typed> {
+export type ForExpr = BaseAstNode & {
+    kind: 'for-expr'
     pattern: Pattern
     expr: Expr
     block: Block
@@ -146,7 +150,8 @@ export const buildForExpr = (node: ParseNode, ctx: Context): ForExpr => {
     return { kind: 'for-expr', parseNode: node, pattern, expr, block }
 }
 
-export interface ClosureExpr extends AstNode<'closure-expr'>, Partial<Typed> {
+export type ClosureExpr = BaseAstNode & {
+    kind: 'closure-expr'
     params: Param[]
     block: Block
     returnType?: Type
@@ -166,7 +171,8 @@ export const buildClosureExpr = (node: ParseNode, ctx: Context): ClosureExpr => 
     return { kind: 'closure-expr', parseNode: node, params, block, returnType }
 }
 
-export interface ListExpr extends AstNode<'list-expr'>, Partial<Typed> {
+export type ListExpr = BaseAstNode & {
+    kind: 'list-expr'
     exprs: Expr[]
 }
 
@@ -176,11 +182,13 @@ export const buildListExpr = (node: ParseNode, ctx: Context): ListExpr => {
     return { kind: 'list-expr', parseNode: node, exprs }
 }
 
-export interface StringLiteral extends AstNode<'string-literal'>, Partial<Typed> {
+export type StringLiteral = BaseAstNode & {
+    kind: 'string-literal'
     value: string
 }
 
-export interface StringInterpolated extends AstNode<'string-interpolated'>, Partial<Typed> {
+export type StringInterpolated = BaseAstNode & {
+    kind: 'string-interpolated'
     tokens: (string | Expr)[]
 }
 
@@ -206,7 +214,8 @@ export const buildStringPart = (node: ParseNode, ctx: Context): string | Expr =>
     }
 }
 
-export interface CharLiteral extends AstNode<'char-literal'>, Partial<Typed> {
+export type CharLiteral = BaseAstNode & {
+    kind: 'char-literal'
     value: string
 }
 
@@ -214,15 +223,18 @@ export const buildChar = (node: ParseNode, ctx: Context): CharLiteral => {
     return { kind: 'char-literal', parseNode: node, value: (<LexerToken>node).value }
 }
 
-export interface IntLiteral extends AstNode<'int-literal'>, Partial<Typed> {
+export type IntLiteral = BaseAstNode & {
+    kind: 'int-literal'
     value: string
 }
 
-export interface FloatLiteral extends AstNode<'float-literal'>, Partial<Typed> {
+export type FloatLiteral = BaseAstNode & {
+    kind: 'float-literal'
     value: string
 }
 
-export interface BoolLiteral extends AstNode<'bool-literal'>, Partial<Typed> {
+export type BoolLiteral = BaseAstNode & {
+    kind: 'bool-literal'
     value: string
 }
 
@@ -230,7 +242,8 @@ export const buildBool = (node: ParseNode, ctx: Context): BoolLiteral => {
     return { kind: 'bool-literal', parseNode: node, value: (<LexerToken>node).value }
 }
 
-export interface Identifier extends AstNode<'identifier'>, Partial<Typed>, Partial<Static> {
+export type Identifier = BaseAstNode & {
+    kind: 'identifier'
     names: Name[]
     typeArgs: Type[]
     ref?: VirtualIdentifierMatch
@@ -245,8 +258,10 @@ export const buildIdentifier = (node: ParseNode, ctx: Context): Identifier => {
     return { kind: 'identifier', parseNode: node, names, typeArgs: typeArgs }
 }
 
-export interface Name extends AstNode<'name'>, Partial<Typed> {
+export type Name = BaseAstNode & {
+    kind: 'name'
     value: string
+    def?: Definition
 }
 
 export const buildName = (node: ParseNode, ctx: Context): Name => {

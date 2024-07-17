@@ -1,6 +1,5 @@
 import { Module } from '../../ast'
 import { Context } from '../../scope'
-import { InstanceRelation, relTypeName } from '../../scope/trait'
 import { concatVid, vidFromString } from '../../scope/util'
 import { VirtualIdentifier } from '../../scope/vid'
 import { Upcast } from '../../semantic/upcast'
@@ -10,7 +9,7 @@ import { unreachable } from '../../util/todo'
 import { EmitNode, EmitToken, emitToken, emitTree } from './node'
 import { emitStatement } from './statement'
 
-export interface JsImport {
+export type JsImport = {
     def: string
     path: string
 }
@@ -35,8 +34,8 @@ export const emitImports = (module: Module, ctx: Context): EmitNode => {
             let vid = i.vid
             // variant constructors are always accessible from type reference, e.g. `Option.Some`, so only `Option`
             // needs to be imported
-            if (i.def.kind === 'variant') {
-                vid = { names: [...i.module.identifier.names, i.def.typeDef.name.value] }
+            if (i.node.kind === 'variant') {
+                vid = { names: [...i.module.identifier.names, i.node.typeDef.name.value] }
             }
             return makeJsImport(vid, i.module, module, ctx)
         })

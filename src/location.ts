@@ -1,7 +1,7 @@
 import { isNewline } from './lexer/lexer'
 import { Source } from './source'
 
-export interface Span {
+export type Span = {
     /**
      * Start position index of this span, inclusive
      */
@@ -12,7 +12,7 @@ export interface Span {
     end: number
 }
 
-export interface Location {
+export type Location = {
     line: number
     column: number
 }

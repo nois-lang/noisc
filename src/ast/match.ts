@@ -2,10 +2,9 @@ import { LexerToken } from '../lexer/lexer'
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
 import { Context } from '../scope'
-import { Typed } from '../semantic'
 import { unreachable } from '../util/todo'
 import { Expr, buildExpr } from './expr'
-import { AstNode } from './index'
+import { BaseAstNode } from './index'
 import {
     BoolLiteral,
     CharLiteral,
@@ -23,7 +22,8 @@ import {
 } from './operand'
 import { Block, buildBlock } from './statement'
 
-export interface MatchExpr extends AstNode<'match-expr'>, Partial<Typed> {
+export type MatchExpr = BaseAstNode & {
+    kind: 'match-expr'
     expr: Expr
     clauses: MatchClause[]
 }
@@ -38,7 +38,8 @@ export const buildMatchExpr = (node: ParseNode, ctx: Context): MatchExpr => {
     return { kind: 'match-expr', parseNode: node, expr, clauses }
 }
 
-export interface MatchClause extends AstNode<'match-clause'> {
+export type MatchClause = BaseAstNode & {
+    kind: 'match-clause'
     patterns: Pattern[]
     block: Block
     guard?: Expr
@@ -53,7 +54,8 @@ export const buildMatchClause = (node: ParseNode, ctx: Context): MatchClause => 
     return { kind: 'match-clause', parseNode: node, patterns, guard, block }
 }
 
-export interface Pattern extends AstNode<'pattern'> {
+export type Pattern = BaseAstNode & {
+    kind: 'pattern'
     name?: Name
     expr: PatternExpr
 }
@@ -105,7 +107,8 @@ export const buildPatternExpr = (node: ParseNode, ctx: Context): PatternExpr => 
     }
 }
 
-export interface ConPattern extends AstNode<'con-pattern'>, Partial<Typed> {
+export type ConPattern = BaseAstNode & {
+    kind: 'con-pattern'
     identifier: Identifier
     fieldPatterns: FieldPattern[]
 }
@@ -117,7 +120,8 @@ export const buildConPattern = (node: ParseNode, ctx: Context): ConPattern => {
     return { kind: 'con-pattern', parseNode: node, identifier, fieldPatterns }
 }
 
-export interface ListPattern extends AstNode<'list-pattern'>, Partial<Typed> {
+export type ListPattern = BaseAstNode & {
+    kind: 'list-pattern'
     itemPatterns: Pattern[]
 }
 
@@ -126,7 +130,8 @@ export const buildListPattern = (node: ParseNode, ctx: Context): ListPattern => 
     return { kind: 'list-pattern', parseNode: node, itemPatterns: nodes.map(n => buildPattern(n, ctx)) }
 }
 
-export interface FieldPattern extends AstNode<'field-pattern'> {
+export type FieldPattern = BaseAstNode & {
+    kind: 'field-pattern'
     name: Name
     pattern?: Pattern
 }
@@ -138,7 +143,9 @@ export const buildFieldPattern = (node: ParseNode, ctx: Context): FieldPattern =
     return { kind: 'field-pattern', parseNode: node, name, pattern }
 }
 
-export interface Hole extends AstNode<'hole'>, Partial<Typed> {}
+export type Hole = BaseAstNode & {
+    kind: 'hole'
+}
 
 export const buildHole = (node: ParseNode): Hole => {
     return { kind: 'hole', parseNode: node }

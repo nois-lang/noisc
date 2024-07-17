@@ -1,11 +1,11 @@
+import { BaseAstNode } from '.'
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { Context } from '../scope'
-import { Checked, Typed } from '../semantic'
-import { AstNode } from './index'
 import { Name, buildName } from './operand'
 import { Generic, Type, buildGeneric, buildType } from './type'
 
-export interface TypeDef extends AstNode<'type-def'>, Partial<Checked> {
+export type TypeDef = BaseAstNode & {
+    kind: 'type-def'
     name: Name
     generics: Generic[]
     variants: Variant[]
@@ -36,9 +36,11 @@ export const buildTypeDef = (node: ParseNode, ctx: Context): TypeDef => {
     return { kind: 'type-def', parseNode: node, name, generics, variants, pub }
 }
 
-export interface Variant extends AstNode<'variant'>, Partial<Typed> {
+export type Variant = BaseAstNode & {
+    kind: 'variant'
     name: Name
     fieldDefs: FieldDef[]
+    typeDef?: TypeDef
 }
 
 export const buildTypeCon = (node: ParseNode, ctx: Context): Variant => {
@@ -48,7 +50,8 @@ export const buildTypeCon = (node: ParseNode, ctx: Context): Variant => {
     return { kind: 'variant', parseNode: node, name, fieldDefs }
 }
 
-export interface FieldDef extends AstNode<'field-def'>, Partial<Typed> {
+export type FieldDef = BaseAstNode & {
+    kind: 'field-def'
     name: Name
     fieldType: Type
     pub: boolean

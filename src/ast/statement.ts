@@ -1,12 +1,11 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { Context } from '../scope'
 import { InstanceRelation } from '../scope/trait'
-import { MethodDef } from '../scope/vid'
-import { Checked, Typed } from '../semantic'
 import { assert } from '../util/todo'
 import { Expr, buildExpr } from './expr'
-import { AstNode, Param, buildParam } from './index'
+import { BaseAstNode, Param, buildParam } from './index'
 import { Pattern, buildPattern } from './match'
+import { CallOp } from './op'
 import { Identifier, Name, buildIdentifier, buildName } from './operand'
 import { Generic, Type, buildGeneric, buildType } from './type'
 import { TypeDef, buildTypeDef } from './type-def'
@@ -36,7 +35,8 @@ export const buildStatement = (node: ParseNode, ctx: Context): Statement => {
     throw Error(`expected statement, got ${node.kind}`)
 }
 
-export interface UseExpr extends AstNode<'use-expr'> {
+export type UseExpr = BaseAstNode & {
+    kind: 'use-expr'
     scope: Name[]
     expr: UseExpr[] | Name
     pub: boolean
@@ -72,7 +72,8 @@ export const buildUseExpr = (node: ParseNode, ctx: Context): UseExpr => {
     return { kind: 'use-expr', parseNode: node, scope: names.slice(0, -1), expr: names.at(-1)!, pub }
 }
 
-export interface VarDef extends AstNode<'var-def'>, Partial<Checked> {
+export type VarDef = BaseAstNode & {
+    kind: 'var-def'
     pattern: Pattern
     varType?: Type
     expr?: Expr
@@ -93,7 +94,7 @@ export const buildVarDef = (node: ParseNode, ctx: Context): VarDef => {
     return { kind: 'var-def', parseNode: node, pattern, varType, expr, pub }
 }
 
-export interface FnDef extends AstNode<'fn-def'>, Partial<Typed>, Partial<Checked> {
+export type FnDef = BaseAstNode & {
     kind: 'fn-def'
     name: Name
     generics: Generic[]
@@ -120,7 +121,8 @@ export const buildFnDef = (node: ParseNode, ctx: Context): FnDef => {
     return { kind: 'fn-def', parseNode: node, name, generics, params, block, returnType, pub }
 }
 
-export interface TraitDef extends AstNode<'trait-def'> {
+export type TraitDef = BaseAstNode & {
+    kind: 'trait-def'
     name: Name
     generics: Generic[]
     block: Block
@@ -141,12 +143,13 @@ export const buildTraitDef = (node: ParseNode, ctx: Context): TraitDef => {
     return { kind: 'trait-def', parseNode: node, name, generics, block, pub }
 }
 
-export interface ImplDef extends AstNode<'impl-def'>, Partial<Checked> {
+export type ImplDef = BaseAstNode & {
+    kind: 'impl-def'
     identifier: Identifier
     generics: Generic[]
     forTrait?: Identifier
     block: Block
-    superMethods?: MethodDef[]
+    superMethods?: CallOp[]
     rel?: InstanceRelation
 }
 
@@ -164,7 +167,8 @@ export const buildImplDef = (node: ParseNode, ctx: Context): ImplDef => {
     return { kind: 'impl-def', parseNode: node, identifier, generics, forTrait, block }
 }
 
-export interface ReturnStmt extends AstNode<'return-stmt'>, Partial<Typed> {
+export type ReturnStmt = BaseAstNode & {
+    kind: 'return-stmt'
     returnExpr: Expr
 }
 
@@ -175,13 +179,16 @@ export const buildReturnStmt = (node: ParseNode, ctx: Context): ReturnStmt => {
     return { kind: 'return-stmt', parseNode: node, returnExpr }
 }
 
-export interface BreakStmt extends AstNode<'break-stmt'> {}
+export type BreakStmt = BaseAstNode & {
+    kind: 'break-stmt'
+}
 
 export const buildBreakStmt = (node: ParseNode, ctx: Context): BreakStmt => {
     return { kind: 'break-stmt', parseNode: node }
 }
 
-export interface Block extends AstNode<'block'>, Partial<Typed> {
+export type Block = BaseAstNode & {
+    kind: 'block'
     statements: Statement[]
 }
 

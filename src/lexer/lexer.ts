@@ -71,7 +71,7 @@ export type TokenKind = (typeof lexerTokenKinds)[number]
 
 export const erroneousTokenKinds: TokenKind[] = ['unknown', 'char-unterminated']
 
-export interface LexerToken {
+export type LexerToken = {
     kind: TokenKind
     value: string
     span: Span
@@ -139,7 +139,7 @@ export const isWhitespace = (char: string): boolean => char === ' ' || char === 
 
 export const isNewline = (char: string): boolean => char === '\n' || char === '\r'
 
-interface LexerContext {
+export type LexerContext = {
     code: string
     pos: number
     tokens: LexerToken[]

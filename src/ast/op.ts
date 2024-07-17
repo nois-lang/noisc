@@ -1,15 +1,14 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { Context } from '../scope'
-import { MethodDef, VariantDef } from '../scope/vid'
 import { Static } from '../semantic'
 import { ConcreteGeneric } from '../typecheck'
-import { Arg, AstNode, AstNodeKind, buildArg } from './index'
+import { Arg, AstNode, AstNodeKind, BaseAstNode, buildArg } from './index'
 import { Name, buildName } from './operand'
 import { Type, buildType } from './type'
 
 export type PostfixOp = MethodCallOp | FieldAccessOp | CallOp | UnwrapOp | BindOp | AwaitOp
 
-export const isPostfixOp = (op: AstNode<AstNodeKind>): op is PostfixOp => {
+export const isPostfixOp = (op: AstNode): op is PostfixOp => {
     return (
         op.kind === 'method-call-op' ||
         op.kind === 'field-access-op' ||
@@ -123,7 +122,8 @@ export const buildBinaryOp = (node: ParseNode): BinaryOp => {
     return { kind: <any>node.kind, parseNode: node }
 }
 
-export interface MethodCallOp extends AstNode<'method-call-op'> {
+export type MethodCallOp = BaseAstNode & {
+    kind: 'method-call-op'
     name: Name
     typeArgs: Type[]
     call: CallOp
@@ -138,7 +138,8 @@ export const buildMethodCallOp = (node: ParseNode, ctx: Context): MethodCallOp =
     return { kind: 'method-call-op', parseNode: node, name, typeArgs, call }
 }
 
-export interface FieldAccessOp extends AstNode<'field-access-op'> {
+export type FieldAccessOp = BaseAstNode & {
+    kind: 'field-access-op'
     name: Name
 }
 
@@ -147,7 +148,8 @@ export const buildFieldAccessOp = (node: ParseNode, ctx: Context): FieldAccessOp
     return { kind: 'field-access-op', parseNode: node, name }
 }
 
-export interface CallOp extends AstNode<'call-op'>, Partial<Static> {
+export type CallOp = BaseAstNode & {
+    kind: 'call-op'
     args: Arg[]
     methodDef?: MethodDef
     variantDef?: VariantDef
@@ -159,38 +161,74 @@ export const buildCallOp = (node: ParseNode, ctx: Context): CallOp => {
     return { kind: 'call-op', parseNode: node, args }
 }
 
-export interface UnwrapOp extends AstNode<'unwrap-op'> {}
+export type UnwrapOp = BaseAstNode & {
+    kind: 'unwrap-op'
+}
 
-export interface BindOp extends AstNode<'bind-op'> {}
+export type BindOp = BaseAstNode & {
+    kind: 'bind-op'
+}
 
-export interface AwaitOp extends AstNode<'await-op'> {}
+export type AwaitOp = BaseAstNode & {
+    kind: 'await-op'
+}
 
-export interface AddOp extends AstNode<'add-op'> {}
+export type AddOp = BaseAstNode & {
+    kind: 'add-op'
+}
 
-export interface SubOp extends AstNode<'sub-op'> {}
+export type SubOp = BaseAstNode & {
+    kind: 'sub-op'
+}
 
-export interface MultOp extends AstNode<'mult-op'> {}
+export type MultOp = BaseAstNode & {
+    kind: 'mult-op'
+}
 
-export interface DivOp extends AstNode<'div-op'> {}
+export type DivOp = BaseAstNode & {
+    kind: 'div-op'
+}
 
-export interface ExpOp extends AstNode<'exp-op'> {}
+export type ExpOp = BaseAstNode & {
+    kind: 'exp-op'
+}
 
-export interface ModOp extends AstNode<'mod-op'> {}
+export type ModOp = BaseAstNode & {
+    kind: 'mod-op'
+}
 
-export interface EqOp extends AstNode<'eq-op'> {}
+export type EqOp = BaseAstNode & {
+    kind: 'eq-op'
+}
 
-export interface NeOp extends AstNode<'ne-op'> {}
+export type NeOp = BaseAstNode & {
+    kind: 'ne-op'
+}
 
-export interface GeOp extends AstNode<'ge-op'> {}
+export type GeOp = BaseAstNode & {
+    kind: 'ge-op'
+}
 
-export interface LeOp extends AstNode<'le-op'> {}
+export type LeOp = BaseAstNode & {
+    kind: 'le-op'
+}
 
-export interface GtOp extends AstNode<'gt-op'> {}
+export type GtOp = BaseAstNode & {
+    kind: 'gt-op'
+}
 
-export interface LtOp extends AstNode<'lt-op'> {}
+export type LtOp = BaseAstNode & {
+    kind: 'lt-op'
+}
 
-export interface AndOp extends AstNode<'and-op'> {}
+export type AndOp = BaseAstNode & {
+    kind: 'and-op'
+}
 
-export interface OrOp extends AstNode<'or-op'> {}
+export type OrOp = BaseAstNode & {
+    kind: 'or-op'
+}
 
-export interface AssignOp extends AstNode<'assign-op'> {}
+export type AssignOp = BaseAstNode & {
+    kind: 'assign-op'
+}

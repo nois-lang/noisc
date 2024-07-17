@@ -1,7 +1,7 @@
 import { UseExpr } from '../ast/statement'
 import { VirtualIdentifier } from '../scope/vid'
 
-export interface VirtualUseExpr {
+export type VirtualUseExpr = {
     vid: VirtualIdentifier
     useExpr: UseExpr
 }

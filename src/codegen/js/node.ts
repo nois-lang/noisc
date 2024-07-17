@@ -3,7 +3,7 @@ import { ParseNode } from '../../parser'
 
 export type EmitNode = EmitToken | EmitTree
 
-export interface EmitToken {
+export type EmitToken = {
     kind: 'token'
     value: string
     parseNode?: ParseNode
@@ -17,7 +17,7 @@ export const emitToken = (value: string, parseNode?: ParseNode): EmitToken => {
     }
 }
 
-export interface EmitTree {
+export type EmitTree = {
     kind: 'node'
     nodes: EmitNode[]
     parseNode?: ParseNode

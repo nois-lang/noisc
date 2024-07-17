@@ -6,12 +6,12 @@ import { VirtualType } from '../typecheck'
 import { makeGenericMapOverStructure } from '../typecheck/generic'
 import { zip } from '../util/array'
 
-export interface Upcast {
+export type Upcast = {
     self: { [trait: string]: InstanceRelation }
     generics: Upcast[]
 }
 
-export interface UpcastFn {
+export type UpcastFn = {
     paramUpcasts: (Upcast | undefined)[]
     returnUpcast?: Upcast
 }

@@ -1,4 +1,4 @@
-import { colorError, prettySourceMessage } from './error'
+import { colorError, colorWarning, prettySourceMessage } from './error'
 import { getSpan } from './parser'
 import { Context } from './scope'
 
@@ -18,5 +18,18 @@ export const reportErrors = (ctx: Context): void | never => {
             )
         }
         process.exit(1)
+    }
+}
+
+export const reportWarnings = (ctx: Context): void | never => {
+    for (const warning of ctx.warnings) {
+        console.error(
+            prettySourceMessage(
+                colorWarning(warning.message),
+                getSpan(warning.node.parseNode),
+                warning.source,
+                warning.notes
+            )
+        )
     }
 }

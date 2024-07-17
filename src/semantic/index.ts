@@ -59,23 +59,23 @@ import { typeNames } from './type-def'
 import { Upcast, UpcastFn, makeUpcast, upcast } from './upcast'
 import { VirtualUseExpr, useExprToVids } from './use-expr'
 
-export interface Checked {
+export type Checked = {
     checked: boolean
 }
 
-export interface TopLevelChecked {
+export type TopLevelChecked = {
     topLevelChecked: boolean
 }
 
-export interface Typed {
+export type Typed = {
     type: VirtualType
 }
 
-export interface Static {
+export type Static = {
     impl: InstanceRelation
 }
 
-export interface Virtual {
+export type Virtual = {
     upcasts: Upcast[]
     upcastFn: UpcastFn
 }
@@ -472,9 +472,9 @@ const checkImplDef = (implDef: ImplDef, ctx: Context) => {
         const ref = resolveVid(vid, ctx, ['type-def', 'trait-def'])
         if (ref) {
             if (module.compiled) {
-            } else if (ref.def.kind === 'trait-def') {
+            } else if (ref.node.kind === 'trait-def') {
                 const traitRels = [
-                    ctx.impls.find(rel => rel.instanceDef === ref.def)!,
+                    ctx.impls.find(rel => rel.instanceDef === ref.node)!,
                     ...findSuperRelChains(ref.vid, ctx).flat()
                 ]
                 const traitMethods: MethodDef[] = traitRels.flatMap(t => {
@@ -679,19 +679,19 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
     const ref = resolveVid(vid, ctx)
     if (ref) {
         identifier.ref = ref
-        switch (ref.def.kind) {
+        switch (ref.node.kind) {
             case 'self':
                 identifier.type = instanceScope(ctx)?.rel?.forType ?? unknownType
                 break
             case 'name-def':
-                const name = ref.def.name
+                const name = ref.node.name
                 if (
-                    ref.def.parent &&
-                    ref.def.parent.kind === 'var-def' &&
-                    !ref.def.parent.pub &&
+                    ref.node.parent &&
+                    ref.node.parent.kind === 'var-def' &&
+                    !ref.node.parent.pub &&
                     ref.module !== ctx.moduleStack.at(-1)!
                 ) {
-                    addError(ctx, privateAccessError(ctx, identifier, 'variable', ref.def.name.value))
+                    addError(ctx, privateAccessError(ctx, identifier, 'variable', ref.node.name.value))
                 }
                 if (name.type === selfType) {
                     const instScope = instanceScope(ctx)
@@ -706,23 +706,23 @@ export const checkIdentifier = (identifier: Identifier, ctx: Context): void => {
                 break
             case 'method-def':
                 if (
-                    !ref.def.fn.pub &&
-                    ref.def.rel.instanceDef.kind === 'impl-def' &&
+                    !ref.node.fn.pub &&
+                    ref.node.rel.instanceDef.kind === 'impl-def' &&
                     ref.module !== ctx.moduleStack.at(-1)!
                 ) {
-                    addError(ctx, privateAccessError(ctx, identifier, 'method', ref.def.fn.name.value))
+                    addError(ctx, privateAccessError(ctx, identifier, 'method', ref.node.fn.name.value))
                 }
 
                 identifier.type = { kind: 'malleable-type', operand: identifier }
                 break
             case 'variant':
-                identifier.type = ref.def.variant.type
+                identifier.type = ref.node.variant.type
                 break
             case 'fn-def':
-                if (!ref.def.pub && ref.module !== ctx.moduleStack.at(-1)!) {
-                    addError(ctx, privateAccessError(ctx, identifier, 'function', ref.def.name.value))
+                if (!ref.node.pub && ref.module !== ctx.moduleStack.at(-1)!) {
+                    addError(ctx, privateAccessError(ctx, identifier, 'function', ref.node.name.value))
                 }
-                identifier.type = ref.def.type
+                identifier.type = ref.node.type
                 break
             case 'module':
                 addError(ctx, vidResolveToModuleError(ctx, identifier, vidToString(vid)))
@@ -753,14 +753,14 @@ export const checkType = (type: Type, ctx: Context) => {
                 addError(ctx, notFoundError(ctx, type, vidToString(vid), 'type'))
                 return
             }
-            const k = ref.def.kind
+            const k = ref.node.kind
             if (type.typeArgs.length > 0 && (k === 'generic' || k === 'self')) {
                 addError(ctx, typeArgCountMismatchError(ctx, type, 0, type.typeArgs.length))
                 return
             }
             if (k === 'type-def' || k === 'trait-def') {
                 type.typeArgs.forEach(tp => checkType(tp, ctx))
-                const typeParams = ref.def.generics.filter(g => g.name.value !== selfType.name)
+                const typeParams = ref.node.generics.filter(g => g.name.value !== selfType.name)
                 if (type.typeArgs.length !== typeParams.length) {
                     addError(ctx, typeArgCountMismatchError(ctx, type, typeParams.length, type.typeArgs.length))
                     return
@@ -788,7 +788,7 @@ export const resolveMalleableType = (operand: Operand, inferred: VirtualType, ct
             case 'identifier':
                 // TODO: properly
                 const ref = operand.type!.operand.ref
-                assert(ref?.def.kind === 'method-def')
+                assert(ref?.node.kind === 'method-def')
                 operand.type = checkQualifiedMethodCall(
                     operand.type!.operand,
                     <VirtualIdentifierMatch<MethodDef>>ref,
@@ -803,7 +803,7 @@ export const resolveMalleableType = (operand: Operand, inferred: VirtualType, ct
     }
 }
 
-export const checkCallArgs = (node: AstNode<any>, args: Operand[], paramTypes: VirtualType[], ctx: Context): void => {
+export const checkCallArgs = (node: AstNode, args: Operand[], paramTypes: VirtualType[], ctx: Context): void => {
     if (args.length !== paramTypes.length) {
         addError(ctx, argCountMismatchError(ctx, node, paramTypes.length, args.length))
         return

@@ -1,6 +1,6 @@
 import { parseOption } from './cli'
 
-export interface Config {
+export type Config = {
     pkgName?: string
     pkgPath: string
     srcPath: string
@@ -12,7 +12,7 @@ export interface Config {
     output: OutConfig
 }
 
-export interface OutConfig {
+export type OutConfig = {
     write: boolean
 }
 

@@ -1,0 +1,78 @@
+// expressive type system: Haskell, Rust
+// algebraic data types
+// type aliases
+// traits and impl specialization
+// specialization type hint? e.g. foo.<Into<Bar>>into()
+// polymorphic parameters only via trait bounds on generics (no params with trait type)
+// self bounds on traits
+// separate operators for Int/Float/String (e.g. +, +., ++) for better type inference
+// 
+// Compiler phases:
+// - Create AST
+//     - Lexing
+//     - Parsing
+// - Name resolution
+//     - Module resolution (find names accessible outside of the module)
+//     - Name resolution (resolve all names to their definition)
+// - Semantic check
+//     - No stupid things like missing method impls, illogical match statements 
+// - Type check 
+//     - Constraint gathering (how factors constraint node's type: type annotations, usage as argument, return type)
+//     - Constraint unification (trying to combine constraints into a most broad type)
+//     - Type semantics (proper impl definition, match refutablility, call integrity)
+//     - Impl resolution (static dispatch references, dynamic dispatch upcasts)
+// - Codegen
+
+type Option<T> {
+    Some(value T)
+    None()
+}
+
+type User(name Name, age Int)
+
+type Name = String
+
+trait Eq {
+    fn eq(self, other Self) Bool
+}
+
+trait Ord<Self: Eq> {
+    fn cmp(self, other Self) Ordering
+
+    fn lt(self, other Self) Bool {
+        self.cmp(other) == Less
+    }
+}
+
+trait Show {
+    fn show(self) String
+}
+
+impl Show for Option<User> {
+    fn show(self) String {
+        "Maybe user!!!"
+    }
+}
+
+impl <T: Eq + Ord> Show for Option<T> {
+    fn show(self) String {
+        match self {
+            Some(value) { value.show() }
+            None() { "None" }
+        }
+    }
+}
+
+fn main() {
+
+    let u = User("Jack", 13)
+    let u = User(name = "Jack", age = 13)
+
+    let m = Some(5)
+    let value = 5
+    match m) {
+        Some(value) { m.value },
+        None() { ... }
+    }
+}
+

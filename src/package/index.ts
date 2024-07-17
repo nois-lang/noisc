@@ -1,6 +1,6 @@
 import { Module } from '../ast'
 
-export interface Package {
+export type Package = {
     path: string
     name: string
     modules: Module[]

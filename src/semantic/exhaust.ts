@@ -26,33 +26,34 @@
  */
 
 import { MatchExpr, PatternExpr } from '../ast/match'
+import { Variant } from '../ast/type-def'
 import { Context, addError, addWarning } from '../scope'
 import { concatVid, idToVid, vidFromScope, vidFromString, vidToString } from '../scope/util'
-import { VariantDef, VirtualIdentifierMatch, resolveVid } from '../scope/vid'
+import { VirtualIdentifierMatch, resolveVid } from '../scope/vid'
 import { assert } from '../util/todo'
 import { nonExhaustiveMatchError, unreachableMatchClauseError } from './error'
 
-export interface MatchTree {
+export type MatchTree = {
     node: MatchNode
 }
 export type MatchNode = MatchType | MatchVariant | Exhaustive | Unmatched
 
-export interface MatchType {
+export type MatchType = {
     kind: 'type'
-    ref: VirtualIdentifierMatch<VariantDef>
+    ref: VirtualIdentifierMatch<Variant>
     variants: Map<string, MatchTree>
 }
 
-export interface MatchVariant {
+export type MatchVariant = {
     kind: 'variant'
     fields: Map<string, MatchTree>
 }
 
-export interface Exhaustive {
+export type Exhaustive = {
     kind: 'exhaustive'
 }
 
-export interface Unmatched {
+export type Unmatched = {
     kind: 'unmatched'
 }
 
@@ -104,10 +105,10 @@ const matchPattern = (pattern: PatternExpr, tree: MatchTree, ctx: Context): bool
             const vid = idToVid(pattern.identifier)
             if (tree.node.kind !== 'type') {
                 const ref = resolveVid(vid, ctx, ['variant'])
-                if (!ref || ref.def.kind !== 'variant') throw Error(`\`${vidToString(vid)}\` not found`)
+                if (!ref || ref.node.kind !== 'variant') throw Error(`\`${vidToString(vid)}\` not found`)
 
                 const variants: Map<string, MatchTree> = new Map(
-                    ref.def.typeDef.variants.map(v => {
+                    ref.node.typeDef.variants.map(v => {
                         const variantVid = concatVid(vidFromScope(vid), vidFromString(v.name.value))
                         return [vidToString(variantVid), { node: { kind: 'unmatched' } }]
                     })

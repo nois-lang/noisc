@@ -36,11 +36,11 @@ export const checkFieldAccess = (operand: Operand, name: Name, ctx: Context): Vi
     }
     const typeVid = operand.type.identifier
     const typeRef = resolveVid(typeVid, ctx, ['type-def'])
-    if (!typeRef || typeRef.def.kind !== 'type-def') {
+    if (!typeRef || typeRef.node.kind !== 'type-def') {
         addError(ctx, notFoundError(ctx, operand, vidToString(typeVid), 'type'))
         return
     }
-    const typeDef = typeRef.def
+    const typeDef = typeRef.node
     const fieldName = name.value
     // check that every type variant has such field
     const matchedCount = typeDef.variants.filter(v => v.fieldDefs.find(f => f.name.value === fieldName)).length
@@ -76,7 +76,7 @@ export const checkFieldAccess = (operand: Operand, name: Name, ctx: Context): Vi
     const conGenericMap = makeGenericMapOverStructure(operand.type, {
         kind: 'vid-type',
         identifier: typeRef.vid,
-        typeArgs: typeRef.def.generics.map(g => genericToVirtual(g, ctx))
+        typeArgs: typeRef.node.generics.map(g => genericToVirtual(g, ctx))
     })
     return resolveType(fieldType, [conGenericMap], ctx)
 }
@@ -114,22 +114,22 @@ export const checkMethodCall_ = (
     methodVid: VirtualIdentifier,
     ctx: Context,
     typeArgs?: Type[],
-    node: AstNode<any> = call
+    node: AstNode = call
 ): VirtualType | undefined => {
     const typeVid = vidFromScope(methodVid)
     const ref = resolveVid(methodVid, ctx, ['method-def'])
-    if (!ref || ref.def.kind !== 'method-def') {
+    if (!ref || ref.node.kind !== 'method-def') {
         addError(ctx, notFoundError(ctx, node ?? call, vidToString(methodVid), 'method'))
         return
     }
 
-    call.methodDef = ref.def
-    const fnType = <VirtualFnType>ref.def.fn.type
+    call.methodDef = ref.node
+    const fnType = <VirtualFnType>ref.node.fn.type
 
     const operandTypeRef = resolveVid(typeVid, ctx, typeKinds)
-    if (ref.def.rel.instanceDef.kind === 'trait-def' && !ref.def.fn.static && args.length > 0) {
+    if (ref.node.rel.instanceDef.kind === 'trait-def' && !ref.node.fn.static && args.length > 0) {
         const self = args[0]
-        const resolved = resolveMethodImpl(self.type!, ref.def, ctx)
+        const resolved = resolveMethodImpl(self.type!, ref.node, ctx)
         if (resolved) {
             call.impl = resolved
 
@@ -137,20 +137,20 @@ export const checkMethodCall_ = (
             // TODO: upcast only happen to the direct implType, but not its supertypes
             // Use case: std::range has to return Iter<T> instead of RangeIter. When RangeIter is passed into a method
             // where MapIter is expected, upcast of RangeIter for MapIter does not upcast it to Iter
-            upcast(self, self.type!, ref.def.rel.implType, ctx)
+            upcast(self, self.type!, ref.node.rel.implType, ctx)
         } else {
-            if (operandTypeRef && operandTypeRef.def.kind !== 'trait-def' && operandTypeRef.def.kind !== 'generic') {
-                addError(ctx, noImplFoundError(ctx, call, ref.def, self.type!))
+            if (operandTypeRef && operandTypeRef.node.kind !== 'trait-def' && operandTypeRef.node.kind !== 'generic') {
+                addError(ctx, noImplFoundError(ctx, call, ref.node, self.type!))
             }
         }
     } else {
-        call.impl = ref.def.rel
+        call.impl = ref.node.rel
         ctx.moduleStack.at(-1)!.relImports.push(call.impl)
     }
 
     let genericMaps = makeMethodGenericMaps(
         args.map(a => a.type!),
-        ref.def,
+        ref.node,
         call,
         ctx,
         typeArgs
@@ -163,13 +163,13 @@ export const checkMethodCall_ = (
     // recalculate generic maps since malleable args might've been updated
     genericMaps = makeMethodGenericMaps(
         args.map(a => a.type!),
-        ref.def,
+        ref.node,
         call,
         ctx,
         typeArgs
     )
 
-    const implForType = getInstanceForType(ref.def.rel.instanceDef, ctx)
+    const implForType = getInstanceForType(ref.node.rel.instanceDef, ctx)
     const implForGenericMap = selfType ? makeGenericMapOverStructure(selfType, implForType) : new Map()
     call.generics = fnType.generics.map((g, i) => {
         const typeArg = typeArgs?.at(i)

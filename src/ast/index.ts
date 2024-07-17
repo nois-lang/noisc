@@ -1,18 +1,130 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
-import { Context, Scope } from '../scope'
-import { InstanceRelation } from '../scope/trait'
+import { Context, DefinitionMap } from '../scope'
 import { VirtualIdentifier, VirtualIdentifierMatch } from '../scope/vid'
-import { Typed } from '../semantic'
 import { VirtualUseExpr } from '../semantic/use-expr'
 import { Source } from '../source'
-import { Expr, buildExpr } from './expr'
-import { Pattern, buildPattern } from './match'
-import { Name, buildName } from './operand'
-import { Block, UseExpr, buildStatement, buildUseExpr } from './statement'
-import { Type, buildType } from './type'
+import { BinaryExpr, Expr, OperandExpr, UnaryExpr, buildExpr } from './expr'
+import { ConPattern, FieldPattern, Hole, ListPattern, MatchClause, MatchExpr, Pattern, buildPattern } from './match'
+import {
+    AddOp,
+    AndOp,
+    AssignOp,
+    AwaitOp,
+    BindOp,
+    CallOp,
+    DivOp,
+    EqOp,
+    ExpOp,
+    FieldAccessOp,
+    GeOp,
+    GtOp,
+    LeOp,
+    LtOp,
+    MethodCallOp,
+    ModOp,
+    MultOp,
+    NeOp,
+    OrOp,
+    SubOp,
+    UnwrapOp
+} from './op'
+import {
+    BoolLiteral,
+    CharLiteral,
+    ClosureExpr,
+    FloatLiteral,
+    ForExpr,
+    Identifier,
+    IfExpr,
+    IfLetExpr,
+    IntLiteral,
+    ListExpr,
+    Name,
+    StringInterpolated,
+    StringLiteral,
+    WhileExpr,
+    buildName
+} from './operand'
+import {
+    Block,
+    BreakStmt,
+    FnDef,
+    ImplDef,
+    ReturnStmt,
+    TraitDef,
+    UseExpr,
+    VarDef,
+    buildStatement,
+    buildUseExpr
+} from './statement'
+import { FnType, Generic, Type, TypeBounds, buildType } from './type'
+import { FieldDef, TypeDef, Variant } from './type-def'
 
-export interface AstNode<T extends AstNodeKind> {
-    kind: T
+export type AstNode =
+    | Module
+    | UseExpr
+    | Variant
+    | ReturnStmt
+    | BreakStmt
+    | Arg
+    | Block
+    | Param
+    | TypeBounds
+    | FnType
+    | Generic
+    | IfExpr
+    | MatchClause
+    | Pattern
+    | ConPattern
+    | ListPattern
+    | FieldPattern
+    | Hole
+    | Identifier
+    | Name
+    | StringInterpolated
+    | OperandExpr
+    | UnaryExpr
+    | BinaryExpr
+    | ClosureExpr
+    | ListExpr
+    | IfLetExpr
+    | WhileExpr
+    | ForExpr
+    | MatchExpr
+    | VarDef
+    | FnDef
+    | TraitDef
+    | ImplDef
+    | TypeDef
+    | FieldDef
+    | StringLiteral
+    | CharLiteral
+    | IntLiteral
+    | FloatLiteral
+    | BoolLiteral
+    | AddOp
+    | SubOp
+    | MultOp
+    | DivOp
+    | ExpOp
+    | ModOp
+    | EqOp
+    | NeOp
+    | GeOp
+    | LeOp
+    | GtOp
+    | LtOp
+    | AndOp
+    | OrOp
+    | AssignOp
+    | MethodCallOp
+    | FieldAccessOp
+    | CallOp
+    | UnwrapOp
+    | BindOp
+    | AwaitOp
+
+export type BaseAstNode = {
     parseNode: ParseNode
 }
 
@@ -65,7 +177,6 @@ export const astKinds = <const>[
     'variant',
     'return-stmt',
     'break-stmt',
-    'call',
     'arg',
     'block',
     'param',
@@ -91,7 +202,7 @@ export const astKinds = <const>[
 
 export type AstNodeKind = (typeof astKinds)[number]
 
-export const compactAstNode = (node: AstNode<any>): any => {
+export const compactAstNode = (node: AstNode): any => {
     if (typeof node !== 'object') return node
     return Object.fromEntries(
         Object.entries(node)
@@ -108,13 +219,14 @@ export const compactAstNode = (node: AstNode<any>): any => {
     )
 }
 
-export interface Module extends AstNode<'module'> {
+export type Module = BaseAstNode & {
+    kind: 'module'
     source: Source
     identifier: VirtualIdentifier
     mod: boolean
     block: Block
 
-    scopeStack: Scope[]
+    scopeStack: DefinitionMap[]
     useExprs: UseExpr[]
 
     /**
@@ -126,17 +238,15 @@ export interface Module extends AstNode<'module'> {
      */
     reExports?: VirtualUseExpr[]
     /**
-     * Persistent top level scope.
-     * Different from scopeStack[0] because it is always available
-     * If module is accessed during its check, use scopeStack.at(0) instead
+     * Persistent top level scope
      */
-    topScope?: Scope
+    topScope: DefinitionMap
     compiled: boolean
     /**
      * List of resolved imports used by this module
      */
     imports: VirtualIdentifierMatch[]
-    relImports: InstanceRelation[]
+    useScope: DefinitionMap
 }
 
 export const buildModuleAst = (
@@ -160,13 +270,15 @@ export const buildModuleAst = (
         block,
         scopeStack: [],
         useExprs,
+        topScope: new Map(),
         compiled,
         imports: [],
-        relImports: []
+        useScope: new Map()
     }
 }
 
-export interface Param extends AstNode<'param'>, Partial<Typed> {
+export type Param = BaseAstNode & {
+    kind: 'param'
     pattern: Pattern
     paramType?: Type
 }
@@ -178,7 +290,8 @@ export const buildParam = (node: ParseNode, ctx: Context): Param => {
     return { kind: 'param', parseNode: node, pattern, paramType: typeNode ? buildType(typeNode, ctx) : undefined }
 }
 
-export interface Arg extends AstNode<'arg'> {
+export type Arg = BaseAstNode & {
+    kind: 'arg'
     name?: Name
     expr: Expr
 }

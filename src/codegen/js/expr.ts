@@ -4,14 +4,13 @@ import { BinaryExpr, Expr, OperandExpr, UnaryExpr } from '../../ast/expr'
 import { MatchExpr, Pattern, PatternExpr } from '../../ast/match'
 import { Identifier, Operand } from '../../ast/operand'
 import { Context } from '../../scope'
-import { relTypeName } from '../../scope/trait'
 import { operatorImplMap } from '../../semantic/op'
 import { ConcreteGeneric } from '../../typecheck'
 import { unreachable } from '../../util/todo'
 import { EmitNode, EmitToken, emitToken, emitTree, jsError, jsVariable } from './node'
 import { emitBlock, emitBlockStatements } from './statement'
 
-export interface EmitExpr {
+export type EmitExpr = {
     emit: EmitNode
     resultVar: string
 }
@@ -304,24 +303,24 @@ export const emitOperand = (operand: Operand, ctx: Context): EmitExpr => {
 }
 
 export const emitIdentifier = (identifier: Identifier, ctx: Context): EmitExpr => {
-    if (identifier.ref?.def.kind === 'method-def') {
+    if (identifier.ref?.node.kind === 'method-def') {
         const staticCallEmit = identifier.impl ? jsRelName(identifier.impl) : undefined
-        if (identifier.ref.def.fn.static === true) {
+        if (identifier.ref.node.fn.static === true) {
             const typeName = identifier.names.at(-2)!.value
-            const traitName = relTypeName(identifier.ref.def.rel)
+            const traitName = relTypeName(identifier.ref.node.rel)
             const callerEmit = staticCallEmit ?? `${typeName}.${traitName}`
             return {
                 emit: emitToken(''),
-                resultVar: `${callerEmit}().${identifier.ref.def.fn.name.value}`
+                resultVar: `${callerEmit}().${identifier.ref.node.fn.name.value}`
             }
         } else {
-            const args = identifier.ref.def.fn.params.map((_, i) => {
+            const args = identifier.ref.node.fn.params.map((_, i) => {
                 const v = nextVariable(ctx)
                 const upcast = (<Operand>identifier).upcastFn?.paramUpcasts.at(i)
                 return { emit: upcast ? emitUpcasts(v, [upcast]) : emitToken(''), resultVar: v }
             })
-            const relName = jsRelName(identifier.ref.def.rel)
-            const fnName = identifier.ref.def.fn.name.value
+            const relName = jsRelName(identifier.ref.node.rel)
+            const fnName = identifier.ref.node.fn.name.value
             const callerEmit = staticCallEmit ?? `${args[0].resultVar}.${relName}`
             const delegate = `return ${callerEmit}().${fnName}(${args.map(a => a.resultVar)});`
             const block = `${args.map(a => (<EmitToken>a.emit).value)}${delegate}`

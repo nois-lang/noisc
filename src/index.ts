@@ -1,17 +1,16 @@
 import { existsSync, readFileSync, statSync } from 'fs'
 import { basename, dirname, join } from 'path'
 import { fileURLToPath } from 'url'
-import { parseOption, reportErrors } from './cli'
+import { parseOption, reportErrors, reportWarnings } from './cli'
 import { fromCmd } from './config'
-import { colorWarning, prettySourceMessage } from './error'
 import { Package } from './package'
 import { buildModule } from './package/build'
 import { emitPackage } from './package/emit'
 import { buildPackage } from './package/io'
-import { getSpan } from './parser'
-import { Context, pathToVid } from './scope'
-import { buildInstanceRelations } from './scope/trait'
-import { checkModule, checkTopLevelDefinition, prepareModule } from './semantic'
+import { resolveImport } from './phase/import-resolve'
+import { resolveModuleScope } from './phase/module-resolve'
+import { resolveName } from './phase/name-resolve'
+import { Context, eachModule as forEachModule, pathToVid } from './scope'
 import { Source } from './source'
 import { assert } from './util/todo'
 
@@ -52,13 +51,10 @@ const ctx: Context = {
     config,
     moduleStack: [],
     packages: [],
-    impls: [],
     errors: [],
     warnings: [],
-    check: false,
     silent: false,
-    variableCounter: 0,
-    relChainsMemo: new Map()
+    variableCounter: 0
 }
 
 let pkg: Package
@@ -123,34 +119,13 @@ if (!std) {
 
 ctx.packages = packages
 ctx.prelude = std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!
+assert(!!ctx.prelude, 'no prelude')
 
-ctx.packages.forEach(p => p.modules.forEach(m => prepareModule(m)))
-ctx.impls = buildInstanceRelations(ctx)
-assert(ctx.moduleStack.length === 0, ctx.moduleStack.length.toString())
-
-ctx.impls.forEach(impl => checkTopLevelDefinition(impl.module, impl.instanceDef, ctx))
-assert(ctx.moduleStack.length === 0, ctx.moduleStack.length.toString())
-
-ctx.check = true
-if (ctx.config.libCheck) {
-    ctx.packages.flatMap(p => p.modules).forEach(m => checkModule(m, ctx))
-} else {
-    pkg.modules.forEach(m => checkModule(m, ctx))
-}
-assert(ctx.moduleStack.length === 0, ctx.moduleStack.length.toString())
+const phases = [resolveModuleScope, resolveImport, resolveName]
+phases.forEach(f => forEachModule(f, ctx))
 
 reportErrors(ctx)
-
-for (const warning of ctx.warnings) {
-    console.error(
-        prettySourceMessage(
-            colorWarning(warning.message),
-            getSpan(warning.node.parseNode),
-            warning.source,
-            warning.notes
-        )
-    )
-}
+reportWarnings(ctx)
 
 if (config.emit) {
     await emitPackage(isDir, pkg, ctx)

@@ -11,20 +11,20 @@ import { holeType, selfType, unknownType } from './type'
 
 export type VirtualType = VidType | VirtualFnType | VirtualGeneric | UnknownType | MalleableType | HoleType
 
-export interface VidType {
+export type VidType = {
     kind: 'vid-type'
     identifier: VirtualIdentifier
     typeArgs: VirtualType[]
 }
 
-export interface VirtualFnType {
+export type VirtualFnType = {
     kind: 'fn-type'
     generics: VirtualGeneric[]
     paramTypes: VirtualType[]
     returnType: VirtualType
 }
 
-export interface UnknownType {
+export type UnknownType = {
     kind: 'unknown-type'
     mismatchedBranches?: { then: VirtualType; else?: VirtualType }
     mismatchedMatchClauses?: VirtualType[]
@@ -34,23 +34,23 @@ export interface UnknownType {
  * Type that is resolved to its first usage.
  * Closures are initially defined with this type
  */
-export interface MalleableType {
+export type MalleableType = {
     kind: 'malleable-type'
     operand: Operand
 }
 
-export interface HoleType {
+export type HoleType = {
     kind: 'hole-type'
 }
 
-export interface VirtualGeneric {
+export type VirtualGeneric = {
     kind: 'generic'
     name: string
     key: string
     bounds: VirtualType[]
 }
 
-export interface ConcreteGeneric {
+export type ConcreteGeneric = {
     generic: VirtualGeneric
     impls: InstanceRelation[]
 }
@@ -94,11 +94,11 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
             if (!ref) {
                 return unknownType
             }
-            if (ref.def.kind === 'self') {
+            if (ref.node.kind === 'self') {
                 return selfType
-            } else if (ref.def.kind === 'generic') {
-                return genericToVirtual(ref.def, ctx)
-            } else if (ref.def.kind === 'trait-def' || ref.def.kind === 'type-def') {
+            } else if (ref.node.kind === 'generic') {
+                return genericToVirtual(ref.node, ctx)
+            } else if (ref.node.kind === 'trait-def' || ref.node.kind === 'type-def') {
                 return {
                     kind: 'vid-type',
                     identifier: ref.vid,
@@ -108,7 +108,7 @@ export const typeToVirtual = (type: Type, ctx: Context): VirtualType => {
                         .map(arg => typeToVirtual(arg, ctx))
                 }
             } else {
-                addError(ctx, expectedTypeError(ctx, type, ref.def.kind))
+                addError(ctx, expectedTypeError(ctx, type, ref.node.kind))
                 return unknownType
             }
         case 'fn-type':

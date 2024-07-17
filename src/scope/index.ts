@@ -1,100 +1,51 @@
 import { Module } from '../ast'
-import { ClosureExpr, Operand } from '../ast/operand'
+import { Name } from '../ast/operand'
 import { FnDef, ImplDef, TraitDef } from '../ast/statement'
-import { TypeDef } from '../ast/type-def'
+import { Generic } from '../ast/type'
+import { TypeDef, Variant } from '../ast/type-def'
 import { Config } from '../config'
 import { Package } from '../package'
 import { SemanticError } from '../semantic/error'
-import { InstanceRelation } from './trait'
 import { vidToString } from './util'
-import { Definition, VirtualIdentifier } from './vid'
+import { VirtualIdentifier } from './vid'
 
-export interface Context {
+export type Context = {
     config: Config
-    // TODO: store reference chain instead of plain modules
+    // TODO: store reference chain instead of plain modules to track recursion
     moduleStack: Module[]
     packages: Package[]
     /**
      * `std::prelude` module
      */
     prelude?: Module
-    impls: InstanceRelation[]
     errors: SemanticError[]
     warnings: SemanticError[]
-    /**
-     * When disabled, semantic checker will visit fn-def blocks only to populate top-level type information
-     */
-    check: boolean
     /**
      * Suppress all errors and warnings that coming while the field is false
      */
     silent: boolean
     variableCounter: number
-
-    relChainsMemo: Map<string, InstanceRelation[][]>
 }
 
-export type Scope = InstanceScope | TypeDefScope | FnDefScope | BlockScope | ModuleScope
-
 /**
- * Map id has to be composite, since different defs might have the same vid, e.g.
- * type Option and impl Option.
- * Due to JS limitations, definition must be converted into string first
- * Use {@link defKey} to create keys
+ * Key is a name of the def
  */
 export type DefinitionMap = Map<string, Definition>
 
-export interface InstanceScope extends BaseScope {
-    kind: 'instance'
-    def: TraitDef | ImplDef
-    rel?: InstanceRelation
-}
-
-export interface TypeDefScope extends BaseScope {
-    kind: 'type'
-    def: TypeDef
-    vid: VirtualIdentifier
-}
-
-export interface FnDefScope extends BaseScope {
-    kind: 'fn'
-    def: FnDef | ClosureExpr
-    returns: Operand[]
-}
-
-export interface BlockScope extends BaseScope {
-    kind: 'block'
-    isLoop: boolean
-    allBranchesReturned: boolean
-}
-
-export interface ModuleScope extends BaseScope {
-    kind: 'module'
-}
-
-export interface BaseScope {
-    definitions: DefinitionMap
-    closures: ClosureExpr[]
-}
+export type Definition = Module | Name | FnDef | TraitDef | TypeDef | Variant | Generic
 
 export const defKey = (def: Definition): string => {
     switch (def.kind) {
         case 'module':
-            return def.kind + vidToString(def.identifier)
-        case 'self':
-            return def.kind
-        case 'name-def':
+            return vidToString(def.identifier)
+        case 'name':
+            return def.value
         case 'fn-def':
         case 'trait-def':
         case 'type-def':
-        case 'generic':
-            return def.kind + def.name.value
-        case 'method-def':
-            return 'fn-def' + def.fn.name.value
-        case 'impl-def':
-            return def.kind + def.identifier.names.at(-1)!.value
         case 'variant':
-            return def.kind + def.variant.name.value
+        case 'generic':
+            return def.name.value
     }
 }
 
@@ -148,4 +99,14 @@ export const enterScope = (module: Module, scope: Scope, ctx: Context): void => 
 export const leaveScope = (module: Module, ctx: Context): void => {
     // TODO: check malleable closures getting out of scope
     module.scopeStack.pop()
+}
+
+export const eachModule = (f: (module: Module, ctx: Context) => void, ctx: Context): void => {
+    ctx.packages.forEach(p =>
+        p.modules.forEach(m => {
+            ctx.moduleStack.push(m)
+            f(m, ctx)
+            ctx.moduleStack.pop()
+        })
+    )
 }

@@ -103,11 +103,11 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
         case 'string-literal': {
             const vid = vidFromString('std::string::String')
             const ref = resolveVid(vid, ctx, ['type-def'])
-            if (!ref || ref.def.kind !== 'type-def') {
+            if (!ref || ref.node.kind !== 'type-def') {
                 addError(ctx, notFoundError(ctx, operand, vidToString(vid)))
                 break
             }
-            operand.type = typeDefToVirtualType(ref.def, ctx, ref.module)
+            operand.type = typeDefToVirtualType(ref.node, ctx, ref.module)
             break
         }
         case 'string-interpolated': {
@@ -127,41 +127,41 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
         case 'char-literal': {
             const vid = vidFromString('std::char::Char')
             const ref = resolveVid(vid, ctx, ['type-def'])
-            if (!ref || ref.def.kind !== 'type-def') {
+            if (!ref || ref.node.kind !== 'type-def') {
                 addError(ctx, notFoundError(ctx, operand, vidToString(vid)))
                 break
             }
-            operand.type = typeDefToVirtualType(ref.def, ctx, ref.module)
+            operand.type = typeDefToVirtualType(ref.node, ctx, ref.module)
             break
         }
         case 'int-literal': {
             const vid = vidFromString('std::int::Int')
             const ref = resolveVid(vid, ctx, ['type-def'])
-            if (!ref || ref.def.kind !== 'type-def') {
+            if (!ref || ref.node.kind !== 'type-def') {
                 addError(ctx, notFoundError(ctx, operand, vidToString(vid)))
                 break
             }
-            operand.type = typeDefToVirtualType(ref.def, ctx, ref.module)
+            operand.type = typeDefToVirtualType(ref.node, ctx, ref.module)
             break
         }
         case 'float-literal': {
             const vid = vidFromString('std::float::Float')
             const ref = resolveVid(vid, ctx, ['type-def'])
-            if (!ref || ref.def.kind !== 'type-def') {
+            if (!ref || ref.node.kind !== 'type-def') {
                 addError(ctx, notFoundError(ctx, operand, vidToString(vid)))
                 break
             }
-            operand.type = typeDefToVirtualType(ref.def, ctx, ref.module)
+            operand.type = typeDefToVirtualType(ref.node, ctx, ref.module)
             break
         }
         case 'bool-literal': {
             const vid = vidFromString('std::bool::Bool')
             const ref = resolveVid(vid, ctx, ['type-def'])
-            if (!ref || ref.def.kind !== 'type-def') {
+            if (!ref || ref.node.kind !== 'type-def') {
                 addError(ctx, notFoundError(ctx, operand, vidToString(vid)))
                 break
             }
-            operand.type = typeDefToVirtualType(ref.def, ctx, ref.module)
+            operand.type = typeDefToVirtualType(ref.node, ctx, ref.module)
             break
         }
         case 'identifier':
@@ -207,7 +207,7 @@ export const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     const opImplFnVid = operatorImplMap.get(binaryExpr.binaryOp.kind)
     assert(!!opImplFnVid, `operator ${binaryExpr.binaryOp.kind} without impl function`)
 
-    const methodRef = <MethodDef>resolveVid(opImplFnVid!, ctx, ['method-def'])?.def
+    const methodRef = <MethodDef>resolveVid(opImplFnVid!, ctx, ['method-def'])?.node
     assert(!!methodRef, `impl fn \`${vidToString(opImplFnVid!)}\` not found`)
     assert(!!methodRef.fn.type, 'untyped impl fn')
     assert(methodRef.fn.type!.kind === 'fn-type', 'impl fn type in not fn')
@@ -455,7 +455,7 @@ export const checkClosureExpr = (closureExpr: ClosureExpr, ctx: Context): void =
 export const checkResolvedClosureExpr = (
     closureExpr: ClosureExpr,
     ctx: Context,
-    caller: AstNode<any>,
+    caller: AstNode,
     inferredType: VirtualFnType
 ): VirtualType => {
     if (closureExpr.params.length > inferredType.paramTypes.length) {
@@ -503,7 +503,7 @@ export const checkQualifiedMethodCall = (
             impl = resolved
             ctx.moduleStack.at(-1)!.relImports.push(impl)
         } else {
-            if (operandTypeRef && operandTypeRef.def.kind !== 'trait-def' && operandTypeRef.def.kind !== 'generic') {
+            if (operandTypeRef && operandTypeRef.node.kind !== 'trait-def' && operandTypeRef.node.kind !== 'generic') {
                 addError(ctx, noImplFoundError(ctx, identifier, ref.def, self))
             }
         }
@@ -658,8 +658,8 @@ export const checkCall_ = (call: CallOp, operand: Operand, args: Expr[], ctx: Co
             case 'identifier':
                 // TODO: properly
                 const ref = operand.type!.operand.ref
-                if (ref?.def.kind !== 'method-def') return unreachable()
-                call.methodDef = ref.def
+                if (ref?.node.kind !== 'method-def') return unreachable()
+                call.methodDef = ref.node
                 operand.type = checkQualifiedMethodCall(
                     operand.type.operand,
                     <VirtualIdentifierMatch<MethodDef>>ref,
@@ -796,7 +796,7 @@ export const variantCallRef = (operand: Operand, ctx: Context): VirtualIdentifie
 
     const vid = idToVid(operand)
     const ref = resolveVid(vid, ctx)
-    if (!ref || ref.def.kind !== 'variant') {
+    if (!ref || ref.node.kind !== 'variant') {
         return undefined
     }
     return <VirtualIdentifierMatch<VariantDef>>ref
@@ -814,7 +814,7 @@ export const checkListExpr = (listExpr: ListExpr, ctx: Context): void => {
     }
     const listVid = vidFromString('std::list::List')
     const ref = resolveVid(listVid, ctx, ['type-def'])
-    if (!ref || ref.def.kind !== 'type-def') {
+    if (!ref || ref.node.kind !== 'type-def') {
         addError(ctx, notFoundError(ctx, listExpr, vidToString(listVid)))
         listExpr.type = unknownType
         return

@@ -4,7 +4,7 @@ import { red, yellow } from './output'
 import { Parser } from './parser'
 import { Source } from './source'
 
-export interface SyntaxError {
+export type SyntaxError = {
     expected: TokenKind[]
     got: LexerToken
     message?: string

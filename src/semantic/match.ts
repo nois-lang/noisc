@@ -106,26 +106,26 @@ const checkConPattern = (
     const conVid = idToVid(pattern.identifier)
     const ref = resolveVid(conVid, ctx, ['variant'])
 
-    if (!ref || ref.def.kind !== 'variant') {
+    if (!ref || ref.node.kind !== 'variant') {
         addError(ctx, notFoundError(ctx, pattern, vidToString(conVid), 'variant'))
         return []
     }
 
-    if (ref.def.typeDef.name.value !== expectedType.identifier.names.at(-1)!) {
+    if (ref.node.typeDef.name.value !== expectedType.identifier.names.at(-1)!) {
         addError(ctx, nonDestructurableTypeError(ctx, pattern, expectedType))
         return []
     }
 
-    if (!refutable && ref.def.typeDef.variants.length > 1) {
+    if (!refutable && ref.node.typeDef.variants.length > 1) {
         addError(ctx, unexpectedRefutablePatternError(ctx, pattern))
     }
 
-    const conType = <VirtualFnType>ref.def.variant.type
+    const conType = <VirtualFnType>ref.node.variant.type
     const conGenericMap = makeGenericMapOverStructure(expectedType, conType.returnType)
     pattern.type = resolveType(conType.returnType, [conGenericMap], ctx)
 
     for (const fp of pattern.fieldPatterns) {
-        const field = ref.def.variant.fieldDefs.find(fd => fd.name.value === fp.name.value)
+        const field = ref.node.variant.fieldDefs.find(fd => fd.name.value === fp.name.value)
         if (!field) {
             addError(ctx, notFoundError(ctx, fp, fp.name.value, 'field'))
             return []

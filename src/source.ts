@@ -1,4 +1,4 @@
-export interface Source {
+export type Source = {
     code: string
     filepath: string
 }
