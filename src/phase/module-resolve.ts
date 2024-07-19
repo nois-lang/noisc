@@ -1,8 +1,5 @@
 import { AstNode } from '../ast'
-import { Name } from '../ast/operand'
-import { FnDef, TraitDef } from '../ast/statement'
-import { TypeDef } from '../ast/type-def'
-import { Context, addError, defKey } from '../scope'
+import { Context, Definition, addError, defKey } from '../scope'
 import { duplicateDefError } from '../semantic/error'
 import { todo } from '../util/todo'
 
@@ -21,6 +18,12 @@ export const resolveModuleScope = (node: AstNode, ctx: Context): void => {
         case 'trait-def':
         case 'type-def': {
             addDef(node, ctx)
+            break
+        }
+        case 'impl-def': {
+            if (!node.forTrait) {
+                addDef(node, ctx)
+            }
             break
         }
         case 'var-def': {
@@ -42,14 +45,14 @@ export const resolveModuleScope = (node: AstNode, ctx: Context): void => {
     }
 }
 
-const addDef = (node: FnDef | TraitDef | TypeDef | Name, ctx: Context): void => {
+const addDef = (node: Definition, ctx: Context): void => {
     const m = ctx.moduleStack.at(-1)!
     const key = defKey(node)
     if (m.topScope.has(key)) {
         addError(ctx, duplicateDefError(ctx, node))
         return
     }
-    if (node.kind === 'name' || node.pub) {
+    if (!('pub' in node) || node.pub) {
         m.topScope.set(key, node)
     }
 }

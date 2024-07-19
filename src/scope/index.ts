@@ -6,6 +6,7 @@ import { TypeDef, Variant } from '../ast/type-def'
 import { Config } from '../config'
 import { Package } from '../package'
 import { SemanticError } from '../semantic/error'
+import { unreachable } from '../util/todo'
 import { vidToString } from './util'
 import { VirtualIdentifier } from './vid'
 
@@ -32,7 +33,7 @@ export type Context = {
  */
 export type DefinitionMap = Map<string, Definition>
 
-export type Definition = Module | Name | FnDef | TraitDef | TypeDef | Variant | Generic
+export type Definition = Module | Name | FnDef | TraitDef | ImplDef | TypeDef | Variant | Generic
 
 export const defKey = (def: Definition): string => {
     switch (def.kind) {
@@ -46,6 +47,11 @@ export const defKey = (def: Definition): string => {
         case 'variant':
         case 'generic':
             return def.name.value
+        case 'impl-def':
+            if (!def.forTrait) {
+                return def.identifier.names[0].value
+            }
+            return unreachable()
     }
 }
 
