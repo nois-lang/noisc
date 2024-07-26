@@ -246,7 +246,7 @@ export type Identifier = BaseAstNode & {
     kind: 'identifier'
     names: Name[]
     typeArgs: Type[]
-    ref?: VirtualIdentifierMatch
+    def?: Definition
 }
 
 export const buildIdentifier = (node: ParseNode, ctx: Context): Identifier => {

@@ -246,7 +246,11 @@ export type Module = BaseAstNode & {
      * List of resolved imports used by this module
      */
     imports: VirtualIdentifierMatch[]
+    /**
+     * Map of definitions accessible in this module via use exprs
+     */
     useScope: DefinitionMap
+    astStack: AstNode[]
 }
 
 export const buildModuleAst = (
@@ -273,7 +277,8 @@ export const buildModuleAst = (
         topScope: new Map(),
         compiled,
         imports: [],
-        useScope: new Map()
+        useScope: new Map(),
+        astStack: []
     }
 }
 
