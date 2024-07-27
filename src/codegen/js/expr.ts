@@ -8,7 +8,7 @@ import { operatorImplMap } from '../../semantic/op'
 import { ConcreteGeneric } from '../../typecheck'
 import { unreachable } from '../../util/todo'
 import { EmitNode, EmitToken, emitToken, emitTree, jsError, jsVariable } from './node'
-import { emitBlock, emitBlockStatements } from './statement'
+import { emitBlockStatements } from './statement'
 
 export type EmitExpr = {
     emit: EmitNode
@@ -182,26 +182,6 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): EmitExpr =
 export const emitOperand = (operand: Operand, ctx: Context): EmitExpr => {
     const resultVar = nextVariable(ctx)
     switch (operand.kind) {
-        case 'if-expr': {
-            const { emit: cEmit, resultVar: cVar } = emitExpr(operand.condition, ctx)
-            const thenBlock = emitBlock(operand.thenBlock, ctx, resultVar)
-            const elseBlock = operand.elseBlock
-                ? emitTree([emitToken('else'), emitBlock(operand.elseBlock, ctx, resultVar)])
-                : emitToken('')
-            return {
-                emit: emitTree([
-                    jsVariable(resultVar),
-                    cEmit,
-                    emitToken(`if(${extractValue(cVar)})`),
-                    thenBlock,
-                    elseBlock
-                ]),
-                resultVar
-            }
-        }
-        case 'if-let-expr':
-            // TODO
-            return { emit: jsError('if-let'), resultVar }
         case 'while-expr': {
             const { emit: cEmit, resultVar: cVar } = emitExpr(operand.condition, ctx)
             const { emit: cEndEmit, resultVar: cEndVar } = emitExpr(operand.condition, ctx)

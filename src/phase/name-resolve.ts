@@ -44,14 +44,6 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
             node.bounds.forEach(b => resolveName(b, ctx))
             break
         }
-        case 'if-expr': {
-            resolveName(node.condition, ctx)
-            resolveName(node.thenBlock, ctx)
-            if (node.elseBlock) {
-                resolveName(node.elseBlock, ctx)
-            }
-            break
-        }
         case 'match-clause': {
             withScope(ctx, () => {
                 node.patterns.forEach(p => resolveName(p, ctx))

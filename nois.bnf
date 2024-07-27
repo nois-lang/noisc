@@ -44,9 +44,7 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
                       ;
     sub-expr          ::= operand postfix-op*
                       ;
-      operand         ::= if-expr
-                      | if-let-expr
-                      | while-expr
+      operand         ::= while-expr
                       | for-expr
                       | match-expr
                       | closure-expr
@@ -113,10 +111,6 @@ closure-expr          ::= closure-params type-annot? (block | statement)
 list-expr             ::= O-BRACKET (expr (COMMA expr)*)? COMMA? C-BRACKET
                       ;
 type-annot            ::= COLON type
-                      ;
-if-expr               ::= IF-KEYWORD expr block (ELSE-KEYWORD block)?
-                      ;
-if-let-expr           ::= IF-KEYWORD LET-KEYWORD pattern EQUALS expr block (ELSE-KEYWORD block)?
                       ;
 while-expr            ::= WHILE-KEYWORD expr block
                       ;

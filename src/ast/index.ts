@@ -133,7 +133,6 @@ export const astExprKinds = <const>[
     'binary-expr',
     'closure-expr',
     'list-expr',
-    'if-let-expr',
     'while-expr',
     'for-expr',
     'match-expr'
@@ -182,7 +181,6 @@ export const astKinds = <const>[
     'type-bounds',
     'fn-type',
     'generic',
-    'if-expr',
     'match-clause',
     'pattern',
     'con-pattern',

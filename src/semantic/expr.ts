@@ -3,7 +3,7 @@ import { Arg, AstNode } from '../ast'
 import { BinaryExpr, Expr, UnaryExpr } from '../ast/expr'
 import { MatchExpr } from '../ast/match'
 import { CallOp } from '../ast/op'
-import { ClosureExpr, ForExpr, Identifier, IfExpr, IfLetExpr, ListExpr, Name, Operand, WhileExpr } from '../ast/operand'
+import { ClosureExpr, ForExpr, Identifier, ListExpr, Name, Operand, WhileExpr } from '../ast/operand'
 import { FieldDef } from '../ast/type-def'
 import { Context, Scope, addError, enterScope, fnDefScope, instanceScope, leaveScope } from '../scope'
 import { bool, future, iter, iterable, show, string, unwrap } from '../scope/std'
@@ -74,12 +74,6 @@ export const checkOperand = (operand: Operand, ctx: Context): void => {
         case 'operand-expr':
             checkOperand(operand.operand, ctx)
             operand.type = operand.operand.type
-            break
-        case 'if-expr':
-            checkIfExpr(operand, ctx)
-            break
-        case 'if-let-expr':
-            checkIfLetExpr(operand, ctx)
             break
         case 'while-expr':
             checkWhileExpr(operand, ctx)
@@ -228,63 +222,6 @@ export const checkBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): void => {
     } else {
         addError(ctx, typeError(ctx, binaryExpr, binaryExpr.lOperand.type!, implTargetType))
         binaryExpr.type = unknownType
-    }
-}
-
-export const checkIfExpr = (ifExpr: IfExpr, ctx: Context): void => {
-    const module = ctx.moduleStack.at(-1)!
-    const scope = module.scopeStack.at(-1)!
-
-    checkExpr(ifExpr.condition, ctx)
-    const condType = ifExpr.condition.type ?? unknownType
-    if (!isAssignable(condType, bool, ctx)) {
-        addError(ctx, typeError(ctx, ifExpr.condition, condType, bool))
-    }
-
-    checkIfExprCommon(ifExpr, scope, ctx)
-}
-
-export const checkIfLetExpr = (ifLetExpr: IfLetExpr, ctx: Context): void => {
-    const module = ctx.moduleStack.at(-1)!
-    const scopeOuter = module.scopeStack.at(-1)!
-    const scope: Scope = {
-        kind: 'block',
-        definitions: new Map(),
-        closures: [],
-        isLoop: false,
-        allBranchesReturned: false
-    }
-    enterScope(module, scope, ctx)
-
-    checkExpr(ifLetExpr.expr, ctx)
-    assert(!!ifLetExpr.expr.type)
-    // pattern definitions should only be available in `then` block
-    checkPattern(ifLetExpr.pattern, ifLetExpr.expr.type!, ctx)
-
-    checkIfExprCommon(ifLetExpr, scopeOuter, ctx)
-
-    leaveScope(module, ctx)
-}
-
-export const checkIfExprCommon = (ifExpr: IfExpr | IfLetExpr, scope: Scope, ctx: Context): void => {
-    const thenAbr = checkBlock(ifExpr.thenBlock, ctx)
-    if (ifExpr.elseBlock) {
-        const elseAbr = checkBlock(ifExpr.elseBlock, ctx)
-
-        if (scope.kind === 'block' && thenAbr && elseAbr) {
-            scope.allBranchesReturned = true
-        }
-
-        const thenType = ifExpr.thenBlock.type!
-        const elseType = ifExpr.elseBlock.type!
-        const combined = combine(thenType, elseType, ctx)
-        if (combined) {
-            ifExpr.type = combined
-        } else {
-            ifExpr.type = { kind: 'unknown-type', mismatchedBranches: { then: thenType, else: elseType } }
-        }
-    } else {
-        ifExpr.type = { kind: 'unknown-type', mismatchedBranches: { then: ifExpr.thenBlock.type! } }
     }
 }
 

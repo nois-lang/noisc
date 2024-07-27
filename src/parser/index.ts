@@ -66,8 +66,6 @@ export const treeKinds = <const>[
     'type-bounds',
     'fn-type',
     'fn-type-params',
-    'if-expr',
-    'if-let-expr',
     'while-expr',
     'for-expr',
     'match-expr',

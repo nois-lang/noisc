@@ -38,18 +38,14 @@ export const parseSubExpr = (parser: Parser): void => {
 }
 
 /**
- * operand ::= if-expr | match-expr | closure-expr | O-PAREN expr C-PAREN | list-expr | STRING | CHAR | number | TRUE
+ * operand ::= match-expr | closure-expr | O-PAREN expr C-PAREN | list-expr | STRING | CHAR | number | TRUE
  * | FALSE | identifier | type
  */
 export const parseOperand = (parser: Parser): void => {
     const dynamicTokens: TokenKind[] = ['char', 'int', 'float', 'bool']
 
     const mark = parser.open()
-    if (parser.at('if-keyword') && parser.nth(1) === 'let-keyword') {
-        parseIfLetExpr(parser)
-    } else if (parser.at('if-keyword')) {
-        parseIfExpr(parser)
-    } else if (parser.at('while-keyword')) {
+    if (parser.at('while-keyword')) {
         parseWhileExpr(parser)
     } else if (parser.at('for-keyword')) {
         parseForExpr(parser)
@@ -92,37 +88,6 @@ export const parseListExpr = (parser: Parser): void => {
     }
     parser.expect('c-bracket')
     parser.close(mark, 'list-expr')
-}
-
-/**
- * if-expr ::= IF-KEYWORD expr block (ELSE-KEYWORD block)?
- */
-export const parseIfExpr = (parser: Parser): void => {
-    const mark = parser.open()
-    parser.expect('if-keyword')
-    parseExpr(parser)
-    parseBlock(parser)
-    if (parser.consume('else-keyword')) {
-        parseBlock(parser)
-    }
-    parser.close(mark, 'if-expr')
-}
-
-/**
- * if-let-expr ::= IF-KEYWORD LET-KEYWORD pattern EQUALS expr block (ELSE-KEYWORD block)?
- */
-export const parseIfLetExpr = (parser: Parser): void => {
-    const mark = parser.open()
-    parser.expect('if-keyword')
-    parser.expect('let-keyword')
-    parsePattern(parser)
-    parser.expect('equals')
-    parseExpr(parser)
-    parseBlock(parser)
-    if (parser.consume('else-keyword')) {
-        parseBlock(parser)
-    }
-    parser.close(mark, 'if-let-expr')
 }
 
 /**

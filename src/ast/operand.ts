@@ -2,7 +2,6 @@ import { LexerToken } from '../lexer/lexer'
 import { ParseNode, ParseTree, filterNonAstNodes } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
 import { Context, Definition } from '../scope'
-import { VirtualIdentifierMatch } from '../scope/vid'
 import { Virtual } from '../semantic'
 import { assert } from '../util/todo'
 import { Expr, buildExpr } from './expr'
@@ -12,8 +11,6 @@ import { Block, buildBlock, buildStatement } from './statement'
 import { Type, buildType } from './type'
 
 export type Operand = (
-    | IfExpr
-    | IfLetExpr
     | WhileExpr
     | ForExpr
     | MatchExpr
@@ -33,10 +30,6 @@ export type Operand = (
 export const buildOperand = (node: ParseNode, ctx: Context): Operand => {
     const n = filterNonAstNodes(node)[0]
     switch (n.kind) {
-        case 'if-expr':
-            return buildIfExpr(n, ctx)
-        case 'if-let-expr':
-            return buildIfLetExpr(n, ctx)
         case 'while-expr':
             return buildWhileExpr(n, ctx)
         case 'for-expr':
@@ -69,49 +62,6 @@ export const identifierFromOperand = (operand: Operand): Identifier | undefined 
         return identifierFromOperand(operand.operand)
     }
     return undefined
-}
-
-export type IfExpr = BaseAstNode & {
-    kind: 'if-expr'
-    condition: Expr
-    thenBlock: Block
-    elseBlock?: Block
-}
-
-export const buildIfExpr = (node: ParseNode, ctx: Context): IfExpr => {
-    const nodes = filterNonAstNodes(node)
-    let idx = 0
-    // skip if-keyword
-    idx++
-    const condition = buildExpr(nodes[idx++], ctx)
-    const thenBlock = buildBlock(nodes[idx++], ctx)
-    // skip else keyword
-    idx++
-    const elseBlock = nodes.at(idx) ? buildBlock(nodes[idx++], ctx) : undefined
-    return { kind: 'if-expr', parseNode: node, condition, thenBlock, elseBlock }
-}
-
-export type IfLetExpr = BaseAstNode & {
-    kind: 'if-let-expr'
-    pattern: Pattern
-    expr: Expr
-    thenBlock: Block
-    elseBlock?: Block
-}
-
-export const buildIfLetExpr = (node: ParseNode, ctx: Context): IfLetExpr => {
-    const nodes = filterNonAstNodes(node)
-    let idx = 0
-    // skip if and let keywords
-    idx++
-    idx++
-    const pattern = buildPattern(nodes[idx++], ctx)
-    const expr = buildExpr(nodes[idx++], ctx)
-    const thenBlock = buildBlock(nodes[idx++], ctx)
-    // skip else keyword
-    idx++
-    const elseBlock = nodes.at(idx) ? buildBlock(nodes[idx++], ctx) : undefined
-    return { kind: 'if-let-expr', parseNode: node, pattern, expr, thenBlock, elseBlock }
 }
 
 export type WhileExpr = BaseAstNode & {

@@ -161,53 +161,6 @@ describe('parser', () => {
         })
     })
 
-    describe('if-expr', () => {
-        it('general', () => {
-            const { tree, errors } = parse('if a { b } else { c }')
-            expect(errors).toEqual([])
-            // biome-ignore format: compact
-            expect(tree).toEqual(
-{ module:
-   [ { statement:
-        [ { expr:
-             [ { 'sub-expr':
-                  [ { operand:
-                       [ { 'if-expr':
-                            [ { 'if-keyword': 'if' },
-                              { expr: [ { 'sub-expr': [ { operand: [ { identifier: [ { name: 'a' } ] } ] } ] } ] },
-                              { block:
-                                 [ { 'o-brace': '{' },
-                                   { statement: [ { expr: [ { 'sub-expr': [ { operand: [ { identifier: [ { name: 'b' } ] } ] } ] } ] } ] },
-                                   { 'c-brace': '}' } ] },
-                              { 'else-keyword': 'else' },
-                              { block:
-                                 [ { 'o-brace': '{' },
-                                   { statement: [ { expr: [ { 'sub-expr': [ { operand: [ { identifier: [ { name: 'c' } ] } ] } ] } ] } ] },
-                                   { 'c-brace': '}' } ] } ] } ] } ] } ] } ] } ] }
-            )
-        })
-
-        it('mismatch paren', () => {
-            const { errors } = parse('if a { b) }')
-            expect(errors.length).toEqual(1)
-            expect(errors[0]).toEqual({
-                expected: [],
-                got: { kind: 'c-paren', span: { end: 9, start: 8 }, value: ')' },
-                message: 'expected statement'
-            })
-        })
-
-        it('duplicate else clause', () => {
-            const { errors } = parse('if a { b } else { c } else { d }')
-            expect(errors.length).toEqual(2)
-            expect(errors[0]).toEqual({
-                expected: [],
-                got: { kind: 'o-brace', span: { end: 28, start: 27 }, value: '{' },
-                message: 'expected statement'
-            })
-        })
-    })
-
     describe('match', () => {
         it('list-pattern', () => {
             const { tree, errors } = parse('match a { [] {} [b, tail] {} }')
