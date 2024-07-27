@@ -5,19 +5,14 @@ import { Checked } from '../semantic'
 import { Hole, buildHole } from './match'
 import { Identifier, Name, buildIdentifier, buildName } from './operand'
 
-export type Type = (Identifier | TypeBounds | FnType | Hole) & Partial<Checked>
+export type Type = (Identifier | FnType | Hole) & Partial<Checked>
 
 export const buildType = (node: ParseNode, ctx: Context): Type => {
     const n = filterNonAstNodes(node)[0]
     if (node.kind === 'type-annot') {
         return buildType(n, ctx)
-    } else if (n.kind === 'type-bounds') {
-        const typeBounds = buildTypeBounds(n, ctx)
-        if (typeBounds.bounds.length === 1) {
-            return typeBounds.bounds[0]
-        } else {
-            return typeBounds
-        }
+    } else if (n.kind === 'identifier') {
+        return buildIdentifier(n, ctx)
     } else if (n.kind === 'hole') {
         return buildHole(n)
     } else {

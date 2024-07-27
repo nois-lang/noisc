@@ -57,7 +57,7 @@ import {
     buildStatement,
     buildUseExpr
 } from './statement'
-import { FnType, Generic, Type, TypeBounds, buildType } from './type'
+import { FnType, Generic, Type, buildType } from './type'
 import { FieldDef, TypeDef, Variant } from './type-def'
 
 export type AstNode =
@@ -69,7 +69,6 @@ export type AstNode =
     | Arg
     | Block
     | Param
-    | TypeBounds
     | FnType
     | Generic
     | IfExpr

@@ -16,12 +16,12 @@ export const parseTypeAnnot = (parser: Parser): void => {
 }
 
 /**
- * type ::= type-bounds | fn-type | hole
+ * type ::= identifier | fn-type | hole
  */
 export const parseType = (parser: Parser): void => {
     const mark = parser.open()
     if (parser.atAny(nameLikeTokens)) {
-        parseTypeBounds(parser)
+        parseIdentifier(parser)
     } else if (parser.atAny(['pipe', 'o-angle'])) {
         parseFnType(parser)
     } else if (parser.at('underscore')) {

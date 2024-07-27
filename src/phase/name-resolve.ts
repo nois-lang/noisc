@@ -34,10 +34,6 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
             }
             break
         }
-        case 'type-bounds': {
-            node.bounds.forEach(b => resolveName(b, ctx))
-            break
-        }
         case 'fn-type': {
             resolveName(node.returnType, ctx)
             node.paramTypes.forEach(pt => resolveName(pt, ctx))
