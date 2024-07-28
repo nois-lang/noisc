@@ -35,8 +35,6 @@ import {
     FloatLiteral,
     ForExpr,
     Identifier,
-    IfExpr,
-    IfLetExpr,
     IntLiteral,
     ListExpr,
     Name,
@@ -71,7 +69,6 @@ export type AstNode =
     | Param
     | FnType
     | Generic
-    | IfExpr
     | MatchClause
     | Pattern
     | ConPattern
@@ -86,7 +83,6 @@ export type AstNode =
     | BinaryExpr
     | ClosureExpr
     | ListExpr
-    | IfLetExpr
     | WhileExpr
     | ForExpr
     | MatchExpr
