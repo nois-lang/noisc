@@ -28,7 +28,7 @@ const addDef = (node: Definition, module: Module, ctx: Context): void => {
         // TODO: duplicate import
         return
     }
-    module.topScope.set(key, node)
+    module.useScope.set(key, node)
 }
 
 const resolvePubVid = (vid: VirtualIdentifier, ctx: Context): Definition | undefined => {

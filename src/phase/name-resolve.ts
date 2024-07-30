@@ -1,6 +1,8 @@
 import { AstNode, AstNodeKind } from '../ast'
-import { Name } from '../ast/operand'
+import { Identifier, Name } from '../ast/operand'
+import { FnDef } from '../ast/statement'
 import { Context, Definition, DefinitionMap, defKey } from '../scope'
+import { unreachable } from '../util/todo'
 
 /**
  * Resolve every name to its definition
@@ -81,12 +83,12 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
         }
         case 'identifier': {
             node.typeArgs.forEach(ta => resolveName(ta, ctx))
-            const def = findName(node.names[0], ctx)
+            const def = findById(node, ctx)
             if (!def) {
                 // TODO: report error
                 break
             }
-            // TODO: check other names
+            node.def = def
             break
         }
         case 'name': {
@@ -247,12 +249,44 @@ const findParent = (ctx: Context, ofKind: AstNodeKind[]): AstNode | undefined =>
 
 const findName = (name: Name, ctx: Context): Definition | undefined => {
     const m = ctx.moduleStack.at(-1)!
-    for (const stack of [...m.scopeStack.toReversed(), m.topScope]) {
+    for (const stack of [...m.scopeStack.toReversed(), m.topScope, m.useScope]) {
         const def = findNameInStack(name, stack)
         if (def) return def
     }
     return undefined
 }
+
+const findById = (id: Identifier, ctx: Context): Definition | undefined => {
+    const def = findName(id.names[0], ctx)
+    if (!def || id.names.length === 1) return def
+    if (id.names.length > 2) {
+        // TODO: report error
+        return undefined
+    }
+    return findWithinDef(def, id.names[1], ctx)
+}
+
+const findWithinDef = (def: Definition, name: Name, ctx: Context): Definition | undefined => {
+    const key = defKey(name)
+    switch (def.kind) {
+        case 'module': {
+            return def.topScope.get(key)
+        }
+        case 'trait-def':
+        case 'impl-def': {
+            if (def.kind === 'impl-def' && def.forTrait) return unreachable()
+            return <FnDef | undefined>def.block.statements.find(s => s.kind === 'fn-def' && defKey(s) === key)
+        }
+        case 'type-def': {
+            return def.variants.find(v => defKey(v) === key)
+        }
+        default: {
+            // TODO: report error
+            return undefined
+        }
+    }
+}
+
 const findNameInStack = (name: Name, stack: DefinitionMap): Definition | undefined => {
     return stack.get(defKey(name))
 }
