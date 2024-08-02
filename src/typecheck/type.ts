@@ -1,19 +1,8 @@
-import { HoleType, UnknownType, VidType, VirtualGeneric } from './index'
+import { VirtualIdentifier } from '../scope/vid'
 
-export const unknownType: UnknownType = { kind: 'unknown-type' }
-
-export const holeType: HoleType = { kind: 'hole-type' }
-
-export const selfType: VirtualGeneric = { kind: 'generic', name: 'Self', key: 'Self', bounds: [] }
-
-export const unitType: VidType = {
-    kind: 'vid-type',
-    identifier: { names: ['std', 'unit', 'Unit'] },
-    typeArgs: []
-}
-
-export const neverType: VidType = {
-    kind: 'vid-type',
-    identifier: { names: ['std', 'never', 'Never'] },
-    typeArgs: []
-}
+export const stringVid: VirtualIdentifier = { names: ['String'], typeArgs: [] }
+export const charVid: VirtualIdentifier = { names: ['Char'], typeArgs: [] }
+export const intVid: VirtualIdentifier = { names: ['Int'], typeArgs: [] }
+export const floatVid: VirtualIdentifier = { names: ['Float'], typeArgs: [] }
+export const boolVid: VirtualIdentifier = { names: ['Bool'], typeArgs: [] }
+export const unitVid: VirtualIdentifier = { names: ['Unit'], typeArgs: [] }

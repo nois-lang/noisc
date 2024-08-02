@@ -1,23 +1,23 @@
 import { Module } from '../ast'
+import { Identifier } from '../ast/operand'
 import { FnDef } from '../ast/statement'
 import { Context, Definition, addError, defKey } from '../scope'
-import { vidEq, vidFromString, vidToString } from '../scope/util'
-import { VirtualIdentifier } from '../scope/vid'
 import { notFoundError } from '../semantic/error'
-import { useExprToVids } from '../semantic/use-expr'
+import { flatUseExprs } from '../semantic/use-expr'
+import { idEq, idFromString, idToString } from '../typecheck'
 
 /**
  * Check use exprs and populate module.useScope
  */
 export const resolveImport = (module: Module, ctx: Context): void => {
-    module.references = module.useExprs.filter(e => !e.pub).flatMap(e => useExprToVids(e))
-    module.reExports = module.useExprs.filter(e => e.pub).flatMap(e => useExprToVids(e))
-    ;[...module.references, ...module.reExports].forEach(vue => {
-        const node = resolvePubVid(vue.vid, ctx)
+    module.references = module.useExprs.filter(e => !e.pub).flatMap(e => flatUseExprs(e))
+    module.reExports = module.useExprs.filter(e => e.pub).flatMap(e => flatUseExprs(e))
+    ;[...module.references, ...module.reExports].forEach(useExpr => {
+        const node = resolvePubId(useExpr, ctx)
         if (node) {
             addDef(node, module, ctx)
         } else {
-            addError(ctx, notFoundError(ctx, vue.useExpr, vidToString(vue.vid)))
+            addError(ctx, notFoundError(ctx, useExpr, idToString(useExpr)))
         }
     })
 }
@@ -31,43 +31,43 @@ const addDef = (node: Definition, module: Module, ctx: Context): void => {
     module.useScope.set(key, node)
 }
 
-const resolvePubVid = (vid: VirtualIdentifier, ctx: Context): Definition | undefined => {
-    if (vid.names.length < 2) return undefined
+const resolvePubId = (id: Identifier, ctx: Context): Definition | undefined => {
+    if (id.names.length < 2) return undefined
 
-    const pkgName = vid.names[0]
+    const pkgName = id.names[0].value
     const pkg = ctx.packages.find(p => p.name === pkgName)
     if (!pkg) return undefined
 
     // base case, e.g. std::option::Option
-    let nodeName = vid.names.at(-1)!
-    let modVid = vidFromString(vid.names.slice(1, -1).join('::'))
-    let mod = pkg.modules.find(m => vidEq(m.identifier, modVid))
+    let nodeName = id.names.at(-1)!.value
+    let modVid = idFromString(id.names.slice(1, -1).join('::'))
+    let mod = pkg.modules.find(m => idEq(m.identifier, modVid))
     if (mod) {
         const node = mod.topScope.get(nodeName)
         if (node) return node
     }
 
     // case of Variant | FnDef, e.g. std::option::Option::Some
-    if (vid.names.length < 3) return undefined
-    nodeName = vid.names.at(-2)!
-    modVid = vidFromString(vid.names.slice(1, -2).join('::'))
-    mod = pkg.modules.find(m => vidEq(m.identifier, modVid))
+    if (id.names.length < 3) return undefined
+    nodeName = id.names.at(-2)!.value
+    modVid = idFromString(id.names.slice(1, -2).join('::'))
+    mod = pkg.modules.find(m => idEq(m.identifier, modVid))
     if (mod) {
         const node = mod.topScope.get(nodeName)
         if (node) {
             switch (node.kind) {
                 case 'type-def': {
-                    const vName = vid.names.at(-1)!
-                    const v = node.variants.find(v => v.name.value === vName)
+                    const vName = id.names.at(-1)!
+                    const v = node.variants.find(v => v.name.value === vName.value)
                     if (v) return v
                     break
                 }
                 case 'trait-def':
                 case 'impl-def': {
-                    const mName = vid.names.at(-1)!
+                    const mName = id.names.at(-1)!
                     // TODO: report private matches as private, not just "not found"
                     const m = <FnDef | undefined>(
-                        node.block.statements.find(s => s.kind === 'fn-def' && s.pub && s.name.value === mName)
+                        node.block.statements.find(s => s.kind === 'fn-def' && s.pub && s.name.value === mName.value)
                     )
                     if (m) return m
                     break

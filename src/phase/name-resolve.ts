@@ -95,7 +95,7 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
             if (findParent(ctx, ['pattern'])) {
                 addDef(node.value, node, ctx)
             } else {
-                const def = findName(node, ctx)
+                const def = findName(node.value, ctx)
                 if (!def) {
                     // TODO: report error
                     break
@@ -233,6 +233,15 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
     m.astStack.pop()
 }
 
+export const findName = (name: string, ctx: Context): Definition | undefined => {
+    const m = ctx.moduleStack.at(-1)!
+    for (const stack of [...m.scopeStack.toReversed(), m.topScope, m.useScope]) {
+        const def = findNameInStack(name, stack)
+        if (def) return def
+    }
+    return undefined
+}
+
 const addDef = (name: string, def: Definition, ctx: Context): void => {
     const m = ctx.moduleStack.at(-1)!
     const scope = m.scopeStack.at(-1) ?? m.topScope
@@ -247,17 +256,8 @@ const findParent = (ctx: Context, ofKind: AstNodeKind[]): AstNode | undefined =>
     return m.astStack.toReversed().find(n => ofKind.includes(n.kind))
 }
 
-const findName = (name: Name, ctx: Context): Definition | undefined => {
-    const m = ctx.moduleStack.at(-1)!
-    for (const stack of [...m.scopeStack.toReversed(), m.topScope, m.useScope]) {
-        const def = findNameInStack(name, stack)
-        if (def) return def
-    }
-    return undefined
-}
-
 const findById = (id: Identifier, ctx: Context): Definition | undefined => {
-    const def = findName(id.names[0], ctx)
+    const def = findName(id.names[0].value, ctx)
     if (!def || id.names.length === 1) return def
     if (id.names.length > 2) {
         // TODO: report error
@@ -287,8 +287,8 @@ const findWithinDef = (def: Definition, name: Name, ctx: Context): Definition | 
     }
 }
 
-const findNameInStack = (name: Name, stack: DefinitionMap): Definition | undefined => {
-    return stack.get(defKey(name))
+const findNameInStack = (name: string, stack: DefinitionMap): Definition | undefined => {
+    return stack.get(name)
 }
 
 const withScope = <T>(ctx: Context, f: () => T): T => {

@@ -1,22 +1,14 @@
+import { Identifier } from '../ast/operand'
 import { UseExpr } from '../ast/statement'
-import { VirtualIdentifier } from '../scope/vid'
 
-export type VirtualUseExpr = {
-    vid: VirtualIdentifier
-    useExpr: UseExpr
-}
-
-export const useExprToVids = (useExpr: UseExpr): VirtualUseExpr[] => {
+export const flatUseExprs = (useExpr: UseExpr): Identifier[] => {
     if (Array.isArray(useExpr.expr)) {
         return useExpr.expr.flatMap(expr => {
             const scope = [...useExpr.scope, ...expr.scope]
-            return useExprToVids({ ...useExpr, scope, expr: expr.expr })
+            return flatUseExprs({ ...useExpr, scope, expr: expr.expr })
         })
-    } else if (useExpr.expr.value === 'self') {
-        const vid: VirtualIdentifier = { names: useExpr.scope.map(n => n.value) }
-        return [{ vid, useExpr }]
     } else {
-        const vid: VirtualIdentifier = { names: [...useExpr.scope.map(n => n.value), useExpr.expr.value] }
-        return [{ vid, useExpr }]
+        const names = useExpr.expr.value === 'self' ? [...useExpr.scope] : [...useExpr.scope, useExpr.expr]
+        return [{ kind: 'identifier', names, typeArgs: [] }]
     }
 }

@@ -1,8 +1,8 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { Context, DefinitionMap } from '../scope'
 import { VirtualIdentifier, VirtualIdentifierMatch } from '../scope/vid'
-import { VirtualUseExpr } from '../semantic/use-expr'
 import { Source } from '../source'
+import { InferredType } from '../typecheck'
 import { BinaryExpr, Expr, OperandExpr, UnaryExpr, buildExpr } from './expr'
 import { ConPattern, FieldPattern, Hole, ListPattern, MatchClause, MatchExpr, Pattern, buildPattern } from './match'
 import {
@@ -120,7 +120,8 @@ export type AstNode =
     | AwaitOp
 
 export type BaseAstNode = {
-    parseNode: ParseNode
+    parseNode?: ParseNode
+    type?: InferredType
 }
 
 export const astExprKinds = <const>[
@@ -225,11 +226,11 @@ export type Module = BaseAstNode & {
     /**
      * All vids accessible from the current module, based on {@link useExprs}
      */
-    references?: VirtualUseExpr[]
+    references?: Identifier[]
     /**
      * All vids that are "re-exported" from other modules, based on {@link useExprs}
      */
-    reExports?: VirtualUseExpr[]
+    reExports?: Identifier[]
     /**
      * Persistent top level scope
      */
