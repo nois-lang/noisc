@@ -235,11 +235,21 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
 
 export const findName = (name: string, ctx: Context): Definition | undefined => {
     const m = ctx.moduleStack.at(-1)!
-    for (const stack of [...m.scopeStack.toReversed(), m.topScope, m.useScope]) {
+    for (const stack of [...m.scopeStack.toReversed(), m.topScope, m.useScope, ctx.prelude!.useScope!]) {
         const def = findNameInStack(name, stack)
         if (def) return def
     }
     return undefined
+}
+
+export const findById = (id: Identifier, ctx: Context): Definition | undefined => {
+    const def = findName(id.names[0].value, ctx)
+    if (!def || id.names.length === 1) return def
+    if (id.names.length > 2) {
+        // TODO: report error
+        return undefined
+    }
+    return findWithinDef(def, id.names[1], ctx)
 }
 
 const addDef = (name: string, def: Definition, ctx: Context): void => {
@@ -254,16 +264,6 @@ const addDef = (name: string, def: Definition, ctx: Context): void => {
 const findParent = (ctx: Context, ofKind: AstNodeKind[]): AstNode | undefined => {
     const m = ctx.moduleStack.at(-1)!
     return m.astStack.toReversed().find(n => ofKind.includes(n.kind))
-}
-
-const findById = (id: Identifier, ctx: Context): Definition | undefined => {
-    const def = findName(id.names[0].value, ctx)
-    if (!def || id.names.length === 1) return def
-    if (id.names.length > 2) {
-        // TODO: report error
-        return undefined
-    }
-    return findWithinDef(def, id.names[1], ctx)
 }
 
 const findWithinDef = (def: Definition, name: Name, ctx: Context): Definition | undefined => {

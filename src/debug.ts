@@ -5,7 +5,7 @@ export const debugAst = (node: AstNode): any => {
     if (typeof node !== 'object') return node
     return Object.fromEntries(
         Object.entries(node)
-            .filter(([p]) => !['parseNode', 'source'].includes(p))
+            .filter(([p]) => !['parseNode', 'source', 'def'].includes(p))
             .map(([p, v]) => {
                 if (p === 'type') {
                     return [p, inferredTypeToString(v)]
