@@ -14,7 +14,12 @@ export const reportErrors = (ctx: Context): void | never => {
     if (ctx.errors.length > 0) {
         for (const error of ctx.errors) {
             console.error(
-                prettySourceMessage(colorError(error.message), getSpan(error.node.parseNode), error.source, error.notes)
+                prettySourceMessage(
+                    colorError(error.message),
+                    error.source,
+                    error.node.parseNode ? getSpan(error.node.parseNode) : undefined,
+                    error.notes
+                )
             )
         }
         process.exit(1)
@@ -26,8 +31,8 @@ export const reportWarnings = (ctx: Context): void | never => {
         console.error(
             prettySourceMessage(
                 colorWarning(warning.message),
-                getSpan(warning.node.parseNode),
                 warning.source,
+                warning.node.parseNode ? getSpan(warning.node.parseNode) : undefined,
                 warning.notes
             )
         )

@@ -31,10 +31,15 @@ export const colorWarning = (message: string): string => {
     return yellow(message)
 }
 
-export const prettySourceMessage = (message: string, span: Span, source: Source, notes: string[] = []): string => {
-    const start = indexToLocation(span.start, source.code)!
-    const locationStr = `${source.filepath}:${locationToString(start)}`
-    const locationMsg = `  at ${locationStr}`
-    const notesStr = notes.length > 0 ? notes.map(n => `  note: ${n}`).join('\n') : ''
-    return [message, locationMsg, prettyLineAt(span, source), notesStr].filter(s => s.length > 0).join('\n')
+export const prettySourceMessage = (message: string, source: Source, span?: Span, notes: string[] = []): string => {
+    if (span) {
+        const start = indexToLocation(span.start, source.code)!
+        const locationStr = `${source.filepath}:${locationToString(start)}`
+        const locationMsg = `  at ${locationStr}`
+        const notesStr = notes.length > 0 ? notes.map(n => `  note: ${n}`).join('\n') : ''
+        return [message, locationMsg, prettyLineAt(span, source), notesStr].filter(s => s.length > 0).join('\n')
+    } else {
+        const notesStr = notes.length > 0 ? notes.map(n => `  note: ${n}`).join('\n') : ''
+        return [message, notesStr].filter(s => s.length > 0).join('\n')
+    }
 }
