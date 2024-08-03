@@ -1,6 +1,5 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { Context, DefinitionMap } from '../scope'
-import { VirtualIdentifier, VirtualIdentifierMatch } from '../scope/vid'
 import { Source } from '../source'
 import { InferredType } from '../typecheck'
 import { BinaryExpr, Expr, OperandExpr, UnaryExpr, buildExpr } from './expr'
@@ -216,7 +215,7 @@ export const compactAstNode = (node: AstNode): any => {
 export type Module = BaseAstNode & {
     kind: 'module'
     source: Source
-    identifier: VirtualIdentifier
+    identifier: Identifier
     mod: boolean
     block: Block
 
@@ -239,7 +238,7 @@ export type Module = BaseAstNode & {
     /**
      * List of resolved imports used by this module
      */
-    imports: VirtualIdentifierMatch[]
+    imports: Identifier[]
     /**
      * Map of definitions accessible in this module via use exprs
      */
@@ -249,7 +248,7 @@ export type Module = BaseAstNode & {
 
 export const buildModuleAst = (
     node: ParseNode,
-    id: VirtualIdentifier,
+    id: Identifier,
     source: Source,
     mod: boolean,
     ctx: Context,

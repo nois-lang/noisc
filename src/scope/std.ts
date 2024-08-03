@@ -1,5 +1,5 @@
+import { idFromString } from '.'
 import { Identifier } from '../ast/operand'
-import { idFromString } from '../typecheck'
 
 export const preludeVid = idFromString('std::prelude')
 

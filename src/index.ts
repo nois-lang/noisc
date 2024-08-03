@@ -11,7 +11,7 @@ import { resolveImport } from './phase/import-resolve'
 import { resolveModuleScope } from './phase/module-resolve'
 import { resolveName } from './phase/name-resolve'
 import { collectTypeBounds } from './phase/type-bound'
-import { Context, eachModule as forEachModule, pathToVid } from './scope'
+import { Context, eachModule as forEachModule, pathToId } from './scope'
 import { Source } from './source'
 import { assert } from './util/todo'
 
@@ -91,13 +91,13 @@ if (isDir) {
     })
 } else {
     const source: Source = { code: readFileSync(config.pkgPath).toString(), filepath: config.pkgPath }
-    const moduleAst = buildModule(source, pathToVid(basename(config.pkgPath)), ctx)
+    const moduleAst = buildModule(source, pathToId(basename(config.pkgPath)), ctx)
     if (!moduleAst) {
         process.exit(1)
     }
     pkg = {
         path: source.filepath,
-        name: moduleAst.identifier.names.at(-1)!,
+        name: moduleAst.identifier.names.at(-1)!.value,
         modules: [moduleAst],
         compiled: false
     }
@@ -119,7 +119,7 @@ if (!std) {
 }
 
 ctx.packages = packages
-ctx.prelude = std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!
+ctx.prelude = std.modules.find(m => m.identifier.names.at(-1)!.value === 'prelude')!
 assert(!!ctx.prelude, 'no prelude')
 
 const phases = [resolveModuleScope, resolveImport, resolveName, collectTypeBounds]

@@ -2,9 +2,9 @@ import { Module } from '../ast'
 import { Identifier } from '../ast/operand'
 import { FnDef } from '../ast/statement'
 import { Context, Definition, addError, defKey } from '../scope'
+import { idEq, idFromString, idToString } from '../scope'
 import { notFoundError } from '../semantic/error'
 import { flatUseExprs } from '../semantic/use-expr'
-import { idEq, idFromString, idToString } from '../typecheck'
 
 /**
  * Check use exprs and populate module.useScope

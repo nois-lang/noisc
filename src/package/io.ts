@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'fs'
 import { extname, join, relative } from 'path'
 import { Module } from '../ast'
-import { Context, pathToVid } from '../scope'
+import { Context, pathToId } from '../scope'
 import { Source } from '../source'
 import { buildModule } from './build'
 import { Package } from './index'
@@ -13,7 +13,7 @@ export const buildPackage = (
     compiled: boolean = false
 ): Package | undefined => {
     const modules = getPackageModuleSources(path).map(s =>
-        buildModule(s, pathToVid(relative(path, s.filepath), name), ctx, compiled)
+        buildModule(s, pathToId(relative(path, s.filepath), name), ctx, compiled)
     )
     if (modules.some(m => !m)) {
         return undefined

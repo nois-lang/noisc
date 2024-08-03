@@ -1,6 +1,6 @@
 import { AstNodeKind } from '../ast'
 import { Identifier } from '../ast/operand'
-import { idFromString } from '../typecheck'
+import { idFromString } from '../scope'
 
 export const operatorImplMap: Map<AstNodeKind, Identifier> = new Map([
     ['add-op', idFromString('std::num::Num::add')],
