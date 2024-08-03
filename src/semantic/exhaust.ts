@@ -28,8 +28,6 @@
 import { MatchExpr, PatternExpr } from '../ast/match'
 import { Variant } from '../ast/type-def'
 import { Context, addError, addWarning } from '../scope'
-import { concatVid, idToVid, vidFromScope, vidFromString, vidToString } from '../scope/util'
-import { VirtualIdentifierMatch, resolveVid } from '../scope/vid'
 import { assert } from '../util/todo'
 import { nonExhaustiveMatchError, unreachableMatchClauseError } from './error'
 
@@ -40,7 +38,7 @@ export type MatchNode = MatchType | MatchVariant | Exhaustive | Unmatched
 
 export type MatchType = {
     kind: 'type'
-    ref: VirtualIdentifierMatch<Variant>
+    ref: Variant
     variants: Map<string, MatchTree>
 }
 

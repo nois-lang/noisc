@@ -7,8 +7,6 @@ import { Config } from '../config'
 import { Package } from '../package'
 import { SemanticError } from '../semantic/error'
 import { unreachable } from '../util/todo'
-import { vidToString } from './util'
-import { VirtualIdentifier } from './vid'
 
 export type Context = {
     config: Config

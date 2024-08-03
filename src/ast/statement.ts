@@ -1,6 +1,5 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { Context } from '../scope'
-import { InstanceRelation } from '../scope/trait'
 import { assert } from '../util/todo'
 import { Expr, buildExpr } from './expr'
 import { BaseAstNode, Param, buildParam } from './index'
@@ -150,7 +149,6 @@ export type ImplDef = BaseAstNode & {
     forTrait?: Identifier
     block: Block
     superMethods?: CallOp[]
-    rel?: InstanceRelation
 }
 
 export const buildImplDef = (node: ParseNode, ctx: Context): ImplDef => {

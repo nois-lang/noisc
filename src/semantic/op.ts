@@ -1,20 +1,20 @@
 import { AstNodeKind } from '../ast'
-import { vidFromString } from '../scope/util'
-import { VirtualIdentifier } from '../scope/vid'
+import { Identifier } from '../ast/operand'
+import { idFromString } from '../typecheck'
 
-export const operatorImplMap: Map<AstNodeKind, VirtualIdentifier> = new Map([
-    ['add-op', vidFromString('std::num::Num::add')],
-    ['sub-op', vidFromString('std::num::Num::sub')],
-    ['mult-op', vidFromString('std::num::Num::mult')],
-    ['div-op', vidFromString('std::num::Num::div')],
-    ['exp-op', vidFromString('std::num::Num::exp')],
-    ['eq-op', vidFromString('std::eq::Eq::eq')],
-    ['ne-op', vidFromString('std::eq::Eq::ne')],
-    ['ge-op', vidFromString('std::ord::Ord::ge')],
-    ['le-op', vidFromString('std::ord::Ord::le')],
-    ['gt-op', vidFromString('std::ord::Ord::gt')],
-    ['lt-op', vidFromString('std::ord::Ord::lt')],
-    ['and-op', vidFromString('std::bool::Bool::and')],
-    ['or-op', vidFromString('std::bool::Bool::or')],
-    ['mod-op', vidFromString('std::int::Int::mod')]
+export const operatorImplMap: Map<AstNodeKind, Identifier> = new Map([
+    ['add-op', idFromString('std::num::Num::add')],
+    ['sub-op', idFromString('std::num::Num::sub')],
+    ['mult-op', idFromString('std::num::Num::mult')],
+    ['div-op', idFromString('std::num::Num::div')],
+    ['exp-op', idFromString('std::num::Num::exp')],
+    ['eq-op', idFromString('std::eq::Eq::eq')],
+    ['ne-op', idFromString('std::eq::Eq::ne')],
+    ['ge-op', idFromString('std::ord::Ord::ge')],
+    ['le-op', idFromString('std::ord::Ord::le')],
+    ['gt-op', idFromString('std::ord::Ord::gt')],
+    ['lt-op', idFromString('std::ord::Ord::lt')],
+    ['and-op', idFromString('std::bool::Bool::and')],
+    ['or-op', idFromString('std::bool::Bool::or')],
+    ['mod-op', idFromString('std::int::Int::mod')]
 ])

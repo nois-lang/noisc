@@ -15,17 +15,7 @@ import {
     resolveTypeImpl,
     typeDefToVirtualType
 } from '../scope/trait'
-import { idToVid, vidEq, vidFromString, vidToString } from '../scope/util'
 import { MethodDef, VariantDef, VirtualIdentifier, VirtualIdentifierMatch, resolveVid, typeKinds } from '../scope/vid'
-import {
-    VidType,
-    VirtualFnType,
-    VirtualType,
-    combine,
-    extractConcreteSupertype,
-    isAssignable,
-    typeToVirtual
-} from '../typecheck'
 import {
     instanceGenericMap,
     makeFnGenericMap,

@@ -6,16 +6,13 @@ import { Name, Operand } from '../ast/operand'
 import { Type } from '../ast/type'
 import { Context, addError } from '../scope'
 import { getInstanceForType, resolveMethodImpl, resolveTypeImpl } from '../scope/trait'
-import { vidFromScope, vidFromString, vidToString } from '../scope/util'
 import { MethodDef, VirtualIdentifier, resolveVid, typeKinds } from '../scope/vid'
-import { VirtualFnType, VirtualType, combine, genericToVirtual, typeToVirtual } from '../typecheck'
 import {
     makeFnGenericMap,
     makeFnTypeArgGenericMap,
     makeGenericMapOverStructure,
     resolveType
 } from '../typecheck/generic'
-import { selfType } from '../typecheck/type'
 import { assert } from '../util/todo'
 import {
     narrowFieldAccessError,

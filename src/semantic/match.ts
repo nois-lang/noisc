@@ -2,11 +2,7 @@ import { ConPattern, Pattern } from '../ast/match'
 import { Name } from '../ast/operand'
 import { Context, addError, defKey } from '../scope'
 import { list } from '../scope/std'
-import { idToVid, vidEq, vidToString } from '../scope/util'
-import { NameDef, resolveVid } from '../scope/vid'
-import { VidType, VirtualFnType, VirtualType, isAssignable } from '../typecheck'
 import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
-import { unknownType } from '../typecheck/type'
 import { unreachable } from '../util/todo'
 import {
     nonDestructurableTypeError,

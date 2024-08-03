@@ -4,13 +4,8 @@ import { Block, BreakStmt, FnDef, ImplDef, ReturnStmt, Statement, TraitDef, VarD
 import { Generic, Type } from '../ast/type'
 import { TypeDef, Variant } from '../ast/type-def'
 import {
-    BlockScope,
     Context,
     DefinitionMap,
-    FnDefScope,
-    InstanceScope,
-    Scope,
-    TypeDefScope,
     addError,
     addWarning,
     defKey,
@@ -20,12 +15,7 @@ import {
     leaveScope,
     unwindScope
 } from '../scope'
-import { InstanceRelation, findSuperRelChains } from '../scope/trait'
-import { idToVid, vidEq, vidToString } from '../scope/util'
-import { Definition, MethodDef, NameDef, VirtualIdentifierMatch, resolveVid, typeKinds } from '../scope/vid'
-import { VirtualFnType, VirtualType, genericToVirtual, isAssignable, typeEq, typeToVirtual } from '../typecheck'
 import { instanceGenericMap, makeFnGenericMap, makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
-import { holeType, neverType, selfType, unitType, unknownType } from '../typecheck/type'
 import { assert, todo, unreachable } from '../util/todo'
 import {
     argCountMismatchError,
@@ -57,7 +47,6 @@ import { checkExpr, checkQualifiedMethodCall, checkResolvedClosureExpr } from '.
 import { checkPattern } from './match'
 import { typeNames } from './type-def'
 import { Upcast, UpcastFn, makeUpcast, upcast } from './upcast'
-import { VirtualUseExpr, useExprToVids } from './use-expr'
 
 export type Checked = {
     checked: boolean

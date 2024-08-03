@@ -5,8 +5,6 @@ import { Package } from '../package'
 import { buildModule } from '../package/build'
 import { buildPackage } from '../package/io'
 import { Context, pathToVid } from '../scope'
-import { buildInstanceRelations } from '../scope/trait'
-import { vidToString } from '../scope/util'
 import { Source } from '../source'
 import { checkModule, checkTopLevelDefinition, prepareModule } from './index'
 
