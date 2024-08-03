@@ -62,8 +62,9 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
         case 'param': {
             // TODO: handle self
             if (node.paramType) return undefined
+            resolveTypeRef(node.type!).known = node.paramType
             collectTypeBounds(node.pattern, ctx, node.paramType)
-            return node.paramType
+            return node.type
         }
         case 'generic': {
             // TODO
@@ -111,7 +112,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
         }
         case 'string-interpolated': {
             node.tokens.filter(t => typeof t !== 'string').forEach(t => collectTypeBounds(t, ctx))
-            addBound(node.type!, stringVid)
+            resolveTypeRef(node.type!).known = stringVid
             break
         }
         case 'operand-expr': {
@@ -163,23 +164,23 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
             break
         }
         case 'string-literal': {
-            addBound(node.type!, stringVid)
+            resolveTypeRef(node.type!).known = stringVid
             break
         }
         case 'char-literal': {
-            addBound(node.type!, charVid)
+            resolveTypeRef(node.type!).known = charVid
             break
         }
         case 'int-literal': {
-            addBound(node.type!, intVid)
+            resolveTypeRef(node.type!).known = intVid
             break
         }
         case 'float-literal': {
-            addBound(node.type!, floatVid)
+            resolveTypeRef(node.type!).known = floatVid
             break
         }
         case 'bool-literal': {
-            addBound(node.type!, boolVid)
+            resolveTypeRef(node.type!).known = boolVid
             break
         }
         case 'method-call-op': {

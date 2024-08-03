@@ -2,17 +2,18 @@ import { Identifier } from '../ast/operand'
 import { Type } from '../ast/type'
 import { ParseNode } from '../parser'
 
-export type InferredType = InferredTypeDef | { kind: 'ref'; ref: InferredTypeDef }
+export type InferredType = InferredTypeDef | { kind: 'ref'; ref: InferredType }
 
 export type InferredTypeDef = {
     kind: 'inferred'
+    known?: Type
     bounds: Type[]
     unified?: Type
 }
 
 export const makeInferredType = (bounds: Type[] = []): InferredType => ({ kind: 'inferred', bounds })
 
-export const resolveTypeRef = (t: InferredType): InferredTypeDef => (t.kind === 'inferred' ? t : resolveTypeRef(t.ref))
+export const resolveTypeRef = (t: InferredType): InferredTypeDef => (t.kind === 'ref' ? resolveTypeRef(t.ref) : t)
 
 export const typeToString = (t: Type): string => {
     switch (t.kind) {
