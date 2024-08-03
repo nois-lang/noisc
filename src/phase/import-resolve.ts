@@ -40,8 +40,13 @@ const resolvePubId = (id: Identifier, ctx: Context): Definition | undefined => {
 
     // base case, e.g. std::option::Option
     let nodeName = id.names.at(-1)!.value
-    let modVid = idFromString(id.names.slice(1, -1).join('::'))
-    let mod = pkg.modules.find(m => idEq(m.identifier, modVid))
+    let modId = idFromString(
+        id.names
+            .slice(0, -1)
+            .map(n => n.value)
+            .join('::')
+    )
+    let mod = pkg.modules.find(m => idEq(m.identifier, modId))
     if (mod) {
         const node = mod.topScope.get(nodeName)
         if (node) return node
@@ -50,8 +55,8 @@ const resolvePubId = (id: Identifier, ctx: Context): Definition | undefined => {
     // case of Variant | FnDef, e.g. std::option::Option::Some
     if (id.names.length < 3) return undefined
     nodeName = id.names.at(-2)!.value
-    modVid = idFromString(id.names.slice(1, -2).join('::'))
-    mod = pkg.modules.find(m => idEq(m.identifier, modVid))
+    modId = idFromString(id.names.slice(1, -2).join('::'))
+    mod = pkg.modules.find(m => idEq(m.identifier, modId))
     if (mod) {
         const node = mod.topScope.get(nodeName)
         if (node) {
