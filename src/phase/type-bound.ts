@@ -1,7 +1,79 @@
 import { AstNode } from '../ast'
+import { Identifier } from '../ast/operand'
 import { Context } from '../scope'
+import { operatorImplMap } from '../semantic/op'
 import { InferredType, makeInferredType } from '../typecheck'
-import { boolVid, charVid, floatVid, intVid, stringVid } from '../typecheck/type'
+import { boolId, charId, floatId, intId, stringId, unitId } from '../typecheck/type'
+import { assert, todo } from '../util/todo'
+import { findById } from './name-resolve'
+
+/**
+ * Set known types of public nodes
+ */
+export const setPubType = (node: AstNode, ctx: Context, parent?: AstNode) => {
+    switch (node.kind) {
+        case 'module': {
+            node.block.statements.forEach(s => setPubType(s, ctx))
+            break
+        }
+        case 'var-def': {
+            if (node.pattern.expr.kind !== 'name') break
+            const def = node.pattern.expr
+            def.type = makeInferredType()
+            def.type.known = node.varType
+            break
+        }
+        case 'fn-def': {
+            node.params.forEach(p => {
+                if (p.paramType) {
+                    p.type = makeInferredType()
+                    p.type.known = p.paramType
+                } else {
+                    // TODO: self param
+                }
+            })
+            node.type = makeInferredType()
+            node.type!.known = {
+                kind: 'fn-type',
+                parseNode: node.name.parseNode,
+                generics: node.generics,
+                paramTypes: node.params.map(p => p.type?.known ?? { kind: 'hole' }),
+                returnType: node.returnType ?? unitId
+            }
+            break
+        }
+        case 'type-def': {
+            // TODO: generics
+            const nodeId: Identifier = {
+                kind: 'identifier',
+                parseNode: node.name.parseNode,
+                names: [node.name],
+                typeArgs: []
+            }
+            node.variants.forEach(v => {
+                v.fieldDefs.forEach(f => {
+                    f.type = makeInferredType()
+                    f.type.known = f.fieldType
+                })
+                v.type = makeInferredType()
+                v.type.known = {
+                    kind: 'fn-type',
+                    parseNode: node.name.parseNode,
+                    generics: node.generics,
+                    paramTypes: v.fieldDefs.map(f => f.type!.known!),
+                    returnType: nodeId
+                }
+            })
+            break
+        }
+        case 'trait-def':
+        case 'impl-def': {
+            if (node.kind === 'impl-def' && node.forTrait) break
+            node.block.statements.forEach(s => setPubType(s, ctx, node))
+            break
+        }
+    }
+}
 
 /**
  * Assign every suitable node its type and type bounds
@@ -112,7 +184,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         }
         case 'string-interpolated': {
             node.tokens.filter(t => typeof t !== 'string').forEach(t => collectTypeBounds(t, ctx))
-            node.type!.known = stringVid
+            node.type!.known = stringId
             break
         }
         case 'operand-expr': {
@@ -126,6 +198,12 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         case 'binary-expr': {
             collectTypeBounds(node.lOperand, ctx)
             collectTypeBounds(node.rOperand, ctx)
+            const methodId = operatorImplMap.get(node.binaryOp.kind)
+            assert(!!methodId)
+            const methodDef = findById(methodId!, ctx)
+            if (methodDef) {
+                todo()
+            }
             // TODO
             break
         }
@@ -172,23 +250,23 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             break
         }
         case 'string-literal': {
-            node.type!.known = stringVid
+            node.type!.known = stringId
             break
         }
         case 'char-literal': {
-            node.type!.known = charVid
+            node.type!.known = charId
             break
         }
         case 'int-literal': {
-            node.type!.known = intVid
+            node.type!.known = intId
             break
         }
         case 'float-literal': {
-            node.type!.known = floatVid
+            node.type!.known = floatId
             break
         }
         case 'bool-literal': {
-            node.type!.known = boolVid
+            node.type!.known = boolId
             break
         }
         case 'method-call-op': {

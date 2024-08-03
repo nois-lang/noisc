@@ -1,8 +1,10 @@
 import { existsSync, readFileSync, statSync } from 'fs'
 import { basename, dirname, join } from 'path'
 import { fileURLToPath } from 'url'
+import { inspect } from 'util'
 import { parseOption, reportErrors, reportWarnings } from './cli'
 import { fromCmd } from './config'
+import { debugAst } from './debug'
 import { Package } from './package'
 import { buildModule } from './package/build'
 import { emitPackage } from './package/emit'
@@ -10,7 +12,7 @@ import { buildPackage } from './package/io'
 import { resolveImports, setExports } from './phase/import-resolve'
 import { resolveModuleScope } from './phase/module-resolve'
 import { resolveName } from './phase/name-resolve'
-import { collectTypeBounds } from './phase/type-bound'
+import { collectTypeBounds, setPubType } from './phase/type-bound'
 import { Context, eachModule, pathToId } from './scope'
 import { Source } from './source'
 import { assert } from './util/todo'
@@ -122,7 +124,7 @@ ctx.packages = packages
 ctx.prelude = std.modules.find(m => m.identifier.names.at(-1)!.value === 'prelude')!
 assert(!!ctx.prelude, 'no prelude')
 
-const phases = [resolveModuleScope, setExports, resolveImports, resolveName, collectTypeBounds]
+const phases = [resolveModuleScope, setExports, resolveImports, resolveName, setPubType, collectTypeBounds]
 phases.forEach(f => eachModule(f, ctx))
 
 reportErrors(ctx)
@@ -132,4 +134,4 @@ if (config.emit) {
     await emitPackage(isDir, pkg, ctx)
 }
 
-// console.log(inspect(debugAst(pkg.modules[0]), { compact: true, depth: null }))
+console.log(inspect(debugAst(pkg.modules[0].block), { compact: true, depth: null }))
