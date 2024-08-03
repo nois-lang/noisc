@@ -1,7 +1,4 @@
-pub type Bool {
-    True,
-    False
-}
+pub type Bool
 
 impl Bool {
     pub fn and(self, other: Self): Self {

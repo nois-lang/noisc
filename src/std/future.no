@@ -87,8 +87,10 @@ impl Runtime {
                 unit
             })
         }
-        if self.queue.count() > 0 || self.pending.count() > 0 {
-            deferFor(|| self.loop(), self.pollingRate)
+        match self.queue.count() > 0 || self.pending.count() > 0 {
+            true {
+                deferFor(|| self.loop(), self.pollingRate)
+            }
         }
     }
 

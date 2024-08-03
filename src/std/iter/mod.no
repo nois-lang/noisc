@@ -35,8 +35,8 @@ pub trait Iter<T> {
     fn position(self, f: |T|: Bool): Option<Int> {
         let i = 0
         for n in self {
-            if f(n) {
-                return Some(i)
+            match f(n) {
+                true { return Some(i) }
             }
             i = i + 1
         }
@@ -45,8 +45,8 @@ pub trait Iter<T> {
 
     fn find(self, f: |T|: Bool): Option<T> {
         for n in self {
-            if f(n) {
-                return Some(n)
+            match f(n) {
+                true { return Some(i) }
             }
         }
         None()

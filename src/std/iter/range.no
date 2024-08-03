@@ -5,12 +5,15 @@ pub type RangeIter (
 
 impl Iter<Int> for RangeIter {
     fn next(self): Option<Int> {
-        if self.head < self.end {
-            let n = Some(self.head.copy())
-            self.head = self.head + 1
-            n
-        } else {
-            None()
+        match self.head < self.end {
+            true {
+                let n = Some(self.head.copy())
+                self.head = self.head + 1
+                n
+            }
+            false {
+                None()
+            }
         }
     }
 }
