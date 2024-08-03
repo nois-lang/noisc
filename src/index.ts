@@ -7,11 +7,11 @@ import { Package } from './package'
 import { buildModule } from './package/build'
 import { emitPackage } from './package/emit'
 import { buildPackage } from './package/io'
-import { resolveImport } from './phase/import-resolve'
+import { resolveImports, setExports } from './phase/import-resolve'
 import { resolveModuleScope } from './phase/module-resolve'
 import { resolveName } from './phase/name-resolve'
 import { collectTypeBounds } from './phase/type-bound'
-import { Context, eachModule as forEachModule, pathToId } from './scope'
+import { Context, eachModule, pathToId } from './scope'
 import { Source } from './source'
 import { assert } from './util/todo'
 
@@ -122,8 +122,8 @@ ctx.packages = packages
 ctx.prelude = std.modules.find(m => m.identifier.names.at(-1)!.value === 'prelude')!
 assert(!!ctx.prelude, 'no prelude')
 
-const phases = [resolveModuleScope, resolveImport, resolveName, collectTypeBounds]
-phases.forEach(f => forEachModule(f, ctx))
+const phases = [resolveModuleScope, setExports, resolveImports, resolveName, collectTypeBounds]
+phases.forEach(f => eachModule(f, ctx))
 
 reportErrors(ctx)
 reportWarnings(ctx)
@@ -131,3 +131,5 @@ reportWarnings(ctx)
 if (config.emit) {
     await emitPackage(isDir, pkg, ctx)
 }
+
+// console.log(inspect(debugAst(pkg.modules[0]), { compact: true, depth: null }))

@@ -30,7 +30,7 @@ describe('nois', () => {
             errors: [],
             warnings: [],
             silent: false,
-            variableCounter: 0,
+            variableCounter: 0
         }
         const astRoot = buildModuleAst(root, idFromString('test'), source, false, ctx)
 

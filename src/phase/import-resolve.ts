@@ -6,13 +6,16 @@ import { idEq, idFromString, idToString } from '../scope'
 import { notFoundError } from '../semantic/error'
 import { flatUseExprs } from '../semantic/use-expr'
 
+export const setExports = (module: Module, ctx: Context): void => {
+    module.references = module.useExprs.filter(e => !e.pub).flatMap(e => flatUseExprs(e))
+    module.reExports = module.useExprs.filter(e => e.pub).flatMap(e => flatUseExprs(e))
+}
+
 /**
  * Check use exprs and populate module.useScope
  */
-export const resolveImport = (module: Module, ctx: Context): void => {
-    module.references = module.useExprs.filter(e => !e.pub).flatMap(e => flatUseExprs(e))
-    module.reExports = module.useExprs.filter(e => e.pub).flatMap(e => flatUseExprs(e))
-    ;[...module.references, ...module.reExports].forEach(useExpr => {
+export const resolveImports = (module: Module, ctx: Context): void => {
+    ;[...module.references!, ...module.reExports!].forEach(useExpr => {
         const node = resolvePubId(useExpr, ctx)
         if (node) {
             addDef(node, module, ctx)
@@ -50,12 +53,23 @@ const resolvePubId = (id: Identifier, ctx: Context): Definition | undefined => {
     if (mod) {
         const node = mod.topScope.get(nodeName)
         if (node) return node
+
+        // id is re exported
+        const reExport = mod.reExports!.find(re => re.names.at(-1)!.value === id.names.at(-1)!.value)
+        if (reExport) {
+            return resolvePubId(reExport, ctx)
+        }
     }
 
     // case of Variant | FnDef, e.g. std::option::Option::Some
     if (id.names.length < 3) return undefined
     nodeName = id.names.at(-2)!.value
-    modId = idFromString(id.names.slice(1, -2).join('::'))
+    modId = idFromString(
+        id.names
+            .slice(0, -2)
+            .map(n => n.value)
+            .join('::')
+    )
     mod = pkg.modules.find(m => idEq(m.identifier, modId))
     if (mod) {
         const node = mod.topScope.get(nodeName)

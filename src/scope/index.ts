@@ -7,6 +7,7 @@ import { Config } from '../config'
 import { Package } from '../package'
 import { ParseNode } from '../parser'
 import { SemanticError } from '../semantic/error'
+import { InferredType } from '../typecheck'
 import { unreachable } from '../util/todo'
 
 export type Context = {
@@ -75,6 +76,11 @@ export const idFromString = (str: string, parseNode?: ParseNode): Identifier => 
         typeArgs: [],
         names: str.split('::').map(n => ({ kind: 'name', value: n }))
     }
+}
+
+export const inferredTypeToString = (t: InferredType): string => {
+    const bounds = t.bounds.length > 0 ? `: ${t.bounds.map(inferredTypeToString).join(' + ')}` : ''
+    return `${t.known ? typeToString(t.known) : '_'}${bounds}`
 }
 
 export const typeToString = (t: Type): string => {

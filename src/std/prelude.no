@@ -6,7 +6,7 @@ pub use std::{
     int::Int,
     string::String,
     char::Char,
-    bool::Bool::{ self, True, False },
+    bool::Bool::{ self },
     eq::Eq,
     copy::{ Copy, copy },
     ord::{ Ordering, Ord },

@@ -1,13 +1,12 @@
 import { AstNode } from '../ast'
-import { Type } from '../ast/type'
 import { Context } from '../scope'
-import { InferredType, makeInferredType, resolveTypeRef } from '../typecheck'
+import { InferredType, makeInferredType } from '../typecheck'
 import { boolVid, charVid, floatVid, intVid, stringVid } from '../typecheck/type'
 
 /**
  * Assign every suitable node its type and type bounds
  */
-export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Type): InferredType | undefined => {
+export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: InferredType) => {
     switch (node.kind) {
         case 'variant':
         case 'return-stmt':
@@ -41,7 +40,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
     switch (node.kind) {
         case 'module': {
             node.block.statements.forEach(s => collectTypeBounds(s, ctx))
-            return undefined
+            break
         }
         case 'variant': {
             // TODO
@@ -56,13 +55,14 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
             break
         }
         case 'block': {
+            node.statements.forEach(s => collectTypeBounds(s, ctx))
             // TODO
             break
         }
         case 'param': {
             // TODO: handle self
             if (node.paramType) return undefined
-            resolveTypeRef(node.type!).known = node.paramType
+            node.type!.known = node.paramType
             collectTypeBounds(node.pattern, ctx, node.paramType)
             return node.type
         }
@@ -105,14 +105,14 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
                 )
                     return undefined
                 node.def.type ??= makeInferredType()
-                return { kind: 'ref', ref: resolveTypeRef(node.def.type) }
+                return node.def.type
             }
             // TODO
             break
         }
         case 'string-interpolated': {
             node.tokens.filter(t => typeof t !== 'string').forEach(t => collectTypeBounds(t, ctx))
-            resolveTypeRef(node.type!).known = stringVid
+            node.type!.known = stringVid
             break
         }
         case 'operand-expr': {
@@ -124,6 +124,8 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
             break
         }
         case 'binary-expr': {
+            collectTypeBounds(node.lOperand, ctx)
+            collectTypeBounds(node.rOperand, ctx)
             // TODO
             break
         }
@@ -148,10 +150,16 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
             break
         }
         case 'var-def': {
-            // TODO
+            if (node.expr) {
+                collectTypeBounds(node.expr, ctx)
+            }
+            collectTypeBounds(node.pattern, ctx, node.expr?.type)
             break
         }
         case 'fn-def': {
+            if (node.block) {
+                collectTypeBounds(node.block, ctx)
+            }
             // TODO
             break
         }
@@ -164,23 +172,23 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
             break
         }
         case 'string-literal': {
-            resolveTypeRef(node.type!).known = stringVid
+            node.type!.known = stringVid
             break
         }
         case 'char-literal': {
-            resolveTypeRef(node.type!).known = charVid
+            node.type!.known = charVid
             break
         }
         case 'int-literal': {
-            resolveTypeRef(node.type!).known = intVid
+            node.type!.known = intVid
             break
         }
         case 'float-literal': {
-            resolveTypeRef(node.type!).known = floatVid
+            node.type!.known = floatVid
             break
         }
         case 'bool-literal': {
-            resolveTypeRef(node.type!).known = boolVid
+            node.type!.known = boolVid
             break
         }
         case 'method-call-op': {
@@ -211,6 +219,6 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
     return node.type
 }
 
-const addBound = (type: InferredType, bound: Type): void => {
-    resolveTypeRef(type).bounds.push(bound)
+const addBound = (type: InferredType, bound: InferredType): void => {
+    type.bounds.push(bound)
 }
