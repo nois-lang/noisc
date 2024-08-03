@@ -21,9 +21,7 @@ export const resolveModuleScope = (node: AstNode, ctx: Context): void => {
             break
         }
         case 'impl-def': {
-            if (!node.forTrait) {
-                addDef(node, ctx)
-            }
+            // TODO
             break
         }
         case 'var-def': {
