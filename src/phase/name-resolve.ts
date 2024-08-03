@@ -252,6 +252,10 @@ export const findById = (id: Identifier, ctx: Context): Definition | undefined =
     return findWithinDef(def, id.names[1], ctx)
 }
 
+export const findNameInStack = (name: string, stack: DefinitionMap): Definition | undefined => {
+    return stack.get(name)
+}
+
 const addDef = (name: string, def: Definition, ctx: Context): void => {
     const m = ctx.moduleStack.at(-1)!
     const scope = m.scopeStack.at(-1) ?? m.topScope
@@ -278,17 +282,18 @@ const findWithinDef = (def: Definition, name: Name, ctx: Context): Definition | 
             return <FnDef | undefined>def.block.statements.find(s => s.kind === 'fn-def' && defKey(s) === key)
         }
         case 'type-def': {
-            return def.variants.find(v => defKey(v) === key)
+            const variant = def.variants.find(v => defKey(v) === key)
+            if (variant) return variant
+            if (def.impl) {
+                return findWithinDef(def.impl, name, ctx)
+            }
+            return undefined
         }
         default: {
             // TODO: report error
             return undefined
         }
     }
-}
-
-const findNameInStack = (name: string, stack: DefinitionMap): Definition | undefined => {
-    return stack.get(name)
 }
 
 const withScope = <T>(ctx: Context, f: () => T): T => {

@@ -4,7 +4,7 @@ import { Context } from '../scope'
 import { operatorImplMap } from '../semantic/op'
 import { InferredType, makeInferredType } from '../typecheck'
 import { boolId, charId, floatId, intId, stringId, unitId } from '../typecheck/type'
-import { assert, todo } from '../util/todo'
+import { assert } from '../util/todo'
 import { findById } from './name-resolve'
 
 /**
@@ -202,7 +202,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             assert(!!methodId)
             const methodDef = findById(methodId!, ctx)
             if (methodDef) {
-                todo()
+                // TODO
             }
             // TODO
             break

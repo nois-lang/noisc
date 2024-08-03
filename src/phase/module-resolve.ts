@@ -2,6 +2,7 @@ import { AstNode } from '../ast'
 import { Context, Definition, addError, defKey } from '../scope'
 import { duplicateDefError } from '../semantic/error'
 import { todo } from '../util/todo'
+import { findById } from './name-resolve'
 
 /**
  * Resolve module definitions available from the outside
@@ -21,7 +22,10 @@ export const resolveModuleScope = (node: AstNode, ctx: Context): void => {
             break
         }
         case 'impl-def': {
-            // TODO
+            if (node.forTrait) break
+            const typeDef = findById(node.identifier, ctx)
+            if (typeDef?.kind !== 'type-def') break
+            typeDef.impl = node
             break
         }
         case 'var-def': {

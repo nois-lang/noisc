@@ -2,6 +2,7 @@ import { BaseAstNode } from '.'
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { Context } from '../scope'
 import { Name, buildName } from './operand'
+import { ImplDef } from './statement'
 import { Generic, Type, buildGeneric, buildType } from './type'
 
 export type TypeDef = BaseAstNode & {
@@ -10,6 +11,7 @@ export type TypeDef = BaseAstNode & {
     generics: Generic[]
     variants: Variant[]
     pub: boolean
+    impl?: ImplDef
 }
 
 export const buildTypeDef = (node: ParseNode, ctx: Context): TypeDef => {
