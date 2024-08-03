@@ -9,6 +9,6 @@ export const flatUseExprs = (useExpr: UseExpr): Identifier[] => {
         })
     } else {
         const names = useExpr.expr.value === 'self' ? [...useExpr.scope] : [...useExpr.scope, useExpr.expr]
-        return [{ kind: 'identifier', names, typeArgs: [] }]
+        return [{ kind: 'identifier', parseNode: useExpr.expr.parseNode, names, typeArgs: [] }]
     }
 }
