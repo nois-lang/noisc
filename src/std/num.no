@@ -1,9 +1,0 @@
-pub trait Num {
-    fn neg(self): Self
-    fn add(self, other: Self): Self
-    fn sub(self, other: Self): Self
-    fn mult(self, other: Self): Self
-    fn div(self, other: Self): Self
-    fn exp(self, other: Self): Self
-    fn abs(self): Self
-}

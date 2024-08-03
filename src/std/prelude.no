@@ -1,7 +1,6 @@
 pub use std::{
     unit::{ Unit, unit },
     never::Never,
-    num::Num,
     float::Float,
     int::Int,
     string::String,

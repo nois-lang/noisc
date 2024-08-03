@@ -1,6 +1,6 @@
 pub type Float
 
-impl Num for Float {
+impl Float {
     fn neg(self): Self {
         negFloat(self)
     }

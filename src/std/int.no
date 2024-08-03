@@ -1,12 +1,6 @@
 pub type Int
 
 impl Int {
-    pub fn mod(self, divisor: Self): Self {
-        modInt(self, divisor)
-    }
-}
-
-impl Num for Int {
     fn neg(self): Self {
         negInt(self)
     }
@@ -33,6 +27,10 @@ impl Num for Int {
 
     fn exp(self, other: Self): Self {
         expInt(self, other)
+    }
+
+    pub fn mod(self, divisor: Self): Self {
+        modInt(self, divisor)
     }
 }
 
