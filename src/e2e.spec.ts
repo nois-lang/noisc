@@ -6,7 +6,7 @@ import { Package } from './package'
 import { buildModule } from './package/build'
 import { emitPackage } from './package/emit'
 import { buildPackage } from './package/io'
-import { Context, pathToVid } from './scope'
+import { Context, pathToId } from './scope'
 import { buildInstanceRelations } from './scope/trait'
 import { checkModule, checkTopLevelDefinition, prepareModule } from './semantic'
 import { Source } from './source'
@@ -34,7 +34,7 @@ const compile = async (files: { [path: string]: string }): Promise<Context> => {
 
     const modules = Object.entries(files).map(([filepath, code]) => {
         const source: Source = { code, filepath: join(config.srcPath, filepath) }
-        return buildModule(source, pathToVid(join('test', filepath)), ctx)!
+        return buildModule(source, pathToId(join('test', filepath)), ctx)!
     })
     const pkg: Package = {
         path: pkgPath,

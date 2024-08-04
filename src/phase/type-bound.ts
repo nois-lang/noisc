@@ -10,7 +10,7 @@ import { findById } from './name-resolve'
 /**
  * Set known types of public nodes
  */
-export const setPubType = (node: AstNode, ctx: Context, parent?: AstNode) => {
+export const setPubType = (node: AstNode, ctx: Context) => {
     switch (node.kind) {
         case 'module': {
             node.block.statements.forEach(s => setPubType(s, ctx))
@@ -25,11 +25,9 @@ export const setPubType = (node: AstNode, ctx: Context, parent?: AstNode) => {
         }
         case 'fn-def': {
             node.params.forEach(p => {
+                p.type = makeInferredType()
                 if (p.paramType) {
-                    p.type = makeInferredType()
                     p.type.known = p.paramType
-                } else {
-                    // TODO: self param
                 }
             })
             node.type = makeInferredType()
@@ -69,7 +67,7 @@ export const setPubType = (node: AstNode, ctx: Context, parent?: AstNode) => {
         case 'trait-def':
         case 'impl-def': {
             if (node.kind === 'impl-def' && node.forTrait) break
-            node.block.statements.forEach(s => setPubType(s, ctx, node))
+            node.block.statements.forEach(s => setPubType(s, ctx))
             break
         }
     }
@@ -201,9 +199,8 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             const methodId = operatorImplMap.get(node.binaryOp.kind)
             assert(!!methodId)
             const methodDef = findById(methodId!, ctx)
-            if (methodDef) {
-                // TODO
-            }
+            assert(!!methodDef)
+            node.type!.bounds.push(methodDef!.type!)
             // TODO
             break
         }

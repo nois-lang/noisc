@@ -4,7 +4,7 @@ import { makeConfig } from '../config'
 import { Package } from '../package'
 import { buildModule } from '../package/build'
 import { buildPackage } from '../package/io'
-import { Context, pathToVid } from '../scope'
+import { Context, pathToId } from '../scope'
 import { Source } from '../source'
 import { checkModule, checkTopLevelDefinition, prepareModule } from './index'
 
@@ -24,7 +24,7 @@ describe('semantic', () => {
             relChainsMemo: new Map()
         }
 
-        const moduleAst = buildModule(source, pathToVid(source.filepath), ctx)!
+        const moduleAst = buildModule(source, pathToId(source.filepath), ctx)!
         const pkg: Package = {
             path: source.filepath,
             name: moduleAst?.identifier.names.at(-1)!,

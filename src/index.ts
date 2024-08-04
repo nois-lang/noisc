@@ -12,6 +12,7 @@ import { buildPackage } from './package/io'
 import { resolveImports, setExports } from './phase/import-resolve'
 import { resolveModuleScope } from './phase/module-resolve'
 import { resolveName } from './phase/name-resolve'
+import { desugar1 } from './phase/sugar'
 import { collectTypeBounds, setPubType } from './phase/type-bound'
 import { Context, eachModule, pathToId } from './scope'
 import { Source } from './source'
@@ -124,7 +125,7 @@ ctx.packages = packages
 ctx.prelude = std.modules.find(m => m.identifier.names.at(-1)!.value === 'prelude')!
 assert(!!ctx.prelude, 'no prelude')
 
-const phases = [resolveModuleScope, setExports, resolveImports, resolveName, setPubType, collectTypeBounds]
+const phases = [resolveModuleScope, setExports, resolveImports, desugar1, resolveName, setPubType, collectTypeBounds]
 phases.forEach(f => eachModule(f, ctx))
 
 reportErrors(ctx)
