@@ -1,10 +1,11 @@
 import { BaseAstNode } from '.'
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { Context } from '../scope'
+import { InferredType } from '../typecheck'
 import { Hole, buildHole } from './match'
 import { Identifier, Name, buildIdentifier, buildName } from './operand'
 
-export type Type = Identifier | FnType | Hole
+export type Type = Identifier | FnType | Hole | InferredType
 
 export const buildType = (node: ParseNode, ctx: Context): Type => {
     const n = filterNonAstNodes(node)[0]

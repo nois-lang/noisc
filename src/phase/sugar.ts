@@ -5,6 +5,7 @@ import { Context, idFromString } from '../scope'
  * Desugar phase that runs before name resolution
  * Does:
  *     - populates type of the `self` param
+ *     - sets fnDef.instance
  */
 export const desugar1 = (node: AstNode, ctx: Context, parent?: AstNode) => {
     switch (node.kind) {
@@ -18,15 +19,16 @@ export const desugar1 = (node: AstNode, ctx: Context, parent?: AstNode) => {
             break
         }
         case 'fn-def': {
-            node.params.forEach((p, i) => {
-                if (parent && (parent.kind === 'impl-def' || parent.kind === 'trait-def')) {
+            if (parent && (parent.kind === 'impl-def' || parent.kind === 'trait-def')) {
+                node.instance = parent
+                node.params.forEach((p, i) => {
                     if (!p.paramType && i === 0) {
                         const selfType = idFromString('Self')
                         selfType.parseNode = p.parseNode
                         p.paramType = selfType
                     }
-                }
-            })
+                })
+            }
             break
         }
     }

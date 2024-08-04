@@ -1,8 +1,9 @@
 import { AstNode } from '../ast'
 import { Identifier } from '../ast/operand'
+import { Type } from '../ast/type'
 import { Context } from '../scope'
 import { operatorImplMap } from '../semantic/op'
-import { InferredType, makeInferredType } from '../typecheck'
+import { InferredType, makeInferredType, makeKnownType } from '../typecheck'
 import { boolId, charId, floatId, intId, stringId, unitId } from '../typecheck/type'
 import { assert } from '../util/todo'
 import { findById } from './name-resolve'
@@ -10,7 +11,7 @@ import { findById } from './name-resolve'
 /**
  * Set known types of public nodes
  */
-export const setPubType = (node: AstNode, ctx: Context) => {
+export const setPubType = (node: AstNode, ctx: Context, parent?: AstNode) => {
     switch (node.kind) {
         case 'module': {
             node.block.statements.forEach(s => setPubType(s, ctx))
@@ -20,24 +21,24 @@ export const setPubType = (node: AstNode, ctx: Context) => {
             if (node.pattern.expr.kind !== 'name') break
             const def = node.pattern.expr
             def.type = makeInferredType()
-            def.type.known = node.varType
+            setKnown(def.type, node.varType)
             break
         }
         case 'fn-def': {
             node.params.forEach(p => {
                 p.type = makeInferredType()
                 if (p.paramType) {
-                    p.type.known = p.paramType
+                    setKnown(p.type, p.paramType)
                 }
             })
             node.type = makeInferredType()
-            node.type!.known = {
+            setKnown(node.type, {
                 kind: 'fn-type',
                 parseNode: node.name.parseNode,
                 generics: node.generics,
-                paramTypes: node.params.map(p => p.type?.known ?? { kind: 'hole' }),
+                paramTypes: node.params.map(p => p.type!),
                 returnType: node.returnType ?? unitId
-            }
+            })
             break
         }
         case 'type-def': {
@@ -51,23 +52,23 @@ export const setPubType = (node: AstNode, ctx: Context) => {
             node.variants.forEach(v => {
                 v.fieldDefs.forEach(f => {
                     f.type = makeInferredType()
-                    f.type.known = f.fieldType
+                    setKnown(f.type, f.fieldType)
                 })
                 v.type = makeInferredType()
-                v.type.known = {
+                setKnown(v.type, {
                     kind: 'fn-type',
                     parseNode: node.name.parseNode,
                     generics: node.generics,
-                    paramTypes: v.fieldDefs.map(f => f.type!.known!),
+                    paramTypes: v.fieldDefs.map(f => f.type!),
                     returnType: nodeId
-                }
+                })
             })
             break
         }
         case 'trait-def':
         case 'impl-def': {
             if (node.kind === 'impl-def' && node.forTrait) break
-            node.block.statements.forEach(s => setPubType(s, ctx))
+            node.block.statements.forEach(s => setPubType(s, ctx, node))
             break
         }
     }
@@ -105,7 +106,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             node.type ??= makeInferredType()
     }
     if (node.type && parentBound) {
-        addBound(node.type, parentBound)
+        addBounds(node.type, [parentBound])
     }
     switch (node.kind) {
         case 'module': {
@@ -132,7 +133,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         case 'param': {
             // TODO: handle self
             if (node.paramType) return undefined
-            node.type!.known = node.paramType
+            setKnown(node.type!, node.paramType)
             collectTypeBounds(node.pattern, ctx, node.paramType)
             return node.type
         }
@@ -182,7 +183,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         }
         case 'string-interpolated': {
             node.tokens.filter(t => typeof t !== 'string').forEach(t => collectTypeBounds(t, ctx))
-            node.type!.known = stringId
+            setKnown(node.type!, stringId)
             break
         }
         case 'operand-expr': {
@@ -200,7 +201,13 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             assert(!!methodId)
             const methodDef = findById(methodId!, ctx)
             assert(!!methodDef)
-            node.type!.bounds.push(methodDef!.type!)
+            const op = node.binaryOp
+            op.type = makeInferredType()
+            addBounds(op.type, [
+                methodDef!.type!,
+                makeKnownType(boundFromCall([node.lOperand.type!, node.rOperand.type!]))
+            ])
+            node.type = { kind: 'return', type: op.type }
             // TODO
             break
         }
@@ -247,23 +254,23 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             break
         }
         case 'string-literal': {
-            node.type!.known = stringId
+            setKnown(node.type!, stringId)
             break
         }
         case 'char-literal': {
-            node.type!.known = charId
+            setKnown(node.type!, charId)
             break
         }
         case 'int-literal': {
-            node.type!.known = intId
+            setKnown(node.type!, intId)
             break
         }
         case 'float-literal': {
-            node.type!.known = floatId
+            setKnown(node.type!, floatId)
             break
         }
         case 'bool-literal': {
-            node.type!.known = boolId
+            setKnown(node.type!, boolId)
             break
         }
         case 'method-call-op': {
@@ -294,6 +301,22 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
     return node.type
 }
 
-const addBound = (type: InferredType, bound: InferredType): void => {
-    type.bounds.push(bound)
+const addBounds = (type: InferredType, bounds: InferredType[]): void => {
+    if (type.kind === 'inferred') {
+        type.bounds.push(...bounds)
+        return
+    }
+    assert(false, type.kind)
+}
+
+const setKnown = (type: InferredType, known?: Type): void => {
+    if (type.kind === 'inferred') {
+        type.known = known
+        return
+    }
+    assert(false, type.kind)
+}
+
+const boundFromCall = (args: Type[]): Type => {
+    return { kind: 'fn-type', generics: [], paramTypes: args, returnType: { kind: 'hole' } }
 }

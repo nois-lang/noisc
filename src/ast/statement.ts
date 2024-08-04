@@ -102,6 +102,7 @@ export type FnDef = BaseAstNode & {
     returnType?: Type
     static?: boolean
     pub: boolean
+    instance?: TraitDef | ImplDef
 }
 
 export const buildFnDef = (node: ParseNode, ctx: Context): FnDef => {
