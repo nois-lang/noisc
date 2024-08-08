@@ -1,16 +1,11 @@
 import { Type } from '../ast/type'
 
-export type InferredType =
-    | {
-          kind: 'inferred'
-          bounds: InferredType[]
-          known?: Type
-          unified?: Type
-      }
-    | {
-          kind: 'return'
-          type: InferredType
-      }
+export type InferredType = {
+    kind: 'inferred'
+    bounds: InferredType[]
+    known?: Type
+    unified?: Type
+}
 
 export const makeInferredType = (bounds: InferredType[] = []): InferredType => ({ kind: 'inferred', bounds })
 

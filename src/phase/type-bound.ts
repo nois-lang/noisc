@@ -5,7 +5,7 @@ import { Context } from '../scope'
 import { operatorImplMap } from '../semantic/op'
 import { InferredType, makeInferredType, makeKnownType } from '../typecheck'
 import { boolId, charId, floatId, intId, stringId, unitId } from '../typecheck/type'
-import { assert } from '../util/todo'
+import { assert, unreachable } from '../util/todo'
 import { findById } from './name-resolve'
 
 /**
@@ -203,12 +203,13 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             assert(!!methodDef)
             const op = node.binaryOp
             op.type = makeInferredType()
-            addBounds(op.type, [
-                methodDef!.type!,
-                makeKnownType(boundFromCall([node.lOperand.type!, node.rOperand.type!]))
-            ])
-            node.type = { kind: 'return', type: op.type }
-            // TODO
+            const fnType = methodDef!.type!.known!
+            if (fnType.kind !== 'fn-type') {
+                return unreachable()
+            }
+            setKnown(op.type, fnType)
+            addBounds(op.type, [makeKnownType(boundFromCall([node.lOperand.type!, node.rOperand.type!]))])
+            setKnown(node.type!, fnType.returnType)
             break
         }
         case 'closure-expr': {
@@ -301,17 +302,17 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
     return node.type
 }
 
-const addBounds = (type: InferredType, bounds: InferredType[]): void => {
+export const setKnown = (type: InferredType, known?: Type): void => {
     if (type.kind === 'inferred') {
-        type.bounds.push(...bounds)
+        type.known = known
         return
     }
     assert(false, type.kind)
 }
 
-const setKnown = (type: InferredType, known?: Type): void => {
+const addBounds = (type: InferredType, bounds: InferredType[]): void => {
     if (type.kind === 'inferred') {
-        type.known = known
+        type.bounds.push(...bounds)
         return
     }
     assert(false, type.kind)
