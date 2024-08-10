@@ -123,7 +123,8 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             break
         }
         case 'arg': {
-            // TODO
+            collectTypeBounds(node.expr, ctx)
+            setKnown(node.type!, node.expr.type)
             break
         }
         case 'block': {
@@ -147,7 +148,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             break
         }
         case 'pattern': {
-            // TODO
+            collectTypeBounds(node.expr, ctx, parentBound)
             break
         }
         case 'con-pattern': {
@@ -226,7 +227,8 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             op.type = makeInferredType()
             const fnType = methodDef!.type!.known!
             if (fnType.kind !== 'fn-type') {
-                return unreachable()
+                unreachable()
+                return
             }
             setKnown(op.type, fnType)
             addBounds(op.type, [makeKnownType(boundFromCall([node.lOperand.type!, node.rOperand.type!]))])

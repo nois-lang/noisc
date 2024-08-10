@@ -82,7 +82,6 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
             break
         }
         case 'identifier': {
-            node.typeArgs.forEach(ta => resolveName(ta, ctx))
             const def = findById(node, ctx)
             if (!def) {
                 // TODO: report error

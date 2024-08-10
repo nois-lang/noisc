@@ -191,7 +191,8 @@ export const astKinds = <const>[
     ...astDefKinds,
     ...astLiteralKinds,
     ...astInfixOpKinds,
-    ...astPostfixOpKinds
+    ...astPostfixOpKinds,
+    'inferred'
 ]
 
 export type AstNodeKind = (typeof astKinds)[number]

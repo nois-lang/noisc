@@ -5,14 +5,14 @@ export const debugAst = (node: AstNode): any => {
     if (typeof node !== 'object') return node
     return Object.fromEntries(
         Object.entries(node)
-            .filter(([p]) => !['parseNode', 'source', 'def'].includes(p))
+            .filter(([p]) => !['parseNode', 'source'].includes(p))
             .map(([p, v]) => {
                 if (p === 'type') {
                     return [p, inferredTypeToString(v)]
                 }
-                return [p, v]
-            })
-            .map(([p, v]) => {
+                if (p === 'def') {
+                    return [p, v.kind]
+                }
                 if (Array.isArray(v)) {
                     return [p, v.map(debugAst)]
                 }
