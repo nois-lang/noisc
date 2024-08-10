@@ -70,8 +70,6 @@ fn absInt(a: Int): Int
 
 fn addInt(a: Int, b: Int): Int
 
-fn addInt(a: Int, b: Int): Int
-
 fn subInt(a: Int, b: Int): Int
 
 fn multInt(a: Int, b: Int): Int

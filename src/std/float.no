@@ -60,8 +60,6 @@ fn absFloat(a: Float): Float
 
 fn addFloat(a: Float, b: Float): Float
 
-fn addFloat(a: Float, b: Float): Float
-
 fn subFloat(a: Float, b: Float): Float
 
 fn multFloat(a: Float, b: Float): Float
