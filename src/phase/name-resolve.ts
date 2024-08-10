@@ -255,6 +255,11 @@ export const findNameInStack = (name: string, stack: DefinitionMap): Definition 
     return stack.get(name)
 }
 
+export const findParent = (ctx: Context, ofKind: AstNodeKind[]): AstNode | undefined => {
+    const m = ctx.moduleStack.at(-1)!
+    return m.astStack.toReversed().find(n => ofKind.includes(n.kind))
+}
+
 const addDef = (name: string, def: Definition, ctx: Context): void => {
     const m = ctx.moduleStack.at(-1)!
     const scope = m.scopeStack.at(-1) ?? m.topScope
@@ -262,11 +267,6 @@ const addDef = (name: string, def: Definition, ctx: Context): void => {
         // TODO: error
     }
     scope.set(name, def)
-}
-
-const findParent = (ctx: Context, ofKind: AstNodeKind[]): AstNode | undefined => {
-    const m = ctx.moduleStack.at(-1)!
-    return m.astStack.toReversed().find(n => ofKind.includes(n.kind))
 }
 
 const findWithinDef = (def: Definition, name: Name, ctx: Context): Definition | undefined => {

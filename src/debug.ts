@@ -1,5 +1,5 @@
 import { AstNode } from './ast'
-import { inferredTypeToString } from './scope'
+import { typeToString } from './scope'
 
 export const debugAst = (node: AstNode): any => {
     if (typeof node !== 'object') return node
@@ -8,7 +8,7 @@ export const debugAst = (node: AstNode): any => {
             .filter(([p]) => !['parseNode', 'source'].includes(p))
             .map(([p, v]) => {
                 if (p === 'type') {
-                    return [p, inferredTypeToString(v)]
+                    return [p, typeToString(v)]
                 }
                 if (p === 'def') {
                     return [p, v.kind]
