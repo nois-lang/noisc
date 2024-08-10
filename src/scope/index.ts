@@ -79,7 +79,7 @@ export const idFromString = (str: string, parseNode?: ParseNode): Identifier => 
 }
 
 export const inferredTypeToString = (t: InferredType): string => {
-    const bounds = t.bounds.length > 0 ? `: [${t.bounds.map(inferredTypeToString).join(', ')}]` : ''
+    const bounds = t.bounds.length > 0 ? ` [${t.bounds.map(inferredTypeToString).join(', ')}]` : ''
     return `${t.known ? typeToString(t.known) : '_'}${bounds}`
 }
 

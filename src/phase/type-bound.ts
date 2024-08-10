@@ -77,7 +77,8 @@ export const setPubType = (node: AstNode, ctx: Context, parent?: AstNode) => {
 /**
  * Assign every suitable node its type and type bounds
  */
-export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: InferredType) => {
+export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: InferredType): void => {
+    if (node.kind === 'inferred') return
     switch (node.kind) {
         case 'variant':
         case 'return-stmt':
@@ -132,10 +133,10 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         }
         case 'param': {
             // TODO: handle self
-            if (node.paramType) return undefined
+            if (node.paramType) break
             setKnown(node.type!, node.paramType)
             collectTypeBounds(node.pattern, ctx, node.paramType)
-            return node.type
+            break
         }
         case 'generic': {
             // TODO
@@ -174,11 +175,10 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
                     node.def.kind === 'type-def' ||
                     node.def.kind === 'module'
                 )
-                    return undefined
+                    break
                 node.def.type ??= makeInferredType()
-                return node.def.type
+                node.type = node.def.type
             }
-            // TODO
             break
         }
         case 'string-interpolated': {
@@ -187,11 +187,32 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             break
         }
         case 'operand-expr': {
-            // TODO
+            collectTypeBounds(node.operand, ctx)
+            node.type = node.operand.type
             break
         }
         case 'unary-expr': {
-            // TODO
+            collectTypeBounds(node.operand, ctx)
+            switch (node.op.kind) {
+                case 'call-op': {
+                    node.op.args.forEach(a => collectTypeBounds(a, ctx))
+                    node.op.type = makeInferredType()
+                    const fnType = node.operand.type?.known
+                    if (fnType?.kind !== 'fn-type') break
+                    setKnown(node.op.type, fnType)
+                    addBounds(node.op.type, [makeKnownType(boundFromCall(node.op.args.map(a => a.type!)))])
+                    setKnown(node.type!, fnType.returnType)
+                    break
+                }
+                case 'method-call-op':
+                case 'field-access-op':
+                case 'unwrap-op':
+                case 'bind-op':
+                case 'await-op': {
+                    // TODO
+                    break
+                }
+            }
             break
         }
         case 'binary-expr': {
@@ -282,24 +303,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             // TODO
             break
         }
-        case 'call-op': {
-            // TODO
-            break
-        }
-        case 'unwrap-op': {
-            // TODO
-            break
-        }
-        case 'bind-op': {
-            // TODO
-            break
-        }
-        case 'await-op': {
-            // TODO
-            break
-        }
     }
-    return node.type
 }
 
 export const setKnown = (type: InferredType, known?: Type): void => {
