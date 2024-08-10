@@ -6,12 +6,12 @@ import { unitId } from '../typecheck/type'
 import { setKnown } from './type-bound'
 
 /**
- * Set known types of public nodes
+ * Set known types of topScope nodes
  */
-export const setPubType = (node: AstNode, ctx: Context, parent?: AstNode) => {
+export const setTopScopeType = (node: AstNode, ctx: Context, parent?: AstNode) => {
     switch (node.kind) {
         case 'module': {
-            node.block.statements.forEach(s => setPubType(s, ctx))
+            node.block.statements.forEach(s => setTopScopeType(s, ctx))
             break
         }
         case 'var-def': {
@@ -67,7 +67,7 @@ export const setPubType = (node: AstNode, ctx: Context, parent?: AstNode) => {
         case 'trait-def':
         case 'impl-def': {
             if (node.kind === 'impl-def' && node.forTrait) break
-            node.block.statements.forEach(s => setPubType(s, ctx, node))
+            node.block.statements.forEach(s => setTopScopeType(s, ctx, node))
             break
         }
     }

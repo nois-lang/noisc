@@ -5,7 +5,7 @@ import { todo } from '../util/todo'
 import { findById } from './name-resolve'
 
 /**
- * Resolve module definitions available from the outside
+ * Resolve `module.topScope`
  */
 export const resolveModuleScope = (node: AstNode, ctx: Context): void => {
     switch (node.kind) {
@@ -54,7 +54,5 @@ const addDef = (node: Definition, ctx: Context): void => {
         addError(ctx, duplicateDefError(ctx, node))
         return
     }
-    if (!('pub' in node) || node.pub) {
-        m.topScope.set(key, node)
-    }
+    m.topScope.set(key, node)
 }
