@@ -87,6 +87,10 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
         case 'identifier': {
             const def = findById(node, ctx)
             if (!def) {
+                if (findName(node.names[0].value, ctx)?.kind === 'name') {
+                    // TODO: method ref on generic, e.g. src/std/iter/mod.no:56
+                    break
+                }
                 addError(ctx, notFoundError(ctx, node, idToString(node)))
                 break
             }
@@ -298,7 +302,6 @@ const findWithinDef = (def: Definition, name: Name, ctx: Context): Definition | 
             return undefined
         }
         case 'name': {
-            // todo('oh no')
             return undefined
         }
         default: {
