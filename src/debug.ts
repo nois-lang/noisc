@@ -1,5 +1,5 @@
 import { AstNode } from './ast'
-import { typeToString } from './scope'
+import { typeToString } from './typecheck'
 
 export const debugAst = (node: AstNode): any => {
     if (typeof node !== 'object') return node

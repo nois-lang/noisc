@@ -3,7 +3,7 @@ import { FnDef } from '../ast/statement'
 import { Type } from '../ast/type'
 import { Context } from '../scope'
 import { operatorImplMap } from '../semantic/op'
-import { addBounds, makeInferredType, makeReturnType } from '../typecheck'
+import { addBounds, cloneType, makeConstType, makeInferredType, makeReturnType } from '../typecheck'
 import { boolId, charId, floatId, intId, stringId } from '../typecheck/type'
 import { assert } from '../util/todo'
 import { findById, findParent } from './name-resolve'
@@ -113,9 +113,19 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
         case 'identifier':
         case 'name': {
             if (node.def) {
-                if (node.def.kind === 'name') {
-                    node.def.type ??= makeInferredType()
-                    node.type = node.def.type
+                switch (node.def.kind) {
+                    case 'name': {
+                        node.def.type ??= makeInferredType()
+                        node.type = node.def.type
+                        break
+                    }
+                    case 'fn-def': {
+                        assert(!!node.def.type)
+                        // fn-def type is cloned, because it's a "template" and should not be polluted with constraints
+                        // of its usage
+                        node.type = cloneType(node.def.type!)
+                        break
+                    }
                 }
             }
             break
@@ -158,9 +168,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
             assert(!!methodId)
             const methodDef = findById(methodId!, ctx)
             assert(!!methodDef)
-            const op = node.binaryOp
-            op.type = makeInferredType()
-            const fnType = methodDef!.type!
+            const fnType = cloneType(methodDef!.type!)
             addBounds(fnType, [boundFromCall([node.lOperand.type!, node.rOperand.type!])])
             node.type = makeReturnType(fnType)
             break
@@ -208,23 +216,23 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
             break
         }
         case 'string-literal': {
-            addBounds(node.type!, [stringId])
+            node.type = makeConstType(stringId)
             break
         }
         case 'char-literal': {
-            addBounds(node.type!, [charId])
+            node.type = makeConstType(charId)
             break
         }
         case 'int-literal': {
-            addBounds(node.type!, [intId])
+            node.type = makeConstType(intId)
             break
         }
         case 'float-literal': {
-            addBounds(node.type!, [floatId])
+            node.type = makeConstType(floatId)
             break
         }
         case 'bool-literal': {
-            addBounds(node.type!, [boolId])
+            node.type = makeConstType(boolId)
             break
         }
         case 'method-call-op': {

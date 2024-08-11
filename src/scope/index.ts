@@ -1,13 +1,13 @@
 import { Module } from '../ast'
 import { Identifier, Name } from '../ast/operand'
 import { FnDef, ImplDef, TraitDef } from '../ast/statement'
-import { Generic, Type } from '../ast/type'
+import { Generic } from '../ast/type'
 import { TypeDef, Variant } from '../ast/type-def'
 import { Config } from '../config'
 import { Package } from '../package'
 import { ParseNode } from '../parser'
 import { SemanticError } from '../semantic/error'
-import { InferredType } from '../typecheck'
+import { typeToString } from '../typecheck'
 import { unreachable } from '../util/todo'
 
 export type Context = {
@@ -75,36 +75,6 @@ export const idFromString = (str: string, parseNode?: ParseNode): Identifier => 
         parseNode,
         typeArgs: [],
         names: str.split('::').map(n => ({ kind: 'name', value: n }))
-    }
-}
-
-export const inferredTypeToString = (t: InferredType): string => {
-    switch (t.kind) {
-        case 'inferred': {
-            if (t.unified) {
-                return typeToString(t.unified)
-            }
-            return t.bounds.length > 0 ? `[${t.bounds.map(typeToString).join(', ')}]` : '_'
-        }
-        case 'return': {
-            return `ret(${typeToString(t.type)})`
-        }
-    }
-}
-
-export const typeToString = (t: Type): string => {
-    switch (t.kind) {
-        case 'identifier':
-            return idToString(t)
-        case 'fn-type':
-            const main = `|${t.paramTypes.map(typeToString).join(', ')}|: ${typeToString(t.returnType)}`
-            const typeArgs = t.generics.length > 0 ? `<${t.generics.map(g => g.name.value).join(', ')}>` : ''
-            return typeArgs + main
-        case 'hole':
-            return '_'
-        case 'inferred':
-        case 'return':
-            return inferredTypeToString(t)
     }
 }
 
