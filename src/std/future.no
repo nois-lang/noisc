@@ -18,16 +18,16 @@ impl <T> Trace for FutureState<T> {}
 
 impl <T> Future<T> {
     pub fn new(f: ||T|: Unit|: Unit): Self {
-        Future(f, [], Created())
+        Future(f, [], FutureState::Created())
     }
 
     pub fn onResolve(self, f: |T|: Unit): Unit {
         match self.state {
-            Resolved(value) {
+            FutureState::Resolved(value) {
                 f(value)
                 return unit
             }
-            Created() {
+            FutureState::Created() {
                 self.spawn(runtime)
             }
             _ {}
@@ -75,10 +75,10 @@ impl Runtime {
     pub fn loop(self): Unit {
         while self.queue.count() > 0 {
             let next = self.queue.popFront()!
-            next.state = Pending()
+            next.state = FutureState::Pending()
             self.pending.add(next)
             let _ = (next.f)(|res| {
-                next.state = Resolved(res)
+                next.state = FutureState::Resolved(res)
                 for s in next.subscribers {
                     s(res)
                 }
@@ -96,7 +96,7 @@ impl Runtime {
 
     pub fn spawn<T>(self, future: Future<T>): Future<T> {
         self.queue.add(future)
-        future.state = Queued()
+        future.state = FutureState::Queued()
         future
     }
 }

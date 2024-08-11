@@ -13,7 +13,6 @@ pub use std::{
     iter::range::{ range },
     iter::repeat::{ repeat },
     list::List,
-    never::Never,
     panic::{ panic, todo },
     io::{ println, show::Show, trace::Trace },
     option::Option::{ self, Some, None },

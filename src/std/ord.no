@@ -9,28 +9,28 @@ pub trait Ord<Self: Eq> {
 
     fn ge(self, other: Self): Bool {
         match self.cmp(other) {
-            Less() { false }
+            Ordering::Less() { false }
             _ { true }
         }
     }
 
     fn le(self, other: Self): Bool {
         match self.cmp(other) {
-            Greater() { false }
+            Ordering::Greater() { false }
             _ { true }
         }
     }
 
     fn gt(self, other: Self): Bool {
         match self.cmp(other) {
-            Greater() { true }
+            Ordering::Greater() { true }
             _ { false }
         }
     }
 
     fn lt(self, other: Self): Bool {
         match self.cmp(other) {
-            Less() { true }
+            Ordering::Less() { true }
             _ { false }
         }
     }
