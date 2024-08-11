@@ -22,7 +22,7 @@ export const desugar1 = (node: AstNode, ctx: Context, parent?: AstNode) => {
             if (parent && (parent.kind === 'impl-def' || parent.kind === 'trait-def')) {
                 node.instance = parent
                 node.params.forEach((p, i) => {
-                    if (!p.paramType && i === 0) {
+                    if (i === 0 && !p.paramType && p.pattern.expr.kind === 'name' && p.pattern.expr.value === 'self') {
                         const selfType = idFromString('Self')
                         selfType.parseNode = p.parseNode
                         p.paramType = selfType

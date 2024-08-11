@@ -3,7 +3,7 @@ import { Identifier } from '../ast/operand'
 import { FnDef } from '../ast/statement'
 import { Context, Definition, addError, defKey } from '../scope'
 import { idEq, idFromString, idToString } from '../scope'
-import { notFoundError } from '../semantic/error'
+import { duplicateUseError, notFoundError } from '../semantic/error'
 import { flatUseExprs } from '../semantic/use-expr'
 
 export const setExports = (module: Module, ctx: Context): void => {
@@ -18,17 +18,17 @@ export const resolveImports = (module: Module, ctx: Context): void => {
     ;[...module.references!, ...module.reExports!].forEach(useExpr => {
         const node = resolvePubId(useExpr, ctx)
         if (node) {
-            addDef(node, module, ctx)
+            addDef(node, module, useExpr, ctx)
         } else {
             addError(ctx, notFoundError(ctx, useExpr, idToString(useExpr)))
         }
     })
 }
 
-const addDef = (node: Definition, module: Module, ctx: Context): void => {
+const addDef = (node: Definition, module: Module, importId: Identifier, ctx: Context): void => {
     const key = defKey(node)
     if (module.useScope.has(key)) {
-        // TODO: duplicate import
+        addError(ctx, duplicateUseError(ctx, importId))
         return
     }
     module.useScope.set(key, node)

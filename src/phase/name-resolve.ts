@@ -1,7 +1,8 @@
 import { AstNode, AstNodeKind } from '../ast'
 import { Identifier, Name } from '../ast/operand'
 import { FnDef } from '../ast/statement'
-import { Context, Definition, DefinitionMap, defKey } from '../scope'
+import { Context, Definition, DefinitionMap, addError, defKey, idToString } from '../scope'
+import { duplicateDefError, genericError, notFoundError } from '../semantic/error'
 import { unreachable } from '../util/todo'
 
 /**
@@ -18,6 +19,7 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
             break
         }
         case 'variant': {
+            resolveName(node.name, ctx)
             node.fieldDefs.forEach(fd => resolveName(fd, ctx))
             break
         }
@@ -43,6 +45,7 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
             break
         }
         case 'generic': {
+            resolveName(node.name, ctx)
             node.bounds.forEach(b => resolveName(b, ctx))
             break
         }
@@ -84,23 +87,24 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
         case 'identifier': {
             const def = findById(node, ctx)
             if (!def) {
-                // TODO: report error
+                addError(ctx, notFoundError(ctx, node, idToString(node)))
                 break
             }
             node.def = def
             break
         }
         case 'name': {
-            if (findParent(ctx, ['pattern'])) {
+            const p = getParent(ctx)
+            if (
+                p?.kind === 'pattern' ||
+                p?.kind === 'field-pattern' ||
+                p?.kind === 'generic' ||
+                p?.kind === 'variant'
+            ) {
                 addDef(node.value, node, ctx)
-            } else {
-                const def = findName(node.value, ctx)
-                if (!def) {
-                    // TODO: report error
-                    break
-                }
-                node.def = def
+                break
             }
+            unreachable(p?.kind)
             break
         }
         case 'string-interpolated': {
@@ -181,21 +185,18 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
             })
             break
         }
-        case 'trait-def': {
-            withScope(ctx, () => {
-                node.generics.forEach(g => resolveName(g, ctx))
-                if (node.block) {
-                    resolveName(node.block, ctx)
-                }
-            })
-            break
-        }
+        case 'trait-def':
         case 'impl-def': {
             withScope(ctx, () => {
+                if (!node.generics.find(g => g.name.value === 'Self')) {
+                    addDef('Self', { kind: 'name', parseNode: undefined, value: 'Self' }, ctx)
+                }
                 node.generics.forEach(g => resolveName(g, ctx))
-                resolveName(node.identifier, ctx)
-                if (node.forTrait) {
-                    resolveName(node.forTrait, ctx)
+                if (node.kind === 'impl-def') {
+                    resolveName(node.identifier, ctx)
+                    if (node.forTrait) {
+                        resolveName(node.forTrait, ctx)
+                    }
                 }
                 if (node.block) {
                     resolveName(node.block, ctx)
@@ -245,7 +246,7 @@ export const findById = (id: Identifier, ctx: Context): Definition | undefined =
     const def = findName(id.names[0].value, ctx)
     if (!def || id.names.length === 1) return def
     if (id.names.length > 2) {
-        // TODO: report error
+        addError(ctx, genericError(ctx, def))
         return undefined
     }
     return findWithinDef(def, id.names[1], ctx)
@@ -259,12 +260,20 @@ export const findParent = (ctx: Context, ofKind: AstNodeKind[]): AstNode | undef
     const m = ctx.moduleStack.at(-1)!
     return m.astStack.toReversed().find(n => ofKind.includes(n.kind))
 }
+export const getParent = (ctx: Context): AstNode | undefined => {
+    const m = ctx.moduleStack.at(-1)!
+    return m.astStack.at(-2)!
+}
 
 const addDef = (name: string, def: Definition, ctx: Context): void => {
     const m = ctx.moduleStack.at(-1)!
-    const scope = m.scopeStack.at(-1) ?? m.topScope
+    const scope = m.scopeStack.at(-1)
+    if (!scope) {
+        // topScope is already populated
+        return
+    }
     if (scope.has(name)) {
-        // TODO: error
+        addError(ctx, duplicateDefError(ctx, def))
     }
     scope.set(name, def)
 }
@@ -288,8 +297,12 @@ const findWithinDef = (def: Definition, name: Name, ctx: Context): Definition | 
             }
             return undefined
         }
+        case 'name': {
+            // todo('oh no')
+            return undefined
+        }
         default: {
-            // TODO: report error
+            addError(ctx, genericError(ctx, def))
             return undefined
         }
     }

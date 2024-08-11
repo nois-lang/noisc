@@ -6,7 +6,7 @@ import { Identifier, Name, Operand } from '../ast/operand'
 import { FnDef, ImplDef, Statement, VarDef } from '../ast/statement'
 import { Type } from '../ast/type'
 import { FieldDef } from '../ast/type-def'
-import { Context } from '../scope'
+import { Context, idToString } from '../scope'
 import { Source } from '../source'
 import { assert, unreachable } from '../util/todo'
 import { MatchTree, unmatchedPaths } from './exhaust'
@@ -302,4 +302,14 @@ export const unexpectedRefutablePatternError = (ctx: Context, patternExpr: Patte
 export const duplicateDefError = (ctx: Context, def: AstNode): SemanticError => {
     const msg = `duplicate definition`
     return semanticError(42, ctx, def, msg)
+}
+
+export const duplicateUseError = (ctx: Context, useId: Identifier): SemanticError => {
+    const msg = `duplicate use expression \`${idToString(useId)}\``
+    return semanticError(43, ctx, useId, msg)
+}
+
+export const genericError = (ctx: Context, def: AstNode): SemanticError => {
+    const msg = `error`
+    return semanticError(44, ctx, def, msg)
 }
