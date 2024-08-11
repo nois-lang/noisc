@@ -79,11 +79,17 @@ export const idFromString = (str: string, parseNode?: ParseNode): Identifier => 
 }
 
 export const inferredTypeToString = (t: InferredType): string => {
-    if (t.unified) {
-        return typeToString(t.unified)
+    switch (t.kind) {
+        case 'inferred': {
+            if (t.unified) {
+                return typeToString(t.unified)
+            }
+            return t.bounds.length > 0 ? `[${t.bounds.map(typeToString).join(', ')}]` : '_'
+        }
+        case 'return': {
+            return `ret(${typeToString(t.type)})`
+        }
     }
-    const bounds = t.bounds.length > 0 ? ` [${t.bounds.map(typeToString).join(', ')}]` : ''
-    return `?${t.known ? typeToString(t.known) : '_'}${bounds}`
 }
 
 export const typeToString = (t: Type): string => {
@@ -97,6 +103,7 @@ export const typeToString = (t: Type): string => {
         case 'hole':
             return '_'
         case 'inferred':
+        case 'return':
             return inferredTypeToString(t)
     }
 }

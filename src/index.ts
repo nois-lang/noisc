@@ -126,7 +126,15 @@ ctx.packages = packages
 ctx.prelude = std.modules.find(m => m.identifier.names.at(-1)!.value === 'prelude')!
 assert(!!ctx.prelude, 'no prelude')
 
-const phases = [resolveModuleScope, setExports, resolveImports, desugar1, resolveName, setTopScopeType, collectTypeBounds]
+const phases = [
+    resolveModuleScope,
+    setExports,
+    resolveImports,
+    desugar1,
+    resolveName,
+    setTopScopeType,
+    collectTypeBounds
+]
 phases.forEach(f => eachModule(f, ctx))
 
 reportErrors(ctx)
