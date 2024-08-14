@@ -77,7 +77,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
         }
         case 'param': {
             // TODO: handle self
-            if (node.paramType) break
+            if (!node.paramType) break
             addBounds(node.type!, [node.paramType!])
             collectTypeBounds(node.pattern, ctx, node.paramType)
             break
@@ -119,10 +119,11 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
                         node.type = node.def.type
                         break
                     }
-                    case 'fn-def': {
+                    case 'fn-def':
+                    case 'type-def': {
                         assert(!!node.def.type)
-                        // fn-def type is cloned, because it's a "template" and should not be polluted with constraints
-                        // of its usage
+                        // fn-def, type-def types are cloned, because it's a "template" and should not be polluted
+                        // with constraints of its usage
                         node.type = cloneType(node.def.type!)
                         break
                     }

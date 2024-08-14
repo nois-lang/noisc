@@ -1,7 +1,7 @@
 import { AstNode } from '../ast'
 import { Identifier } from '../ast/operand'
 import { Context } from '../scope'
-import { addBounds, makeInferredType } from '../typecheck'
+import { addBounds, makeConstType, makeInferredType } from '../typecheck'
 import { unitId } from '../typecheck/type'
 
 /**
@@ -45,6 +45,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context, parent?: AstNode) =
                 names: [node.name],
                 typeArgs: []
             }
+            node.type = makeConstType(nodeId)
             node.variants.forEach(v => {
                 v.fieldDefs.forEach(f => {
                     f.type = makeInferredType([f.fieldType])
