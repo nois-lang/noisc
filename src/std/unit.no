@@ -2,5 +2,5 @@ pub type Unit()
 
 impl Trace for Unit {}
 
-pub let unit: Unit = Unit()
+pub let unit: Unit = Unit::Unit()
 
