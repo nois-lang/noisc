@@ -1,8 +1,10 @@
 import { AstNode, AstNodeKind } from '../ast'
 import { Identifier, Name } from '../ast/operand'
 import { FnDef } from '../ast/statement'
+import { Generic } from '../ast/type'
 import { Context, Definition, DefinitionMap, addError, defKey, idToString } from '../scope'
 import { duplicateDefError, genericError, notFoundError } from '../semantic/error'
+import { makeConstType } from '../typecheck'
 import { unreachable } from '../util/todo'
 
 /**
@@ -19,7 +21,7 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
             break
         }
         case 'variant': {
-            resolveName(node.name, ctx)
+            addDef(defKey(node), node, ctx)
             node.fieldDefs.forEach(fd => resolveName(fd, ctx))
             break
         }
@@ -45,8 +47,9 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
             break
         }
         case 'generic': {
-            resolveName(node.name, ctx)
+            addDef(defKey(node), node, ctx)
             node.bounds.forEach(b => resolveName(b, ctx))
+            node.type = makeConstType({ kind: 'identifier', typeArgs: [], names: [node.name] })
             break
         }
         case 'match-clause': {
@@ -87,10 +90,6 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
         case 'identifier': {
             const def = findById(node, ctx)
             if (!def) {
-                if (findName(node.names[0].value, ctx)?.kind === 'name') {
-                    // TODO: method ref on generic, e.g. src/std/iter/mod.no:56
-                    break
-                }
                 addError(ctx, notFoundError(ctx, node, idToString(node)))
                 break
             }
@@ -99,12 +98,7 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
         }
         case 'name': {
             const p = getParent(ctx)
-            if (
-                p?.kind === 'pattern' ||
-                p?.kind === 'field-pattern' ||
-                p?.kind === 'generic' ||
-                p?.kind === 'variant'
-            ) {
+            if (p?.kind === 'pattern' || p?.kind === 'field-pattern') {
                 addDef(node.value, node, ctx)
                 break
             }
@@ -193,7 +187,14 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
         case 'impl-def': {
             withScope(ctx, () => {
                 if (!node.generics.find(g => g.name.value === 'Self')) {
-                    addDef('Self', { kind: 'name', parseNode: undefined, value: 'Self' }, ctx)
+                    const g: Generic = {
+                        kind: 'generic',
+                        name: { kind: 'name', value: 'Self' },
+                        parseNode: node.kind === 'trait-def' ? node.name.parseNode : node.identifier.parseNode,
+                        bounds: []
+                    }
+                    g.name.def = g
+                    node.generics.push(g)
                 }
                 node.generics.forEach(g => resolveName(g, ctx))
                 if (node.kind === 'impl-def') {
@@ -277,6 +278,7 @@ const addDef = (name: string, def: Definition, ctx: Context): void => {
         return
     }
     if (scope.has(name)) {
+        console.trace(name)
         addError(ctx, duplicateDefError(ctx, def))
     }
     scope.set(name, def)
@@ -302,6 +304,10 @@ const findWithinDef = (def: Definition, name: Name, ctx: Context): Definition | 
             return undefined
         }
         case 'name': {
+            return undefined
+        }
+        case 'generic': {
+            // TODO
             return undefined
         }
         default: {

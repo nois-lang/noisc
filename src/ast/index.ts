@@ -117,7 +117,6 @@ export type AstNode =
     | UnwrapOp
     | BindOp
     | AwaitOp
-    | InferredType
 
 export type BaseAstNode = {
     parseNode?: ParseNode

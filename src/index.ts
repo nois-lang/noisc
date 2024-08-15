@@ -144,4 +144,4 @@ if (config.emit) {
     await emitPackage(isDir, pkg, ctx)
 }
 
-console.log(inspect(debugAst(pkg.modules[0].block), { compact: true, depth: null }))
+console.log(inspect(debugAst(pkg.modules[0].block), { compact: true, depth: null, breakLength: 120 }))

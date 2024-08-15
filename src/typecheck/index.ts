@@ -1,23 +1,32 @@
-import { Type } from '../ast/type'
+import { Hole } from '../ast/match'
+import { Generic, Type } from '../ast/type'
 import { idToString } from '../scope'
 import { assert } from '../util/todo'
 
 export type InferredType =
     | {
           kind: 'inferred'
-          bounds: Type[]
+          bounds: InferredType[]
+          unified?: Type
+      }
+    | {
+          kind: 'inferred-fn'
+          generics: Generic[]
+          params: InferredType[]
+          returnType: InferredType
           unified?: Type
       }
     | { kind: 'const'; type: Type }
-    | { kind: 'return'; type: Type }
+    | { kind: 'return'; type: InferredType }
+    | Hole
 
-export const makeInferredType = (bounds: Type[] = []) => ({ kind: <const>'inferred', bounds })
+export const makeInferredType = (bounds: InferredType[] = []) => ({ kind: <const>'inferred', bounds })
 
-export const makeReturnType = (type: Type) => ({ kind: <const>'return', type })
+export const makeReturnType = (type: InferredType) => ({ kind: <const>'return', type })
 
 export const makeConstType = (type: Type) => ({ kind: <const>'const', type })
 
-export const addBounds = (type: Type, bounds: Type[]): void => {
+export const addBounds = (type: InferredType, bounds: InferredType[]): void => {
     if (type.kind === 'inferred') {
         type.bounds.push(...bounds)
         return
@@ -25,16 +34,12 @@ export const addBounds = (type: Type, bounds: Type[]): void => {
     assert(false, type.kind)
 }
 
-export const cloneType = (t: InferredType): InferredType => {
+export const instantiateConstType = (t: InferredType): InferredType => {
     switch (t.kind) {
-        case 'inferred':
-            return {
-                kind: 'inferred',
-                bounds: t.bounds.map(t_ => (t_.kind === 'inferred' || t_.kind === 'return' ? cloneType(t_) : t_))
-            }
         case 'const':
-        case 'return':
-            return { kind: t.kind, type: t.type }
+            return makeInferredType([t])
+        default:
+            return t
     }
 }
 
@@ -44,12 +49,15 @@ export const inferredTypeToString = (t: InferredType): string => {
             if (t.unified) {
                 return typeToString(t.unified)
             }
-            return t.bounds.length > 0 ? `[${t.bounds.map(typeToString).join(', ')}]` : '_'
-
+            return `[${t.bounds.map(inferredTypeToString).join(', ')}]`
+        case 'inferred-fn':
+            return `|${t.params.map(inferredTypeToString).join(', ')}|: ${inferredTypeToString(t.returnType)}`
         case 'return':
-            return `ret(${typeToString(t.type)})`
+            return `ret(${inferredTypeToString(t.type)})`
         case 'const':
             return typeToString(t.type)
+        case 'hole':
+            return typeToString(t)
     }
 }
 
@@ -63,9 +71,5 @@ export const typeToString = (t: Type): string => {
             return typeArgs + main
         case 'hole':
             return '_'
-        case 'inferred':
-        case 'const':
-        case 'return':
-            return inferredTypeToString(t)
     }
 }

@@ -53,7 +53,9 @@ pub trait Iter<T> {
     }
 
     fn collect<C: Collector<T>>(self): C {
-        C::fromIter(self)
+        // TODO
+        // C::fromIter(self)
+        todo()
     }
 }
 

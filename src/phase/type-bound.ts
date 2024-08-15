@@ -1,9 +1,15 @@
 import { AstNode } from '../ast'
 import { FnDef } from '../ast/statement'
-import { Type } from '../ast/type'
 import { Context } from '../scope'
 import { operatorImplMap } from '../semantic/op'
-import { addBounds, cloneType, makeConstType, makeInferredType, makeReturnType } from '../typecheck'
+import {
+    InferredType,
+    addBounds,
+    instantiateConstType,
+    makeConstType,
+    makeInferredType,
+    makeReturnType
+} from '../typecheck'
 import { boolId, charId, floatId, intId, stringId } from '../typecheck/type'
 import { assert } from '../util/todo'
 import { findById, findParent } from './name-resolve'
@@ -11,8 +17,7 @@ import { findById, findParent } from './name-resolve'
 /**
  * Assign every suitable node its type and type bounds
  */
-export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Type): void => {
-    if (node.kind === 'inferred') return
+export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: InferredType): void => {
     const m = ctx.moduleStack.at(-1)!
     m.astStack.push(node)
     switch (node.kind) {
@@ -42,8 +47,10 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
         case 'bool-literal':
             node.type ??= makeInferredType()
     }
-    if (node.type && parentBound) {
-        addBounds(node.type, [parentBound])
+    if (node.type && node.type.kind === 'inferred') {
+        if (parentBound) {
+            addBounds(node.type, [parentBound])
+        }
     }
     switch (node.kind) {
         case 'module': {
@@ -78,8 +85,9 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
         case 'param': {
             // TODO: handle self
             if (!node.paramType) break
-            addBounds(node.type!, [node.paramType!])
-            collectTypeBounds(node.pattern, ctx, node.paramType)
+            const pType = makeConstType(node.paramType!)
+            addBounds(node.type!, [pType])
+            collectTypeBounds(node.pattern, ctx, pType)
             break
         }
         case 'generic': {
@@ -113,27 +121,15 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
         case 'identifier':
         case 'name': {
             if (node.def) {
-                switch (node.def.kind) {
-                    case 'name': {
-                        node.def.type ??= makeInferredType()
-                        node.type = node.def.type
-                        break
-                    }
-                    case 'fn-def':
-                    case 'type-def': {
-                        assert(!!node.def.type)
-                        // fn-def, type-def types are cloned, because it's a "template" and should not be polluted
-                        // with constraints of its usage
-                        node.type = cloneType(node.def.type!)
-                        break
-                    }
-                }
+                assert(!!node.def.type)
+                node.type = instantiateConstType(node.def.type!)
+                break
             }
             break
         }
         case 'string-interpolated': {
             node.tokens.filter(t => typeof t !== 'string').forEach(t => collectTypeBounds(t, ctx))
-            addBounds(node.type!, [stringId])
+            addBounds(node.type!, [makeConstType(stringId)])
             break
         }
         case 'operand-expr': {
@@ -145,8 +141,8 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
             collectTypeBounds(node.operand, ctx)
             switch (node.op.kind) {
                 case 'call-op': {
+                    const fnType = instantiateConstType(node.operand.type!)
                     node.op.args.forEach(a => collectTypeBounds(a, ctx))
-                    const fnType = node.operand.type!
                     addBounds(fnType, [boundFromCall(node.op.args.map(a => a.type!))])
                     node.type = makeReturnType(fnType)
                     break
@@ -169,7 +165,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
             assert(!!methodId)
             const methodDef = findById(methodId!, ctx)
             assert(!!methodDef)
-            const fnType = cloneType(methodDef!.type!)
+            const fnType = instantiateConstType(methodDef!.type!)
             addBounds(fnType, [boundFromCall([node.lOperand.type!, node.rOperand.type!])])
             node.type = makeReturnType(fnType)
             break
@@ -196,12 +192,13 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
         }
         case 'var-def': {
             if (node.expr) {
-                collectTypeBounds(node.expr, ctx, node.varType)
+                collectTypeBounds(node.expr, ctx, node.varType ? makeConstType(node.varType) : undefined)
             }
             collectTypeBounds(node.pattern, ctx, node.expr?.type)
             break
         }
         case 'fn-def': {
+            node.params.forEach(p => collectTypeBounds(p, ctx))
             if (node.block) {
                 collectTypeBounds(node.block, ctx)
             }
@@ -248,6 +245,6 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Typ
     m.astStack.pop()
 }
 
-const boundFromCall = (args: Type[]): Type => {
-    return { kind: 'fn-type', generics: [], paramTypes: args, returnType: { kind: 'hole' } }
+const boundFromCall = (args: InferredType[]): InferredType => {
+    return { kind: 'inferred-fn', generics: [], params: args, returnType: { kind: 'hole' } }
 }

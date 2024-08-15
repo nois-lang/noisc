@@ -1,14 +1,15 @@
 import { AstNode } from './ast'
-import { typeToString } from './typecheck'
+import { inferredTypeToString } from './typecheck'
 
 export const debugAst = (node: AstNode): any => {
     if (typeof node !== 'object') return node
     return Object.fromEntries(
         Object.entries(node)
             .filter(([p]) => !['parseNode', 'source'].includes(p))
+            .filter(([, v]) => !(Array.isArray(v) && v.length === 0))
             .map(([p, v]) => {
                 if (p === 'type') {
-                    return [p, typeToString(v)]
+                    return [p, inferredTypeToString(v)]
                 }
                 if (p === 'def') {
                     return [p, v.kind]

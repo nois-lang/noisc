@@ -1,7 +1,7 @@
 import { AstNode } from '../ast'
 import { Identifier } from '../ast/operand'
 import { Context } from '../scope'
-import { addBounds, makeConstType, makeInferredType } from '../typecheck'
+import { makeConstType } from '../typecheck'
 import { unitId } from '../typecheck/type'
 
 /**
@@ -16,25 +16,17 @@ export const setTopScopeType = (node: AstNode, ctx: Context, parent?: AstNode) =
         case 'var-def': {
             if (node.pattern.expr.kind !== 'name') break
             const def = node.pattern.expr
-            def.type = makeInferredType([node.varType!])
+            def.type = makeConstType(node.varType!)
             break
         }
         case 'fn-def': {
-            node.params.forEach(p => {
-                p.type = makeInferredType()
-                if (p.paramType) {
-                    addBounds(p.type, [p.paramType])
-                }
+            node.type = makeConstType({
+                kind: 'fn-type',
+                parseNode: node.name.parseNode,
+                generics: node.generics,
+                paramTypes: node.params.map(p => p.paramType!),
+                returnType: node.returnType ?? unitId
             })
-            node.type = makeInferredType([
-                {
-                    kind: 'fn-type',
-                    parseNode: node.name.parseNode,
-                    generics: node.generics,
-                    paramTypes: node.params.map(p => p.type!),
-                    returnType: node.returnType ?? unitId
-                }
-            ])
             break
         }
         case 'type-def': {
@@ -43,22 +35,18 @@ export const setTopScopeType = (node: AstNode, ctx: Context, parent?: AstNode) =
                 kind: 'identifier',
                 parseNode: node.name.parseNode,
                 names: [node.name],
-                typeArgs: []
+                typeArgs: [],
+                def: node
             }
             node.type = makeConstType(nodeId)
             node.variants.forEach(v => {
-                v.fieldDefs.forEach(f => {
-                    f.type = makeInferredType([f.fieldType])
+                v.type = makeConstType({
+                    kind: 'fn-type',
+                    parseNode: node.name.parseNode,
+                    generics: node.generics,
+                    paramTypes: v.fieldDefs.map(f => f.fieldType),
+                    returnType: nodeId
                 })
-                v.type = makeInferredType([
-                    {
-                        kind: 'fn-type',
-                        parseNode: node.name.parseNode,
-                        generics: node.generics,
-                        paramTypes: v.fieldDefs.map(f => f.type!),
-                        returnType: nodeId
-                    }
-                ])
             })
             break
         }
