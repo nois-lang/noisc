@@ -7,7 +7,7 @@ import { unitId } from '../typecheck/type'
 /**
  * Set known types of topScope nodes
  */
-export const setTopScopeType = (node: AstNode, ctx: Context, parent?: AstNode) => {
+export const setTopScopeType = (node: AstNode, ctx: Context) => {
     switch (node.kind) {
         case 'module': {
             node.block.statements.forEach(s => setTopScopeType(s, ctx))
@@ -20,10 +20,14 @@ export const setTopScopeType = (node: AstNode, ctx: Context, parent?: AstNode) =
             break
         }
         case 'fn-def': {
+            const generics = node.generics
+            if (node.instance) {
+                generics.push(...node.instance.generics)
+            }
             node.type = makeConstType({
                 kind: 'fn-type',
                 parseNode: node.name.parseNode,
-                generics: node.generics,
+                generics,
                 paramTypes: node.params.map(p => p.paramType!),
                 returnType: node.returnType ?? unitId
             })
@@ -53,7 +57,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context, parent?: AstNode) =
         case 'trait-def':
         case 'impl-def': {
             if (node.kind === 'impl-def' && node.forTrait) break
-            node.block.statements.forEach(s => setTopScopeType(s, ctx, node))
+            node.block.statements.forEach(s => setTopScopeType(s, ctx))
             break
         }
     }
