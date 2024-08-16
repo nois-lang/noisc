@@ -1,11 +1,11 @@
 import { AstNode } from '../ast'
 import { Identifier } from '../ast/operand'
 import { Context } from '../scope'
-import { makeConstType } from '../typecheck'
-import { unitId } from '../typecheck/type'
+import { makeInferredFromType, makeInferredType, makeTemplateType } from '../typecheck'
+import { unitType } from '../typecheck/type'
 
 /**
- * Set known types of topScope nodes
+ * Set inferred types of topScope nodes
  */
 export const setTopScopeType = (node: AstNode, ctx: Context) => {
     switch (node.kind) {
@@ -16,7 +16,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
         case 'var-def': {
             if (node.pattern.expr.kind !== 'name') break
             const def = node.pattern.expr
-            def.type = makeConstType(node.varType!)
+            def.type = makeTemplateType(makeInferredFromType(node.varType!))
             break
         }
         case 'fn-def': {
@@ -24,12 +24,11 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             if (node.instance) {
                 generics.push(...node.instance.generics)
             }
-            node.type = makeConstType({
-                kind: 'fn-type',
-                parseNode: node.name.parseNode,
+            node.type = makeTemplateType({
+                kind: 'inferred-fn',
                 generics,
-                paramTypes: node.params.map(p => p.paramType!),
-                returnType: node.returnType ?? unitId
+                params: node.params.map(p => makeInferredFromType(p.paramType!)),
+                returnType: node.returnType ? makeInferredFromType(node.returnType) : unitType
             })
             break
         }
@@ -42,13 +41,12 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
                 typeArgs: [],
                 def: node
             }
-            node.type = makeConstType(nodeId)
+            node.type = makeInferredFromType(nodeId)
             node.variants.forEach(v => {
-                v.type = makeConstType({
-                    kind: 'fn-type',
-                    parseNode: node.name.parseNode,
+                v.type = makeTemplateType({
+                    kind: 'inferred-fn',
                     generics: node.generics,
-                    paramTypes: v.fieldDefs.map(f => f.fieldType),
+                    params: v.fieldDefs.map(f => makeInferredFromType(f.fieldType)),
                     returnType: nodeId
                 })
             })
@@ -57,8 +55,12 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
         case 'trait-def':
         case 'impl-def': {
             if (node.kind === 'impl-def' && node.forTrait) break
+            node.generics.forEach(g => setTopScopeType(g, ctx))
             node.block.statements.forEach(s => setTopScopeType(s, ctx))
             break
+        }
+        case 'generic': {
+            node.type = makeInferredType()
         }
     }
 }

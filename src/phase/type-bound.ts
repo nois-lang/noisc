@@ -5,13 +5,13 @@ import { operatorImplMap } from '../semantic/op'
 import {
     InferredType,
     addBounds,
-    instantiateConstType,
-    makeConstType,
+    instantiateTemplateType,
+    makeInferredFromType,
     makeInferredType,
     makeReturnType
 } from '../typecheck'
-import { boolId, charId, floatId, intId, stringId } from '../typecheck/type'
-import { assert } from '../util/todo'
+import { boolType, charType, floatType, intType, stringType } from '../typecheck/type'
+import { assert, unreachable } from '../util/todo'
 import { findById, findParent } from './name-resolve'
 
 /**
@@ -83,9 +83,12 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             break
         }
         case 'param': {
-            // TODO: handle self
             if (!node.paramType) break
-            const pType = makeConstType(node.paramType!)
+            collectTypeBounds(node.paramType, ctx)
+            const pType =
+                node.paramType.kind === 'identifier' && node.paramType.def
+                    ? node.paramType.def.type!
+                    : makeInferredFromType(node.paramType)
             addBounds(node.type!, [pType])
             collectTypeBounds(node.pattern, ctx, pType)
             break
@@ -122,14 +125,9 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         case 'name': {
             if (node.def) {
                 assert(!!node.def.type)
-                node.type = instantiateConstType(node.def.type!)
+                node.type = instantiateTemplateType(node.def.type!)
                 break
             }
-            break
-        }
-        case 'string-interpolated': {
-            node.tokens.filter(t => typeof t !== 'string').forEach(t => collectTypeBounds(t, ctx))
-            addBounds(node.type!, [makeConstType(stringId)])
             break
         }
         case 'operand-expr': {
@@ -141,7 +139,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             collectTypeBounds(node.operand, ctx)
             switch (node.op.kind) {
                 case 'call-op': {
-                    const fnType = instantiateConstType(node.operand.type!)
+                    const fnType = instantiateTemplateType(node.operand.type!)
                     node.op.args.forEach(a => collectTypeBounds(a, ctx))
                     addBounds(fnType, [boundFromCall(node.op.args.map(a => a.type!))])
                     node.type = makeReturnType(fnType)
@@ -165,7 +163,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             assert(!!methodId)
             const methodDef = findById(methodId!, ctx)
             assert(!!methodDef)
-            const fnType = instantiateConstType(methodDef!.type!)
+            const fnType = instantiateTemplateType(methodDef!.type!)
             addBounds(fnType, [boundFromCall([node.lOperand.type!, node.rOperand.type!])])
             node.type = makeReturnType(fnType)
             break
@@ -192,17 +190,18 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         }
         case 'var-def': {
             if (node.expr) {
-                collectTypeBounds(node.expr, ctx, node.varType ? makeConstType(node.varType) : undefined)
+                collectTypeBounds(node.expr, ctx, node.varType ? makeInferredFromType(node.varType) : undefined)
             }
             collectTypeBounds(node.pattern, ctx, node.expr?.type)
             break
         }
         case 'fn-def': {
+            node.generics.forEach(g => collectTypeBounds(g, ctx))
             node.params.forEach(p => collectTypeBounds(p, ctx))
             if (node.block) {
-                collectTypeBounds(node.block, ctx)
+                if (node.type?.kind !== 'template' || node.type.type.kind !== 'inferred-fn') return unreachable()
+                collectTypeBounds(node.block, ctx, node.type.type.returnType)
             }
-            // TODO
             break
         }
         case 'trait-def': {
@@ -213,24 +212,29 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             // TODO
             break
         }
+        case 'string-interpolated': {
+            node.tokens.filter(t => typeof t !== 'string').forEach(t => collectTypeBounds(t, ctx))
+            node.type = instantiateTemplateType(stringType)
+            break
+        }
         case 'string-literal': {
-            node.type = makeConstType(stringId)
+            node.type = instantiateTemplateType(stringType)
             break
         }
         case 'char-literal': {
-            node.type = makeConstType(charId)
+            node.type = instantiateTemplateType(charType)
             break
         }
         case 'int-literal': {
-            node.type = makeConstType(intId)
+            node.type = instantiateTemplateType(intType)
             break
         }
         case 'float-literal': {
-            node.type = makeConstType(floatId)
+            node.type = instantiateTemplateType(floatType)
             break
         }
         case 'bool-literal': {
-            node.type = makeConstType(boolId)
+            node.type = instantiateTemplateType(boolType)
             break
         }
         case 'method-call-op': {

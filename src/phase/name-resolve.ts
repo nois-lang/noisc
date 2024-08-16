@@ -4,7 +4,6 @@ import { FnDef } from '../ast/statement'
 import { Generic } from '../ast/type'
 import { Context, Definition, DefinitionMap, addError, defKey, idToString } from '../scope'
 import { duplicateDefError, genericError, notFoundError } from '../semantic/error'
-import { makeConstType } from '../typecheck'
 import { unreachable } from '../util/todo'
 
 /**
@@ -49,7 +48,6 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
         case 'generic': {
             addDef(defKey(node), node, ctx)
             node.bounds.forEach(b => resolveName(b, ctx))
-            node.type = makeConstType({ kind: 'identifier', typeArgs: [], names: [node.name] })
             break
         }
         case 'match-clause': {
@@ -88,6 +86,9 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
             break
         }
         case 'identifier': {
+            node.typeArgs.forEach(ta => {
+                return resolveName(ta, ctx)
+            })
             const def = findById(node, ctx)
             if (!def) {
                 addError(ctx, notFoundError(ctx, node, idToString(node)))

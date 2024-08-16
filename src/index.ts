@@ -12,9 +12,10 @@ import { buildPackage } from './package/io'
 import { resolveImports, setExports } from './phase/import-resolve'
 import { resolveModuleScope } from './phase/module-resolve'
 import { resolveName } from './phase/name-resolve'
-import { setTopScopeType } from './phase/pub-type'
 import { desugar1 } from './phase/sugar'
+import { setTopScopeType } from './phase/top-scope-type'
 import { collectTypeBounds } from './phase/type-bound'
+import { unifyTypeBounds } from './phase/type-unify'
 import { Context, eachModule, pathToId } from './scope'
 import { Source } from './source'
 import { assert } from './util/todo'
@@ -133,7 +134,8 @@ const phases = [
     desugar1,
     resolveName,
     setTopScopeType,
-    collectTypeBounds
+    collectTypeBounds,
+    unifyTypeBounds
 ]
 phases.forEach(f => eachModule(f, ctx))
 

@@ -1,4 +1,5 @@
 import { Hole } from '../ast/match'
+import { Identifier } from '../ast/operand'
 import { Generic, Type } from '../ast/type'
 import { idToString } from '../scope'
 import { assert } from '../util/todo'
@@ -7,24 +8,39 @@ export type InferredType =
     | {
           kind: 'inferred'
           bounds: InferredType[]
-          unified?: Type
       }
     | {
           kind: 'inferred-fn'
           generics: Generic[]
           params: InferredType[]
           returnType: InferredType
-          unified?: Type
       }
-    | { kind: 'const'; type: Type }
+    | { kind: 'template'; type: InferredType }
     | { kind: 'return'; type: InferredType }
+    | Identifier
     | Hole
+    | { kind: 'error' }
 
 export const makeInferredType = (bounds: InferredType[] = []) => ({ kind: <const>'inferred', bounds })
 
 export const makeReturnType = (type: InferredType) => ({ kind: <const>'return', type })
 
-export const makeConstType = (type: Type) => ({ kind: <const>'const', type })
+export const makeTemplateType = (type: InferredType) => ({ kind: <const>'template', type })
+
+export const makeInferredFromType = (type: Type): InferredType => {
+    switch (type.kind) {
+        case 'identifier':
+        case 'hole':
+            return type
+        case 'fn-type':
+            return {
+                kind: 'inferred-fn',
+                generics: type.generics,
+                params: type.paramTypes.map(makeInferredFromType),
+                returnType: makeInferredFromType(type.returnType)
+            }
+    }
+}
 
 export const addBounds = (type: InferredType, bounds: InferredType[]): void => {
     if (type.kind === 'inferred') {
@@ -34,30 +50,28 @@ export const addBounds = (type: InferredType, bounds: InferredType[]): void => {
     assert(false, type.kind)
 }
 
-export const instantiateConstType = (t: InferredType): InferredType => {
-    switch (t.kind) {
-        case 'const':
-            return makeInferredType([t])
-        default:
-            return t
+export const instantiateTemplateType = (t: InferredType): InferredType => {
+    if (t.kind === 'template') {
+        return makeInferredType([structuredClone(t.type)])
     }
+    return t
 }
 
 export const inferredTypeToString = (t: InferredType): string => {
     switch (t.kind) {
         case 'inferred':
-            if (t.unified) {
-                return typeToString(t.unified)
-            }
             return `[${t.bounds.map(inferredTypeToString).join(', ')}]`
         case 'inferred-fn':
             return `|${t.params.map(inferredTypeToString).join(', ')}|: ${inferredTypeToString(t.returnType)}`
         case 'return':
             return `ret(${inferredTypeToString(t.type)})`
-        case 'const':
-            return typeToString(t.type)
+        case 'template':
+            return `template(${inferredTypeToString(t.type)})`
         case 'hole':
+        case 'identifier':
             return typeToString(t)
+        case 'error':
+            return 'ERROR'
     }
 }
 

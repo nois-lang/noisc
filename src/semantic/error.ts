@@ -309,7 +309,6 @@ export const duplicateUseError = (ctx: Context, useId: Identifier): SemanticErro
     return semanticError(43, ctx, useId, msg)
 }
 
-export const genericError = (ctx: Context, def: AstNode): SemanticError => {
-    const msg = `error`
+export const genericError = (ctx: Context, def: AstNode, msg: string = 'error'): SemanticError => {
     return semanticError(44, ctx, def, msg)
 }
