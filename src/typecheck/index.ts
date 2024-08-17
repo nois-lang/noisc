@@ -52,7 +52,7 @@ export const addBounds = (type: InferredType, bounds: InferredType[]): void => {
 
 export const instantiateTemplateType = (t: InferredType): InferredType => {
     if (t.kind === 'template') {
-        return makeInferredType([structuredClone(t.type)])
+        return makeInferredType([{ ...t.type }])
     }
     return t
 }

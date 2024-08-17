@@ -1,6 +1,7 @@
 import { AstNode } from '../ast'
 import { FnDef } from '../ast/statement'
-import { Context } from '../scope'
+import { Context, addError } from '../scope'
+import { genericError } from '../semantic/error'
 import { operatorImplMap } from '../semantic/op'
 import {
     InferredType,
@@ -10,8 +11,8 @@ import {
     makeInferredType,
     makeReturnType
 } from '../typecheck'
-import { boolType, charType, floatType, intType, stringType } from '../typecheck/type'
-import { assert, unreachable } from '../util/todo'
+import { boolType, charType, floatType, intType, stringType, unitType } from '../typecheck/type'
+import { assert } from '../util/todo'
 import { findById, findParent } from './name-resolve'
 
 /**
@@ -45,6 +46,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         case 'int-literal':
         case 'float-literal':
         case 'bool-literal':
+        case 'var-def':
             node.type ??= makeInferredType()
     }
     if (node.type && node.type.kind === 'inferred') {
@@ -124,7 +126,6 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         case 'identifier':
         case 'name': {
             if (node.def) {
-                assert(!!node.def.type)
                 node.type = instantiateTemplateType(node.def.type!)
                 break
             }
@@ -157,6 +158,10 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             break
         }
         case 'binary-expr': {
+            if (node.binaryOp.kind === 'assign-op') {
+                // TODO
+                break
+            }
             collectTypeBounds(node.lOperand, ctx)
             collectTypeBounds(node.rOperand, ctx)
             const methodId = operatorImplMap.get(node.binaryOp.kind)
@@ -193,22 +198,26 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
                 collectTypeBounds(node.expr, ctx, node.varType ? makeInferredFromType(node.varType) : undefined)
             }
             collectTypeBounds(node.pattern, ctx, node.expr?.type)
+            node.type = instantiateTemplateType(unitType)
             break
         }
         case 'fn-def': {
             node.generics.forEach(g => collectTypeBounds(g, ctx))
             node.params.forEach(p => collectTypeBounds(p, ctx))
             if (node.block) {
-                if (node.type?.kind !== 'template' || node.type.type.kind !== 'inferred-fn') return unreachable()
+                if (node.type?.kind !== 'template' || node.type.type.kind !== 'inferred-fn') {
+                    addError(ctx, genericError(ctx, node, 'no type'))
+                    break
+                    // return unreachable()
+                }
                 collectTypeBounds(node.block, ctx, node.type.type.returnType)
             }
             break
         }
-        case 'trait-def': {
-            // TODO
-            break
-        }
+        case 'trait-def':
         case 'impl-def': {
+            if (node.kind === 'impl-def' && node.forTrait) break
+            node.block.statements.forEach(s => collectTypeBounds(s, ctx))
             // TODO
             break
         }

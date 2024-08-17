@@ -41,7 +41,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
                 typeArgs: [],
                 def: node
             }
-            node.type = makeInferredFromType(nodeId)
+            node.type = makeTemplateType(nodeId)
             node.variants.forEach(v => {
                 v.type = makeTemplateType({
                     kind: 'inferred-fn',
@@ -61,6 +61,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
         }
         case 'generic': {
             node.type = makeInferredType()
+            break
         }
     }
 }
