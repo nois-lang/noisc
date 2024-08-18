@@ -1,6 +1,5 @@
-import { Hole } from '../ast/match'
-import { Identifier } from '../ast/operand'
-import { Generic, Type } from '../ast/type'
+import { Name } from '../ast/operand'
+import { Type } from '../ast/type'
 import { idToString } from '../scope'
 import { assert } from '../util/todo'
 
@@ -10,37 +9,28 @@ export type InferredType =
           bounds: InferredType[]
       }
     | {
+          kind: 'type-param'
+          name: Name
+          unified?: InferredType
+      }
+    | {
           kind: 'inferred-fn'
-          generics: Generic[]
+          generics: InferredType[]
           params: InferredType[]
           returnType: InferredType
       }
-    | { kind: 'template'; type: InferredType }
+    | { kind: 'def'; type: Type }
+    | { kind: 'hole' }
     | { kind: 'return'; type: InferredType }
-    | Identifier
-    | Hole
-    | { kind: 'error' }
+    | { kind: 'error'; message?: string }
 
 export const makeInferredType = (bounds: InferredType[] = []) => ({ kind: <const>'inferred', bounds })
 
+export const makeTypeParam = (name: Name) => ({ kind: <const>'type-param', name })
+
 export const makeReturnType = (type: InferredType) => ({ kind: <const>'return', type })
 
-export const makeTemplateType = (type: InferredType) => ({ kind: <const>'template', type })
-
-export const makeInferredFromType = (type: Type): InferredType => {
-    switch (type.kind) {
-        case 'identifier':
-        case 'hole':
-            return type
-        case 'fn-type':
-            return {
-                kind: 'inferred-fn',
-                generics: type.generics,
-                params: type.paramTypes.map(makeInferredFromType),
-                returnType: makeInferredFromType(type.returnType)
-            }
-    }
-}
+export const makeDefType = (type: Type) => ({ kind: <const>'def', type })
 
 export const addBounds = (type: InferredType, bounds: InferredType[]): void => {
     if (type.kind === 'inferred') {
@@ -50,28 +40,51 @@ export const addBounds = (type: InferredType, bounds: InferredType[]): void => {
     assert(false, type.kind)
 }
 
-export const instantiateTemplateType = (t: InferredType): InferredType => {
-    if (t.kind === 'template') {
-        return makeInferredType([{ ...t.type }])
+export const instantiateDefType = (t: InferredType): InferredType => {
+    if (t.kind === 'def') {
+        if (t.type.kind === 'fn-type') {
+            assert(!!t.type.returnType.type)
+            return makeInferredType([
+                {
+                    kind: 'inferred-fn',
+                    generics: t.type.generics.map(g => {
+                        assert(!!g.type)
+                        return instantiateDefType(g.type!)
+                    }),
+                    params: t.type.paramTypes.map(pt => {
+                        assert(!!pt.type)
+                        return instantiateDefType(pt.type!)
+                    }),
+                    returnType: instantiateDefType(t.type.returnType.type!)
+                }
+            ])
+        }
+        return makeInferredType([t])
     }
     return t
 }
 
-export const inferredTypeToString = (t: InferredType): string => {
+export const inferredTypeToString = (t: InferredType, depth = 0): string => {
+    if (depth > 5) return '@rec'
     switch (t.kind) {
         case 'inferred':
-            return `[${t.bounds.map(inferredTypeToString).join(', ')}]`
+            return `[${t.bounds.map(b => inferredTypeToString(b, depth + 1)).join(', ')}]`
+        case 'type-param':
+            const unified = t.unified ? `: ${inferredTypeToString(t.unified)}` : ''
+            return `<${t.name.value}${unified}>`
         case 'inferred-fn':
-            return `|${t.params.map(inferredTypeToString).join(', ')}|: ${inferredTypeToString(t.returnType)}`
+            return `|${t.params.map(p => inferredTypeToString(p, depth + 1)).join(', ')}|: ${inferredTypeToString(
+                t.returnType
+            )}`
         case 'return':
-            return `ret(${inferredTypeToString(t.type)})`
-        case 'template':
-            return `template(${inferredTypeToString(t.type)})`
+            return `ret(${inferredTypeToString(t.type, depth + 1)})`
+        case 'def':
+            return `def(${typeToString(t.type)})`
         case 'hole':
-        case 'identifier':
-            return typeToString(t)
+            return '_'
         case 'error':
-            return 'ERROR'
+            const msg = t.message ? `(${t.message})` : ''
+            return `ERROR${msg}`
     }
 }
 
@@ -85,5 +98,7 @@ export const typeToString = (t: Type): string => {
             return typeArgs + main
         case 'hole':
             return '_'
+        case 'name':
+            return t.value
     }
 }

@@ -1,8 +1,8 @@
 import { AstNode } from '../ast'
-import { Identifier } from '../ast/operand'
 import { Context } from '../scope'
-import { makeInferredFromType, makeInferredType, makeTemplateType } from '../typecheck'
+import { makeDefType, makeTypeParam } from '../typecheck'
 import { unitType } from '../typecheck/type'
+import { assert, todo, unreachable } from '../util/todo'
 
 /**
  * Set inferred types of topScope nodes
@@ -14,42 +14,50 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             break
         }
         case 'var-def': {
-            if (node.pattern.expr.kind !== 'name') break
+            if (node.pattern.expr.kind !== 'name') return unreachable()
             const def = node.pattern.expr
-            def.type = makeTemplateType(makeInferredFromType(node.varType!))
+            assert(!!node.varType)
+            def.type = makeDefType(node.varType!)
             break
         }
         case 'fn-def': {
-            const generics = node.generics
             if (node.instance) {
-                generics.push(...node.instance.generics)
+                node.generics.push(...node.instance.generics)
             }
-            node.type = makeTemplateType({
-                kind: 'inferred-fn',
-                generics,
-                params: node.params.map(p => makeInferredFromType(p.paramType!)),
-                returnType: node.returnType ? makeInferredFromType(node.returnType) : unitType
+            node.generics.forEach(g => setTopScopeType(g, ctx))
+            node.params.forEach(p => setTopScopeType(p, ctx))
+            assert(!!node.returnType)
+            if (node.returnType) {
+                setTopScopeType(node.returnType, ctx)
+            }
+            node.type = makeDefType({
+                kind: 'fn-type',
+                generics: node.generics,
+                paramTypes: node.params.map(p => p.paramType!),
+                returnType: node.returnType ? node.returnType : unitType.type
             })
             break
         }
         case 'type-def': {
-            // TODO: generics
-            const nodeId: Identifier = {
-                kind: 'identifier',
-                parseNode: node.name.parseNode,
-                names: [node.name],
-                typeArgs: [],
-                def: node
-            }
-            node.type = makeTemplateType(nodeId)
+            node.type = makeDefType(node.name)
             node.variants.forEach(v => {
-                v.type = makeTemplateType({
-                    kind: 'inferred-fn',
+                v.fieldDefs.forEach(f => setTopScopeType(f, ctx))
+                const fnType = {
+                    kind: <const>'fn-type',
                     generics: node.generics,
-                    params: v.fieldDefs.map(f => makeInferredFromType(f.fieldType)),
-                    returnType: nodeId
-                })
+                    paramTypes: v.fieldDefs.map(f => f.fieldType),
+                    returnType: node.name
+                }
+                setTopScopeType(fnType, ctx)
+                v.type = makeDefType(fnType)
             })
+            break
+        }
+        case 'field-def': {
+            assert(!!node.fieldType)
+            setTopScopeType(node.fieldType!, ctx)
+            node.type = node.fieldType!.type!
+            setTopScopeType(node.name, ctx)
             break
         }
         case 'trait-def':
@@ -59,8 +67,42 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             node.block.statements.forEach(s => setTopScopeType(s, ctx))
             break
         }
+        case 'param': {
+            assert(!!node.paramType)
+            setTopScopeType(node.paramType!, ctx)
+            node.type = node.paramType!.type!
+            setTopScopeType(node.pattern, ctx)
+            break
+        }
+        case 'pattern': {
+            if (node.expr.kind !== 'name') {
+                return todo()
+            }
+            setTopScopeType(node.expr, ctx)
+            break
+        }
+        case 'identifier': {
+            node.typeArgs.forEach(ta => setTopScopeType(ta, ctx))
+            node.type = node.def?.type ?? { kind: 'error', message: 'no def' }
+            break
+        }
+        case 'name': {
+            node.type = node.def?.type ?? { kind: 'error', message: 'no def' }
+            break
+        }
+        case 'fn-type': {
+            node.generics.forEach(pt => setTopScopeType(pt, ctx))
+            node.paramTypes.forEach(pt => setTopScopeType(pt, ctx))
+            setTopScopeType(node.returnType, ctx)
+            node.type = makeDefType(node)
+            break
+        }
+        case 'hole': {
+            node.type = { kind: 'hole' }
+            break
+        }
         case 'generic': {
-            node.type = makeInferredType()
+            node.type = makeTypeParam(node.name)
             break
         }
     }

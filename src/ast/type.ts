@@ -4,7 +4,7 @@ import { Context } from '../scope'
 import { Hole, buildHole } from './match'
 import { Identifier, Name, buildIdentifier, buildName } from './operand'
 
-export type Type = Identifier | FnType | Hole
+export type Type = Identifier | FnType | Hole | Name
 
 export const buildType = (node: ParseNode, ctx: Context): Type => {
     const n = filterNonAstNodes(node)[0]

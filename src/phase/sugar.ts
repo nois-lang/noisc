@@ -1,11 +1,13 @@
 import { AstNode } from '../ast'
 import { Context, idFromString } from '../scope'
+import { unitType } from '../typecheck/type'
 
 /**
  * Desugar phase that runs before name resolution
  * Does:
  *     - populates type of the `self` param
  *     - sets fnDef.instance
+ *     - set fnDef.returnType to Unit if not specified
  */
 export const desugar1 = (node: AstNode, ctx: Context, parent?: AstNode) => {
     switch (node.kind) {
@@ -29,6 +31,7 @@ export const desugar1 = (node: AstNode, ctx: Context, parent?: AstNode) => {
                     }
                 })
             }
+            node.returnType ??= unitType.type
             break
         }
     }

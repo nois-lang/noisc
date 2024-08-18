@@ -134,10 +134,13 @@ const phases = [
     desugar1,
     resolveName,
     setTopScopeType,
-    collectTypeBounds,
-    unifyTypeBounds
+    collectTypeBounds
 ]
 phases.forEach(f => eachModule(f, ctx))
+const m = ctx.packages.at(-1)!.modules[0]
+ctx.moduleStack.push(m)
+unifyTypeBounds(m, ctx)
+ctx.moduleStack.pop()
 
 reportErrors(ctx)
 reportWarnings(ctx)

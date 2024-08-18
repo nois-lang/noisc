@@ -1,6 +1,6 @@
 import { AstNode } from '../ast'
 import { Context } from '../scope'
-import { InferredType, inferredTypeToString, typeToString } from '../typecheck'
+import { InferredType, makeDefType, typeToString } from '../typecheck'
 import { zip } from '../util/array'
 import { todo, unreachable } from '../util/todo'
 
@@ -182,26 +182,18 @@ const unifyType = (type: InferredType): void => {
             Object.assign(type, ret)
             break
         case 'hole':
-        case 'template':
+        case 'def':
         case 'error':
             break
     }
 }
 
 const unify = (a: InferredType, b: InferredType): InferredType => {
-    const aStr = inferredTypeToString(a)
-    const bStr = inferredTypeToString(b)
     const u1 = unify_(a, b)
     if (u1.kind !== 'error') {
-        console.log('unified', aStr, bStr, inferredTypeToString(u1))
         return u1
     }
     const u2 = unify_(b, a)
-    if (u2.kind === 'error') {
-        console.log('error', inferredTypeToString(a), inferredTypeToString(b))
-    } else {
-        console.log('unified', aStr, bStr, inferredTypeToString(u2))
-    }
     return u2
 }
 
@@ -220,42 +212,52 @@ const unify_ = (a: InferredType, b: InferredType): InferredType => {
                         returnType: unify(a.returnType, b.returnType)
                     }
                     return t
-                case 'identifier':
+                case 'def':
                 case 'hole':
                 case 'error':
                     todo(b.kind)
                     break
-                case 'template':
                 case 'inferred':
                 case 'return':
                     unreachable()
                     break
             }
             break
-        case 'identifier':
-            if (a.def?.kind === 'generic') {
-                if (b.kind !== 'hole') {
-                    Object.assign(a, b)
-                }
-            }
+        case 'def':
             switch (b.kind) {
-                case 'identifier':
-                    // TODO
-                    if (typeToString(a) === typeToString(b)) {
+                case 'def':
+                    // TODO: proper equality
+                    if (typeToString(a.type) === typeToString(b.type)) {
                         return a
                     }
+                    break
+                case 'inferred':
+                case 'inferred-fn':
+                case 'return':
+                case 'error':
+                    todo(b.kind)
+                    break
             }
             break
+        case 'type-param':
+            if (a.unified) {
+                const u = unify(a.unified, b)
+                Object.assign(a.unified, u)
+                return u
+            }
+            if (b.kind !== 'hole') {
+                a.unified = b
+            }
+            return b
         case 'hole':
             return b
         case 'error':
             return a
         case 'inferred':
-        case 'template':
         case 'return':
             return unreachable()
     }
-    return { kind: 'error' }
+    return { kind: 'error', message: `unhandled unify [${[a.kind, b.kind].join(', ')}]` }
 }
 
 const extractReturnType = (type: InferredType): InferredType | undefined => {
@@ -263,15 +265,23 @@ const extractReturnType = (type: InferredType): InferredType | undefined => {
         case 'inferred':
             unifyType(type)
             return extractReturnType(type)
+        case 'type-param':
+            if (type.unified) {
+                return extractReturnType(type.unified)
+            }
+            return undefined
         case 'inferred-fn':
             return type.returnType
         case 'return':
             return extractReturnType(type.type)
         case 'hole':
-        case 'identifier':
         case 'error':
             return undefined
-        case 'template':
-            return unreachable()
+        case 'def':
+            if (type.type.kind === 'fn-type') {
+                unreachable()
+                return makeDefType(type.type.returnType)
+            }
+            return undefined
     }
 }
