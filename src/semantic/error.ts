@@ -53,16 +53,6 @@ export const unknownTypeError = (ctx: Context, node: AstNode, type: VirtualType)
     return semanticError(3, ctx, node, 'unknown type')
 }
 
-export const typeError = (ctx: Context, node: AstNode, actual: VirtualType, expected: VirtualType): SemanticError => {
-    if (actual.kind === 'unknown-type' && actual.mismatchedBranches) {
-        return mismatchedBranchesError(ctx, node, actual.mismatchedBranches.then, actual.mismatchedBranches.else)
-    }
-    const message = `\
-type error: expected ${virtualTypeToString(expected)}
-            got      ${virtualTypeToString(actual)}`
-    return semanticError(4, ctx, node, message)
-}
-
 export const mismatchedBranchesError = (
     ctx: Context,
     node: AstNode,
@@ -312,3 +302,8 @@ export const duplicateUseError = (ctx: Context, useId: Identifier): SemanticErro
 export const genericError = (ctx: Context, def: AstNode, msg: string = 'error'): SemanticError => {
     return semanticError(44, ctx, def, msg)
 }
+
+export const typeError = (ctx: Context, node: AstNode, message: string): SemanticError => {
+    return semanticError(45, ctx, node, message)
+}
+

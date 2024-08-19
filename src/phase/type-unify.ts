@@ -1,5 +1,6 @@
 import { AstNode } from '../ast'
-import { Context } from '../scope'
+import { Context, addError } from '../scope'
+import { typeError } from '../semantic/error'
 import { InferredType, inferredTypeToString, makeDefType, typeToString } from '../typecheck'
 import { zip } from '../util/array'
 import { todo, unreachable } from '../util/todo'
@@ -148,6 +149,11 @@ export const unifyTypeBounds = (node: AstNode, ctx: Context): void => {
         case 'field-access-op': {
             // TODO
             break
+        }
+    }
+    if (node.type) {
+        if (node.type.kind === 'error') {
+            addError(ctx, typeError(ctx, node, node.type.message ?? 'type error'))
         }
     }
 }
