@@ -234,7 +234,6 @@ const unify_ = (a: InferredType, b: InferredType): InferredType => {
                 case 'inferred':
                 case 'inferred-fn':
                 case 'return':
-                case 'error':
                     todo(b.kind)
                     break
             }

@@ -13,7 +13,7 @@ import { resolveImports, setExports } from './phase/import-resolve'
 import { resolveModuleScope } from './phase/module-resolve'
 import { resolveName } from './phase/name-resolve'
 import { desugar1 } from './phase/sugar'
-import { setTopScopeType } from './phase/top-scope-type'
+import { setTopScopeDefType, setTopScopeType } from './phase/top-scope-type'
 import { collectTypeBounds } from './phase/type-bound'
 import { unifyTypeBounds } from './phase/type-unify'
 import { Context, eachModule, pathToId } from './scope'
@@ -133,6 +133,7 @@ const phases = [
     resolveImports,
     desugar1,
     resolveName,
+    setTopScopeDefType,
     setTopScopeType,
     collectTypeBounds
 ]

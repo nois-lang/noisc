@@ -84,7 +84,7 @@ export const inferredTypeToString = (t: InferredType, depth = 0): string => {
             return '_'
         case 'error':
             const msg = t.message ? `(${t.message})` : ''
-            return `ERROR${msg}`
+            return `error${msg}`
     }
 }
 

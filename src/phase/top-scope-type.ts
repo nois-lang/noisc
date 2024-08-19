@@ -5,6 +5,32 @@ import { unitType } from '../typecheck/type'
 import { assert, todo, unreachable } from '../util/todo'
 
 /**
+ * Set inferred def types of topScope nodes
+ */
+export const setTopScopeDefType = (node: AstNode, ctx: Context) => {
+    switch (node.kind) {
+        case 'module': {
+            node.block.statements.forEach(s => setTopScopeDefType(s, ctx))
+            break
+        }
+        case 'trait-def': {
+            node.type = makeDefType(node.name)
+            node.generics.forEach(g => setTopScopeDefType(g, ctx))
+            break
+        }
+        case 'type-def': {
+            node.type = makeDefType(node.name)
+            node.generics.forEach(g => setTopScopeDefType(g, ctx))
+            break
+        }
+        case 'generic': {
+            node.type = makeTypeParam(node.name)
+            break
+        }
+    }
+}
+
+/**
  * Set inferred types of topScope nodes
  */
 export const setTopScopeType = (node: AstNode, ctx: Context) => {
@@ -39,7 +65,6 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             break
         }
         case 'type-def': {
-            node.type = makeDefType(node.name)
             node.variants.forEach(v => {
                 v.fieldDefs.forEach(f => setTopScopeType(f, ctx))
                 const fnType = {
@@ -87,7 +112,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             break
         }
         case 'name': {
-            node.type = node.def?.type ?? { kind: 'error', message: 'no def' }
+            node.type = makeDefType(node)
             break
         }
         case 'fn-type': {
