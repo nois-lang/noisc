@@ -1,6 +1,6 @@
 import { AstNode } from '../ast'
 import { Context } from '../scope'
-import { InferredType, makeDefType, typeToString } from '../typecheck'
+import { InferredType, inferredTypeToString, makeDefType, typeToString } from '../typecheck'
 import { zip } from '../util/array'
 import { todo, unreachable } from '../util/todo'
 
@@ -229,6 +229,13 @@ const unify_ = (a: InferredType, b: InferredType): InferredType => {
                     // TODO: proper equality
                     if (typeToString(a.type) === typeToString(b.type)) {
                         return a
+                    } else {
+                        const e = {
+                            kind: 'error',
+                            message: `failed unify [${[inferredTypeToString(a), inferredTypeToString(b)].join(', ')}]`
+                        }
+                        Object.assign(a, e)
+                        Object.assign(b, e)
                     }
                     break
                 case 'inferred':
@@ -256,7 +263,10 @@ const unify_ = (a: InferredType, b: InferredType): InferredType => {
         case 'return':
             return unreachable()
     }
-    return { kind: 'error', message: `unhandled unify [${[a.kind, b.kind].join(', ')}]` }
+    return {
+        kind: 'error',
+        message: `unhandled unify [${[inferredTypeToString(a), inferredTypeToString(b)].join(', ')}]`
+    }
 }
 
 const extractReturnType = (type: InferredType): InferredType | undefined => {
