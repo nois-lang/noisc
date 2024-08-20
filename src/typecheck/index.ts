@@ -1,6 +1,8 @@
+import { UnaryExpr } from '../ast/expr'
+import { FieldAccessOp } from '../ast/op'
 import { Name } from '../ast/operand'
-import { Type } from '../ast/type'
-import { idToString } from '../scope'
+import { Generic, Type } from '../ast/type'
+import { Definition, defKey, idToString } from '../scope'
 import { assert } from '../util/todo'
 
 export type InferredType =
@@ -10,7 +12,7 @@ export type InferredType =
       }
     | {
           kind: 'type-param'
-          name: Name
+          type: Generic
           unified?: InferredType
       }
     | {
@@ -19,18 +21,27 @@ export type InferredType =
           params: InferredType[]
           returnType: InferredType
       }
-    | { kind: 'def'; type: Type }
-    | { kind: 'hole' }
+    | { kind: 'field-access'; operandType: InferredType; fieldName: Name }
+    | { kind: 'def'; def: Definition }
+    | Type
     | { kind: 'return'; type: InferredType }
     | { kind: 'error'; message?: string }
 
 export const makeInferredType = (bounds: InferredType[] = []) => ({ kind: <const>'inferred', bounds })
 
-export const makeTypeParam = (name: Name) => ({ kind: <const>'type-param', name })
+export const makeTypeParam = (type: Generic) => ({ kind: <const>'type-param', type })
+
+export const makeFieldAccessType = (expr: UnaryExpr) => ({
+    kind: <const>'field-access',
+    operandType: expr.operand.type!,
+    fieldName: (<FieldAccessOp>expr.op).name
+})
 
 export const makeReturnType = (type: InferredType) => ({ kind: <const>'return', type })
 
-export const makeDefType = (type: Type) => ({ kind: <const>'def', type })
+export const makeDefType = (def: Definition) => ({ kind: <const>'def', def })
+
+export const makeErrorType = (message?: string) => ({ kind: <const>'error', message })
 
 export const addBounds = (type: InferredType, bounds: InferredType[]): void => {
     if (type.kind === 'inferred') {
@@ -41,37 +52,39 @@ export const addBounds = (type: InferredType, bounds: InferredType[]): void => {
 }
 
 export const instantiateDefType = (t: InferredType): InferredType => {
-    if (t.kind === 'def') {
-        if (t.type.kind === 'fn-type') {
-            assert(!!t.type.returnType.type)
+    switch (t.kind) {
+        case 'fn-type': {
             return makeInferredType([
                 {
                     kind: 'inferred-fn',
-                    generics: t.type.generics.map(g => {
+                    generics: t.generics.map(g => {
                         assert(!!g.type)
                         return instantiateDefType(g.type!)
                     }),
-                    params: t.type.paramTypes.map(pt => {
+                    params: t.paramTypes.map(pt => {
                         assert(!!pt.type)
                         return instantiateDefType(pt.type!)
                     }),
-                    returnType: instantiateDefType(t.type.returnType.type!)
+                    returnType: instantiateDefType(t.returnType.type!)
                 }
             ])
         }
-        return makeInferredType([t])
+        case 'def': {
+            return makeInferredType([t])
+        }
+        default:
+            return t
     }
-    return t
 }
 
 export const inferredTypeToString = (t: InferredType, depth = 0): string => {
-    if (depth > 5) return '@rec'
+    if (depth > 50) return '@rec'
     switch (t.kind) {
         case 'inferred':
             return `[${t.bounds.map(b => inferredTypeToString(b, depth + 1)).join(', ')}]`
         case 'type-param':
             const unified = t.unified ? `: ${inferredTypeToString(t.unified)}` : ''
-            return `<${t.name.value}${unified}>`
+            return `<${t.type.name.value}${unified}>`
         case 'inferred-fn':
             return `|${t.params.map(p => inferredTypeToString(p, depth + 1)).join(', ')}|: ${inferredTypeToString(
                 t.returnType
@@ -79,9 +92,14 @@ export const inferredTypeToString = (t: InferredType, depth = 0): string => {
         case 'return':
             return `ret(${inferredTypeToString(t.type, depth + 1)})`
         case 'def':
-            return `def(${typeToString(t.type)})`
+            return `def(${t.def.kind} ${defKey(t.def)})`
+        case 'field-access':
+            return `(${inferredTypeToString(t.operandType)}).${t.fieldName.value}`
+        case 'identifier':
+        case 'name':
+        case 'fn-type':
         case 'hole':
-            return '_'
+            return typeToString(t)
         case 'error':
             const msg = t.message ? `(${t.message})` : ''
             return `error${msg}`

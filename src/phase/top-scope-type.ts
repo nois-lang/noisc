@@ -1,6 +1,7 @@
 import { AstNode } from '../ast'
+import { Identifier, Name } from '../ast/operand'
 import { Context } from '../scope'
-import { makeDefType, makeTypeParam } from '../typecheck'
+import { makeDefType, makeErrorType, makeTypeParam } from '../typecheck'
 import { unitType } from '../typecheck/type'
 import { assert, todo, unreachable } from '../util/todo'
 
@@ -14,17 +15,17 @@ export const setTopScopeDefType = (node: AstNode, ctx: Context) => {
             break
         }
         case 'trait-def': {
-            node.type = makeDefType(node.name)
+            node.type = makeDefType(node)
             node.generics.forEach(g => setTopScopeDefType(g, ctx))
             break
         }
         case 'type-def': {
-            node.type = makeDefType(node.name)
+            node.type = makeDefType(node)
             node.generics.forEach(g => setTopScopeDefType(g, ctx))
             break
         }
         case 'generic': {
-            node.type = makeTypeParam(node.name)
+            node.type = makeTypeParam(node)
             break
         }
     }
@@ -42,8 +43,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
         case 'var-def': {
             if (node.pattern.expr.kind !== 'name') return unreachable()
             const def = node.pattern.expr
-            assert(!!node.varType)
-            def.type = makeDefType(node.varType!)
+            def.type = node.varType ?? makeErrorType()
             break
         }
         case 'fn-def': {
@@ -56,26 +56,36 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             if (node.returnType) {
                 setTopScopeType(node.returnType, ctx)
             }
-            node.type = makeDefType({
+            node.type = {
                 kind: 'fn-type',
                 generics: node.generics,
                 paramTypes: node.params.map(p => p.paramType!),
-                returnType: node.returnType ? node.returnType : unitType.type
-            })
+                returnType: node.returnType ? node.returnType : <Name>unitType.def
+            }
             break
         }
         case 'type-def': {
-            node.variants.forEach(v => {
-                v.fieldDefs.forEach(f => setTopScopeType(f, ctx))
-                const fnType = {
-                    kind: <const>'fn-type',
-                    generics: node.generics,
-                    paramTypes: v.fieldDefs.map(f => f.fieldType),
-                    returnType: node.name
-                }
-                setTopScopeType(fnType, ctx)
-                v.type = makeDefType(fnType)
-            })
+            node.variants.forEach(v => setTopScopeType(v, ctx))
+            break
+        }
+        case 'variant': {
+            node.fieldDefs.forEach(f => setTopScopeType(f, ctx))
+            // TODO: ugly
+            const typeDefId: Identifier = {
+                kind: 'identifier',
+                parseNode: node.parseNode,
+                names: [node.typeDef!.name],
+                typeArgs: [],
+                def: node.typeDef
+            }
+            const fnType = {
+                kind: <const>'fn-type',
+                generics: node.typeDef!.generics,
+                paramTypes: node.fieldDefs.map(f => f.fieldType),
+                returnType: typeDefId
+            }
+            setTopScopeType(fnType, ctx)
+            node.type = fnType
             break
         }
         case 'field-def': {
@@ -119,7 +129,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             node.generics.forEach(pt => setTopScopeType(pt, ctx))
             node.paramTypes.forEach(pt => setTopScopeType(pt, ctx))
             setTopScopeType(node.returnType, ctx)
-            node.type = makeDefType(node)
+            node.type = node
             break
         }
         case 'hole': {
@@ -127,7 +137,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             break
         }
         case 'generic': {
-            node.type = makeTypeParam(node.name)
+            node.type = makeTypeParam(node)
             break
         }
     }

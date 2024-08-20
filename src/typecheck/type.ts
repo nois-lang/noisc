@@ -1,10 +1,9 @@
 import { makeDefType } from '.'
-import { idFromString } from '../scope'
 
 // TODO should reference type defs
-export const stringType: ReturnType<typeof makeDefType> = makeDefType(idFromString('String'))
-export const charType: ReturnType<typeof makeDefType> = makeDefType(idFromString('Char'))
-export const intType: ReturnType<typeof makeDefType> = makeDefType(idFromString('Int'))
-export const floatType: ReturnType<typeof makeDefType> = makeDefType(idFromString('Float'))
-export const boolType: ReturnType<typeof makeDefType> = makeDefType(idFromString('Bool'))
-export const unitType: ReturnType<typeof makeDefType> = makeDefType(idFromString('Unit'))
+export const stringType = makeDefType({ kind: 'name', value: 'String' })
+export const charType = makeDefType({ kind: 'name', value: 'Char' })
+export const intType = makeDefType({ kind: 'name', value: 'Int' })
+export const floatType = makeDefType({ kind: 'name', value: 'Float' })
+export const boolType = makeDefType({ kind: 'name', value: 'Bool' })
+export const unitType = makeDefType({ kind: 'name', value: 'Unit' })

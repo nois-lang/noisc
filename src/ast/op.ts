@@ -1,7 +1,6 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { Context } from '../scope'
 import { Static } from '../semantic'
-import { ConcreteGeneric } from '../typecheck'
 import { Arg, AstNode, AstNodeKind, BaseAstNode, buildArg } from './index'
 import { Name, buildName } from './operand'
 import { Type, buildType } from './type'

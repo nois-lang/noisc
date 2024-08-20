@@ -6,7 +6,7 @@ import {
     InferredType,
     addBounds,
     instantiateDefType,
-    makeDefType,
+    makeFieldAccessType,
     makeInferredType,
     makeReturnType
 } from '../typecheck'
@@ -139,8 +139,11 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
                     node.type = makeReturnType(fnType)
                     break
                 }
+                case 'field-access-op': {
+                    node.type = makeFieldAccessType(node)
+                    break
+                }
                 case 'method-call-op':
-                case 'field-access-op':
                 case 'unwrap-op':
                 case 'bind-op':
                 case 'await-op': {
@@ -188,7 +191,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         }
         case 'var-def': {
             if (node.expr) {
-                collectTypeBounds(node.expr, ctx, node.varType ? makeDefType(node.varType) : undefined)
+                collectTypeBounds(node.expr, ctx, node.varType ? node.varType : undefined)
             }
             collectTypeBounds(node.pattern, ctx, node.expr?.type)
             node.type = instantiateDefType(unitType)
@@ -198,11 +201,11 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             node.generics.forEach(g => collectTypeBounds(g, ctx))
             node.params.forEach(p => collectTypeBounds(p, ctx))
             if (node.block) {
-                if (node.type?.kind !== 'def' || node.type.type.kind !== 'fn-type') {
+                if (node.type?.kind !== 'fn-type') {
                     unreachable()
                     break
                 }
-                collectTypeBounds(node.block, ctx, makeDefType(node.type.type.returnType))
+                collectTypeBounds(node.block, ctx, node.type.returnType)
             }
             break
         }

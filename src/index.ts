@@ -143,11 +143,11 @@ ctx.moduleStack.push(m)
 unifyTypeBounds(m, ctx)
 ctx.moduleStack.pop()
 
+console.log(inspect(debugAst(pkg.modules[0].block), { compact: true, depth: null, breakLength: 120 }))
+
 reportErrors(ctx)
 reportWarnings(ctx)
 
 if (config.emit) {
     await emitPackage(isDir, pkg, ctx)
 }
-
-console.log(inspect(debugAst(pkg.modules[0].block), { compact: true, depth: null, breakLength: 120 }))
