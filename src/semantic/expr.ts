@@ -5,8 +5,7 @@ import { MatchExpr } from '../ast/match'
 import { CallOp } from '../ast/op'
 import { ClosureExpr, ForExpr, Identifier, ListExpr, Name, Operand, WhileExpr } from '../ast/operand'
 import { FieldDef } from '../ast/type-def'
-import { Context, Scope, addError, enterScope, fnDefScope, instanceScope, leaveScope } from '../scope'
-import { bool, future, iter, iterable, show, string, unwrap } from '../scope/std'
+import { Context, addError } from '../scope'
 import {
     InstanceRelation,
     getConcreteTrait,

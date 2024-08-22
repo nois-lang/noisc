@@ -1,6 +1,5 @@
 import { AstNode } from '../ast'
 import { Context, idFromString } from '../scope'
-import { unitType } from '../typecheck/type'
 
 /**
  * Desugar phase that runs before name resolution
@@ -31,7 +30,7 @@ export const desugar1 = (node: AstNode, ctx: Context, parent?: AstNode) => {
                     }
                 })
             }
-            node.returnType ??= unitType.type
+            node.returnType ??= ctx.stdTypeIds.unit ?? { kind: 'hole' }
             break
         }
     }

@@ -1,5 +1,5 @@
 import { AstNode } from '../ast'
-import { addError, Context, idToString } from '../scope'
+import { Context, addError, idToString } from '../scope'
 import { typeError } from '../semantic/error'
 import { InferredType, inferredTypeToString, makeDefType, makeErrorType } from '../typecheck'
 import { zip } from '../util/array'
@@ -153,7 +153,7 @@ export const unifyTypeBounds = (node: AstNode, ctx: Context): void => {
     }
     if (node.type) {
         if (node.type.kind === 'error') {
-            addError(ctx, typeError(ctx, node, node.type.message ?? 'type error'))
+            addError(ctx, typeError(ctx, node, node.type.message))
         }
     }
 }

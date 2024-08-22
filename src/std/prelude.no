@@ -14,6 +14,7 @@ pub use std::{
     iter::repeat::{ repeat },
     list::List,
     panic::{ panic, todo },
+    unwrap::{ Unwrap },
     io::{ println, show::Show, trace::Trace },
     option::Option::{ self, Some, None },
     result::Result::{ self, Ok, Error },

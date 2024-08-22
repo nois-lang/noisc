@@ -6,6 +6,7 @@ import { TypeDef, Variant } from '../ast/type-def'
 import { Config } from '../config'
 import { Package } from '../package'
 import { ParseNode } from '../parser'
+import { StdTypeIds } from '../phase/std-type'
 import { SemanticError } from '../semantic/error'
 import { typeToString } from '../typecheck'
 import { unreachable } from '../util/todo'
@@ -15,6 +16,7 @@ export type Context = {
     // TODO: store reference chain instead of plain modules to track recursion
     moduleStack: Module[]
     packages: Package[]
+    stdTypeIds: StdTypeIds
     /**
      * `std::prelude` module
      */

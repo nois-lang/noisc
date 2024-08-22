@@ -1,6 +1,5 @@
 import { extractValue, jsRelName, nextVariable } from '.'
 import { Context } from '../../scope'
-import { string, trace } from '../../scope/std'
 import { todo } from '../../util/todo'
 import { EmitNode, emitToken, emitTree, jsVariable } from './node'
 

@@ -1,8 +1,7 @@
 import { AstNode } from '../ast'
-import { Identifier, Name } from '../ast/operand'
-import { Context } from '../scope'
+import { Identifier } from '../ast/operand'
+import { Context, idToString } from '../scope'
 import { makeDefType, makeErrorType, makeTypeParam } from '../typecheck'
-import { unitType } from '../typecheck/type'
 import { assert, todo, unreachable } from '../util/todo'
 
 /**
@@ -60,7 +59,11 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
                 kind: 'fn-type',
                 generics: node.generics,
                 paramTypes: node.params.map(p => p.paramType!),
-                returnType: node.returnType ? node.returnType : <Name>unitType.def
+                returnType: node.returnType
+                    ? node.returnType
+                    : ctx.stdTypeIds.unit
+                      ? ctx.stdTypeIds.unit
+                      : makeErrorType()
             }
             break
         }
@@ -118,7 +121,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
         }
         case 'identifier': {
             node.typeArgs.forEach(ta => setTopScopeType(ta, ctx))
-            node.type = node.def?.type ?? { kind: 'error', message: 'no def' }
+            node.type = node.def?.type ?? { kind: 'error', message: `no def (${idToString(node)})` }
             break
         }
         case 'name': {

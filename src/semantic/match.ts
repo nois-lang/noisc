@@ -1,7 +1,6 @@
 import { ConPattern, Pattern } from '../ast/match'
 import { Name } from '../ast/operand'
 import { Context, addError, defKey } from '../scope'
-import { list } from '../scope/std'
 import { makeGenericMapOverStructure, resolveType } from '../typecheck/generic'
 import { unreachable } from '../util/todo'
 import {

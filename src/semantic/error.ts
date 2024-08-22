@@ -303,7 +303,7 @@ export const genericError = (ctx: Context, def: AstNode, msg: string = 'error'):
     return semanticError(44, ctx, def, msg)
 }
 
-export const typeError = (ctx: Context, node: AstNode, message: string): SemanticError => {
-    return semanticError(45, ctx, node, message)
+export const typeError = (ctx: Context, node: AstNode, message?: string): SemanticError => {
+    const msg = `type error${message ? `: ${message}` : ''}`
+    return semanticError(45, ctx, node, msg)
 }
-
