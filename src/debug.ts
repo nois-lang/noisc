@@ -2,8 +2,13 @@ import { AstNode } from './ast'
 import { inferredTypeToString } from './typecheck'
 import { ExtractKeys } from './util/type'
 
-export const debugAst = (node: AstNode, focusKinds: ExtractKeys<AstNode>[] = ['kind', 'type'], depth = 0): any => {
-    if (depth > 10) return '@rec'
+export const debugAst = (
+    node: AstNode,
+    focusKinds: ExtractKeys<AstNode>[] = ['kind', 'type'],
+    reportRecursive = false,
+    depth = 0
+): any => {
+    if (depth > 10) return reportRecursive ? '@rec' : undefined
 
     const o = Object.fromEntries(
         Object.entries(node)
@@ -24,11 +29,13 @@ export const debugAst = (node: AstNode, focusKinds: ExtractKeys<AstNode>[] = ['k
                     }
                 }
                 if (Array.isArray(v)) {
-                    const items = v.map(i => debugAst(i, focusKinds, depth + 1)).filter(i => i !== undefined)
+                    const items = v
+                        .map(i => debugAst(i, focusKinds, reportRecursive, depth + 1))
+                        .filter(i => i !== undefined)
                     return [p, items]
                 }
                 if (typeof v === 'object' && 'parseNode' in v) {
-                    return [p, debugAst(v, focusKinds, depth + 1)]
+                    return [p, debugAst(v, focusKinds, reportRecursive, depth + 1)]
                 }
                 if (focusKinds.includes(<any>p)) {
                     return [p, v]
