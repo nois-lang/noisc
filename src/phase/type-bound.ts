@@ -5,6 +5,7 @@ import { operatorImplMap } from '../semantic/op'
 import {
     InferredType,
     addBounds,
+    boundFromCall,
     instantiateDefType,
     makeErrorType,
     makeFieldAccessType,
@@ -145,6 +146,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
                     break
                 }
                 case 'method-call-op':
+                    node.op.call.args.forEach(a => collectTypeBounds(a, ctx))
                     node.type = makeMethodCallType(node)
                     break
                 case 'unwrap-op':
@@ -254,8 +256,4 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         }
     }
     m.astStack.pop()
-}
-
-const boundFromCall = (args: InferredType[]): InferredType => {
-    return { kind: 'inferred-fn', generics: [], params: args, returnType: { kind: 'hole' } }
 }

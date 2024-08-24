@@ -138,14 +138,16 @@ const phases = [
     resolveName,
     setTopScopeDefType,
     setTopScopeType,
-    collectTypeBounds
+    collectTypeBounds,
+    unifyTypeBounds
 ]
 phases.forEach(f => eachModule(f, ctx))
 const m = ctx.packages.at(-1)!.modules[0]
 ctx.moduleStack.push(m)
-unifyTypeBounds(m, ctx)
+// unifyTypeBounds(m, ctx)
 ctx.moduleStack.pop()
 
+// biome-ignore lint:
 console.log(inspect(debugAst(pkg.modules[0].block), { compact: true, depth: null, breakLength: 120 }))
 
 reportErrors(ctx)

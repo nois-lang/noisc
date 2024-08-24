@@ -70,14 +70,6 @@ export const makeErrorType = (message?: string, errorKind: ErrorTypeKind = 'othe
     message
 })
 
-export const addBounds = (type: InferredType, bounds: InferredType[]): void => {
-    if (type.kind === 'inferred') {
-        type.bounds.push(...bounds)
-        return
-    }
-    assert(false, type.kind)
-}
-
 export const instantiateDefType = (t: InferredType): InferredType => {
     switch (t.kind) {
         case 'fn-type': {
@@ -148,4 +140,16 @@ export const typeToString = (t: Type): string => {
         case 'name':
             return t.value
     }
+}
+
+export const addBounds = (type: InferredType, bounds: InferredType[]): void => {
+    if (type.kind === 'inferred') {
+        type.bounds.push(...bounds)
+        return
+    }
+    assert(false, type.kind)
+}
+
+export const boundFromCall = (args: InferredType[]): InferredType => {
+    return { kind: 'inferred-fn', generics: [], params: args, returnType: { kind: 'hole' } }
 }

@@ -4,6 +4,8 @@ import { typeError } from '../semantic/error'
 import {
     ErrorType,
     InferredType,
+    addBounds,
+    boundFromCall,
     inferredTypeToString,
     instantiateDefType,
     makeDefType,
@@ -184,7 +186,7 @@ const unifyType = (type: InferredType): void => {
                 const f = typeDef.variants[0].fieldDefs.find(f => f.name.value === type.fieldName.value)
                 if (!f) {
                     // TODO: might be a method reference
-                    Object.assign(type, makeErrorType(`no field ${type.fieldName.value}`, 'no-field'))
+                    Object.assign(type, makeErrorType(type.fieldName.value, 'no-field'))
                     break
                 }
                 // TODO: handle type-def generics
@@ -211,13 +213,14 @@ const unifyType = (type: InferredType): void => {
                         break
                     }
                     const mType = instantiateDefType(m.type!)
+                    addBounds(mType, [boundFromCall(type.op.call.args.map(a => a.type!))])
                     Object.assign(type, makeReturnType(mType))
                     unifyType(type)
                     break
                 }
                 if (type.operandType.def?.kind === 'trait-def') {
                     // TODO
-                    Object.assign(type, makeErrorType('todo: method call on trait'))
+                    Object.assign(type, makeErrorType('method call on trait', 'todo'))
                     break
                 }
             }
@@ -283,9 +286,10 @@ const unify_ = (a: InferredType, b: InferredType): InferredType => {
             break
         }
         case 'def': {
-            // TODO: proper def equality
             switch (b.kind) {
+                // biome-ignore lint:
                 case 'def':
+                    // TODO: respect def's trait impls
                     if (b.kind === 'def' && a.def === b.def) {
                         return a
                     }
