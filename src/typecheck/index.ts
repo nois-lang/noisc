@@ -115,7 +115,9 @@ export const inferredTypeToString = (t: InferredType, depth = 0): string => {
         case 'field-access':
             return `(${inferredTypeToString(t.operandType)}).${t.fieldName.value}`
         case 'method-call':
-            return `(${inferredTypeToString(t.operandType)}).${t.op.name.value}(${t.op.call.args.map(a => a.type!)})`
+            return `(${inferredTypeToString(t.operandType)}).${t.op.name.value}(${t.op.call.args
+                .map(a => inferredTypeToString(a.type!))
+                .join(', ')})`
         case 'identifier':
         case 'name':
         case 'fn-type':

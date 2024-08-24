@@ -103,7 +103,6 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             assert(!!node.paramType)
             setTopScopeType(node.paramType!, ctx)
             node.type = node.paramType!.type!
-            setTopScopeType(node.pattern, ctx)
             break
         }
         case 'pattern': {
@@ -116,10 +115,6 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
         case 'identifier': {
             node.typeArgs.forEach(ta => setTopScopeType(ta, ctx))
             node.type = node.def?.type ?? { kind: 'hole' }
-            break
-        }
-        case 'name': {
-            node.type = makeDefType(node)
             break
         }
         case 'fn-type': {

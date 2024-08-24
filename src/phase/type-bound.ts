@@ -86,7 +86,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             break
         }
         case 'param': {
-            // TODO
+            collectTypeBounds(node.pattern, ctx, instantiateDefType(node.paramType!.type!))
             break
         }
         case 'generic': {
@@ -123,6 +123,11 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
                 assert(!!node.def.type)
                 node.type = instantiateDefType(node.def.type!)
                 break
+            } else {
+                node.type = makeInferredType()
+                if (parentBound) {
+                    addBounds(node.type!, [parentBound])
+                }
             }
             break
         }

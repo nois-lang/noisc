@@ -13,7 +13,7 @@ import {
     makeReturnType
 } from '../typecheck'
 import { dedup, zip } from '../util/array'
-import { unreachable } from '../util/todo'
+import { todo, unreachable } from '../util/todo'
 
 /**
  * Unify type bounds
@@ -319,9 +319,8 @@ const unify_ = (a: InferredType, b: InferredType): InferredType => {
             }
             return b
         }
-        case 'identifier':
         case 'name':
-            // TODO
+        case 'identifier':
             break
         case 'hole':
             return b
