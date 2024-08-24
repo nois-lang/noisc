@@ -70,7 +70,7 @@ describe('parser', () => {
                             [ { 'o-paren': '(' },
                               { 'field-def':
                                  [ { name: 'value' },
-                                   { 'type-annot': [ { colon: ':' }, { type: [ { 'type-bounds': [ { identifier: [ { name: 'T' } ] } ] } ] } ] } ] },
+                                   { 'type-annot': [ { colon: ':' }, { type: [ { identifier: [ { name: 'T' } ] } ] } ] } ] },
                               { 'c-paren': ')' } ] } ] },
                     { comma: ',' },
                     { variant: [ { name: 'None' } ] },

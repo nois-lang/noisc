@@ -2,7 +2,7 @@ import { makeConfig } from '../config'
 import { tokenize } from '../lexer/lexer'
 import { Parser } from '../parser'
 import { parseModule } from '../parser/fns'
-import { Context } from '../scope'
+import { Context, idFromString } from '../scope'
 import { Module, buildModuleAst, compactAstNode } from './index'
 
 describe('ast', () => {
@@ -21,15 +21,13 @@ describe('ast', () => {
             config: makeConfig('test', 'test.no'),
             moduleStack: [],
             packages: [],
-            impls: [],
+            stdTypeIds: {},
             errors: [],
             warnings: [],
-            check: false,
             silent: false,
-            variableCounter: 0,
-            relChainsMemo: new Map()
+            variableCounter: 0
         }
-        return buildModuleAst(parseTree, vidFromString('test'), source, false, ctx)
+        return buildModuleAst(parseTree, idFromString('test'), source, false, ctx)
     }
 
     describe('string', () => {

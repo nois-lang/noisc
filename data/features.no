@@ -77,9 +77,6 @@ fn main() {
     // alternative call syntax
     Vec2::show(vec)
 
-    // if
-    let d = if true { 4 } else { 2 + 6 }
-
     // while loop
     let e = while d < 5 {
         a = a + 1
@@ -101,7 +98,10 @@ fn main() {
     let b = match 4 {
         1 { "one" }
         n if n % 2 == 0 {
-            if (n > 5) { "good" } else { "not good" }
+            match (n > 5) {
+                True { "good" } 
+                _ { "not good" }
+            }
         }
         _ { "whatever" }
     }
@@ -112,13 +112,6 @@ fn main() {
         Vec2::Vec2(x: 1) { "x one whatever" }
         Vec2::Vec2(x) if x != 4 { "x is {x} not 4" }
         _ { "whatever"}
-    }
-
-    // if let
-    if let Option(value) = Some(42) {
-        println("value is {value}")
-    } else {
-        println("no value")
     }
 
     // closure

@@ -251,7 +251,7 @@ export type Module = BaseAstNode & {
 
 export const buildModuleAst = (
     node: ParseNode,
-    id: Identifier,
+    identifier: Identifier,
     source: Source,
     mod: boolean,
     ctx: Context,
@@ -265,7 +265,7 @@ export const buildModuleAst = (
         kind: 'module',
         parseNode: node,
         source,
-        identifier: id,
+        identifier,
         mod,
         block,
         scopeStack: [],
