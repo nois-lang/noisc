@@ -16,7 +16,7 @@ import { unreachable } from '../util/todo'
 /**
  * Unify type bounds
  */
-export const unifyTypeBounds = (node: AstNode, ctx: Context): void => {
+export const unifyTypeBounds = (node: AstNode, ctx: Context, report = true): void => {
     if (node.type) {
         unifyType(node.type)
     }
@@ -85,7 +85,7 @@ export const unifyTypeBounds = (node: AstNode, ctx: Context): void => {
             break
         }
         case 'unary-expr': {
-            unifyTypeBounds(node.operand, ctx)
+            unifyTypeBounds(node.operand, ctx, false)
             switch (node.op.kind) {
                 case 'call-op': {
                     node.op.args.forEach(a => unifyTypeBounds(a, ctx))
@@ -157,7 +157,7 @@ export const unifyTypeBounds = (node: AstNode, ctx: Context): void => {
             break
         }
     }
-    if (node.type) {
+    if (node.type && report) {
         reportErrors(ctx, node)
     }
 }
@@ -232,6 +232,7 @@ const unifyType = (type: InferredType): void => {
                 break
             }
             Object.assign(type, ret)
+            unifyType(type)
             break
         }
         case 'identifier':
