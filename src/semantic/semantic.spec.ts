@@ -4,9 +4,16 @@ import { makeConfig } from '../config'
 import { Package } from '../package'
 import { buildModule } from '../package/build'
 import { buildPackage } from '../package/io'
-import { Context, pathToId } from '../scope'
+import { resolveImports, setExports } from '../phase/import-resolve'
+import { resolveModuleScope } from '../phase/module-resolve'
+import { resolveName } from '../phase/name-resolve'
+import { setStdTypeIds } from '../phase/std-type'
+import { desugar1 } from '../phase/sugar'
+import { setTopScopeDefType, setTopScopeType } from '../phase/top-scope-type'
+import { collectTypeBounds } from '../phase/type-bound'
+import { unifyTypeBounds } from '../phase/type-unify'
+import { Context, eachModule, idToString, pathToId } from '../scope'
 import { Source } from '../source'
-import { checkModule, checkTopLevelDefinition, prepareModule } from './index'
 
 describe('semantic', () => {
     const check = (code: string, checkStd: boolean = false): Context => {
@@ -15,19 +22,17 @@ describe('semantic', () => {
             config: makeConfig('test', 'test.no'),
             moduleStack: [],
             packages: [],
-            impls: [],
+            stdTypeIds: {},
             errors: [],
             warnings: [],
-            check: false,
             silent: false,
-            variableCounter: 0,
-            relChainsMemo: new Map()
+            variableCounter: 0
         }
 
         const moduleAst = buildModule(source, pathToId(source.filepath), ctx)!
         const pkg: Package = {
             path: source.filepath,
-            name: moduleAst?.identifier.names.at(-1)!,
+            name: moduleAst?.identifier.names.at(-1)!.value,
             modules: [moduleAst],
             compiled: false
         }
@@ -35,21 +40,21 @@ describe('semantic', () => {
         const std = buildPackage(join(dirname(fileURLToPath(import.meta.url)), '..', 'std'), 'std', ctx)!
 
         ctx.packages = [std, pkg]
-        ctx.prelude = std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!
+        ctx.prelude = std.modules.find(m => m.identifier.names.at(-1)!.value === 'prelude')!
 
-        ctx.packages.forEach(p => {
-            p.modules.forEach(m => {
-                prepareModule(m)
-            })
-        })
-        ctx.impls = buildInstanceRelations(ctx)
-        ctx.impls.forEach(impl => checkTopLevelDefinition(impl.module, impl.instanceDef, ctx))
-        ctx.check = true
-        if (checkStd) {
-            ctx.packages.flatMap(p => p.modules).forEach(m => checkModule(m, ctx))
-        } else {
-            checkModule(moduleAst, ctx)
-        }
+        const phases = [
+            resolveModuleScope,
+            setExports,
+            resolveImports,
+            setStdTypeIds,
+            desugar1,
+            resolveName,
+            setTopScopeDefType,
+            setTopScopeType,
+            collectTypeBounds,
+            unifyTypeBounds
+        ]
+        phases.forEach(f => eachModule(f, ctx))
 
         return ctx
     }
@@ -90,11 +95,7 @@ fn main() {
             expect(ctx.errors.map(e => e.message)).toEqual([])
             const module = ctx.packages.at(-1)!.modules[0]
             expect(module.reExports!.length).toEqual(0)
-            expect(module.references!.map(r => r.vid).map(vidToString)).toEqual([
-                'std::iter',
-                'std::iter::Iter',
-                'std::iter::Iterable'
-            ])
+            expect(module.references!.map(idToString)).toEqual(['std::iter', 'std::iter::Iter', 'std::iter::Iterable'])
         })
 
         it('re-export', () => {
@@ -102,11 +103,7 @@ fn main() {
             const ctx = check(code, false)
             expect(ctx.errors.map(e => e.message)).toEqual([])
             const module = ctx.packages.at(-1)!.modules[0]
-            expect(module.reExports!.map(r => r.vid).map(vidToString)).toEqual([
-                'std::iter',
-                'std::iter::Iter',
-                'std::iter::Iterable'
-            ])
+            expect(module.reExports!.map(idToString)).toEqual(['std::iter', 'std::iter::Iter', 'std::iter::Iterable'])
             expect(module.references!.length).toEqual(0)
         })
     })
