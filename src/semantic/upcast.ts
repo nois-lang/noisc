@@ -1,8 +1,6 @@
 import { Virtual } from '.'
 import { Operand } from '../ast/operand'
 import { Context } from '../scope'
-import { InstanceRelation, relTypeName, resolveTypeImpl } from '../scope/trait'
-import { VirtualType } from '../typecheck'
 import { makeGenericMapOverStructure } from '../typecheck/generic'
 import { zip } from '../util/array'
 

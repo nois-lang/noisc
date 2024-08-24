@@ -29,7 +29,6 @@ import { MatchExpr, PatternExpr } from '../ast/match'
 import { Variant } from '../ast/type-def'
 import { Context, addError, addWarning } from '../scope'
 import { assert } from '../util/todo'
-import { nonExhaustiveMatchError, unreachableMatchClauseError } from './error'
 
 export type MatchTree = {
     node: MatchNode
