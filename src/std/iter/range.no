@@ -18,11 +18,11 @@ impl Iter<Int> for RangeIter {
     }
 }
 
-pub fn range(start: Int, end: Int): Iter<Int> {
+pub fn range(start: Int, end: Int): RangeIter<Int> {
     RangeIter::RangeIter(head: start, end)
 }
 
-pub fn rangeClosed(start: Int, end: Int): Iter<Int> {
+pub fn rangeClosed(start: Int, end: Int): RangeIter<Int> {
     RangeIter::RangeIter(head: start, end: end + 1)
 }
 
