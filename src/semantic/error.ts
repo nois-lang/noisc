@@ -8,6 +8,7 @@ import { Type } from '../ast/type'
 import { FieldDef } from '../ast/type-def'
 import { Context, idToString } from '../scope'
 import { Source } from '../source'
+import { ErrorType } from '../typecheck'
 import { assert, unreachable } from '../util/todo'
 import { MatchTree, unmatchedPaths } from './exhaust'
 
@@ -303,7 +304,7 @@ export const genericError = (ctx: Context, def: AstNode, msg: string = 'error'):
     return semanticError(44, ctx, def, msg)
 }
 
-export const typeError = (ctx: Context, node: AstNode, message?: string): SemanticError => {
-    const msg = `type error${message ? `: ${message}` : ''}`
+export const typeError = (ctx: Context, node: AstNode, e: ErrorType): SemanticError => {
+    const msg = `type error (${e.errorKind})${e.message ? `: ${e.message}` : ''}`
     return semanticError(45, ctx, node, msg)
 }

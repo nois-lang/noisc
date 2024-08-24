@@ -1,5 +1,5 @@
 import { UnaryExpr } from '../ast/expr'
-import { FieldAccessOp } from '../ast/op'
+import { FieldAccessOp, MethodCallOp } from '../ast/op'
 import { Name } from '../ast/operand'
 import { Generic, Type } from '../ast/type'
 import { Definition, defKey, idToString } from '../scope'
@@ -22,10 +22,27 @@ export type InferredType =
           returnType: InferredType
       }
     | { kind: 'field-access'; operandType: InferredType; fieldName: Name }
+    | { kind: 'method-call'; operandType: InferredType; op: MethodCallOp }
     | { kind: 'def'; def: Definition }
     | Type
     | { kind: 'return'; type: InferredType }
-    | { kind: 'error'; message?: string }
+    | ErrorType
+
+export type ErrorTypeKind =
+    | 'no-unify'
+    | 'no-def'
+    | 'no-field'
+    | 'no-method'
+    | 'not-callable'
+    | 'unhandled'
+    | 'other'
+    | 'todo'
+
+export type ErrorType = {
+    kind: 'error'
+    errorKind: ErrorTypeKind
+    message?: string
+}
 
 export const makeInferredType = (bounds: InferredType[] = []) => ({ kind: <const>'inferred', bounds })
 
@@ -37,11 +54,21 @@ export const makeFieldAccessType = (expr: UnaryExpr) => ({
     fieldName: (<FieldAccessOp>expr.op).name
 })
 
+export const makeMethodCallType = (expr: UnaryExpr) => ({
+    kind: <const>'method-call',
+    operandType: expr.operand.type!,
+    op: <MethodCallOp>expr.op
+})
+
 export const makeReturnType = (type: InferredType) => ({ kind: <const>'return', type })
 
 export const makeDefType = (def: Definition) => ({ kind: <const>'def', def })
 
-export const makeErrorType = (message?: string) => ({ kind: <const>'error', message })
+export const makeErrorType = (message?: string, errorKind: ErrorTypeKind = 'other') => ({
+    kind: <const>'error',
+    errorKind,
+    message
+})
 
 export const addBounds = (type: InferredType, bounds: InferredType[]): void => {
     if (type.kind === 'inferred') {
@@ -95,6 +122,8 @@ export const inferredTypeToString = (t: InferredType, depth = 0): string => {
             return `def(${t.def.kind} ${defKey(t.def)})`
         case 'field-access':
             return `(${inferredTypeToString(t.operandType)}).${t.fieldName.value}`
+        case 'method-call':
+            return `(${inferredTypeToString(t.operandType)}).${t.op.name.value}(${t.op.call.args.map(a => a.type!)})`
         case 'identifier':
         case 'name':
         case 'fn-type':

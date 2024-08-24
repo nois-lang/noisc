@@ -52,3 +52,5 @@ export const zip = <A, B, C>(a: A[], b: B[], f: (a: A, b: B, i: number) => C): C
     }
     return res
 }
+
+export const dedup = <T>(a: T[]): T[] => [...new Set(a)]
