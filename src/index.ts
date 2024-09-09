@@ -1,9 +1,10 @@
 import { existsSync, readFileSync, statSync } from 'fs'
 import { basename, dirname, join } from 'path'
 import { fileURLToPath } from 'url'
+import { inspect } from 'util'
 import { parseOption, reportErrors, reportWarnings } from './cli'
-import { jsRelName } from './codegen/js'
 import { fromCmd } from './config'
+import { debugAst } from './debug'
 import { Package } from './package'
 import { buildModule } from './package/build'
 import { emitPackage } from './package/emit'
@@ -117,14 +118,18 @@ if (!std) {
 }
 
 ctx.packages = packages
+ctx.packages.forEach(p =>
+    p.modules.forEach(m => {
+        m.package = p
+    })
+)
 ctx.prelude = std.modules.find(m => m.identifier.names.at(-1)!.value === 'prelude')!
 assert(!!ctx.prelude, 'no prelude')
 
 semanticCheck(ctx)
 
 // biome-ignore lint:
-// console.log(inspect(debugAst(pkg.modules[0].block), { compact: true, depth: null, breakLength: 120 }))
-console.log(pkg.modules[0].impls.map(jsRelName))
+console.log(inspect(debugAst(pkg.modules[0].block), { compact: true, depth: null, breakLength: 120 }))
 
 reportErrors(ctx)
 reportWarnings(ctx)
