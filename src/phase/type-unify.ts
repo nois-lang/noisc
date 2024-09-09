@@ -15,6 +15,7 @@ import {
     makeReturnType
 } from '../typecheck'
 import { dedup, zip } from '../util/array'
+import { assign } from '../util/object'
 import { unreachable } from '../util/todo'
 
 /**
@@ -170,7 +171,7 @@ const unifyType = (type: InferredType, ctx: Context): void => {
     switch (type.kind) {
         case 'inferred': {
             const unified = type.bounds.reduce((a, b) => unify(a, b, ctx), { kind: 'hole' })
-            Object.assign(type, unified)
+            assign(type, unified)
             break
         }
         case 'inferred-fn':
@@ -182,20 +183,20 @@ const unifyType = (type: InferredType, ctx: Context): void => {
                 const typeDef = type.operandType.def
                 if (typeDef.variants.length > 1) {
                     // TODO: make sure every variant contains such field with equal type
-                    Object.assign(type, makeErrorType('variant field access', 'todo'))
+                    assign(type, makeErrorType('variant field access', 'todo'))
                     break
                 }
                 const f = typeDef.variants[0].fieldDefs.find(f => f.name.value === type.fieldName.value)
                 if (!f) {
                     // TODO: might be a method reference
-                    Object.assign(type, makeErrorType(type.fieldName.value, 'no-field'))
+                    assign(type, makeErrorType(type.fieldName.value, 'no-field'))
                     break
                 }
                 // TODO: handle type-def generics
-                Object.assign(type, f.type!)
+                assign(type, f.type!)
                 break
             }
-            Object.assign(type, makeErrorType(inferredTypeToString(type)))
+            assign(type, makeErrorType(inferredTypeToString(type)))
             break
         case 'method-call':
             unifyType(type.operandType, ctx)
@@ -213,10 +214,10 @@ const unifyType = (type: InferredType, ctx: Context): void => {
                         // TODO: check traits impld by operandType
                         const fnDef = findMethodDefForMethodCall(type, ctx)
                         if (!fnDef) {
-                            Object.assign(type, notFoundError)
+                            assign(type, notFoundError)
                             break
                         }
-                        Object.assign(
+                        assign(
                             type,
                             makeReturnType(
                                 makeInferredType([
@@ -230,35 +231,32 @@ const unifyType = (type: InferredType, ctx: Context): void => {
                     }
                     const mType = instantiateDefType(m.type!)
                     addBounds(mType, [boundFromCall(type.op.call.args.map(a => a.type!))])
-                    Object.assign(type, makeReturnType(mType))
+                    assign(type, makeReturnType(mType))
                     unifyType(type, ctx)
                     break
                 }
                 if (type.operandType.def?.kind === 'trait-def') {
                     // TODO
-                    Object.assign(type, makeErrorType('method call on trait', 'todo'))
+                    assign(type, makeErrorType('method call on trait', 'todo'))
                     break
                 }
             }
-            Object.assign(type, makeErrorType(inferredTypeToString(type)))
+            assign(type, makeErrorType(inferredTypeToString(type)))
             break
         case 'return': {
             unifyType(type.type, ctx)
             const ret = extractReturnType(type.type, ctx)
             if (!ret) {
                 const e = makeErrorType(`type ${inferredTypeToString(type.type)} is not callable`, 'not-callable')
-                Object.assign(type, e)
+                assign(type, e)
                 break
             }
-            Object.assign(type, ret)
+            assign(type, ret)
             unifyType(type, ctx)
             break
         }
         case 'identifier':
-            Object.assign(
-                type,
-                type.def ? makeDefType(type.def) : makeErrorType(`no def: ${idToString(type)}`, 'no-def')
-            )
+            assign(type, type.def ? makeDefType(type.def) : makeErrorType(`no def: ${idToString(type)}`, 'no-def'))
             break
         case 'fn-type':
         case 'name':
@@ -272,7 +270,7 @@ const unifyType = (type: InferredType, ctx: Context): void => {
 
 const unify = (a: InferredType, b: InferredType, ctx: Context): InferredType => {
     const u1 = unify_(a, b, ctx)
-    if (u1.kind === 'error' && u1.errorKind === 'unhandled') {
+    if (u1.kind === 'error' && u1.error.errorKind === 'unhandled') {
         const u2 = unify_(b, a, ctx)
         return u2
     } else {
@@ -318,8 +316,8 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context): InferredType =>
                         `failed unify [${[inferredTypeToString(a), inferredTypeToString(b)].join(', ')}]`,
                         'no-unify'
                     )
-                    Object.assign(a, e)
-                    Object.assign(b, e)
+                    assign(a, e)
+                    assign(b, e)
                     return a
             }
             break
@@ -327,7 +325,7 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context): InferredType =>
         case 'type-param': {
             if (a.unified) {
                 const u = unify(a.unified, b, ctx)
-                Object.assign(a.unified, u)
+                assign(a.unified, u)
                 return u
             }
             if (b.kind !== 'hole') {
