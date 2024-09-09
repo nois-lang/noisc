@@ -1,5 +1,5 @@
 // import
-use std::io::Show
+use std::fmt::Show
 
 // sum type
 type Vec2(x: Float, y: Float)
