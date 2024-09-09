@@ -2,6 +2,7 @@ import { existsSync, readFileSync, statSync } from 'fs'
 import { basename, dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 import { parseOption, reportErrors, reportWarnings } from './cli'
+import { jsRelName } from './codegen/js'
 import { fromCmd } from './config'
 import { Package } from './package'
 import { buildModule } from './package/build'
@@ -16,7 +17,7 @@ import { desugar1 } from './phase/sugar'
 import { setTopScopeDefType, setTopScopeType } from './phase/top-scope-type'
 import { collectTypeBounds } from './phase/type-bound'
 import { unifyTypeBounds } from './phase/type-unify'
-import { Context, eachModule, idToString, pathToId } from './scope'
+import { Context, eachModule, pathToId } from './scope'
 import { Source } from './source'
 import { assert } from './util/todo'
 
@@ -145,11 +146,7 @@ phases.forEach(f => eachModule(f, ctx))
 
 // biome-ignore lint:
 // console.log(inspect(debugAst(pkg.modules[0].block), { compact: true, depth: null, breakLength: 120 }))
-console.log(
-    pkg.modules[0].impls.map(
-        impl => `impl ${idToString(impl.identifier)}${impl.forTrait ? ` for ${idToString(impl.forTrait)}` : ''}`
-    )
-)
+console.log(pkg.modules[0].impls.map(jsRelName))
 
 reportErrors(ctx)
 reportWarnings(ctx)

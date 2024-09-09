@@ -1,5 +1,6 @@
 import { Module } from '../../ast'
-import { Context } from '../../scope'
+import { ImplDef, TraitDef } from '../../ast/statement'
+import { Context, idToString } from '../../scope'
 import { Upcast } from '../../semantic/upcast'
 import { groupBy } from '../../util/array'
 import { unreachable } from '../../util/todo'
@@ -85,14 +86,17 @@ export const nextVariable = (ctx: Context): string => {
     return `$${ctx.variableCounter}`
 }
 
-export const jsRelName = (rel: InstanceRelation): string => {
-    if (rel.instanceDef.kind === 'trait-def') {
-        return relTypeName(rel)
+export const jsRelName = (instanceDef: TraitDef | ImplDef): string => {
+    if (instanceDef.kind === 'trait-def') {
+        return instanceDef.name.value
     }
-    if (rel.inherent) {
-        return `impl_${virtualTypeToString(rel.implType)}`.replace(/[:<>, ]/g, '')
+    const idStr = idToString(instanceDef.identifier).replace(/[:<>, ]/g, '')
+    if (!instanceDef.forTrait) {
+        return `impl_${idStr}`
+    } else {
+        const forStr = idToString(instanceDef.forTrait).replace(/[:<>, ]/g, '')
+        return `impl_${idStr}_${forStr}`
     }
-    return `impl_${virtualTypeToString(rel.implType)}_${virtualTypeToString(rel.forType)}`.replace(/[:<>, ]/g, '')
 }
 
 export const jsGenericTypeName = (type: VirtualType): string => {
