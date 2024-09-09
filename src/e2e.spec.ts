@@ -7,8 +7,6 @@ import { buildModule } from './package/build'
 import { emitPackage } from './package/emit'
 import { buildPackage } from './package/io'
 import { Context, pathToId } from './scope'
-import { buildInstanceRelations } from './scope/trait'
-import { checkModule, checkTopLevelDefinition, prepareModule } from './semantic'
 import { Source } from './source'
 
 const compile = async (files: { [path: string]: string }): Promise<Context> => {
@@ -23,13 +21,10 @@ const compile = async (files: { [path: string]: string }): Promise<Context> => {
         config,
         moduleStack: [],
         packages: [],
-        impls: [],
+        stdTypeIds: {},
         errors: [],
         warnings: [],
-        check: false,
-        silent: false,
         variableCounter: 0,
-        relChainsMemo: new Map()
     }
 
     const modules = Object.entries(files).map(([filepath, code]) => {
@@ -46,7 +41,7 @@ const compile = async (files: { [path: string]: string }): Promise<Context> => {
     const std = buildPackage('tmp/dist/std', 'std', ctx, true)!
 
     ctx.packages = [std, pkg]
-    ctx.prelude = std.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!
+    ctx.prelude = std.modules.find(m => m.identifier.names.at(-1)!.value === 'prelude')!
 
     ctx.packages.forEach(p => {
         p.modules.forEach(m => {
@@ -76,13 +71,10 @@ const compileStd = async (): Promise<void> => {
         config,
         moduleStack: [],
         packages: [],
-        impls: [],
+        stdTypeIds: {},
         errors: [],
         warnings: [],
-        check: false,
-        silent: false,
-        variableCounter: 0,
-        relChainsMemo: new Map()
+        variableCounter: 0
     }
     const pkg = buildPackage(config.pkgPath, config.pkgName!, ctx)!
 

@@ -8,16 +8,8 @@ import { Package } from './package'
 import { buildModule } from './package/build'
 import { emitPackage } from './package/emit'
 import { buildPackage } from './package/io'
-import { registerImpl } from './phase/impl-register'
-import { resolveImports, setExports } from './phase/import-resolve'
-import { resolveModuleScope } from './phase/module-resolve'
-import { resolveName } from './phase/name-resolve'
-import { setStdTypeIds } from './phase/std-type'
-import { desugar1 } from './phase/sugar'
-import { setTopScopeDefType, setTopScopeType } from './phase/top-scope-type'
-import { collectTypeBounds } from './phase/type-bound'
-import { unifyTypeBounds } from './phase/type-unify'
-import { Context, eachModule, pathToId } from './scope'
+import { Context, pathToId } from './scope'
+import { semanticCheck } from './semantic'
 import { Source } from './source'
 import { assert } from './util/todo'
 
@@ -128,20 +120,7 @@ ctx.packages = packages
 ctx.prelude = std.modules.find(m => m.identifier.names.at(-1)!.value === 'prelude')!
 assert(!!ctx.prelude, 'no prelude')
 
-const phases = [
-    resolveModuleScope,
-    setExports,
-    resolveImports,
-    setStdTypeIds,
-    registerImpl,
-    desugar1,
-    resolveName,
-    setTopScopeDefType,
-    setTopScopeType,
-    collectTypeBounds,
-    unifyTypeBounds
-]
-phases.forEach(f => eachModule(f, ctx))
+semanticCheck(ctx)
 
 // biome-ignore lint:
 // console.log(inspect(debugAst(pkg.modules[0].block), { compact: true, depth: null, breakLength: 120 }))
