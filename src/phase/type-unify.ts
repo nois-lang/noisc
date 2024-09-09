@@ -203,7 +203,7 @@ const unifyType = (type: InferredType, ctx: Context): void => {
             if (type.operandType.kind === 'def') {
                 if (type.operandType.def?.kind === 'type-def') {
                     const notFoundError = makeErrorType(
-                        `method ${type.op.name.value} not found in type ${inferredTypeToString(type)}`,
+                        `method ${type.op.name.value} not found in type ${inferredTypeToString(type.operandType)}`,
                         'no-method'
                     )
                     const typeDef = type.operandType.def

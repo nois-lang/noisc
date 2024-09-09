@@ -1,3 +1,4 @@
+import { checkImpl } from '../phase/impl'
 import { registerImpl } from '../phase/impl-register'
 import { resolveImports, setExports } from '../phase/import-resolve'
 import { resolveModuleScope } from '../phase/module-resolve'
@@ -20,6 +21,7 @@ export const semanticCheck = (ctx: Context): void => {
         resolveName,
         setTopScopeDefType,
         setTopScopeType,
+        checkImpl,
         collectTypeBounds,
         unifyTypeBounds
     ]

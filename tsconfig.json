@@ -14,7 +14,8 @@
         "outDir": "./dist",
         "incremental": true,
         "lib": [
-            "es2023.array"
+            "es2023.array",
+            "es2023"
         ],
         "skipLibCheck": true
     },

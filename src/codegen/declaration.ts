@@ -106,5 +106,12 @@ export const emitParseNode = (node: ParseNode): string => {
     if ('value' in node) {
         return node.value
     }
-    return node.nodes.map(emitParseNode).join('')
+    return (
+        node.nodes
+            .map(emitParseNode)
+            .join(' ')
+            // HACK: parseNode has no information about whitespace
+            .replace(/ ([:\(\)])/g, '$1')
+            .replace(/([\(\)]) /g, '$1')
+    )
 }

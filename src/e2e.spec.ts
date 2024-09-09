@@ -24,7 +24,7 @@ const compile = async (files: { [path: string]: string }): Promise<Context> => {
         stdTypeIds: {},
         errors: [],
         warnings: [],
-        variableCounter: 0,
+        variableCounter: 0
     }
 
     const modules = Object.entries(files).map(([filepath, code]) => {
