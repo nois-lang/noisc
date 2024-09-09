@@ -24,7 +24,6 @@ describe('ast', () => {
             stdTypeIds: {},
             errors: [],
             warnings: [],
-            silent: false,
             variableCounter: 0
         }
         return buildModuleAst(parseTree, idFromString('test'), source, false, ctx)

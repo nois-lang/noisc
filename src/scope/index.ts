@@ -26,7 +26,6 @@ export type Context = {
     /**
      * Suppress all errors and warnings that coming while the field is false
      */
-    silent: boolean
     variableCounter: number
 }
 

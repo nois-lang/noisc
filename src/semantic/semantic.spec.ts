@@ -25,7 +25,6 @@ describe('semantic', () => {
             stdTypeIds: {},
             errors: [],
             warnings: [],
-            silent: false,
             variableCounter: 0
         }
 
