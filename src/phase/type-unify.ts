@@ -14,7 +14,7 @@ import {
     makeInferredType,
     makeReturnType
 } from '../typecheck'
-import { dedup, zip } from '../util/array'
+import { zip } from '../util/array'
 import { assign } from '../util/object'
 import { unreachable } from '../util/todo'
 
@@ -386,7 +386,11 @@ const extractReturnType = (type: InferredType, ctx: Context): InferredType | und
 
 const reportErrors = (ctx: Context, node: AstNode): void => {
     if (node.type) {
-        dedup(findErrors(node.type)).forEach(e => addError(ctx, typeError(ctx, node, e)))
+        findErrors(node.type).forEach(e => {
+            if (e.error.reported) return
+            addError(ctx, typeError(ctx, node, e.error))
+            e.error.reported = true
+        })
     }
 }
 

@@ -40,8 +40,16 @@ export type ErrorTypeKind =
 
 export type ErrorType = {
     kind: 'error'
+    error: ErrorType_
+}
+
+/**
+ * HACK: nested object to keep the same reference to an error, prevents duplicate error reports
+ */
+export type ErrorType_ = {
     errorKind: ErrorTypeKind
     message?: string
+    reported: boolean
 }
 
 export const makeInferredType = (bounds: InferredType[] = []) => ({ kind: <const>'inferred', bounds })
@@ -66,8 +74,11 @@ export const makeDefType = (def: Definition) => ({ kind: <const>'def', def })
 
 export const makeErrorType = (message?: string, errorKind: ErrorTypeKind = 'other') => ({
     kind: <const>'error',
-    errorKind,
-    message
+    error: {
+        errorKind,
+        message,
+        reported: false
+    }
 })
 
 export const instantiateDefType = (t: InferredType): InferredType => {
@@ -124,7 +135,7 @@ export const inferredTypeToString = (t: InferredType, depth = 0): string => {
         case 'hole':
             return typeToString(t)
         case 'error':
-            const msg = t.message ? `(${t.message})` : ''
+            const msg = t.error.message ? `(${t.error.message})` : ''
             return `error${msg}`
     }
 }

@@ -3,7 +3,7 @@ import { BinaryOp } from '../ast/op'
 import { Identifier } from '../ast/operand'
 import { Context, idToString } from '../scope'
 import { Source } from '../source'
-import { ErrorType } from '../typecheck'
+import { ErrorType_ } from '../typecheck'
 import { assert } from '../util/todo'
 
 export type SemanticError = {
@@ -53,7 +53,7 @@ export const genericError = (ctx: Context, def: AstNode, msg: string = 'error'):
     return semanticError(44, ctx, def, msg)
 }
 
-export const typeError = (ctx: Context, node: AstNode, e: ErrorType): SemanticError => {
+export const typeError = (ctx: Context, node: AstNode, e: ErrorType_): SemanticError => {
     const msg = `type error (${e.errorKind})${e.message ? `: ${e.message}` : ''}`
     return semanticError(45, ctx, node, msg)
 }
