@@ -149,7 +149,6 @@ export type ImplDef = BaseAstNode & {
     generics: Generic[]
     forTrait?: Identifier
     block: Block
-    superMethods?: CallOp[]
 }
 
 export const buildImplDef = (node: ParseNode, ctx: Context): ImplDef => {

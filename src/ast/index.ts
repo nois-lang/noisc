@@ -247,6 +247,7 @@ export type Module = BaseAstNode & {
      */
     useScope: DefinitionMap
     astStack: AstNode[]
+    impls: ImplDef[]
 }
 
 export const buildModuleAst = (
@@ -274,7 +275,8 @@ export const buildModuleAst = (
         compiled,
         imports: [],
         useScope: new Map(),
-        astStack: []
+        astStack: [],
+        impls: []
     }
 }
 

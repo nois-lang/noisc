@@ -13,7 +13,7 @@ import {
     makeReturnType
 } from '../typecheck'
 import { dedup, zip } from '../util/array'
-import { todo, unreachable } from '../util/todo'
+import { unreachable } from '../util/todo'
 
 /**
  * Unify type bounds
