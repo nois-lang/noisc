@@ -35,5 +35,9 @@ export const findMethodDefForMethodCall = (type: InferredType, ctx: Context): Fn
             return undefined
         }
     }
+    if (type.operandType.kind === 'type-param') {
+        // TODO
+        return undefined
+    }
     return todo(type.operandType.kind)
 }

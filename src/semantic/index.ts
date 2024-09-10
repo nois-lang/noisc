@@ -3,6 +3,7 @@ import { registerImpl } from '../phase/impl-register'
 import { resolveImports, setExports } from '../phase/import-resolve'
 import { resolveModuleScope } from '../phase/module-resolve'
 import { resolveName } from '../phase/name-resolve'
+import { setSelfBound } from '../phase/self-bound'
 import { setStdTypeIds } from '../phase/std-type'
 import { desugar1 } from '../phase/sugar'
 import { setTopScopeDefType, setTopScopeType } from '../phase/top-scope-type'
@@ -19,6 +20,7 @@ export const semanticCheck = (ctx: Context): void => {
         registerImpl,
         desugar1,
         resolveName,
+        setSelfBound,
         setTopScopeDefType,
         setTopScopeType,
         checkImpl,

@@ -85,13 +85,13 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             }
             if (node.statements.length === 0) {
                 addBounds(node.type!, [
-                    instantiateDefType(ctx.stdTypeIds.unit?.type ?? makeErrorType('no def', 'no-def'))
+                    instantiateDefType(ctx.stdTypeIds.unit?.type ?? makeErrorType('no def', 'no-def'), ctx)
                 ])
             }
             break
         }
         case 'param': {
-            collectTypeBounds(node.pattern, ctx, instantiateDefType(node.paramType!.type!))
+            collectTypeBounds(node.pattern, ctx, instantiateDefType(node.paramType!.type!, ctx))
             break
         }
         case 'generic': {
@@ -126,7 +126,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         case 'name': {
             if (node.def) {
                 assert(!!node.def.type)
-                node.type = instantiateDefType(node.def.type!)
+                node.type = instantiateDefType(node.def.type!, ctx)
                 break
             } else {
                 node.type = makeInferredType()
@@ -145,7 +145,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             collectTypeBounds(node.operand, ctx)
             switch (node.op.kind) {
                 case 'call-op': {
-                    const fnType = instantiateDefType(node.operand.type!)
+                    const fnType = instantiateDefType(node.operand.type!, ctx)
                     node.op.args.forEach(a => collectTypeBounds(a, ctx))
                     addBounds(fnType, [boundFromCall(node.op.args.map(a => a.type!))])
                     node.type = makeReturnType(fnType)
@@ -179,7 +179,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             assert(!!methodId)
             const methodDef = findById(methodId!, ctx)
             assert(!!methodDef)
-            const fnType = instantiateDefType(methodDef!.type!)
+            const fnType = instantiateDefType(methodDef!.type!, ctx)
             addBounds(fnType, [boundFromCall([node.lOperand.type!, node.rOperand.type!])])
             node.type = makeReturnType(fnType)
             break
@@ -209,7 +209,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
                 collectTypeBounds(node.expr, ctx, node.varType ? node.varType : undefined)
             }
             collectTypeBounds(node.pattern, ctx, node.expr?.type)
-            node.type = instantiateDefType(ctx.stdTypeIds.unit?.type ?? makeErrorType('no def', 'no-def'))
+            node.type = instantiateDefType(ctx.stdTypeIds.unit?.type ?? makeErrorType('no def', 'no-def'), ctx)
             break
         }
         case 'fn-def': {
@@ -226,33 +226,36 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         }
         case 'trait-def':
         case 'impl-def': {
-            node.block.statements.forEach(s => collectTypeBounds(s, ctx))
             // TODO
+            if (node.kind === 'impl-def' && node.forTrait) {
+                break
+            }
+            node.block.statements.forEach(s => collectTypeBounds(s, ctx))
             break
         }
         case 'string-interpolated': {
             node.tokens.filter(t => typeof t !== 'string').forEach(t => collectTypeBounds(t, ctx))
-            node.type = instantiateDefType(ctx.stdTypeIds.string?.type ?? makeErrorType('no def', 'no-def'))
+            node.type = instantiateDefType(ctx.stdTypeIds.string?.type ?? makeErrorType('no def', 'no-def'), ctx)
             break
         }
         case 'string-literal': {
-            node.type = instantiateDefType(ctx.stdTypeIds.string?.type ?? makeErrorType('no def', 'no-def'))
+            node.type = instantiateDefType(ctx.stdTypeIds.string?.type ?? makeErrorType('no def', 'no-def'), ctx)
             break
         }
         case 'char-literal': {
-            node.type = instantiateDefType(ctx.stdTypeIds.char?.type ?? makeErrorType('no def', 'no-def'))
+            node.type = instantiateDefType(ctx.stdTypeIds.char?.type ?? makeErrorType('no def', 'no-def'), ctx)
             break
         }
         case 'int-literal': {
-            node.type = instantiateDefType(ctx.stdTypeIds.int?.type ?? makeErrorType('no def', 'no-def'))
+            node.type = instantiateDefType(ctx.stdTypeIds.int?.type ?? makeErrorType('no def', 'no-def'), ctx)
             break
         }
         case 'float-literal': {
-            node.type = instantiateDefType(ctx.stdTypeIds.float?.type ?? makeErrorType('no def', 'no-def'))
+            node.type = instantiateDefType(ctx.stdTypeIds.float?.type ?? makeErrorType('no def', 'no-def'), ctx)
             break
         }
         case 'bool-literal': {
-            node.type = instantiateDefType(ctx.stdTypeIds.bool?.type ?? makeErrorType('no def', 'no-def'))
+            node.type = instantiateDefType(ctx.stdTypeIds.bool?.type ?? makeErrorType('no def', 'no-def'), ctx)
             break
         }
         case 'method-call-op': {

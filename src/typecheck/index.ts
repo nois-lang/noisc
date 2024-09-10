@@ -2,7 +2,7 @@ import { UnaryExpr } from '../ast/expr'
 import { FieldAccessOp, MethodCallOp } from '../ast/op'
 import { Name } from '../ast/operand'
 import { Generic, Type } from '../ast/type'
-import { Definition, defKey, idToString } from '../scope'
+import { Context, Definition, defKey, idToString } from '../scope'
 import { assert, unreachable } from '../util/todo'
 
 export type InferredType =
@@ -82,7 +82,7 @@ export const makeErrorType = (message?: string, errorKind: ErrorTypeKind = 'othe
     }
 })
 
-export const instantiateDefType = (t: InferredType): InferredType => {
+export const instantiateDefType = (t: InferredType, ctx: Context): InferredType => {
     switch (t.kind) {
         case 'fn-type': {
             return makeInferredType([
@@ -90,12 +90,12 @@ export const instantiateDefType = (t: InferredType): InferredType => {
                     kind: 'inferred-fn',
                     generics: t.generics.map(g => {
                         assert(!!g.type)
-                        return instantiateDefType(g.type!)
+                        return instantiateDefType(g.type!, ctx)
                     }),
                     params: t.paramTypes.map(pt => {
-                        return instantiateDefType(pt)
+                        return instantiateDefType(pt, ctx)
                     }),
-                    returnType: instantiateDefType(t.returnType)
+                    returnType: instantiateDefType(t.returnType ?? ctx.stdTypeIds.unit, ctx)
                 }
             ])
         }
@@ -113,8 +113,12 @@ export const inferredTypeToString = (t: InferredType, depth = 0): string => {
         case 'inferred':
             return `[${t.bounds.map(b => inferredTypeToString(b, depth + 1)).join(', ')}]`
         case 'type-param':
-            const unified = t.unified ? `: ${inferredTypeToString(t.unified, depth + 1)}` : ''
-            return `<${t.type.name.value}${unified}>`
+            const unified = t.unified ? ` (${inferredTypeToString(t.unified, depth + 1)})` : ''
+            const bounds =
+                t.type.bounds.length > 0
+                    ? `: ${t.type.bounds.map(b => inferredTypeToString(b, depth + 1)).join('+')}`
+                    : ''
+            return `<${t.type.name.value}${bounds}${unified}>`
         case 'inferred-fn':
             return `|${t.params.map(p => inferredTypeToString(p, depth + 1)).join(', ')}|: ${inferredTypeToString(
                 t.returnType,
