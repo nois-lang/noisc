@@ -163,11 +163,17 @@ export const unifyTypeBounds = (node: AstNode, ctx: Context, report = true): voi
         }
     }
     if (node.type && report) {
-        reportErrors(ctx, node)
+        reportTypeErrors(ctx, node, node.type)
     }
 }
 
-const unifyType = (type: InferredType, ctx: Context): void => {
+/**
+ * TODO: track unification stack to report a trace where type error occurred
+ * example: type error (no-unify): failed unify [Int, String]
+ *     in unify [||: Int, ||: String]
+ *     in unify [Int, String]
+ */
+export const unifyType = (type: InferredType, ctx: Context): void => {
     switch (type.kind) {
         case 'inferred': {
             const unified = type.bounds.reduce((a, b) => unify(a, b, ctx), { kind: 'hole' })
@@ -268,7 +274,7 @@ const unifyType = (type: InferredType, ctx: Context): void => {
     }
 }
 
-const unify = (a: InferredType, b: InferredType, ctx: Context): InferredType => {
+export const unify = (a: InferredType, b: InferredType, ctx: Context): InferredType => {
     const u1 = unify_(a, b, ctx)
     if (u1.kind === 'error' && u1.error.errorKind === 'unhandled') {
         const u2 = unify_(b, a, ctx)
@@ -323,6 +329,10 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context): InferredType =>
             break
         }
         case 'type-param': {
+            // HACK to unify method signatures unify(traitMethod.type, implMethod.type)
+            if (b.kind === 'type-param' && a.type.name.value === b.type.name.value) {
+                return a
+            }
             if (a.unified) {
                 const u = unify(a.unified, b, ctx)
                 assign(a.unified, u)
@@ -384,9 +394,9 @@ const extractReturnType = (type: InferredType, ctx: Context): InferredType | und
     }
 }
 
-const reportErrors = (ctx: Context, node: AstNode): void => {
-    if (node.type) {
-        findErrors(node.type).forEach(e => {
+export const reportTypeErrors = (ctx: Context, node: AstNode, type: InferredType): void => {
+    if (type) {
+        findTypeErrors(type).forEach(e => {
             if (e.error.reported) return
             addError(ctx, typeError(ctx, node, e.error))
             e.error.reported = true
@@ -394,10 +404,10 @@ const reportErrors = (ctx: Context, node: AstNode): void => {
     }
 }
 
-const findErrors = (t: InferredType): ErrorType[] => {
+export const findTypeErrors = (t: InferredType): ErrorType[] => {
     switch (t.kind) {
         case 'inferred-fn':
-            return [...t.params.flatMap(findErrors), ...findErrors(t.returnType)]
+            return [...t.params.flatMap(findTypeErrors), ...findTypeErrors(t.returnType)]
         case 'error':
             return [t]
     }

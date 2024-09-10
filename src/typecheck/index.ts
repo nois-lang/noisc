@@ -3,7 +3,7 @@ import { FieldAccessOp, MethodCallOp } from '../ast/op'
 import { Name } from '../ast/operand'
 import { Generic, Type } from '../ast/type'
 import { Definition, defKey, idToString } from '../scope'
-import { assert } from '../util/todo'
+import { assert, unreachable } from '../util/todo'
 
 export type InferredType =
     | {
@@ -113,21 +113,22 @@ export const inferredTypeToString = (t: InferredType, depth = 0): string => {
         case 'inferred':
             return `[${t.bounds.map(b => inferredTypeToString(b, depth + 1)).join(', ')}]`
         case 'type-param':
-            const unified = t.unified ? `: ${inferredTypeToString(t.unified)}` : ''
+            const unified = t.unified ? `: ${inferredTypeToString(t.unified, depth + 1)}` : ''
             return `<${t.type.name.value}${unified}>`
         case 'inferred-fn':
             return `|${t.params.map(p => inferredTypeToString(p, depth + 1)).join(', ')}|: ${inferredTypeToString(
-                t.returnType
+                t.returnType,
+                depth + 1
             )}`
         case 'return':
             return `ret(${inferredTypeToString(t.type, depth + 1)})`
         case 'def':
             return `def(${t.def.kind} ${defKey(t.def)})`
         case 'field-access':
-            return `(${inferredTypeToString(t.operandType)}).${t.fieldName.value}`
+            return `(${inferredTypeToString(t.operandType, depth + 1)}).${t.fieldName.value}`
         case 'method-call':
-            return `(${inferredTypeToString(t.operandType)}).${t.op.name.value}(${t.op.call.args
-                .map(a => inferredTypeToString(a.type!))
+            return `(${inferredTypeToString(t.operandType, depth + 1)}).${t.op.name.value}(${t.op.call.args
+                .map(a => inferredTypeToString(a.type!, depth + 1))
                 .join(', ')})`
         case 'identifier':
         case 'name':
@@ -138,6 +139,7 @@ export const inferredTypeToString = (t: InferredType, depth = 0): string => {
             const msg = t.error.message ? `(${t.error.message})` : ''
             return `error${msg}`
     }
+    return unreachable(t)
 }
 
 export const typeToString = (t: Type): string => {

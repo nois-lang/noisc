@@ -94,7 +94,6 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
         }
         case 'trait-def':
         case 'impl-def': {
-            if (node.kind === 'impl-def' && node.forTrait) break
             node.generics.forEach(g => setTopScopeType(g, ctx))
             node.block.statements.forEach(s => setTopScopeType(s, ctx))
             break

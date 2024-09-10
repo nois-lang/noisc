@@ -2,7 +2,10 @@ import { AstNode } from '../ast'
 import { FnDef } from '../ast/statement'
 import { emitParseNode } from '../codegen/declaration'
 import { Context, addError, idToString } from '../scope'
-import { genericError, notFoundError } from '../semantic/error'
+import { genericError } from '../semantic/error'
+import { instantiateDefType } from '../typecheck'
+import { assert } from '../util/todo'
+import { reportTypeErrors, unify } from './type-unify'
 
 export const checkImpl = (node: AstNode, ctx: Context): void => {
     switch (node.kind) {
@@ -37,14 +40,16 @@ export const checkImpl = (node: AstNode, ctx: Context): void => {
                     addError(ctx, genericError(ctx, im.name, msg))
                     return
                 }
-                // TODO: trait and impl methods must match signatures
+                assert(!!im.type)
+                assert(!!traitMethod.type)
+                // TODO: handle unify of 'fn-type's specifically for this case (get rid of `instantiateDefType`)
+                const t = unify(instantiateDefType(im.type!), instantiateDefType(traitMethod.type!), ctx)
+                reportTypeErrors(ctx, im.name, t)
             })
             requiredMethods.forEach(rm => {
                 const implMethod = implMethods.find(m => m.name.value === rm.name.value)
                 if (!implMethod) {
-                    const msg = `missing implementation of method \`${idToString(
-                        node.identifier
-                    )}\` required by trait \`${traitDef.name.value}\``
+                    const msg = `missing method \`${rm.name.value}\` required by trait \`${traitDef.name.value}\``
                     const rmStr = `${emitParseNode(rm.parseNode!)} { todo() }`
                     const note = `implement method\n    ${rmStr}`
                     addError(ctx, genericError(ctx, node.identifier, msg, [note]))

@@ -118,11 +118,6 @@ if (!std) {
 }
 
 ctx.packages = packages
-ctx.packages.forEach(p =>
-    p.modules.forEach(m => {
-        m.package = p
-    })
-)
 ctx.prelude = std.modules.find(m => m.identifier.names.at(-1)!.value === 'prelude')!
 assert(!!ctx.prelude, 'no prelude')
 
