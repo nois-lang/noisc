@@ -32,6 +32,10 @@ export const checkImpl = (node: AstNode, ctx: Context): void => {
                     addError(ctx, genericError(ctx, node.identifier, msg))
                     return
                 }
+                if (!im.block) {
+                    const msg = `method \`${im.name.value}\` is missing body`
+                    addError(ctx, genericError(ctx, im, msg))
+                }
                 const traitMethod = traitMethods.find(m => m.name.value === im.name.value)
                 if (!traitMethod) {
                     const msg = `method \`${im.name.value}\` not found in trait \`${traitDef.name.value}\``
