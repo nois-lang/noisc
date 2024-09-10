@@ -113,7 +113,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
         }
         case 'identifier': {
             node.typeArgs.forEach(ta => setTopScopeType(ta, ctx))
-            node.type = node.def?.type ?? { kind: 'hole' }
+            node.type = node
             break
         }
         case 'fn-type': {

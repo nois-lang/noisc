@@ -1,5 +1,6 @@
 import { AstNode } from '../ast'
-import { Context, addError, idToString } from '../scope'
+import { Identifier } from '../ast/operand'
+import { Context, addError } from '../scope'
 import { typeError } from '../semantic/error'
 import { findMethodDefForMethodCall } from '../semantic/impl'
 import {
@@ -9,14 +10,13 @@ import {
     boundFromCall,
     inferredTypeToString,
     instantiateDefType,
-    makeDefType,
     makeErrorType,
     makeInferredType,
     makeReturnType
 } from '../typecheck'
 import { zip } from '../util/array'
 import { assign } from '../util/object'
-import { unreachable } from '../util/todo'
+import { todo, unreachable } from '../util/todo'
 
 /**
  * Unify type bounds
@@ -242,7 +242,7 @@ export const unifyType = (type: InferredType, ctx: Context): void => {
                     break
                 }
             }
-            assign(type, makeErrorType(inferredTypeToString(type)))
+            assign(type, makeErrorType(`not def ${inferredTypeToString(type.operandType)}`))
             break
         case 'return': {
             unifyType(type.type, ctx)
@@ -257,7 +257,11 @@ export const unifyType = (type: InferredType, ctx: Context): void => {
             break
         }
         case 'identifier':
-            assign(type, type.def ? makeDefType(type.def) : makeErrorType(`no def: ${idToString(type)}`, 'no-def'))
+            if (type.def?.type && type.typeArgs.length === 0) {
+                type.typeArgs.forEach(ta => unifyType(ta, ctx))
+                assign(type, type.def.type)
+                break
+            }
             break
         case 'fn-type':
         case 'name':
@@ -285,6 +289,7 @@ export const unify = (a: InferredType, b: InferredType, ctx: Context, stack: [st
 const unify_ = (a: InferredType, b: InferredType, ctx: Context, stack: [string, string][]): InferredType => {
     unifyType(a, ctx)
     unifyType(b, ctx)
+    if (a === b) return a
     if (b.kind === 'inferred' || b.kind === 'fn-type') {
         unreachable(inferredTypeToString(b))
     }
@@ -305,13 +310,14 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context, stack: [string, 
         }
         case 'def': {
             switch (b.kind) {
+                case 'type-param':
+                    break
                 // biome-ignore lint:
                 case 'def':
                     // TODO: respect def's trait impls
                     if (b.kind === 'def' && a.def === b.def) {
                         return a
                     }
-                case 'type-param':
                 case 'inferred-fn':
                 case 'identifier':
                 case 'fn-type':
@@ -329,6 +335,7 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context, stack: [string, 
         case 'type-param': {
             // HACK to unify method signatures unify(traitMethod.type, implMethod.type)
             if (b.kind === 'type-param' && a.type.name.value === b.type.name.value) {
+                assign(b, a)
                 return a
             }
             if (a.unified) {
@@ -342,7 +349,24 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context, stack: [string, 
             return b
         }
         case 'name':
+            break
         case 'identifier':
+            if (b.kind === 'identifier') {
+                if (b.def?.type?.kind === 'type-param') {
+                    return unify(b.def.type, a, ctx, stack)
+                }
+                if (a.def && a.def === b.def) {
+                    if (a.typeArgs.length !== b.typeArgs.length) {
+                        todo()
+                        break
+                    }
+                    const typeArgs = <Identifier[]>zip(a.typeArgs, b.typeArgs, (ta, tb) => unify(ta, tb, ctx, stack))
+                    const u: Identifier = { kind: 'identifier', parseNode: a.parseNode, names: a.names, typeArgs }
+                    assign(a, u)
+                    assign(b, u)
+                    return u
+                }
+            }
             break
         case 'hole':
             return b
@@ -356,7 +380,7 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context, stack: [string, 
             return unreachable()
     }
     return makeErrorType(
-        `unhandled unify [${[inferredTypeToString(a), inferredTypeToString(b)].join(', ')}]`,
+        `unhandled unify [${a.kind}, ${b.kind}] [${[inferredTypeToString(a), inferredTypeToString(b)].join(', ')}]`,
         'unhandled'
     )
 }

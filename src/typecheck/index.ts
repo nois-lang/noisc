@@ -93,10 +93,9 @@ export const instantiateDefType = (t: InferredType): InferredType => {
                         return instantiateDefType(g.type!)
                     }),
                     params: t.paramTypes.map(pt => {
-                        assert(!!pt.type)
-                        return instantiateDefType(pt.type!)
+                        return instantiateDefType(pt)
                     }),
-                    returnType: instantiateDefType(t.returnType.type!)
+                    returnType: instantiateDefType(t.returnType)
                 }
             ])
         }
