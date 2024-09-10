@@ -50,6 +50,7 @@ export type ErrorType_ = {
     errorKind: ErrorTypeKind
     message?: string
     reported: boolean
+    stack?: [string, string][]
 }
 
 export const makeInferredType = (bounds: InferredType[] = []) => ({ kind: <const>'inferred', bounds })

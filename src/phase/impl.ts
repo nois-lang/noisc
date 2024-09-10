@@ -28,10 +28,8 @@ export const checkImpl = (node: AstNode, ctx: Context): void => {
             const implMethods = node.block.statements.filter(s => s.kind === 'fn-def').map(s => <FnDef>s)
             implMethods.forEach(im => {
                 if (im.kind !== 'fn-def') {
-                    addError(
-                        ctx,
-                        genericError(ctx, node.identifier, `\`${idToString(node.identifier)}\` is not a trait`)
-                    )
+                    const msg = `\`${idToString(node.identifier)}\` is not a trait`
+                    addError(ctx, genericError(ctx, node.identifier, msg))
                     return
                 }
                 const traitMethod = traitMethods.find(m => m.name.value === im.name.value)
