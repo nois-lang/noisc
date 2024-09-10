@@ -69,7 +69,7 @@ impl Runtime {
     }
 
     pub fn withPollingRate(pollingRate: Int): Runtime {
-        Runtime(pollingRate, [], [])
+        Runtime::Runtime(pollingRate, [], [])
     }
 
     pub fn loop(self): Unit {
