@@ -3,7 +3,6 @@ import { Identifier } from '../ast/operand'
 import { findName } from '../phase/name-resolve'
 import { Context, addError, idFromString } from '../scope'
 import { notFoundError } from '../semantic/error'
-import { makeDefType } from '../typecheck'
 
 export type StdTypeIds = {
     unit?: Identifier
@@ -55,7 +54,7 @@ export const setStdTypeIds = (node: AstNode, ctx: Context): void => {
             return
         }
         id.def = def
-        id.type = makeDefType(def)
+        id.type = id
         ctx.stdTypeIds[name] = id
     })
 }

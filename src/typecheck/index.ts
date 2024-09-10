@@ -2,7 +2,7 @@ import { UnaryExpr } from '../ast/expr'
 import { FieldAccessOp, MethodCallOp } from '../ast/op'
 import { Name } from '../ast/operand'
 import { Generic, Type } from '../ast/type'
-import { Context, Definition, defKey, idToString } from '../scope'
+import { Context, idToString } from '../scope'
 import { assert, unreachable } from '../util/todo'
 
 export type InferredType =
@@ -23,7 +23,6 @@ export type InferredType =
       }
     | { kind: 'field-access'; operandType: InferredType; fieldName: Name }
     | { kind: 'method-call'; operandType: InferredType; op: MethodCallOp }
-    | { kind: 'def'; def: Definition }
     | Type
     | { kind: 'return'; type: InferredType }
     | ErrorType
@@ -71,8 +70,6 @@ export const makeMethodCallType = (expr: UnaryExpr) => ({
 
 export const makeReturnType = (type: InferredType) => ({ kind: <const>'return', type })
 
-export const makeDefType = (def: Definition) => ({ kind: <const>'def', def })
-
 export const makeErrorType = (message?: string, errorKind: ErrorTypeKind = 'other') => ({
     kind: <const>'error',
     error: {
@@ -99,9 +96,6 @@ export const instantiateDefType = (t: InferredType, ctx: Context): InferredType 
                 }
             ])
         }
-        case 'def': {
-            return makeInferredType([t])
-        }
         default:
             return t
     }
@@ -126,8 +120,6 @@ export const inferredTypeToString = (t: InferredType, depth = 0): string => {
             )}`
         case 'return':
             return `ret(${inferredTypeToString(t.type, depth + 1)})`
-        case 'def':
-            return `def(${t.def.kind} ${defKey(t.def)})`
         case 'field-access':
             return `(${inferredTypeToString(t.operandType, depth + 1)}).${t.fieldName.value}`
         case 'method-call':

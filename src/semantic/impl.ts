@@ -12,7 +12,7 @@ export const findMethodDefForMethodCall = (type: InferredType, ctx: Context): Fn
         assert(false, type.kind)
         return unreachable()
     }
-    if (type.operandType.kind === 'def') {
+    if (type.operandType.kind === 'identifier') {
         const def = type.operandType.def
         const impls = ctx.packages.flatMap(p =>
             p.modules.flatMap(m => m.impls).filter(impl => impl.forTrait && impl.forTrait.def === def)

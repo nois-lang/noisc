@@ -1,7 +1,7 @@
 import { AstNode } from '../ast'
 import { Identifier } from '../ast/operand'
 import { Context } from '../scope'
-import { makeDefType, makeErrorType, makeTypeParam } from '../typecheck'
+import { makeErrorType, makeTypeParam } from '../typecheck'
 import { assert, todo, unreachable } from '../util/todo'
 
 /**
@@ -14,12 +14,10 @@ export const setTopScopeDefType = (node: AstNode, ctx: Context) => {
             break
         }
         case 'trait-def': {
-            node.type = makeDefType(node)
             node.generics.forEach(g => setTopScopeDefType(g, ctx))
             break
         }
         case 'type-def': {
-            node.type = makeDefType(node)
             node.generics.forEach(g => setTopScopeDefType(g, ctx))
             break
         }
@@ -72,7 +70,12 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
                 kind: 'identifier',
                 parseNode: node.parseNode,
                 names: [node.typeDef!.name],
-                typeArgs: node.typeDef!.generics.map(g => ({ kind: 'identifier', names: [g.name], typeArgs: [] })),
+                typeArgs: node.typeDef!.generics.map(g => ({
+                    kind: 'identifier',
+                    names: [g.name],
+                    typeArgs: [],
+                    def: g
+                })),
                 def: node.typeDef
             }
             const fnType = {

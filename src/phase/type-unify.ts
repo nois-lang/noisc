@@ -17,7 +17,7 @@ import {
 } from '../typecheck'
 import { zip } from '../util/array'
 import { assign } from '../util/object'
-import { todo, unreachable } from '../util/todo'
+import { unreachable } from '../util/todo'
 
 /**
  * Unify type bounds
@@ -256,8 +256,7 @@ export const unifyType = (type: InferredType, ctx: Context): void => {
             break
         }
         case 'identifier':
-            if (type.def?.type && type.typeArgs.length === 0) {
-                type.typeArgs.forEach(ta => unifyType(ta, ctx))
+            if (type.def?.type?.kind === 'type-param') {
                 assign(type, type.def.type)
                 break
             }
@@ -266,7 +265,6 @@ export const unifyType = (type: InferredType, ctx: Context): void => {
         case 'name':
         case 'type-param':
         case 'hole':
-        case 'def':
         case 'error':
             break
     }
@@ -307,19 +305,31 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context, stack: [string, 
             }
             break
         }
-        case 'def': {
+        case 'identifier': {
             if (a.def === ctx.stdTypeIds.never?.def) {
                 return b
             }
             switch (b.kind) {
                 // biome-ignore lint:
-                case 'def':
-                    // TODO: respect def's trait impls
-                    if (b.kind === 'def' && a.def === b.def) {
-                        return a
+                case 'identifier': {
+                    if (a.def && a.def === b.def) {
+                        if (a.typeArgs.length === b.typeArgs.length) {
+                            const typeArgs = <Identifier[]>(
+                                zip(a.typeArgs, b.typeArgs, (ta, tb) => unify(ta, tb, ctx, stack))
+                            )
+                            const u: Identifier = {
+                                kind: 'identifier',
+                                parseNode: a.parseNode,
+                                names: a.names,
+                                typeArgs
+                            }
+                            assign(a, u)
+                            assign(b, u)
+                            return u
+                        }
                     }
+                }
                 case 'inferred-fn':
-                case 'identifier':
                 case 'fn-type':
                 case 'name':
                     const e = makeErrorType(
@@ -352,24 +362,6 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context, stack: [string, 
             return b
         }
         case 'name':
-            break
-        case 'identifier':
-            if (b.kind === 'identifier') {
-                if (b.def?.type?.kind === 'type-param') {
-                    return unify(b.def.type, a, ctx, stack)
-                }
-                if (a.def && a.def === b.def) {
-                    if (a.typeArgs.length !== b.typeArgs.length) {
-                        todo()
-                        break
-                    }
-                    const typeArgs = <Identifier[]>zip(a.typeArgs, b.typeArgs, (ta, tb) => unify(ta, tb, ctx, stack))
-                    const u: Identifier = { kind: 'identifier', parseNode: a.parseNode, names: a.names, typeArgs }
-                    assign(a, u)
-                    assign(b, u)
-                    return u
-                }
-            }
             break
         case 'hole':
             return b
@@ -407,12 +399,6 @@ const extractReturnType = (type: InferredType, ctx: Context): InferredType | und
             return undefined
         case 'error':
             return type
-        case 'def':
-            if (type.def.kind === 'fn-def') {
-                unreachable()
-                return type.def.returnType!
-            }
-            return undefined
         case 'method-call':
         case 'fn-type':
         case 'return':
@@ -447,8 +433,6 @@ const extractDefs = (t: InferredType): Definition[] => {
                 return [t.def]
             }
             break
-        case 'def':
-            return [t.def]
         case 'type-param':
             return <TypeDef[]>t.type.bounds.map(b => b.def)
     }
