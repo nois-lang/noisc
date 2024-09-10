@@ -213,39 +213,33 @@ export const unifyType = (type: InferredType, ctx: Context): void => {
             }
             if (defs.length > 0) {
                 const def = defs[0]
-                if (def.kind === 'type-def') {
-                    const notFoundError = makeErrorType(
-                        `method ${type.op.name.value} not found in type ${inferredTypeToString(type.operandType)}`,
-                        'no-method'
-                    )
-                    const m = def.impl?.block.statements.find(
-                        s => s.kind === 'fn-def' && s.name.value === type.op.name.value
-                    )
-                    if (!m) {
-                        // TODO: check traits impld by operandType
-                        const fnDef = findMethodDefForMethodCall(type, ctx)
-                        if (!fnDef) {
-                            assign(type, notFoundError)
-                            break
-                        }
-                        const callType = makeInferredType([
-                            instantiateDefType(fnDef.type!, ctx),
-                            boundFromCall(type.op.call.args.map(a => a.type!))
-                        ])
-                        assign(type, makeReturnType(callType))
-                        unifyType(type, ctx)
+                const block =
+                    def.kind === 'type-def' ? def.impl?.block : def.kind === 'trait-def' ? def.block : undefined
+                const m = block?.statements.find(s => s.kind === 'fn-def' && s.name.value === type.op.name.value)
+                if (!m) {
+                    // TODO: check traits impld by operandType
+                    const fnDef = findMethodDefForMethodCall(type, ctx)
+                    if (!fnDef) {
+                        const notFoundError = makeErrorType(
+                            `method ${type.op.name.value} not found in type ${inferredTypeToString(type.operandType)}`,
+                            'no-method'
+                        )
+                        assign(type, notFoundError)
                         break
                     }
-                    const mType = instantiateDefType(m.type!, ctx)
-                    addBounds(mType, [boundFromCall(type.op.call.args.map(a => a.type!))])
-                    assign(type, makeReturnType(mType))
+                    const callType = makeInferredType([
+                        instantiateDefType(fnDef.type!, ctx),
+                        boundFromCall(type.op.call.args.map(a => a.type!))
+                    ])
+                    assign(type, makeReturnType(callType))
                     unifyType(type, ctx)
                     break
-                } else if (def.kind === 'trait-def') {
-                    // TODO
-                    assign(type, makeErrorType('method call on trait', 'todo'))
-                    break
                 }
+                const mType = instantiateDefType(m.type!, ctx)
+                addBounds(mType, [boundFromCall(type.op.call.args.map(a => a.type!))])
+                assign(type, makeReturnType(mType))
+                unifyType(type, ctx)
+                break
             }
             assign(type, makeErrorType(`not def ${inferredTypeToString(type.operandType)}`))
             break
