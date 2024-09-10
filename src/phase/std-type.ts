@@ -7,6 +7,7 @@ import { makeDefType } from '../typecheck'
 
 export type StdTypeIds = {
     unit?: Identifier
+    never?: Identifier
     bool?: Identifier
     string?: Identifier
     char?: Identifier
@@ -30,6 +31,7 @@ export const setStdTypeIds = (node: AstNode, ctx: Context): void => {
     ctx.stdTypeIds = {}
     const pairs = <const>[
         ['unit', 'Unit'],
+        ['never', 'Never'],
         ['bool', 'Bool'],
         ['string', 'String'],
         ['char', 'Char'],

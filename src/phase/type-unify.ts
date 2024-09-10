@@ -309,6 +309,9 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context, stack: [string, 
             break
         }
         case 'def': {
+            if (a.def === ctx.stdTypeIds.never?.def) {
+                return b
+            }
             switch (b.kind) {
                 case 'type-param':
                     break
