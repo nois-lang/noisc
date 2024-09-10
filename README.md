@@ -49,11 +49,11 @@ pub fn main() {
 ## Features
 
 - Expressive type system
+- Automatic memory management
 - Variant types and pattern matching
 - Type class polymorphism with `traits`
 - Errors are a part of a function type signature (using `std::result::Result` return type)
-- Automatic memory management
-- Implicit last block line returns
+- Everything* is an expression
 
 ## Roadmap
 
