@@ -404,8 +404,9 @@ const extractReturnType = (type: InferredType, ctx: Context): InferredType | und
         case 'identifier':
         case 'name':
         case 'hole':
-        case 'error':
             return undefined
+        case 'error':
+            return type
         case 'def':
             if (type.def.kind === 'fn-def') {
                 unreachable()
@@ -441,6 +442,11 @@ export const findTypeErrors = (t: InferredType): ErrorType[] => {
 
 const extractDefs = (t: InferredType): Definition[] => {
     switch (t.kind) {
+        case 'identifier':
+            if (t.def) {
+                return [t.def]
+            }
+            break
         case 'def':
             return [t.def]
         case 'type-param':
