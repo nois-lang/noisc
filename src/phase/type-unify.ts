@@ -145,12 +145,9 @@ export const unifyTypeBounds = (node: AstNode, ctx: Context, report = true): voi
             }
             break
         }
-        case 'trait-def': {
-            // TODO
-            break
-        }
+        case 'trait-def':
         case 'impl-def': {
-            // TODO
+            node.block.statements.forEach(s => unifyTypeBounds(s, ctx))
             break
         }
         case 'method-call-op': {
@@ -179,7 +176,11 @@ export const unifyType = (type: InferredType, ctx: Context): void => {
             break
         case 'field-access':
             unifyType(type.operandType, ctx)
-            if (type.operandType.kind === 'def' && type.operandType.def?.kind === 'type-def') {
+            if (type.operandType.kind === 'def') {
+                if (type.operandType.def?.kind !== 'type-def') {
+                    unreachable()
+                    break
+                }
                 const typeDef = type.operandType.def
                 if (typeDef.variants.length > 1) {
                     // TODO: make sure every variant contains such field with equal type

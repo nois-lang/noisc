@@ -209,7 +209,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
                 collectTypeBounds(node.expr, ctx, node.varType ? node.varType : undefined)
             }
             collectTypeBounds(node.pattern, ctx, node.expr?.type)
-            node.type = instantiateDefType(ctx.stdTypeIds.unit?.type ?? makeErrorType('no def'))
+            node.type = instantiateDefType(ctx.stdTypeIds.unit?.type ?? makeErrorType('no def', 'no-def'))
             break
         }
         case 'fn-def': {
@@ -226,7 +226,6 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         }
         case 'trait-def':
         case 'impl-def': {
-            if (node.kind === 'impl-def' && node.forTrait) break
             node.block.statements.forEach(s => collectTypeBounds(s, ctx))
             // TODO
             break
