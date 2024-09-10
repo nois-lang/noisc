@@ -72,7 +72,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
                 kind: 'identifier',
                 parseNode: node.parseNode,
                 names: [node.typeDef!.name],
-                typeArgs: [],
+                typeArgs: node.typeDef!.generics.map(g => ({ kind: 'identifier', names: [g.name], typeArgs: [] })),
                 def: node.typeDef
             }
             const fnType = {
