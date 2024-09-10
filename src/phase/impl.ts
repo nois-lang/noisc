@@ -2,10 +2,10 @@ import { AstNode } from '../ast'
 import { FnDef } from '../ast/statement'
 import { emitParseNode } from '../codegen/declaration'
 import { Context, addError, idToString } from '../scope'
-import { genericError } from '../semantic/error'
+import { genericError, typeError } from '../semantic/error'
 import { instantiateDefType } from '../typecheck'
 import { assert } from '../util/todo'
-import { reportTypeErrors, unify } from './type-unify'
+import { findTypeErrors, unify } from './type-unify'
 
 export const checkImpl = (node: AstNode, ctx: Context): void => {
     switch (node.kind) {
@@ -42,7 +42,12 @@ export const checkImpl = (node: AstNode, ctx: Context): void => {
                 assert(!!traitMethod.type)
                 // TODO: handle unify of 'fn-type's specifically for this case (get rid of `instantiateDefType`)
                 const t = unify(instantiateDefType(im.type!), instantiateDefType(traitMethod.type!), ctx)
-                reportTypeErrors(ctx, im.name, t)
+                findTypeErrors(t).forEach(e => {
+                    if (e.error.reported) return
+                    const note = `trait method is\n    ${emitParseNode(traitMethod.parseNode!)}`
+                    addError(ctx, typeError(ctx, im.name, e.error, [note]))
+                    e.error.reported = true
+                })
             })
             requiredMethods.forEach(rm => {
                 const implMethod = implMethods.find(m => m.name.value === rm.name.value)
