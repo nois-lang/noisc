@@ -83,6 +83,11 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             if (lastStmt) {
                 addBounds(node.type!, [lastStmt.type!])
             }
+            if (node.statements.length === 0) {
+                addBounds(node.type!, [
+                    instantiateDefType(ctx.stdTypeIds.unit?.type ?? makeErrorType('no def', 'no-def'))
+                ])
+            }
             break
         }
         case 'param': {
