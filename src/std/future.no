@@ -18,7 +18,7 @@ impl <T> Trace for FutureState<T> {}
 
 impl <T> Future<T> {
     pub fn new(f: ||T|: Unit|: Unit): Self {
-        Future(f, [], FutureState::Created())
+        Future::Future(f, [], FutureState::Created())
     }
 
     pub fn onResolve(self, f: |T|: Unit): Unit {
