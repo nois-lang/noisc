@@ -2,7 +2,6 @@ import { LexerToken } from '../lexer/lexer'
 import { ParseNode, ParseTree, filterNonAstNodes } from '../parser'
 import { nameLikeTokens } from '../parser/fns'
 import { Context, Definition } from '../scope'
-import { Virtual } from '../semantic'
 import { assert } from '../util/todo'
 import { Expr, buildExpr } from './expr'
 import { BaseAstNode, Param, buildParam } from './index'
@@ -10,7 +9,7 @@ import { MatchExpr, Pattern, buildMatchExpr, buildNumber, buildPattern } from '.
 import { Block, buildBlock, buildStatement } from './statement'
 import { Type, buildType } from './type'
 
-export type Operand = (
+export type Operand =
     | WhileExpr
     | ForExpr
     | MatchExpr
@@ -24,8 +23,7 @@ export type Operand = (
     | FloatLiteral
     | BoolLiteral
     | Identifier
-) &
-    Partial<Virtual>
+    | Block
 
 export const buildOperand = (node: ParseNode, ctx: Context): Operand => {
     const n = filterNonAstNodes(node)[0]
@@ -52,6 +50,8 @@ export const buildOperand = (node: ParseNode, ctx: Context): Operand => {
             return buildBool(n, ctx)
         case 'identifier':
             return buildIdentifier(n, ctx)
+        case 'block':
+            return buildBlock(n, ctx)
     }
     throw Error(`expected operand, got ${node.kind}`)
 }

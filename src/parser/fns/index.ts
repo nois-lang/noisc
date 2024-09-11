@@ -52,6 +52,7 @@ export const exprFirstTokens: TokenKind[] = [
     'bool',
     'o-paren',
     'o-bracket',
+    'o-brace',
     'o-angle',
     'd-quote',
     'pipe'

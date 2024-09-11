@@ -55,6 +55,7 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
                       | number
                       | bool
                       | identifier
+                      | block
                       ;
     infix-op          ::= add-op | sub-op | mult-op | div-op | exp-op | mod-op | eq-op | ne-op
                       | ge-op | le-op | gt-op | lt-op | and-op | or-op | assign-op;

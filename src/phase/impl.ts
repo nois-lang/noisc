@@ -45,9 +45,10 @@ export const checkImpl = (node: AstNode, ctx: Context): void => {
                 assert(!!im.type)
                 assert(!!traitMethod.type)
                 // TODO: handle unify of 'fn-type's specifically for this case (get rid of `instantiateDefType`)
-                const t = unify(instantiateDefType(im.type!), instantiateDefType(traitMethod.type!), ctx)
+                const t = unify(instantiateDefType(im.type!, ctx), instantiateDefType(traitMethod.type!, ctx), ctx)
                 findTypeErrors(t).forEach(e => {
                     if (e.error.reported) return
+                    // TODO: don't print method body
                     const note = `trait method is\n    ${emitParseNode(traitMethod.parseNode!)}`
                     addError(ctx, typeError(ctx, im.name, e.error, [note]))
                     e.error.reported = true

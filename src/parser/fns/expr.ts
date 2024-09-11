@@ -39,7 +39,7 @@ export const parseSubExpr = (parser: Parser): void => {
 
 /**
  * operand ::= match-expr | closure-expr | O-PAREN expr C-PAREN | list-expr | STRING | CHAR | number | TRUE
- * | FALSE | identifier | type
+ * | FALSE | identifier | block
  */
 export const parseOperand = (parser: Parser): void => {
     const dynamicTokens: TokenKind[] = ['char', 'int', 'float', 'bool']
@@ -57,6 +57,8 @@ export const parseOperand = (parser: Parser): void => {
         parser.expect('o-paren')
         parseExpr(parser)
         parser.expect('c-paren')
+    } else if (parser.at('o-brace')) {
+        parseBlock(parser)
     } else if (parser.at('o-bracket')) {
         parseListExpr(parser)
     } else if (parser.atAny(nameLikeTokens)) {
