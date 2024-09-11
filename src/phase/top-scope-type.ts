@@ -91,7 +91,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
         case 'field-def': {
             assert(!!node.fieldType)
             setTopScopeType(node.fieldType!, ctx)
-            node.type = node.fieldType!.type!
+            node.type = node.fieldType!
             setTopScopeType(node.name, ctx)
             break
         }

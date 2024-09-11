@@ -17,7 +17,7 @@ import {
 } from '../typecheck'
 import { zip } from '../util/array'
 import { assign } from '../util/object'
-import { unreachable } from '../util/todo'
+import { assert, unreachable } from '../util/todo'
 
 /**
  * Unify type bounds
@@ -200,6 +200,7 @@ export const unifyType = (type: InferredType, ctx: Context): void => {
                 break
             }
             // TODO: handle type-def generics
+            assert(!!f.type, `field has no type: ${typeDef.name.value}.${f.name.value}`)
             assign(type, f.type!)
             unifyType(type, ctx)
             break
@@ -321,7 +322,8 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context, stack: [string, 
                                 kind: 'identifier',
                                 parseNode: a.parseNode,
                                 names: a.names,
-                                typeArgs
+                                typeArgs,
+                                def: a.def
                             }
                             assign(a, u)
                             assign(b, u)
