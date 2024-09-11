@@ -1,13 +1,11 @@
 import { AstNode } from '../ast'
 import { Identifier } from '../ast/operand'
-import { TypeDef } from '../ast/type-def'
-import { Context, Definition, addError } from '../scope'
+import { Context, addError } from '../scope'
 import { typeError } from '../semantic/error'
 import { findMethodDefForMethodCall } from '../semantic/impl'
 import {
     ErrorType,
     InferredType,
-    addBounds,
     boundFromCall,
     inferredTypeToString,
     instantiateDefType,
@@ -177,7 +175,9 @@ export const unifyType = (type: InferredType, ctx: Context): void => {
             break
         case 'field-access':
             unifyType(type.operandType, ctx)
-            const typeDefs = extractDefs(type.operandType).filter(def => def.kind === 'type-def')
+            const typeDefs = extractIds(type.operandType)
+                .map(id => id.def)
+                .filter(def => def?.kind === 'type-def')
             if (typeDefs.length > 1) {
                 // TODO
                 assign(type, makeErrorType('multiple defs', 'todo'))
@@ -206,39 +206,28 @@ export const unifyType = (type: InferredType, ctx: Context): void => {
             break
         case 'method-call':
             unifyType(type.operandType, ctx)
-            const defs = extractDefs(type.operandType)
-            if (defs.length > 1) {
+            const operandIdCandidates = extractIds(type.operandType)
+            if (operandIdCandidates.length > 1) {
                 // TODO
                 assign(type, makeErrorType('multiple defs', 'todo'))
                 break
             }
-            if (defs.length > 0) {
-                const def = defs[0]
-                const block =
-                    def.kind === 'type-def' ? def.impl?.block : def.kind === 'trait-def' ? def.block : undefined
-                const m = block?.statements.find(s => s.kind === 'fn-def' && s.name.value === type.op.name.value)
-                if (!m) {
-                    // TODO: check traits impld by operandType
-                    const fnDef = findMethodDefForMethodCall(type, ctx)
-                    if (!fnDef) {
-                        const notFoundError = makeErrorType(
-                            `method ${type.op.name.value} not found in type ${inferredTypeToString(type.operandType)}`,
-                            'no-method'
-                        )
-                        assign(type, notFoundError)
-                        break
-                    }
-                    const callType = makeInferredType([
-                        instantiateDefType(fnDef.type!, ctx),
-                        boundFromCall(type.op.call.args.map(a => a.type!))
-                    ])
-                    assign(type, makeReturnType(callType))
-                    unifyType(type, ctx)
+            if (operandIdCandidates.length > 0) {
+                const operandId = operandIdCandidates[0]
+                const fnDef = findMethodDefForMethodCall(operandId, type.op, ctx)
+                if (!fnDef) {
+                    const notFoundError = makeErrorType(
+                        `method ${type.op.name.value} not found in type ${inferredTypeToString(type.operandType)}`,
+                        'no-method'
+                    )
+                    assign(type, notFoundError)
                     break
                 }
-                const mType = instantiateDefType(m.type!, ctx)
-                addBounds(mType, [boundFromCall(type.op.call.args.map(a => a.type!))])
-                assign(type, makeReturnType(mType))
+                const callType = makeInferredType([
+                    instantiateDefType(fnDef.type!, ctx),
+                    boundFromCall(type.op.call.args.map(a => a.type!))
+                ])
+                assign(type, makeReturnType(callType))
                 unifyType(type, ctx)
                 break
             }
@@ -335,7 +324,7 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context, stack: [string, 
                 case 'fn-type':
                 case 'name':
                     const e = makeErrorType(
-                        `failed unify [${[inferredTypeToString(a), inferredTypeToString(b)].join(', ')}]`,
+                        `failed unify [${a.kind}, ${b.kind}] [${[a, b].map(inferredTypeToString).join(', ')}]`,
                         'no-unify'
                     )
                     assign(a, e)
@@ -428,15 +417,18 @@ export const findTypeErrors = (t: InferredType): ErrorType[] => {
     return []
 }
 
-const extractDefs = (t: InferredType): Definition[] => {
+/**
+ * TODO: better name
+ */
+const extractIds = (t: InferredType): Identifier[] => {
     switch (t.kind) {
         case 'identifier':
             if (t.def) {
-                return [t.def]
+                return [t]
             }
             break
         case 'type-param':
-            return <TypeDef[]>t.type.bounds.map(b => b.def)
+            return t.type.bounds
     }
     return []
 }
