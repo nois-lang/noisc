@@ -57,6 +57,7 @@ export type FieldDef = BaseAstNode & {
     name: Name
     fieldType: Type
     pub: boolean
+    variant?: Variant
 }
 
 export const buildFieldDef = (node: ParseNode, ctx: Context): FieldDef => {

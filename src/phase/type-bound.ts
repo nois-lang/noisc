@@ -1,3 +1,4 @@
+import { inspect } from 'util'
 import { AstNode } from '../ast'
 import { FnDef } from '../ast/statement'
 import { Context } from '../scope'
@@ -9,6 +10,7 @@ import {
     instantiateDefType,
     makeErrorType,
     makeFieldAccessType,
+    makeFieldPatternType,
     makeInferredType,
     makeMethodCallType,
     makeReturnType
@@ -50,9 +52,11 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         case 'var-def':
             node.type ??= makeInferredType()
     }
-    if (node.type && node.type.kind === 'inferred') {
-        if (parentBound) {
-            addBounds(node.type, [parentBound])
+    if (node.kind !== 'match-clause') {
+        if (node.type && node.type.kind === 'inferred') {
+            if (parentBound) {
+                addBounds(node.type, [parentBound])
+            }
         }
     }
     switch (node.kind) {
@@ -99,6 +103,10 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             break
         }
         case 'match-clause': {
+            node.type = makeInferredType()
+            node.patterns.forEach(p => collectTypeBounds(p, ctx, parentBound))
+            collectTypeBounds(node.block, ctx)
+            addBounds(node.type!, [node.block.type!])
             // TODO
             break
         }
@@ -107,14 +115,15 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             break
         }
         case 'con-pattern': {
-            // TODO
-            break
-        }
-        case 'list-pattern': {
-            // TODO
+            node.fieldPatterns.forEach(fp => collectTypeBounds(fp, ctx, parentBound))
             break
         }
         case 'field-pattern': {
+            assert(!!parentBound)
+            node.name.type = makeFieldPatternType(parentBound!, node)
+            break
+        }
+        case 'list-pattern': {
             // TODO
             break
         }
@@ -125,7 +134,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         case 'identifier':
         case 'name': {
             if (node.def) {
-                assert(!!node.def.type)
+                assert(!!node.def.type, `no def type ${inspect(node.def)}`)
                 node.type = instantiateDefType(node.def.type!, ctx)
                 break
             } else {
@@ -201,7 +210,12 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             break
         }
         case 'match-expr': {
-            // TODO
+            collectTypeBounds(node.expr, ctx)
+            node.clauses.forEach(c => collectTypeBounds(c, ctx, node.expr.type!))
+            addBounds(
+                node.type!,
+                node.clauses.map(c => c.type!)
+            )
             break
         }
         case 'var-def': {

@@ -21,6 +21,7 @@ import {
     buildString
 } from './operand'
 import { Block, buildBlock } from './statement'
+import { Variant } from './type-def'
 
 export type MatchExpr = BaseAstNode & {
     kind: 'match-expr'
@@ -134,6 +135,7 @@ export type FieldPattern = BaseAstNode & {
     kind: 'field-pattern'
     name: Name
     pattern?: Pattern
+    variant?: Variant
 }
 
 export const buildFieldPattern = (node: ParseNode, ctx: Context): FieldPattern => {

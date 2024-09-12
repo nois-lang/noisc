@@ -1,4 +1,5 @@
 import { UnaryExpr } from '../ast/expr'
+import { FieldPattern } from '../ast/match'
 import { FieldAccessOp, MethodCallOp } from '../ast/op'
 import { Name } from '../ast/operand'
 import { Generic, Type } from '../ast/type'
@@ -22,6 +23,7 @@ export type InferredType =
           returnType: InferredType
       }
     | { kind: 'field-access'; operandType: InferredType; fieldName: Name }
+    | { kind: 'field-pattern'; operandType: InferredType; fieldPattern: FieldPattern }
     | { kind: 'method-call'; operandType: InferredType; op: MethodCallOp }
     | Type
     | { kind: 'return'; type: InferredType }
@@ -60,6 +62,12 @@ export const makeFieldAccessType = (expr: UnaryExpr) => ({
     kind: <const>'field-access',
     operandType: expr.operand.type!,
     fieldName: (<FieldAccessOp>expr.op).name
+})
+
+export const makeFieldPatternType = (operandType: InferredType, fieldPattern: FieldPattern) => ({
+    kind: <const>'field-pattern',
+    operandType,
+    fieldPattern
 })
 
 export const makeMethodCallType = (expr: UnaryExpr) => ({
@@ -122,6 +130,10 @@ export const inferredTypeToString = (t: InferredType, depth = 0): string => {
             return `ret(${inferredTypeToString(t.type, depth + 1)})`
         case 'field-access':
             return `(${inferredTypeToString(t.operandType, depth + 1)}).${t.fieldName.value}`
+        case 'field-pattern':
+            return `dest(${inferredTypeToString(t.operandType)}, ${t.fieldPattern.variant?.name.value ?? '_'}(${
+                t.fieldPattern.name.value
+            }))`
         case 'method-call':
             return `(${inferredTypeToString(t.operandType, depth + 1)}).${t.op.name.value}(${t.op.call.args
                 .map(a => inferredTypeToString(a.type!, depth + 1))
@@ -132,8 +144,8 @@ export const inferredTypeToString = (t: InferredType, depth = 0): string => {
         case 'hole':
             return typeToString(t)
         case 'error':
-            const msg = t.error.message ? `(${t.error.message})` : ''
-            return `error${msg}`
+            const msg = t.error.message ? `, ${t.error.message}` : ''
+            return `error(${t.error.errorKind}${msg})`
     }
     return unreachable(t)
 }

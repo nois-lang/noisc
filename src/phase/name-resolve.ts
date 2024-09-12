@@ -69,7 +69,11 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
         }
         case 'con-pattern': {
             resolveName(node.identifier, ctx)
-            node.fieldPatterns.forEach(fp => resolveName(fp, ctx))
+            node.fieldPatterns.forEach(fp => {
+                const def = node.identifier.def
+                fp.variant = def?.kind === 'variant' ? def : undefined
+                resolveName(fp, ctx)
+            })
             break
         }
         case 'list-pattern': {

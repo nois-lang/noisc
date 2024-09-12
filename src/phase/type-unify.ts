@@ -184,7 +184,7 @@ export const unifyType = (type: InferredType, ctx: Context): void => {
                 break
             }
             if (typeDefs.length === 0) {
-                assign(type, makeErrorType(inferredTypeToString(type)))
+                assign(type, makeErrorType(`no def ${inferredTypeToString(type)}`, 'todo'))
                 break
             }
             const typeDef = typeDefs[0]
@@ -233,6 +233,43 @@ export const unifyType = (type: InferredType, ctx: Context): void => {
             }
             assign(type, makeErrorType(`not def ${inferredTypeToString(type.operandType)}`))
             break
+        case 'field-pattern': {
+            unifyType(type.operandType, ctx)
+            const variant = type.fieldPattern.variant
+            if (!variant) {
+                const e = makeErrorType(`no variant on type ${inferredTypeToString(type)}`, 'todo')
+                assign(type, e)
+                break
+            }
+            const typeDefs = extractIds(type.operandType)
+                .filter(t => t.def?.kind === 'type-def')
+                .map(id => id.def)
+                .filter(def => def?.kind === 'type-def')
+            if (typeDefs.length > 1) {
+                // TODO
+                assign(type, makeErrorType('multiple defs', 'todo'))
+                break
+            }
+            if (typeDefs.length === 0) {
+                assign(type, makeErrorType(`no def ${inferredTypeToString(type)}`, 'todo'))
+                break
+            }
+            const typeDef = typeDefs[0]
+            if (typeDef !== variant.typeDef) {
+                // failed unify
+                break
+            }
+            const f = variant.fieldDefs.find(fd => fd.name.value === type.fieldPattern.name.value)
+            if (!f) {
+                assign(type, makeErrorType(type.fieldPattern.name.value, 'no-field'))
+                break
+            }
+            // TODO: handle type-def generics
+            assert(!!f.type, `field has no type: ${typeDef.name.value}.${f.name.value}`)
+            assign(type, f.type!)
+            unifyType(type, ctx)
+            break
+        }
         case 'return': {
             unifyType(type.type, ctx)
             const ret = extractReturnType(type.type, ctx)
@@ -365,16 +402,14 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context, stack: [string, 
             // these should never appear in a result of `unifyType`
             return unreachable()
     }
-    return makeErrorType(
-        `unhandled unify [${a.kind}, ${b.kind}] [${[inferredTypeToString(a), inferredTypeToString(b)].join(', ')}]`,
-        'unhandled'
-    )
+    return makeErrorType(`unify [${[inferredTypeToString(a), inferredTypeToString(b)].join(', ')}]`, 'unhandled')
 }
 
 const extractReturnType = (type: InferredType, ctx: Context): InferredType | undefined => {
     switch (type.kind) {
         case 'inferred':
         case 'field-access':
+        case 'field-pattern':
             unifyType(type, ctx)
             return extractReturnType(type, ctx)
         case 'type-param':

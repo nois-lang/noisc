@@ -42,6 +42,10 @@ export const resolveModuleScope = (node: AstNode, ctx: Context): void => {
         case 'type-def': {
             for (const variant of node.variants) {
                 variant.typeDef = node
+
+                for (const field of variant.fieldDefs) {
+                    field.variant = variant
+                }
             }
         }
     }
