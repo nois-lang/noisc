@@ -13,7 +13,7 @@ import {
     makeInferredType,
     makeReturnType
 } from '../typecheck'
-import { zip } from '../util/array'
+import { dedup, zip } from '../util/array'
 import { assign } from '../util/object'
 import { assert, unreachable } from '../util/todo'
 
@@ -164,6 +164,7 @@ export const unifyTypeBounds = (node: AstNode, ctx: Context, report = true): voi
 }
 
 export const unifyType = (type: InferredType, ctx: Context): void => {
+    ctx.unifyStack.push(`unify ${inferredTypeToString(type)}`)
     switch (type.kind) {
         case 'inferred': {
             const unified = type.bounds.reduce((a, b) => unify(a, b, ctx), { kind: 'hole' })
@@ -295,24 +296,27 @@ export const unifyType = (type: InferredType, ctx: Context): void => {
         case 'error':
             break
     }
+    ctx.unifyStack.pop()
 }
 
-export const unify = (a: InferredType, b: InferredType, ctx: Context, stack: [string, string][] = []): InferredType => {
-    stack.push([inferredTypeToString(a), inferredTypeToString(b)])
-    let res = unify_(a, b, ctx, stack)
+export const unify = (a: InferredType, b: InferredType, ctx: Context): InferredType => {
+    ctx.unifyStack.push(`unify [${inferredTypeToString(a)}, ${inferredTypeToString(b)}]`)
+    unifyType(a, ctx)
+    unifyType(b, ctx)
+    ctx.unifyStack.push(`unify [${inferredTypeToString(a)}, ${inferredTypeToString(b)}]`)
+    let res = unify_(a, b, ctx)
     if (res.kind === 'error' && res.error.errorKind === 'unhandled') {
-        res = unify_(b, a, ctx, stack)
+        res = unify_(b, a, ctx)
     }
     if (res.kind === 'error') {
-        res.error.stack = [...stack]
+        res.error.stack = dedup([...ctx.unifyStack])
     }
-    stack.pop()
+    ctx.unifyStack.pop()
+    ctx.unifyStack.pop()
     return res
 }
 
-const unify_ = (a: InferredType, b: InferredType, ctx: Context, stack: [string, string][]): InferredType => {
-    unifyType(a, ctx)
-    unifyType(b, ctx)
+const unify_ = (a: InferredType, b: InferredType, ctx: Context): InferredType => {
     if (a === b) return a
     if (b.kind === 'inferred' || b.kind === 'fn-type') {
         unreachable(inferredTypeToString(b))
@@ -325,8 +329,8 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context, stack: [string, 
                         kind: 'inferred-fn',
                         // TODO
                         generics: [],
-                        params: zip(a.params, b.params, (a_, b_) => unify(a_, b_, ctx, stack)),
-                        returnType: unify(a.returnType, b.returnType, ctx, stack)
+                        params: zip(a.params, b.params, (a_, b_) => unify(a_, b_, ctx)),
+                        returnType: unify(a.returnType, b.returnType, ctx)
                     }
                     return t
             }
@@ -341,9 +345,7 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context, stack: [string, 
                 case 'identifier': {
                     if (a.def && a.def === b.def) {
                         if (a.typeArgs.length === b.typeArgs.length) {
-                            const typeArgs = <Identifier[]>(
-                                zip(a.typeArgs, b.typeArgs, (ta, tb) => unify(ta, tb, ctx, stack))
-                            )
+                            const typeArgs = <Identifier[]>zip(a.typeArgs, b.typeArgs, (ta, tb) => unify(ta, tb, ctx))
                             const u: Identifier = {
                                 kind: 'identifier',
                                 parseNode: a.parseNode,
@@ -360,10 +362,7 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context, stack: [string, 
                 case 'inferred-fn':
                 case 'fn-type':
                 case 'name':
-                    const e = makeErrorType(
-                        `failed unify [${a.kind}, ${b.kind}] [${[a, b].map(inferredTypeToString).join(', ')}]`,
-                        'no-unify'
-                    )
+                    const e = makeErrorType(`failed unify [${[a, b].map(inferredTypeToString).join(', ')}]`, 'no-unify')
                     assign(a, e)
                     assign(b, e)
                     return a
@@ -379,7 +378,7 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context, stack: [string, 
                 return a
             }
             if (a.unified) {
-                const u = unify(a.unified, b, ctx, stack)
+                const u = unify(a.unified, b, ctx)
                 assign(a.unified, u)
                 return u
             }

@@ -27,8 +27,10 @@ describe('nois', () => {
             config: makeConfig('test', 'test.no'),
             moduleStack: [],
             packages: [],
+            stdTypeIds: {},
             errors: [],
             warnings: [],
+            unifyStack: [],
             variableCounter: 0
         }
         const astRoot = buildModuleAst(root, idFromString('test'), source, false, ctx)

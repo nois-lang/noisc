@@ -6,6 +6,10 @@ import { Generic, Type } from '../ast/type'
 import { Context, idToString } from '../scope'
 import { assert, unreachable } from '../util/todo'
 
+/**
+ * TODO: attach "source" node to a type to indicate where this type is coming from
+ * set it for literals and explicit typings
+ */
 export type InferredType =
     | {
           kind: 'inferred'
@@ -51,7 +55,7 @@ export type ErrorType_ = {
     errorKind: ErrorTypeKind
     message?: string
     reported: boolean
-    stack?: [string, string][]
+    stack?: string[]
 }
 
 export const makeInferredType = (bounds: InferredType[] = []) => ({ kind: <const>'inferred', bounds })

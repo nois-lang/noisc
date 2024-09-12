@@ -24,6 +24,7 @@ const compile = async (files: { [path: string]: string }): Promise<Context> => {
         stdTypeIds: {},
         errors: [],
         warnings: [],
+        unifyStack: [],
         variableCounter: 0
     }
 
@@ -74,6 +75,7 @@ const compileStd = async (): Promise<void> => {
         stdTypeIds: {},
         errors: [],
         warnings: [],
+        unifyStack: [],
         variableCounter: 0
     }
     const pkg = buildPackage(config.pkgPath, config.pkgName!, ctx)!

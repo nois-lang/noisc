@@ -54,6 +54,7 @@ const ctx: Context = {
     stdTypeIds: {},
     errors: [],
     warnings: [],
+    unifyStack: [],
     variableCounter: 0
 }
 

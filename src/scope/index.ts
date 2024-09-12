@@ -23,6 +23,7 @@ export type Context = {
     prelude?: Module
     errors: SemanticError[]
     warnings: SemanticError[]
+    unifyStack: string[]
     /**
      * Suppress all errors and warnings that coming while the field is false
      */
@@ -91,23 +92,19 @@ export const pathToId = (path: string, packageName?: string): Identifier => {
 }
 
 export const addError = (ctx: Context, error: SemanticError): void => {
-    if (!ctx.silent) {
-        // console.trace(
-        //     prettySourceMessage(
-        //         error.message,
-        //         error.source,
-        //         error.node.parseNode ? getSpan(error.node.parseNode) : undefined,
-        //         error.notes
-        //     )
-        // )
-        ctx.errors.push(error)
-    }
+    // console.trace(
+    //     prettySourceMessage(
+    //         error.message,
+    //         error.source,
+    //         error.node.parseNode ? getSpan(error.node.parseNode) : undefined,
+    //         error.notes
+    //     )
+    // )
+    ctx.errors.push(error)
 }
 
 export const addWarning = (ctx: Context, error: SemanticError): void => {
-    if (!ctx.silent) {
-        ctx.warnings.push(error)
-    }
+    ctx.warnings.push(error)
 }
 
 export const eachModule = (f: (module: Module, ctx: Context) => void, ctx: Context): void => {
