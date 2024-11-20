@@ -5,42 +5,40 @@ pub type Option<T> {
     None
 }
 
-impl <T> Option<T> {
-    pub fn map<U>(self, f: |T|: U): Option<U> {
-        match self {
-            Some(value) { Some(f(value)) }
-            None() { self }
-        }
+pub let map = fn<T, U>(option: Option<T>, f: fn(value: T): U): Option<U> {
+    match option {
+        Some(value) { Some(f(value)) }
+        None() { option }
     }
+}
 
-    pub fn isSome(self): Bool {
-        match self {
-            Some() { true }
-            None() { false }
-        }
+pub let isSome = fn<T>(option: Option<T>): Bool {
+    match option {
+        Some() { true }
+        None() { false }
     }
+}
 
-    pub fn isNone(self): Bool {
-        self.isSome().not()
+pub let isNone = fn<T>(option: Option<T>): Bool {
+    option.isSome().not()
+}
+
+pub let or = fn<T>(option: Option<T>, other: Option<T>): Option<T> {
+    match option {
+        Some() { option }
+        None() { other }
     }
+}
 
-    pub fn or(self, other: Option<T>): Option<T> {
-        match self {
-            Some() { self }
-            None() { other }
-        }
-    }
-
-    pub fn unwrap(self): T {
-        match self {
-            Some(value) { value }
-            None() { panic("no value") }
-        }
+pub let unwrap = fn<T>(option: Option<T>): T {
+    match option {
+        Some(value) { value }
+        None() { panic("no value") }
     }
 }
 
 impl <T> Unwrap<T> for Option<T> {
-    fn bind(self): Option<T> {
+    bind = fn(self): Option<T> {
         self
     }
 }

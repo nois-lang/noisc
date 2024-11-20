@@ -2,33 +2,33 @@ use std::iter::MapAdapter
 
 pub type String
 
-impl String {
-    // TODO: belongs to the Monoid trait
-    pub fn concat(self, other: Self): Self {
-        concatString(self, other)
-    }
+// TODO: belongs to the Monoid trait
+pub concat = fn(string: String, other: Self): String {
+    concatString(string, other)
 }
 
 impl Show for String {
-    fn show(self): String {
+    // TODO: use identity function
+    show = fn(self): String {
         self
     }
 }
 
 impl Trace for String {
-    fn trace(self): String {
+    trace = fn(self): String {
         "\"{self}\""
     }
 }
 
 impl Eq for String {
-    fn eq(self, other: Self): Bool {
+    eq = fn(self, other: Self): Bool {
         eqString(self, other)
     }
 }
 
 impl Collector<String> for String {
-    fn fromIter(iter: Iter<String>): Self {
+    // TODO: use fold
+    fromIter = fn(iter: Iter<String>): String {
         let res = ""
         for i in iter {
             res = res.concat(i)
@@ -38,18 +38,13 @@ impl Collector<String> for String {
 }
 
 impl Collector<Char> for String {
-    fn fromIter(iter: Iter<Char>): Self {
-        // TODO: method ref
-        iter.map(|c| c.show()).collect<String>()
+    fromIter = fn(iter: Iter<Char>): Self {
+        iter.map(Show::show).collect<String>()
     }
 }
 
-impl Copy for String {
-    fn copy(self): Self {
-        copy(self)
-    }
-}
+impl Copy for String {}
 
-fn concatString(a: String, b: String): String
+let concatString = fn(a: String, b: String): String
 
-fn eqString(a: String, b: String): Bool
+let eqString = fn(a: String, b: String): Bool

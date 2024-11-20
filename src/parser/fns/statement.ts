@@ -1,21 +1,19 @@
 import { Parser } from '..'
 import { syntaxError } from '../../error'
 import { parseExpr, parseIdentifier } from './expr'
-import { exprFirstTokens, nameLikeTokens, paramFirstTokens, useExprFirstTokens } from './index'
+import { exprFirstTokens, nameLikeTokens, useExprFirstTokens } from './index'
 import { parsePattern } from './match'
-import { parseTypeAnnot, parseTypeBounds } from './type'
+import { parseTypeAnnot, parseTypeParams } from './type'
 import { parseTypeDef } from './type-def'
 
 /**
- * statement ::= var-def | fn-def | kind-def | impl-def | type-def | return-stmt | break-stmt | expr
+ * statement ::= var-def | kind-def | impl-def | type-def | return-stmt | break-stmt | expr
  */
 export const parseStatement = (parser: Parser): void => {
     const mark = parser.open()
 
     if (parser.atOptionalFirst('pub-keyword', 'let-keyword')) {
         parseVarDef(parser)
-    } else if (parser.atOptionalFirst('pub-keyword', 'fn-keyword')) {
-        parseFnDef(parser)
     } else if (parser.atOptionalFirst('pub-keyword', 'trait-keyword')) {
         parseTraitDef(parser)
     } else if (parser.at('impl-keyword')) {
@@ -101,86 +99,7 @@ export const parseVarDef = (parser: Parser): void => {
 }
 
 /**
- * fn-def ::= PUB-KEYWORD? FN-KEYWORD NAME generic-list? params type-annot? block?
- */
-export const parseFnDef = (parser: Parser): void => {
-    const mark = parser.open()
-    parser.consume('pub-keyword')
-    parser.expect('fn-keyword')
-    parser.expectAny(nameLikeTokens)
-    if (parser.at('o-angle')) {
-        parseGenerics(parser)
-    }
-    if (parser.at('o-paren')) {
-        parseParams(parser)
-    }
-    if (parser.at('colon')) {
-        parseTypeAnnot(parser)
-    }
-    if (parser.at('o-brace')) {
-        parseBlock(parser)
-    }
-    parser.close(mark, 'fn-def')
-}
-
-/**
- * params ::= O-PAREN (param (COMMA param)*)? COMMA? C-PAREN
- */
-export const parseParams = (parser: Parser): void => {
-    const mark = parser.open()
-    parser.expect('o-paren')
-    while (parser.atAny(paramFirstTokens) && !parser.eof()) {
-        parseParam(parser)
-        if (!parser.at('c-paren')) {
-            parser.expect('comma')
-        }
-    }
-    parser.expect('c-paren')
-    parser.close(mark, 'params')
-}
-
-/**
- * param ::= IDENTIFIER type-annot?
- */
-export const parseParam = (parser: Parser): void => {
-    const mark = parser.open()
-    parsePattern(parser)
-    if (parser.at('colon')) {
-        parseTypeAnnot(parser)
-    }
-    parser.close(mark, 'param')
-}
-
-/**
- * generics ::= O-ANGLE (generic (COMMA generic)* COMMA?)? C-ANGLE
- */
-export const parseGenerics = (parser: Parser): void => {
-    const mark = parser.open()
-    parser.expect('o-angle')
-    while (parser.atAny(nameLikeTokens) && !parser.eof()) {
-        parseGeneric(parser)
-        if (!parser.at('c-angle')) {
-            parser.expect('comma')
-        }
-    }
-    parser.expect('c-angle')
-    parser.close(mark, 'generics')
-}
-/**
- * generic ::= NAME (COLON type-bounds)?
- */
-export const parseGeneric = (parser: Parser): void => {
-    const mark = parser.open()
-    parser.expectAny(nameLikeTokens)
-    if (parser.at('colon')) {
-        parser.expect('colon')
-        parseTypeBounds(parser)
-    }
-    parser.close(mark, 'generic')
-}
-
-/**
- * trait-def ::= PUB-KEYWORD? KIND-KEYWORD NAME generics? block
+ * trait-def ::= PUB-KEYWORD? TRAIT-KEYWORD NAME type-params? trait-block
  */
 export const parseTraitDef = (parser: Parser): void => {
     const mark = parser.open()
@@ -188,26 +107,48 @@ export const parseTraitDef = (parser: Parser): void => {
     parser.expect('trait-keyword')
     parser.expectAny(nameLikeTokens)
     if (parser.at('o-angle')) {
-        parseGenerics(parser)
+        parseTypeParams(parser)
     }
-    parseBlock(parser)
+    parseTraitBlock(parser)
     parser.close(mark, 'trait-def')
 }
 
 /**
- * impl-def ::= IMPL-KEYWORD generics? identifier impl-for? block
+ * trait-block ::= O-BRACE trait-statement* C-BRACE
+ */
+export const parseTraitBlock = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('o-brace')
+    while (!parser.at('c-brace') && !parser.eof()) {
+        parseTraitStatement(parser)
+    }
+    parser.expect('c-brace')
+    parser.close(mark, 'trait-block')
+}
+
+/**
+ * trait-statement ::= NAME EQUALS expr
+ */
+export const parseTraitStatement = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expectAny(nameLikeTokens)
+    parser.expect('equals')
+    parseExpr(parser)
+    parser.close(mark, 'trait-statement')
+}
+
+/**
+ * impl-def ::= IMPL-KEYWORD generics? identifier impl-for trait-block
  */
 export const parseImplDef = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('impl-keyword')
     if (parser.at('o-angle')) {
-        parseGenerics(parser)
+        parseTypeParams(parser)
     }
     parseIdentifier(parser)
-    if (parser.at('for-keyword')) {
-        parseImplFor(parser)
-    }
-    parseBlock(parser)
+    parseImplFor(parser)
+    parseTraitBlock(parser)
     parser.close(mark, 'impl-def')
 }
 

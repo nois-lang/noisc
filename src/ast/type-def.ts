@@ -3,12 +3,12 @@ import { ParseNode, filterNonAstNodes } from '../parser'
 import { Context } from '../scope'
 import { Name, buildName } from './operand'
 import { ImplDef } from './statement'
-import { Generic, Type, buildGeneric, buildType } from './type'
+import { Type, TypeParam, buildType, buildTypeParam } from './type'
 
 export type TypeDef = BaseAstNode & {
     kind: 'type-def'
     name: Name
-    generics: Generic[]
+    typeParams: TypeParam[]
     variants: Variant[]
     pub: boolean
     impl?: ImplDef
@@ -22,8 +22,8 @@ export const buildTypeDef = (node: ParseNode, ctx: Context): TypeDef => {
     // skip type-keyword
     idx++
     const name = buildName(nodes[idx++], ctx)
-    const generics =
-        nodes.at(idx)?.kind === 'generics' ? filterNonAstNodes(nodes[idx++]).map(n => buildGeneric(n, ctx)) : []
+    const typeParams =
+        nodes.at(idx)?.kind === 'type-params' ? filterNonAstNodes(nodes[idx++]).map(n => buildTypeParam(n, ctx)) : []
     let variants: Variant[] = []
     if (nodes.at(idx)?.kind === 'variant-list') {
         variants = filterNonAstNodes(nodes[idx++]).map(n => buildTypeCon(n, ctx))
@@ -35,7 +35,7 @@ export const buildTypeDef = (node: ParseNode, ctx: Context): TypeDef => {
         const fieldDefs = filterNonAstNodes(nodes[idx]).map(n => buildFieldDef(n, ctx))
         variants = [{ kind: 'variant', parseNode: nodes[idx++], name, fieldDefs }]
     }
-    return { kind: 'type-def', parseNode: node, name, generics, variants, pub }
+    return { kind: 'type-def', parseNode: node, name, typeParams, variants, pub }
 }
 
 export type Variant = BaseAstNode & {

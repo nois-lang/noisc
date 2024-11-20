@@ -1,20 +1,20 @@
 pub type MapIter<T, U>(
     iter: Iter<T>,
-    f: |T|: U
+    f: fn(value: T): U
 )
 
 impl <T, U> Iter<U> for MapIter<T, U> {
-    fn next(self): Option<U> {
+    next = fn(self): Option<U> {
         self.iter.next().map(self.f)
     }
 }
 
 pub trait MapAdapter<T> {
-    fn map<U>(self, f: |T|: U): Iter<U>
+    map = fn<U>(self, f: fn(elem: T): U): Iter<U>
 }
 
 impl <T> MapAdapter<T> for Iter<T> {
-    fn map<U>(self, f: |T|: U): Iter<U> {
+    map = fn<U>(self, f: fn(elem: T): U): Iter<U> {
         MapIter(iter: self, f)
     }
 }

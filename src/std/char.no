@@ -1,29 +1,25 @@
 pub type Char
 
 impl Show for Char {
-    fn show(self): String {
+    show = fn(self): String {
         showChar(self)
     }
 }
 
 impl Trace for Char {
-    fn trace(self): String {
+    trace = fn(self): String {
         self.show()
     }
 }
 
 impl Eq for Char {
-    fn eq(self, other: Self): Bool {
+    eq = fn(self, other: Self): Bool {
         eqChar(self, other)
     }
 }
 
-impl Copy for Char {
-    fn copy(self): Self {
-        copy(self)
-    }
-}
+impl Copy for Char {}
 
-fn showChar(a: Char): String
+let showChar = fn(a: Char): String
 
-fn eqChar(a: Char, b: Char): Bool
+let eqChar = fn(a: Char, b: Char): Bool

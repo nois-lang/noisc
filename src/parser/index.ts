@@ -1,5 +1,5 @@
 import { SyntaxError } from '../error'
-import { LexerToken, TokenKind, independentTokenKinds, lexerDynamicKinds } from '../lexer/lexer'
+import { LexerToken, TokenKind, independentTokenKinds, lexerLiteralKinds } from '../lexer/lexer'
 import { Span } from '../location'
 import { Source } from '../source'
 import { nameLikeTokens } from './fns'
@@ -12,13 +12,15 @@ export const treeKinds = <const>[
     'use-expr',
     'use-list',
     'var-def',
+    'trait-def',
+    'trait-block',
+    'trait-statement',
     'fn-def',
-    'generics',
-    'generic',
+    'type-params',
+    'type-param',
     'generic-bounds',
     'params',
     'param',
-    'trait-def',
     'impl-def',
     'impl-for',
     'type-def',
@@ -65,6 +67,7 @@ export const treeKinds = <const>[
     'type-bounds',
     'fn-type',
     'fn-type-params',
+    'param-type',
     'while-expr',
     'for-expr',
     'match-expr',
@@ -96,7 +99,7 @@ export type ParseTree = {
 export type ParseNode = LexerToken | ParseTree
 
 export const parseNodeKinds: NodeKind[] = [
-    ...lexerDynamicKinds,
+    ...lexerLiteralKinds,
     ...nameLikeTokens,
     ...treeKinds,
     'minus',

@@ -30,32 +30,49 @@ export const buildTypeBounds = (node: ParseNode, ctx: Context): TypeBounds => {
     return { kind: 'type-bounds', parseNode: node, bounds }
 }
 
-export type Generic = BaseAstNode & {
-    kind: 'generic'
+export type TypeParam = BaseAstNode & {
+    kind: 'type-param'
     name: Name
     key?: string
     bounds: Identifier[]
 }
 
-export const buildGeneric = (node: ParseNode, ctx: Context): Generic => {
+export const buildTypeParam = (node: ParseNode, ctx: Context): TypeParam => {
     const nodes = filterNonAstNodes(node)
     const name = buildName(nodes[0], ctx)
     const bounds = nodes.at(1) ? buildTypeBounds(nodes[1], ctx).bounds : []
-    return { kind: 'generic', parseNode: node, name, bounds: bounds }
+    return { kind: 'type-param', parseNode: node, name, bounds: bounds }
 }
 
 export type FnType = BaseAstNode & {
     kind: 'fn-type'
-    generics: Generic[]
-    paramTypes: Type[]
+    generics: TypeParam[]
+    paramTypes: ParamType[]
     returnType: Type
 }
 
 export const buildFnType = (node: ParseNode, ctx: Context): FnType => {
     const nodes = filterNonAstNodes(node)
     let i = 0
-    const generics = nodes[i].kind === 'generics' ? filterNonAstNodes(nodes[i++]).map(n => buildGeneric(n, ctx)) : []
-    const paramTypes = filterNonAstNodes(nodes[i++]).map(n => buildType(n, ctx))
+    // skip fn-keyword
+    i++
+    const generics =
+        nodes[i].kind === 'type-params' ? filterNonAstNodes(nodes[i++]).map(n => buildTypeParam(n, ctx)) : []
+    const paramTypes = filterNonAstNodes(nodes[i++]).map(n => buildParamType(n, ctx))
     const returnType = buildType(filterNonAstNodes(nodes[i++])[0], ctx)
     return { kind: 'fn-type', parseNode: node, generics, paramTypes, returnType }
+}
+
+export type ParamType = BaseAstNode & {
+    kind: 'param-type'
+    name: Name
+    paramType: Type
+}
+
+export const buildParamType = (node: ParseNode, ctx: Context): ParamType => {
+    const nodes = filterNonAstNodes(node)
+    let i = 0
+    const name = buildName(nodes[i++], ctx)
+    const paramType = buildType(nodes[i++], ctx)
+    return { kind: 'param-type', parseNode: node, name, paramType }
 }

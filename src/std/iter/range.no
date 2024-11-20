@@ -4,7 +4,7 @@ pub type RangeIter (
 )
 
 impl Iter<Int> for RangeIter {
-    fn next(self): Option<Int> {
+    next = fn(self): Option<Int> {
         match self.head < self.end {
             true {
                 let n = Some(self.head.copy())
@@ -18,11 +18,11 @@ impl Iter<Int> for RangeIter {
     }
 }
 
-pub fn range(start: Int, end: Int): RangeIter {
-    RangeIter::RangeIter(head: start, end)
+pub let range = fn(start: Int, end: Int): RangeIter {
+    RangeIter(head: start, end)
 }
 
-pub fn rangeClosed(start: Int, end: Int): RangeIter {
-    RangeIter::RangeIter(head: start, end: end + 1)
+pub let rangeClosed = fn(start: Int, end: Int): RangeIter {
+    RangeIter(head: start, end: end + 1)
 }
 

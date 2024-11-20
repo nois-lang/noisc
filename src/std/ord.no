@@ -4,31 +4,31 @@ pub type Ordering {
     Greater
 }
 
-pub trait Ord<Self: Eq> {
-    fn cmp(self, other: Self): Ordering
+pub trait Ord {
+    cmp = fn(self, other: Self): Ordering
 
-    fn ge(self, other: Self): Bool {
+    ge = fn(self, other: Self): Bool {
         match self.cmp(other) {
             Ordering::Less() { false }
             _ { true }
         }
     }
 
-    fn le(self, other: Self): Bool {
+    le = fn(self, other: Self): Bool {
         match self.cmp(other) {
             Ordering::Greater() { false }
             _ { true }
         }
     }
 
-    fn gt(self, other: Self): Bool {
+    gt = fn(self, other: Self): Bool {
         match self.cmp(other) {
             Ordering::Greater() { true }
             _ { false }
         }
     }
 
-    fn lt(self, other: Self): Bool {
+    lt = fn(self, other: Self): Bool {
         match self.cmp(other) {
             Ordering::Less() { true }
             _ { false }

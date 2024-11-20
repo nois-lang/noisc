@@ -10,23 +10,15 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
                       ;
   var-def             ::= PUB-KEYWORD? LET-KEYWORD pattern type-annot? (EQUALS expr)?
                       ;
-  fn-def              ::= PUB-KEYWORD? FN-KEYWORD NAME generics? params type-annot? block?
+  trait-def           ::= PUB-KEYWORD? TRAIT-KEYWORD NAME type-params? trait-block
                       ;
-    generics          ::= O-ANGLE (generic (COMMA generic)* COMMA?)? C-ANGLE
+    trait-block       ::= O-BRACE trait-statement* C-BRACE
                       ;
-      generic         ::= NAME (COLON type-bounds)?
+      trait-statement ::= NAME EQUALS expr
                       ;
-    params            ::= O-PAREN (param (COMMA param)*)? COMMA? C-PAREN
+  impl-def            ::= IMPL-KEYWORD type-params? FOR-KEYWORD identifier trait-block
                       ;
-      param           ::= pattern type-annot?
-                      ;
-  trait-def           ::= PUB-KEYWORD? TRAIT-KEYWORD NAME generics? block
-                      ;
-  impl-def            ::= IMPL-KEYWORD generics? identifier impl-for? block
-                      ;
-    impl-for          ::= FOR-KEYWORD identifier
-                      ;
-  type-def            ::= PUB-KEYWORD? TYPE-KEYWORD NAME generics? (variant-list | variant-params)?
+  type-def            ::= PUB-KEYWORD? TYPE-KEYWORD NAME type-params? (variant-list | variant-params)?
                       ;
     variant-params    ::= O-PAREN (field-def (COMMA field-def)*)? COMMA? C-PAREN
                       ;
@@ -44,13 +36,13 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
                       ;
     sub-expr          ::= operand postfix-op*
                       ;
-      operand         ::= while-expr
+      operand         ::= fn-def
+                      | while-expr
                       | for-expr
                       | match-expr
-                      | closure-expr
                       | list-expr
                       | string
-                      | CHAR
+                      | char
                       | number
                       | bool
                       | identifier
@@ -96,19 +88,27 @@ type                  ::= identifier | fn-type | hole
                       ;
   type-bounds         ::= identifier (PLUS identifier)*
                       ;
-  fn-type             ::= generics? fn-type-params type-annot
+  fn-type             ::= FN-KEYWORD type-params? fn-type-params type-annot
                       ;
-    fn-type-params    ::= PIPE (type (COMMA type)* COMMA?)? PIPE
+    fn-type-params    ::= O-BRACE (param-type (COMMA param-type)* COMMA?)? C-BRACE
+                      ;
+    param-type        ::= NAME COLON type
                       ;
 block                 ::= O-BRACE statement* C-BRACE
-                      ;
-closure-expr          ::= closure-params type-annot? (block | statement)
-                      ;
-  closure-params      ::= PIPE (param (COMMA param)*)? COMMA? PIPE
                       ;
 list-expr             ::= O-BRACKET (expr (COMMA expr)*)? COMMA? C-BRACKET
                       ;
 type-annot            ::= COLON type
+                      ;
+fn-def                ::= FN-KEYWORD type-params params type-annot? block?
+                      ;
+  params              ::= O-PAREN (param (COMMA param)*)? COMMA? C-PAREN
+                      ;
+    param             ::= pattern type-annot?
+                      ;
+  type-params         ::= O-ANGLE (type-param (COMMA type-param)* COMMA?)? C-ANGLE
+                      ;
+    type-param        ::= NAME (COLON type-bounds)?
                       ;
 while-expr            ::= WHILE-KEYWORD expr block
                       ;
@@ -128,7 +128,7 @@ pattern               ::= pattern-bind? pattern-expr
                       ;
   pattern-bind        ::= NAME AT
                       ;
-  pattern-expr        ::= string | CHAR | number | bool | hole | NAME | con-pattern | list-pattern
+  pattern-expr        ::= string | char | number | bool | hole | NAME | con-pattern | list-pattern
                       ;
     con-pattern       ::= identifier con-pattern-params
                       ;
@@ -141,6 +141,8 @@ pattern               ::= pattern-bind? pattern-expr
     hole              ::= UNDERSCORE
                       ;
 number                ::= MINUS? (INT | FLOAT)
+                      ;
+char                  ::= QUOTE CHAR QUOTE
                       ;
 string                ::= D-QUOTE string-part* D-QUOTE
                       ;

@@ -6,7 +6,7 @@ pub type RepeatIter<T> (
 )
 
 impl <T> Iter<T> for RepeatIter<T> {
-    fn next(self): Option<T> {
+    next = fn(self): Option<T> {
         let n = self.range.next()
         match n {
             Some() { Some(self.item) }
@@ -15,7 +15,7 @@ impl <T> Iter<T> for RepeatIter<T> {
     }
 }
 
-pub fn repeat<T>(item: T, count: Int): RepeatIter<T> {
-    RepeatIter::RepeatIter(range: RangeIter::RangeIter(0, count), item)
+pub let repeat = fn<T>(item: T, count: Int): RepeatIter<T> {
+    RepeatIter(range: RangeIter::RangeIter(0, count), item)
 }
 

@@ -1,6 +1,11 @@
 pub type Unit()
 
+impl Eq for Unit {
+    // TODO: use const
+    eq = fn() { true }
+}
+
 impl Trace for Unit {}
 
-pub let unit: Unit = Unit::Unit()
+pub let unit: Unit = Unit()
 

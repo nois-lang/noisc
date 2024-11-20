@@ -1,9 +1,9 @@
-pub fn panic(message: String): Never {
+pub let panic = fn(message: String): Never {
     throwError("panic: {message}")
 }
 
-pub fn todo(message: String): Never {
+pub let todo = fn(message: String): Never {
     panic("todo: {message}")
 }
 
-pub fn throwError(message: String): Never
+let throwError = fn(message: String): Never

@@ -1,5 +1,5 @@
-pub fn println(string: String): Unit {
+pub let println = fn(string: String): Unit {
     printlnStr(string)
 }
 
-fn printlnStr(string: String): Unit
+let printlnStr = fn(string: String): Unit

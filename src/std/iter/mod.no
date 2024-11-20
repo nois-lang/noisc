@@ -6,17 +6,17 @@ pub use std::iter::{
 }
 
 pub trait Iterable<T> {
-    fn iter(self): Iter<T>
+    iter = fn<I: Iter<T>>(self): I
 }
 
 pub trait Iter<T> {
-    fn next(self): Option<T>
+    next = fn(self): Option<T>
 
-    fn count(self): Int {
-        self.fold(|acc, _| acc + 1, 0)
+    count = fn(self): Int {
+        self.fold(fn(acc, _) { acc + 1 }, 0)
     }
 
-    fn last(self): Option<T> {
+    last = fn(self): Option<T> {
         let res = None()
         for item in self {
             res = Some(item)
@@ -24,7 +24,7 @@ pub trait Iter<T> {
         return res
     }
 
-    fn fold<U>(self, f: |U, T|: U, initial: U): U {
+    fold = fn<U>(self, f: fn(acc: U, item: T): U, initial: U): U {
         let res = initial
         for item in self {
             res = f(res, item)
@@ -32,7 +32,7 @@ pub trait Iter<T> {
         return res
     }
 
-    fn position(self, f: |T|: Bool): Option<Int> {
+    position = fn(self, f: fn(elem: T): Bool): Option<Int> {
         let i = 0
         for n in self {
             match f(n) {
@@ -43,7 +43,7 @@ pub trait Iter<T> {
         None()
     }
 
-    fn find(self, f: |T|: Bool): Option<T> {
+    find = fn(self, f: fn(elem: T): Bool): Option<T> {
         for n in self {
             match f(n) {
                 true { return Some(i) }
@@ -52,7 +52,7 @@ pub trait Iter<T> {
         None()
     }
 
-    fn collect<C: Collector<T>>(self): C {
+    collect = fn<C: Collector<T>>(self): C {
         // TODO
         // C::fromIter(self)
         todo()
@@ -60,11 +60,11 @@ pub trait Iter<T> {
 }
 
 impl <T> Iterable<T> for Iter<T> {
-    fn iter(self): Iter<T> {
+    iter = fn(self): Iter<T> {
         return self
     }
 }
 
 pub trait Collector<T> {
-    fn fromIter<I: Iter<T>>(iter: I): Self
+    fromIter = fn<I: Iter<T>>(iter: I): Self
 }

@@ -2,47 +2,45 @@ use std::iter::{ MapAdapter, IntersperseAdapter }
 
 pub type List<T>
 
-impl <T> List<T> {
-    pub fn at(self, index: Int): Option<T> {
-        listAt(self, index)
-    }
+pub let at = fn<T>(list: List<T>, index: Int): Option<T> {
+    listAt(list, index)
+}
 
-    pub fn add(self, item: T): Unit {
-        listAdd(self, item)
-    }
+pub let add = fn<T>(list: List<T>, item: T): Unit {
+    listAdd(list, item)
+}
 
-    pub fn count(self): Int {
-        self.iter().count()
-    }
+pub let count = fn<T>(list: List<T>): Int {
+    list.iter().count()
+}
 
-    pub fn popAt(self, index: Int): Option<T> {
-        listPopAt(self, index)
-    }
+pub let popAt = fn<T>(list: List<T>, index: Int): Option<T> {
+    listPopAt(list, index)
+}
 
-    pub fn pop(self): Option<T> {
-        self.popAt(self.count() - 1)
-    }
-    
-    pub fn popFront(self): Option<T> {
-        self.popAt(0)
-    }
+pub let pop = fn<T>(list: List<T>): Option<T> {
+    list.popAt(list.count() - 1)
+}
 
-    pub fn clear(self): Self {
-        while self.count() > 0 {
-            self.popFront()
-        }
-        self
+pub let popFront = fn<T>(list: List<T>): Option<T> {
+    list.popAt(0)
+}
+
+pub let clear = fn<T>(list: List<T>): List<T> {
+    while list.count() > 0 {
+        list.popFront()
     }
+    list
 }
 
 impl <T> Iterable<T> for List<T> {
-    fn iter(self): Iter<T> {
+    iter = fn(self): Iter<T> {
         ListIter(list: self, index: 0)
     }
 }
 
 impl <T> Collector<T> for List<T> {
-    fn fromIter(iter: Iter<T>): Self {
+    fromIter = fn(iter: Iter<T>): Self {
         let list = []
         while true {
             match iter.next() {
@@ -54,29 +52,19 @@ impl <T> Collector<T> for List<T> {
     }
 }
 
-impl Show for List<String> {
-    fn show(self): String {
-        "[{self.iter().intersperse(", ").collect<String>()}]"
-    }
-}
-
 impl <T: Show> Show for List<T> {
-    fn show(self): String {
-        self.iter().map(Show::show).collect<List<String>>().show()
+    show = fn(self): String {
+        "[{self.iter().map(Show::show).intersperse(", ").collect<String>()}]"
     }
 }
 
 impl <T: Trace> Trace for List<T> {
-    fn trace(self): String {
+    trace = fn(self): String {
         "[{self.iter().map(Trace::trace).intersperse(", ").collect<String>()}]"
     }
 }
 
-impl <T: Copy> Copy for List<T> {
-    fn copy(self): Self {
-        copy(self)
-    }
-}
+impl <T: Copy> Copy for List<T> {}
 
 pub type ListIter<T>(
     list: List<T>,
@@ -87,7 +75,7 @@ pub type ListIter<T>(
 )
 
 impl <T> Iter<T> for ListIter<T> {
-    fn next(self): Option<T> {
+    next = fn(self): Option<T> {
         match self.list.at(self.index) {
             Some(value) {
                 self.index = self.index + 1
@@ -98,8 +86,8 @@ impl <T> Iter<T> for ListIter<T> {
     }
 }
 
-fn listAt<T>(list: List<T>, index: Int): Option<T>
+let listAt = fn<T>(list: List<T>, index: Int): Option<T>
 
-fn listAdd<T>(list: List<T>, item: T): Unit
+let listAdd = fn<T>(list: List<T>, item: T): Unit
 
-fn listPopAt<T>(list: List<T>, index: Int): Option<T>
+let listPopAt = fn<T>(list: List<T>, index: Int): Option<T>

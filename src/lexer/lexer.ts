@@ -52,7 +52,7 @@ export const lexerKeywordKinds = <const>[
     'await-keyword'
 ]
 
-export const lexerDynamicKinds = <const>['name', 'string-part', 'char', 'int', 'float', 'bool']
+export const lexerLiteralKinds = <const>['name', 'string-part', 'char', 'int', 'float', 'bool']
 
 const lexerParseIndependentKinds = <const>['comment']
 
@@ -62,7 +62,7 @@ export const lexerTokenKinds = <const>[
     ...lexerKeywordKinds,
     ...lexerPunctuationKinds,
     ...lexerOperatorKinds,
-    ...lexerDynamicKinds,
+    ...lexerLiteralKinds,
     ...lexerParseIndependentKinds,
     ...lexerSpecialKinds
 ]

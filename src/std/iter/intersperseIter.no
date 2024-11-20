@@ -7,7 +7,7 @@ pub type IntersperseIter<T>(
 )
 
 impl <T> Iter<T> for IntersperseIter<T> {
-    fn next(self): Option<T> {
+    next = fn(self): Option<T> {
         match self.needsSeparator {
             true {
                 self.needsSeparator = false
@@ -23,11 +23,11 @@ impl <T> Iter<T> for IntersperseIter<T> {
 }
 
 pub trait IntersperseAdapter<T> {
-    fn intersperse(self, separator: T): Iter<T>
+    intersperse = fn(self, separator: T): Iter<T>
 }
 
 impl <T> IntersperseAdapter<T> for Iter<T> {
-    fn intersperse(self, separator: T): Iter<T> {
+    intersperse = fn(self, separator: T): Iter<T> {
         IntersperseIter(iter: self.peekable(), separator, needsSeparator: false)
     }
 }

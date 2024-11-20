@@ -1,7 +1,6 @@
 import { Parser } from '..'
 import { nameLikeTokens, paramFirstTokens } from './index'
-import { parseGenerics } from './statement'
-import { parseTypeAnnot } from './type'
+import { parseTypeAnnot, parseTypeParams } from './type'
 
 /**
  * type-def ::= PUB-KEYWORD? TYPE-KEYWORD NAME generics? (variant-list | variant-params)?
@@ -12,7 +11,7 @@ export const parseTypeDef = (parser: Parser): void => {
     parser.expect('type-keyword')
     parser.expectAny(nameLikeTokens)
     if (parser.at('o-angle')) {
-        parseGenerics(parser)
+        parseTypeParams(parser)
     }
     if (parser.at('o-paren')) {
         parseTypeConParams(parser)

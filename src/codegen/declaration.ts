@@ -40,8 +40,8 @@ export const emitStatement = (statement: Statement, pubOnly = true): string | un
         case 'trait-def': {
             if (!statement.pub) return undefined
             const generics =
-                statement.generics?.length > 0
-                    ? `<${statement.generics.map(g => emitParseNode(g.parseNode)).join(', ')}>`
+                statement.typeParams?.length > 0
+                    ? `<${statement.typeParams.map(g => emitParseNode(g.parseNode)).join(', ')}>`
                     : ''
             const statements = statement.block.statements
                 .map(s => emitStatement(s, false))
@@ -52,8 +52,8 @@ export const emitStatement = (statement: Statement, pubOnly = true): string | un
         }
         case 'impl-def': {
             const generics =
-                statement.generics?.length > 0
-                    ? `<${statement.generics.map(g => emitParseNode(g.parseNode)).join(', ')}> `
+                statement.typeParams?.length > 0
+                    ? `<${statement.typeParams.map(g => emitParseNode(g.parseNode)).join(', ')}> `
                     : ''
             if (statement.forTrait) {
                 const id = emitParseNode(statement.identifier.parseNode)
@@ -70,8 +70,8 @@ export const emitStatement = (statement: Statement, pubOnly = true): string | un
         case 'type-def': {
             if (!statement.pub) return undefined
             const generics =
-                statement.generics?.length > 0
-                    ? `<${statement.generics.map(g => emitParseNode(g.parseNode)).join(', ')}>`
+                statement.typeParams?.length > 0
+                    ? `<${statement.typeParams.map(g => emitParseNode(g.parseNode)).join(', ')}>`
                     : ''
             const variants = statement.variants.map(v => {
                 const fields = v.fieldDefs

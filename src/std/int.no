@@ -1,88 +1,82 @@
 pub type Int
 
-impl Int {
-    fn neg(self): Self {
-        negInt(self)
-    }
+pub let neg = fn(int): Int {
+    negInt(int)
+}
 
-    fn abs(self): Self {
-        absInt(self)
-    }
+pub let abs = fn(int): Int {
+    absInt(int)
+}
 
-    fn add(self, other: Self): Self {
-        addInt(self, other)
-    }
+pub let add = fn(int, other: Int): Int {
+    addInt(int, other)
+}
 
-    fn sub(self, other: Self): Self {
-        subInt(self, other)
-    }
+pub let sub = fn(int, other: Int): Int {
+    subInt(int, other)
+}
 
-    fn mult(self, other: Self): Self {
-        multInt(self, other)
-    }
+pub let mult = fn(int, other: Int): Int {
+    multInt(int, other)
+}
 
-    fn div(self, other: Self): Self {
-        divInt(self, other)
-    }
+pub let div = fn(int, other: Int): Int {
+    divInt(int, other)
+}
 
-    fn exp(self, other: Self): Self {
-        expInt(self, other)
-    }
+pub let exp = fn(int, other: Int): Int {
+    expInt(int, other)
+}
 
-    pub fn mod(self, divisor: Self): Self {
-        modInt(self, divisor)
-    }
+pub let mod = fn(int, divisor: Int): Int {
+    modInt(int, divisor)
 }
 
 impl Eq for Int {
-    fn eq(self, other: Self): Bool {
+    eq = fn(self, other: Self): Bool {
         eqInt(self, other)
     }
 }
 
 impl Ord for Int {
-    fn cmp(self, other: Self): Ordering {
+    cmp = fn(self, other: Self): Ordering {
         cmpInt(self, other)
     }
 }
 
 impl Show for Int {
-    fn show(self): String {
+    show = fn(self): String {
         showInt(self)
     }
 }
 
 impl Trace for Int {
-    fn trace(self): String {
+    trace = fn(self): String {
         self.show()
     }
 }
 
-impl Copy for Int {
-    fn copy(self): Self {
-        copy(self)
-    }
-}
+impl Copy for Int {}
 
-fn negInt(a: Int): Int
+let negInt = fn(a: Int): Int
 
-fn absInt(a: Int): Int
+let absInt = fn(a: Int): Int
 
-fn addInt(a: Int, b: Int): Int
+let addInt = fn(a: Int, b: Int): Int
 
-fn subInt(a: Int, b: Int): Int
+let subInt = fn(a: Int, b: Int): Int
 
-fn multInt(a: Int, b: Int): Int
+let multInt = fn(a: Int, b: Int): Int
 
-fn divInt(a: Int, b: Int): Int
+let divInt = fn(a: Int, b: Int): Int
 
-fn expInt(a: Int, b: Int): Int
+let expInt = fn(a: Int, b: Int): Int
 
-fn modInt(a: Int, b: Int): Int
+let modInt = fn(a: Int, b: Int): Int
 
-fn eqInt(a: Int, b: Int): Bool
+let eqInt = fn(a: Int, b: Int): Bool
 
-fn cmpInt(a: Int, b: Int): Ordering
+let cmpInt = fn(a: Int, b: Int): Ordering
 
-fn showInt(a: Int): String
+let showInt = fn(a: Int): String
 

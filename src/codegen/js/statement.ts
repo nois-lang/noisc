@@ -83,7 +83,7 @@ export const emitInstanceDef = (instanceDef: ImplDef | TraitDef, ctx: Context): 
         .filter(f => f)
         .map(f => f!)
     const all = [...superMs, ...ms]
-    const generics = instanceDef.generics.map(g => g.name.value)
+    const generics = instanceDef.typeParams.map(g => g.name.value)
     const cached = nextVariable(ctx)
     const methodEmit = emitTree([emitToken('{'), emitIntersperse(all, ','), emitToken('};')])
     const instanceEmit = emitTree([
@@ -149,9 +149,9 @@ export const emitVariant = (v: Variant, typeDef: TypeDef, ctx: Context): EmitNod
 }
 
 export const emitUpcastFn = (v: Variant, typeDef: TypeDef, ctx: Context): EmitNode => {
-    const params = ['value', 'Self', ...typeDef.generics.map(g => g.name.value)]
+    const params = ['value', 'Self', ...typeDef.typeParams.map(g => g.name.value)]
     const selfG = 'Object.assign(value, Self);'
-    const gs = typeDef.generics.flatMap(g => {
+    const gs = typeDef.typeParams.flatMap(g => {
         const fields = v.fieldDefs.filter(f => virtualTypeToString(f.type!) === g.name.value).map(f => f.name.value)
         if (fields.length === 0) return []
         const fs = fields

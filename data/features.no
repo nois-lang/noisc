@@ -4,16 +4,14 @@ use std::fmt::Show
 // sum type
 type Vec2(x: Float, y: Float)
 
-// inherent impl
-impl Vec2 {
-    fn size(self): Float {
-        self.x ^ 2. + self.y ^ 2.
-    }
+// function
+fn size(vec: Vec2): Float {
+    vec.x ^ 2. + vec.y ^ 2.
 }
 
 // impl
-impl Show for Vec2 {
-    fn show(self): String {
+impl Show<Vec2> {
+    show = fn(self): String {
         "(" + self.x + ", " + self.y + ")"
     }
 }
@@ -126,20 +124,20 @@ fn main() {
     let r = Vec2::show
 }
 
-trait Show<I> {
+trait Show {
     // actual type is fn<T: Show<T>>(a: T): String
-    show = fn(a: I): String
+    show = fn(self): String
 }
 
-trait Debug<I> {
-    debug = fn(a: I): String
+trait Debug {
+    debug = fn(self): String
 }
 
-impl Show<String> {
+impl Show for String {
     show = id
 }
 
-impl <T: Debug<T>> Show<T> {
+impl <T: Debug<T>> Show for T {
     show = fn(a: T): String {
         // sugar for debug(a)
         a.debug()

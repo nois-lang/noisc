@@ -33,29 +33,29 @@ type User(name Name, age Int)
 type Name = String
 
 trait Eq {
-    fn eq(self, other Self) Bool
+    eq = fn(self, other Self) Bool
 }
 
 trait Ord<Self: Eq> {
-    fn cmp(self, other Self) Ordering
+    cmp = fn(self, other Self) Ordering
 
-    fn lt(self, other Self) Bool {
+    lt = fn(self, other Self) Bool {
         self.cmp(other) == Less
     }
 }
 
 trait Show {
-    fn show(self) String
+    show = fn(self) String
 }
 
 impl Show for Option<User> {
-    fn show(self) String {
+    show = fn(self) String {
         "Maybe user!!!"
     }
 }
 
 impl <T: Eq + Ord> Show for Option<T> {
-    fn show(self) String {
+    show = fn(self) String {
         match self {
             Some(value) { value.show() }
             None() { "None" }
@@ -64,7 +64,6 @@ impl <T: Eq + Ord> Show for Option<T> {
 }
 
 fn main() {
-
     let u = User("Jack", 13)
     let u = User(name = "Jack", age = 13)
 

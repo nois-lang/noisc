@@ -1,74 +1,68 @@
 pub type Float
 
-impl Float {
-    fn neg(self): Self {
-        negFloat(self)
-    }
+pub let neg = fn(float): Float {
+    negFloat(float)
+}
 
-    fn abs(self): Self {
-        absFloat(self)
-    }
+pub let abs = fn(float): Float {
+    absFloat(float)
+}
 
-    fn add(self, other: Self): Self {
-        addFloat(self, other)
-    }
+pub let add = fn(float, other: Float): Float {
+    addFloat(float, other)
+}
 
-    fn sub(self, other: Self): Self {
-        subFloat(self, other)
-    }
+pub let sub = fn(float, other: Float): Float {
+    subFloat(float, other)
+}
 
-    fn mult(self, other: Self): Self {
-        multFloat(self, other)
-    }
+pub let mult = fn(float, other: Float): Float {
+    multFloat(float, other)
+}
 
-    fn div(self, other: Self): Self {
-        divFloat(self, other)
-    }
+pub let div = fn(float, other: Float): Float {
+    divFloat(float, other)
+}
 
-    fn exp(self, other: Self): Self {
-        expFloat(self, other)
-    }
+pub let exp = fn(float, other: Float): Float {
+    expFloat(float, other)
 }
 
 impl Eq for Float {
-    fn eq(self, other: Self): Bool {
+    eq = fn(self, other: Self): Bool {
         eqFloat(self, other)
     }
 }
 
 impl Show for Float {
-    fn show(self): String {
+    show = fn(self): String {
         showFloat(self)
     }
 }
 
 impl Trace for Float {
-    fn trace(self): String {
+    trace = fn(self): String {
         self.show()
     }
 }
 
-impl Copy for Float {
-    fn copy(self): Self {
-        copy(self)
-    }
-}
+impl Copy for Float {}
 
-fn negFloat(a: Float): Float
+let negFloat = fn(a: Float): Float
 
-fn absFloat(a: Float): Float
+let absFloat = fn(a: Float): Float
 
-fn addFloat(a: Float, b: Float): Float
+let addFloat = fn(a: Float, b: Float): Float
 
-fn subFloat(a: Float, b: Float): Float
+let subFloat = fn(a: Float, b: Float): Float
 
-fn multFloat(a: Float, b: Float): Float
+let multFloat = fn(a: Float, b: Float): Float
 
-fn divFloat(a: Float, b: Float): Float
+let divFloat = fn(a: Float, b: Float): Float
 
-fn expFloat(a: Float, b: Float): Float
+let expFloat = fn(a: Float, b: Float): Float
 
-fn eqFloat(a: Float, b: Float): Bool
+let eqFloat = fn(a: Float, b: Float): Bool
 
-fn showFloat(a: Float): String
+let showFloat = fn(a: Float): String
 

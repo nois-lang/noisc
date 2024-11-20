@@ -1,5 +1,5 @@
 import { FieldPattern } from '../ast/match'
-import { Generic, Type } from '../ast/type'
+import { TypeParam, Type } from '../ast/type'
 import { Context, idToString } from '../scope'
 import { assert } from '../util/todo'
 
@@ -14,7 +14,7 @@ export type InferredType =
       }
     | {
           kind: 'type-param'
-          type: Generic
+          type: TypeParam
           unified?: InferredType
       }
     | {
@@ -55,7 +55,7 @@ export type ErrorType_ = {
 
 export const makeInferredType = (bounds: InferredType[] = []) => ({ kind: <const>'inferred', bounds })
 
-export const makeTypeParam = (type: Generic) => ({ kind: <const>'type-param', type })
+export const makeTypeParam = (type: TypeParam) => ({ kind: <const>'type-param', type })
 
 export const makeFieldPatternType = (operandType: InferredType, fieldPattern: FieldPattern) => ({
     kind: <const>'field-pattern',

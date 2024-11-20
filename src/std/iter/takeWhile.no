@@ -1,11 +1,11 @@
 pub type TakeWhileIter<T>(
     iter: Iter<T>,
-    f: |T|: Bool,
+    f: fn(item: T): Bool,
     done: Bool
 )
 
 impl <T> Iter<T> for TakeWhileIter<T> {
-    fn next(self): Option<T> {
+    next = fn(self): Option<T> {
         match self.done { 
             true { return None() }
         }
@@ -25,11 +25,11 @@ impl <T> Iter<T> for TakeWhileIter<T> {
 }
 
 pub trait TakeWhileAdapter<T> {
-    fn takeWhile(self, f: |T|: Bool): Iter<T>
+    takeWhile = fn(self, f: fn(item: T): Bool): Iter<T>
 }
 
 impl <T> TakeWhileAdapter<T> for Iter<T> {
-    fn takeWhile(self, f: |T|: Bool): Iter<T> {
+    takeWhile = fn(self, f: fn(item: T): Bool): Iter<T> {
         TakeWhileIter(iter: self, f, false)
     }
 }

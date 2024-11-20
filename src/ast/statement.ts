@@ -2,21 +2,19 @@ import { ParseNode, filterNonAstNodes } from '../parser'
 import { Context } from '../scope'
 import { assert } from '../util/todo'
 import { Expr, buildExpr } from './expr'
-import { BaseAstNode, Param, buildParam } from './index'
+import { BaseAstNode } from './index'
 import { Pattern, buildPattern } from './match'
 import { Identifier, Name, buildIdentifier, buildName } from './operand'
-import { Generic, Type, buildGeneric, buildType } from './type'
+import { Type, TypeParam, buildType, buildTypeParam } from './type'
 import { TypeDef, buildTypeDef } from './type-def'
 
-export type Statement = VarDef | FnDef | TraitDef | ImplDef | TypeDef | ReturnStmt | BreakStmt | Expr
+export type Statement = VarDef | TraitDef | ImplDef | TypeDef | ReturnStmt | BreakStmt | Expr
 
 export const buildStatement = (node: ParseNode, ctx: Context): Statement => {
     const n = filterNonAstNodes(node)[0]
     switch (n.kind) {
         case 'var-def':
             return buildVarDef(n, ctx)
-        case 'fn-def':
-            return buildFnDef(n, ctx)
         case 'trait-def':
             return buildTraitDef(n, ctx)
         case 'impl-def':
@@ -92,39 +90,11 @@ export const buildVarDef = (node: ParseNode, ctx: Context): VarDef => {
     return { kind: 'var-def', parseNode: node, pattern, varType, expr, pub }
 }
 
-export type FnDef = BaseAstNode & {
-    kind: 'fn-def'
-    name: Name
-    generics: Generic[]
-    params: Param[]
-    block?: Block
-    returnType?: Type
-    static?: boolean
-    pub: boolean
-    instance?: TraitDef | ImplDef
-}
-
-export const buildFnDef = (node: ParseNode, ctx: Context): FnDef => {
-    const nodes = filterNonAstNodes(node)
-    let idx = 0
-    const pub = nodes[idx].kind === 'pub-keyword'
-    if (pub) idx++
-    // skip fn-keyword
-    idx++
-    const name = buildName(nodes[idx++], ctx)
-    const generics =
-        nodes.at(idx)?.kind === 'generics' ? filterNonAstNodes(nodes[idx++]).map(n => buildGeneric(n, ctx)) : []
-    const params = nodes.at(idx)?.kind === 'params' ? filterNonAstNodes(nodes[idx++]).map(n => buildParam(n, ctx)) : []
-    const returnType = nodes.at(idx)?.kind === 'type-annot' ? buildType(nodes[idx++], ctx) : undefined
-    const block = nodes.at(idx)?.kind === 'block' ? buildBlock(nodes[idx++], ctx) : undefined
-    return { kind: 'fn-def', parseNode: node, name, generics, params, block, returnType, pub }
-}
-
 export type TraitDef = BaseAstNode & {
     kind: 'trait-def'
     name: Name
-    generics: Generic[]
-    block: Block
+    typeParams: TypeParam[]
+    block: TraitBlock
     pub: boolean
 }
 
@@ -136,18 +106,42 @@ export const buildTraitDef = (node: ParseNode, ctx: Context): TraitDef => {
     // skip trait-keyword
     idx++
     const name = buildName(nodes[idx++], ctx)
-    const generics =
-        nodes.at(idx)?.kind === 'generics' ? filterNonAstNodes(nodes[idx++]).map(n => buildGeneric(n, ctx)) : []
-    const block = buildBlock(nodes[idx++], ctx)
-    return { kind: 'trait-def', parseNode: node, name, generics, block, pub }
+    const typeParams =
+        nodes.at(idx)?.kind === 'type-params' ? filterNonAstNodes(nodes[idx++]).map(n => buildTypeParam(n, ctx)) : []
+    const block = buildTraitBlock(nodes[idx++], ctx)
+    return { kind: 'trait-def', parseNode: node, name, typeParams, block, pub }
+}
+
+export type TraitBlock = BaseAstNode & {
+    kind: 'trait-block'
+    statements: TraitStatement[]
+}
+
+export const buildTraitBlock = (node: ParseNode, ctx: Context): TraitBlock => {
+    const statements = filterNonAstNodes(node).map(n => buildTraitStatement(n, ctx))
+    return { kind: 'trait-block', parseNode: node, statements }
+}
+
+export type TraitStatement = BaseAstNode & {
+    kind: 'trait-statement'
+    name: Name
+    expr: Expr
+}
+
+export const buildTraitStatement = (node: ParseNode, ctx: Context): TraitStatement => {
+    const nodes = filterNonAstNodes(node)
+    let idx = 0
+    const name = buildName(nodes[idx++], ctx)
+    const expr = buildExpr(nodes[idx++], ctx)
+    return { kind: 'trait-statement', parseNode: node, name, expr }
 }
 
 export type ImplDef = BaseAstNode & {
     kind: 'impl-def'
     identifier: Identifier
-    generics: Generic[]
+    typeParams: TypeParam[]
     forTrait?: Identifier
-    block: Block
+    block: TraitBlock
 }
 
 export const buildImplDef = (node: ParseNode, ctx: Context): ImplDef => {
@@ -155,13 +149,13 @@ export const buildImplDef = (node: ParseNode, ctx: Context): ImplDef => {
     let idx = 0
     // skip impl-keyword
     idx++
-    const generics =
-        nodes.at(idx)?.kind === 'generics' ? filterNonAstNodes(nodes[idx++]).map(n => buildGeneric(n, ctx)) : []
+    const typeParams =
+        nodes.at(idx)?.kind === 'type-params' ? filterNonAstNodes(nodes[idx++]).map(n => buildTypeParam(n, ctx)) : []
     const identifier = buildIdentifier(nodes[idx++], ctx)
     const forTrait =
         nodes.at(idx)?.kind === 'impl-for' ? buildIdentifier(filterNonAstNodes(nodes[idx++])[1], ctx) : undefined
-    const block = buildBlock(nodes[idx++], ctx)
-    return { kind: 'impl-def', parseNode: node, identifier, generics, forTrait, block }
+    const block = buildTraitBlock(nodes[idx++], ctx)
+    return { kind: 'impl-def', parseNode: node, identifier, typeParams, forTrait, block }
 }
 
 export type ReturnStmt = BaseAstNode & {

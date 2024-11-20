@@ -1,11 +1,11 @@
 import { Parser } from '..'
 import { syntaxError } from '../../error'
 import { TokenKind } from '../../lexer/lexer'
-import { exprFirstTokens, infixOpFirstTokens, nameLikeTokens, numberFirstTokens, parseClosureExpr } from './index'
+import { exprFirstTokens, infixOpFirstTokens, nameLikeTokens, numberFirstTokens, paramFirstTokens } from './index'
 import { parseMatchExpr, parsePattern } from './match'
 import { parseInfixOp, parsePostfixOp } from './op'
 import { parseBlock } from './statement'
-import { parseType } from './type'
+import { parseType, parseTypeAnnot, parseTypeParams } from './type'
 
 /**
  * expr ::= sub-expr (infix-op sub-expr)*
@@ -38,21 +38,21 @@ export const parseSubExpr = (parser: Parser): void => {
 }
 
 /**
- * operand ::= match-expr | closure-expr | list-expr | STRING | CHAR | number | TRUE
+ * operand ::= fn-def | match-expr | closure-expr | list-expr | STRING | CHAR | number | TRUE
  * | FALSE | identifier | block
  */
 export const parseOperand = (parser: Parser): void => {
     const dynamicTokens: TokenKind[] = ['char', 'int', 'float', 'bool']
 
     const mark = parser.open()
-    if (parser.at('while-keyword')) {
+    if (parser.at('fn-keyword')) {
+        parseFnDef(parser)
+    } else if (parser.at('while-keyword')) {
         parseWhileExpr(parser)
     } else if (parser.at('for-keyword')) {
         parseForExpr(parser)
     } else if (parser.at('match-keyword')) {
         parseMatchExpr(parser)
-    } else if (parser.at('pipe')) {
-        parseClosureExpr(parser)
     } else if (parser.at('o-brace')) {
         parseBlock(parser)
     } else if (parser.at('o-bracket')) {
@@ -86,6 +86,53 @@ export const parseListExpr = (parser: Parser): void => {
     }
     parser.expect('c-bracket')
     parser.close(mark, 'list-expr')
+}
+
+/**
+ * fn-def ::= FN-KEYWORD type-params params type-annot? block?
+ */
+export const parseFnDef = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('fn-keyword')
+    if (parser.at('o-angle')) {
+        parseTypeParams(parser)
+    }
+    parseParams(parser)
+    if (parser.at('colon')) {
+        parseTypeAnnot(parser)
+    }
+    if (parser.at('o-brace')) {
+        parseBlock(parser)
+    }
+    parser.close(mark, 'fn-def')
+}
+
+/**
+ * params ::= O-PAREN (param (COMMA param)*)? COMMA? C-PAREN
+ */
+export const parseParams = (parser: Parser): void => {
+    const mark = parser.open()
+    parser.expect('o-paren')
+    while (parser.atAny(paramFirstTokens) && !parser.eof()) {
+        parseParam(parser)
+        if (!parser.at('c-paren')) {
+            parser.expect('comma')
+        }
+    }
+    parser.expect('c-paren')
+    parser.close(mark, 'params')
+}
+
+/**
+ * param ::= IDENTIFIER type-annot?
+ */
+export const parseParam = (parser: Parser): void => {
+    const mark = parser.open()
+    parsePattern(parser)
+    if (parser.at('colon')) {
+        parseTypeAnnot(parser)
+    }
+    parser.close(mark, 'param')
 }
 
 /**
@@ -127,7 +174,15 @@ export const parseIdentifier = (parser: Parser): void => {
     }
     if (
         parser.at('o-angle') &&
-        parser.encounter('c-angle', [...nameLikeTokens, 'colon', 'comma', 'o-angle', 'underscore', 'pipe'])
+        parser.encounter('c-angle', [
+            ...nameLikeTokens,
+            'colon',
+            'comma',
+            'o-angle',
+            'underscore',
+            'o-paren',
+            'c-paren'
+        ])
     ) {
         parseTypeArgs(parser)
     }

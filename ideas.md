@@ -1,4 +1,3 @@
-- Infer type parameters bounds in inherent impl def https://rust-lang.github.io/rfcs/2089-implied-bounds.html
 - Block is a valid expression
 - std::test
 - noisdoc

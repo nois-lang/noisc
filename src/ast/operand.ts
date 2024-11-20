@@ -6,14 +6,14 @@ import { assert } from '../util/todo'
 import { Expr, buildExpr } from './expr'
 import { BaseAstNode, Param, buildParam } from './index'
 import { MatchExpr, Pattern, buildMatchExpr, buildNumber, buildPattern } from './match'
-import { Block, buildBlock, buildStatement } from './statement'
-import { Type, buildType } from './type'
+import { Block, TraitDef, buildBlock } from './statement'
+import { Type, TypeParam, buildType, buildTypeParam } from './type'
 
 export type Operand =
+    | FnDef
     | WhileExpr
     | ForExpr
     | MatchExpr
-    | ClosureExpr
     | ListExpr
     | StringLiteral
     | StringInterpolated
@@ -24,17 +24,40 @@ export type Operand =
     | Identifier
     | Block
 
+export type FnDef = BaseAstNode & {
+    kind: 'fn-def'
+    typeParams: TypeParam[]
+    params: Param[]
+    block?: Block
+    returnType?: Type
+    static?: boolean
+    trait?: TraitDef
+}
+
+export const buildFnDef = (node: ParseNode, ctx: Context): FnDef => {
+    const nodes = filterNonAstNodes(node)
+    let idx = 0
+    // skip fn-keyword
+    idx++
+    const typeParams =
+        nodes.at(idx)?.kind === 'type-params' ? filterNonAstNodes(nodes[idx++]).map(n => buildTypeParam(n, ctx)) : []
+    const params = nodes.at(idx)?.kind === 'params' ? filterNonAstNodes(nodes[idx++]).map(n => buildParam(n, ctx)) : []
+    const returnType = nodes.at(idx)?.kind === 'type-annot' ? buildType(nodes[idx++], ctx) : undefined
+    const block = nodes.at(idx)?.kind === 'block' ? buildBlock(nodes[idx++], ctx) : undefined
+    return { kind: 'fn-def', parseNode: node, typeParams, params, block, returnType }
+}
+
 export const buildOperand = (node: ParseNode, ctx: Context): Operand => {
     const n = filterNonAstNodes(node)[0]
     switch (n.kind) {
+        case 'fn-def':
+            return buildFnDef(n, ctx)
         case 'while-expr':
             return buildWhileExpr(n, ctx)
         case 'for-expr':
             return buildForExpr(n, ctx)
         case 'match-expr':
             return buildMatchExpr(n, ctx)
-        case 'closure-expr':
-            return buildClosureExpr(n, ctx)
         case 'list-expr':
             return buildListExpr(n, ctx)
         case 'string':
@@ -92,27 +115,6 @@ export const buildForExpr = (node: ParseNode, ctx: Context): ForExpr => {
     const expr = buildExpr(nodes[idx++], ctx)
     const block = buildBlock(nodes[idx++], ctx)
     return { kind: 'for-expr', parseNode: node, pattern, expr, block }
-}
-
-export type ClosureExpr = BaseAstNode & {
-    kind: 'closure-expr'
-    params: Param[]
-    block: Block
-    returnType?: Type
-}
-
-export const buildClosureExpr = (node: ParseNode, ctx: Context): ClosureExpr => {
-    const nodes = filterNonAstNodes(node)
-    let idx = 0
-    const params = filterNonAstNodes(nodes[idx++])
-        .filter(n => n.kind === 'param')
-        .map(n => buildParam(n, ctx))
-    const returnType = nodes.at(idx)?.kind === 'type-annot' ? buildType(nodes[idx++], ctx) : undefined
-    const block: Block =
-        nodes[idx].kind === 'block'
-            ? buildBlock(nodes[idx++], ctx)
-            : { kind: 'block', parseNode: nodes[idx], statements: [buildStatement(nodes[idx++], ctx)] }
-    return { kind: 'closure-expr', parseNode: node, params, block, returnType }
 }
 
 export type ListExpr = BaseAstNode & {

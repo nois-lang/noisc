@@ -5,35 +5,36 @@ pub type Result<T, E> {
     Error(pub error: E)
 }
 
-impl <T, E> Result<T, E> {
-    pub fn isOk(self): Bool {
-        match self {
-            Ok() { true }
-            Error() { false }
-        }
+pub let isOk = fn<T, E>(result: Result<T, E>): Bool {
+    match result {
+        Ok() { true }
+        Error() { false }
     }
-    pub fn isError(self): Bool {
-        match self {
-            Ok() { false }
-            Error() { true }
-        }
+}
+
+pub let isError = fn<T, E>(result: Result<T, E>): Bool {
+    match result {
+        Ok() { false }
+        Error() { true }
     }
-    pub fn ok(self): Option<T> {
-        match self {
-            Ok(value) { Some(value: value) }
-            Error() { None() }
-        }
+}
+
+pub let ok = fn<T, E>(result: Result<T, E>): Option<T> {
+    match result {
+        Ok(value) { Some(value: value) }
+        Error() { None() }
     }
-    pub fn error(self): Option<E> {
-        match self {
-            Ok() { None() }
-            Error(error) { Some(value: error) }
-        }
+}
+
+pub let error = fn<T, E>(result: Result<T, E>): Option<E> {
+    match result {
+        Ok() { None() }
+        Error(error) { Some(value: error) }
     }
 }
 
 impl <T> Unwrap<T> for Result<T, _> {
-    fn bind(self): Option<T> {
+    bind = fn(self): Option<T> {
         self.ok()
     }
 }

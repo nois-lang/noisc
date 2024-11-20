@@ -1,30 +1,12 @@
 import { Parser } from '..'
-import { TokenKind } from '../../lexer/lexer'
-import { parseBlock, parseParam, parseStatement, parseUseStmt } from './statement'
-import { parseTypeAnnot } from './type'
+import { TokenKind, lexerKeywordKinds } from '../../lexer/lexer'
+import { parseStatement, parseUseStmt } from './statement'
 
 /**
  * Tokens that can be used as a name AST node depending on context.
  * Includes 'name' itself and all keyword tokens
  */
-export const nameLikeTokens: TokenKind[] = [
-    'name',
-    'use-keyword',
-    'type-keyword',
-    'trait-keyword',
-    'impl-keyword',
-    'let-keyword',
-    'fn-keyword',
-    'if-keyword',
-    'else-keyword',
-    'return-keyword',
-    'break-keyword',
-    'while-keyword',
-    'for-keyword',
-    'in-keyword',
-    'match-keyword',
-    'pub-keyword'
-]
+export const nameLikeTokens: TokenKind[] = ['name', ...lexerKeywordKinds]
 
 export const infixOpFirstTokens: TokenKind[] = [
     'ampersand',
@@ -54,10 +36,9 @@ export const exprFirstTokens: TokenKind[] = [
     'o-bracket',
     'o-brace',
     'o-angle',
-    'd-quote',
-    'pipe'
+    'd-quote'
 ]
-export const paramFirstTokens: TokenKind[] = [...nameLikeTokens, 'underscore', 'pub-keyword']
+export const paramFirstTokens: TokenKind[] = [...nameLikeTokens, 'underscore']
 export const useExprFirstTokens: TokenKind[] = [...nameLikeTokens, 'o-brace']
 export const fieldPatternFirstTokens: TokenKind[] = [...nameLikeTokens, 'period']
 
@@ -73,38 +54,4 @@ export const parseModule = (parser: Parser): void => {
         parseStatement(parser)
     }
     parser.close(mark, 'module')
-}
-
-/**
- * TODO: closure generics
- * closure-expr ::= closure-params type-annot? (block | statement)
- */
-export const parseClosureExpr = (parser: Parser): void => {
-    const mark = parser.open()
-    parseClosureParams(parser)
-    if (parser.at('colon')) {
-        parseTypeAnnot(parser)
-    }
-    if (parser.at('o-brace')) {
-        parseBlock(parser)
-    } else {
-        parseStatement(parser)
-    }
-    parser.close(mark, 'closure-expr')
-}
-
-/**
- * closure-params ::= PIPE (param (COMMA param)*)? COMMA? PIPE
- */
-export const parseClosureParams = (parser: Parser): void => {
-    const mark = parser.open()
-    parser.expect('pipe')
-    while (!parser.at('pipe') && !parser.eof()) {
-        parseParam(parser)
-        if (!parser.at('pipe')) {
-            parser.expect('comma')
-        }
-    }
-    parser.expect('pipe')
-    parser.close(mark, 'closure-params')
 }

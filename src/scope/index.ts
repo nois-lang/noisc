@@ -1,7 +1,7 @@
 import { Module } from '../ast'
 import { Identifier, Name } from '../ast/operand'
 import { FnDef, ImplDef, TraitDef } from '../ast/statement'
-import { Generic } from '../ast/type'
+import { TypeParam } from '../ast/type'
 import { TypeDef, Variant } from '../ast/type-def'
 import { Config } from '../config'
 import { Package } from '../package'
@@ -35,7 +35,7 @@ export type Context = {
  */
 export type DefinitionMap = Map<string, Definition>
 
-export type Definition = Module | Name | FnDef | TraitDef | ImplDef | TypeDef | Variant | Generic
+export type Definition = Module | Name | FnDef | TraitDef | ImplDef | TypeDef | Variant | TypeParam
 
 export const defKey = (def: Definition): string => {
     switch (def.kind) {

@@ -1,7 +1,7 @@
 pub trait Unwrap<T> {
-    fn bind(self): Option<T>
+    bind = fn(self): Option<T>
 
-    fn unwrap(self): T {
+    unwrap = fn(self): T {
         self.bind().unwrap()
     }
 }

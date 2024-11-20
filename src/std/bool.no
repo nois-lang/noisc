@@ -1,51 +1,38 @@
 pub type Bool
 
-impl Bool {
-    pub fn and(self, other: Self): Self {
-        andBool(self, other)
-    }
+pub let and = fn(bool: Bool, other: Bool): Bool {
+    andBool(bool, other)
+}
 
-    pub fn or(self, other: Self): Self {
-        orBool(self, other)
-    }
+pub let or = fn(bool: Bool, other: Bool): Bool {
+    orBool(bool, other)
+}
 
-    pub fn not(self): Self {
-        notBool(self)
-    }
+pub let not = fn(bool: Bool): Bool {
+    notBool(bool)
 }
 
 impl Show for Bool {
-    fn show(self): String {
+    show = fn(self): String {
         showBool(self)
     }
 }
 
-impl Trace for Bool {
-    fn trace(self): String {
-        self.show()
-    }
-}
+impl Trace for Bool {}
 
 impl Eq for Bool {
-    fn eq(self, other: Self): Bool {
+    eq = fn(self, other: Self): Bool {
         eqBool(self, other)
     }
 }
 
-impl Copy for Bool {
-    fn copy(self): Self {
-        copy(self)
-    }
-}
+impl Copy for Bool {}
 
-fn andBool(a: Bool, b: Bool): Bool
+let andBool = fn(a: Bool, b: Bool): Bool
 
-fn orBool(a: Bool, b: Bool): Bool
+let orBool = fn(a: Bool, b: Bool): Bool
 
-fn notBool(a: Bool): Bool
+let notBool = fn(a: Bool): Bool
 
-fn showBool(a: Bool): String
+let showBool = fn(a: Bool): String
 
-fn eqBool(a: Bool, b: Bool): Bool
-
-fn copyBool(a: Bool): Bool

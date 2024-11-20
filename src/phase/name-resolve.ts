@@ -1,7 +1,6 @@
 import { AstNode, AstNodeKind } from '../ast'
 import { Identifier, Name } from '../ast/operand'
-import { FnDef } from '../ast/statement'
-import { Generic } from '../ast/type'
+import { TypeParam } from '../ast/type'
 import { Context, Definition, DefinitionMap, addError, defKey, idToString } from '../scope'
 import { duplicateDefError, genericError, notFoundError } from '../semantic/error'
 import { unreachable } from '../util/todo'
@@ -192,7 +191,7 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
         case 'impl-def': {
             withScope(ctx, () => {
                 if (!node.generics.find(g => g.name.value === 'Self')) {
-                    const g: Generic = {
+                    const g: TypeParam = {
                         kind: 'generic',
                         name: { kind: 'name', value: 'Self' },
                         parseNode: node.kind === 'trait-def' ? node.name.parseNode : node.identifier.parseNode,
