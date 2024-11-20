@@ -38,7 +38,7 @@ export const parseSubExpr = (parser: Parser): void => {
 }
 
 /**
- * operand ::= match-expr | closure-expr | O-PAREN expr C-PAREN | list-expr | STRING | CHAR | number | TRUE
+ * operand ::= match-expr | closure-expr | list-expr | STRING | CHAR | number | TRUE
  * | FALSE | identifier | block
  */
 export const parseOperand = (parser: Parser): void => {
@@ -53,10 +53,6 @@ export const parseOperand = (parser: Parser): void => {
         parseMatchExpr(parser)
     } else if (parser.at('pipe')) {
         parseClosureExpr(parser)
-    } else if (parser.at('o-paren') && exprFirstTokens.includes(parser.nth(1))) {
-        parser.expect('o-paren')
-        parseExpr(parser)
-        parser.expect('c-paren')
     } else if (parser.at('o-brace')) {
         parseBlock(parser)
     } else if (parser.at('o-bracket')) {

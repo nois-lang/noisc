@@ -1,5 +1,6 @@
 import { AstNode } from '../ast'
 import { Context, idFromString } from '../scope'
+import { todo } from '../util/todo'
 
 /**
  * Desugar phase that runs before name resolution
@@ -31,6 +32,10 @@ export const desugar1 = (node: AstNode, ctx: Context, parent?: AstNode) => {
                 })
             }
             node.returnType ??= ctx.stdTypeIds.unit ?? { kind: 'hole' }
+            break
+        }
+        case 'compose-op': {
+            todo()
             break
         }
     }

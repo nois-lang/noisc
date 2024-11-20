@@ -9,10 +9,8 @@ import {
     boundFromCall,
     instantiateDefType,
     makeErrorType,
-    makeFieldAccessType,
     makeFieldPatternType,
     makeInferredType,
-    makeMethodCallType,
     makeReturnType
 } from '../typecheck'
 import { assert, unreachable } from '../util/todo'
@@ -160,18 +158,14 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
                     node.type = makeReturnType(fnType)
                     break
                 }
-                case 'field-access-op': {
-                    node.type = makeFieldAccessType(node)
-                    break
-                }
-                case 'method-call-op':
-                    node.op.call.args.forEach(a => collectTypeBounds(a, ctx))
-                    node.type = makeMethodCallType(node)
-                    break
                 case 'unwrap-op':
                 case 'bind-op':
                 case 'await-op': {
                     // TODO
+                    break
+                }
+                case 'compose-op': {
+                    unreachable()
                     break
                 }
             }
@@ -272,12 +266,8 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             node.type = instantiateDefType(ctx.stdTypeIds.bool?.type ?? makeErrorType('no def', 'no-def'), ctx)
             break
         }
-        case 'method-call-op': {
-            // TODO
-            break
-        }
-        case 'field-access-op': {
-            // TODO
+        case 'compose-op': {
+            unreachable()
             break
         }
     }

@@ -48,7 +48,6 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
                       | for-expr
                       | match-expr
                       | closure-expr
-                      | O-PAREN expr C-PAREN
                       | list-expr
                       | string
                       | CHAR
@@ -75,11 +74,9 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
       or-op           ::= PIPE PIPE;
       assign-op       ::= EQUALS;
 
-    postfix-op        ::= method-call-op | field-access-op | call-op | unwrap-op | bind-op | await-op
+    postfix-op        ::= compose-op | call-op | unwrap-op | bind-op | await-op
                       ;                                                                                                                                                                                                                                                                                                
-      method-call-op  ::= PERIOD NAME type-args? call-op
-                      ;
-      field-access-op ::= PERIOD NAME
+      compose-op      ::= PERIOD operand
                       ;
       call-op         ::= O-PAREN (arg (COMMA arg)*)? COMMA? C-PAREN
                       ;

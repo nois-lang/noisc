@@ -1,16 +1,13 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { Context } from '../scope'
-import { Static } from '../semantic'
 import { Arg, AstNode, AstNodeKind, BaseAstNode, buildArg } from './index'
-import { Name, buildName } from './operand'
-import { Type, buildType } from './type'
+import { Operand, buildOperand } from './operand'
 
-export type PostfixOp = MethodCallOp | FieldAccessOp | CallOp | UnwrapOp | BindOp | AwaitOp
+export type PostfixOp = ComposeOp | CallOp | UnwrapOp | BindOp | AwaitOp
 
 export const isPostfixOp = (op: AstNode): op is PostfixOp => {
     return (
-        op.kind === 'method-call-op' ||
-        op.kind === 'field-access-op' ||
+        op.kind === 'compose-op' ||
         op.kind === 'call-op' ||
         op.kind === 'unwrap-op' ||
         op.kind === 'bind-op' ||
@@ -20,10 +17,8 @@ export const isPostfixOp = (op: AstNode): op is PostfixOp => {
 
 export const buildPostfixOp = (node: ParseNode, ctx: Context): PostfixOp => {
     switch (node.kind) {
-        case 'method-call-op':
-            return buildMethodCallOp(node, ctx)
-        case 'field-access-op':
-            return buildFieldAccessOp(node, ctx)
+        case 'compose-op':
+            return buildComposeOp(node, ctx)
         case 'call-op':
             return buildCallOp(node, ctx)
         case 'unwrap-op':
@@ -35,7 +30,7 @@ export const buildPostfixOp = (node: ParseNode, ctx: Context): PostfixOp => {
     }
 }
 
-export type BinaryOp = (
+export type BinaryOp =
     | AddOp
     | SubOp
     | MultOp
@@ -51,8 +46,6 @@ export type BinaryOp = (
     | AndOp
     | OrOp
     | AssignOp
-) &
-    Partial<Static>
 
 export type Associativity = 'left' | 'right' | 'none'
 
@@ -121,38 +114,19 @@ export const buildBinaryOp = (node: ParseNode): BinaryOp => {
     return { kind: <any>node.kind, parseNode: node }
 }
 
-export type MethodCallOp = BaseAstNode & {
-    kind: 'method-call-op'
-    name: Name
-    typeArgs: Type[]
-    call: CallOp
+export type ComposeOp = BaseAstNode & {
+    kind: 'compose-op'
+    operand: Operand
 }
 
-export const buildMethodCallOp = (node: ParseNode, ctx: Context): MethodCallOp => {
-    const nodes = filterNonAstNodes(node)
-    let i = 0
-    const name = buildName(nodes[i++], ctx)
-    const typeArgs = nodes[i].kind === 'type-args' ? filterNonAstNodes(nodes[i++]).map(n => buildType(n, ctx)) : []
-    const call = buildCallOp(nodes[i++], ctx)
-    return { kind: 'method-call-op', parseNode: node, name, typeArgs, call }
-}
-
-export type FieldAccessOp = BaseAstNode & {
-    kind: 'field-access-op'
-    name: Name
-}
-
-export const buildFieldAccessOp = (node: ParseNode, ctx: Context): FieldAccessOp => {
-    const name = buildName(filterNonAstNodes(node)[0], ctx)
-    return { kind: 'field-access-op', parseNode: node, name }
+export const buildComposeOp = (node: ParseNode, ctx: Context): ComposeOp => {
+    const operand = buildOperand(filterNonAstNodes(node)[0], ctx)
+    return { kind: 'compose-op', parseNode: node, operand }
 }
 
 export type CallOp = BaseAstNode & {
     kind: 'call-op'
     args: Arg[]
-    methodDef?: MethodDef
-    variantDef?: VariantDef
-    generics?: ConcreteGeneric[]
 }
 
 export const buildCallOp = (node: ParseNode, ctx: Context): CallOp => {

@@ -11,7 +11,7 @@ impl <T> Iter<T> for TakeWhileIter<T> {
         }
         match self.iter.next() {
             Some(value) {
-                match (self.f)(value).not() {
+                match value.{self.f}.not() {
                     true {
                         self.done = true
                         return None()

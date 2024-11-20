@@ -225,14 +225,8 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
             resolveName(node.fieldType, ctx)
             break
         }
-        case 'method-call-op': {
-            resolveName(node.call, ctx)
-            node.typeArgs.forEach(a => resolveName(a, ctx))
-            // methods are checked after type resolution since types are not known yet
-            break
-        }
-        case 'field-access-op': {
-            // fields are checked after type resolution since types are not known yet
+        case 'compose-op': {
+            unreachable()
             break
         }
         case 'call-op': {

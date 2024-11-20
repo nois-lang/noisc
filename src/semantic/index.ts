@@ -28,4 +28,11 @@ export const semanticCheck = (ctx: Context): void => {
         unifyTypeBounds
     ]
     phases.forEach(f => eachModule(f, ctx))
+    // ;[collectTypeBounds, unifyTypeBounds].forEach(f =>
+    //     ctx.packages.at(-1)!.modules.forEach(m => {
+    //         ctx.moduleStack.push(m)
+    //         f(m, ctx)
+    //         ctx.moduleStack.pop()
+    //     })
+    // )
 }

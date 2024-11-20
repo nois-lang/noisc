@@ -36,46 +36,6 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): EmitExpr => {
     const resultVar = nextVariable(ctx)
     const upcasts = unaryExpr.operand.upcasts
     switch (unaryExpr.op.kind) {
-        case 'method-call-op': {
-            const lOp = emitOperand(unaryExpr.operand, ctx)
-            const mCall = unaryExpr.op
-            const call = mCall.call
-            const methodDef = call.methodDef!
-            const methodName = methodDef.fn.name.value
-
-            const args = call.args.map(a => emitExpr(a.expr, ctx))
-            const genericTypes = call.generics?.map(g => emitGeneric(g, ctx)) ?? []
-            const jsArgs = [...args, ...genericTypes]
-            const argsEmit = (
-                methodDef.fn.static ? jsArgs.map(a => a.resultVar) : [lOp.resultVar, ...jsArgs.map(a => a.resultVar)]
-            ).join(',')
-
-            const upcastEmit = emitUpcasts(lOp.resultVar, upcasts)
-
-            const callerEmit = call.impl ? jsRelName(call.impl) : `${lOp.resultVar}.${relTypeName(methodDef.rel)}`
-            const callEmit = jsVariable(resultVar, emitToken(`${callerEmit}().${methodName}(${argsEmit})`))
-
-            const exprUpcastEmit = emitUpcasts(resultVar, unaryExpr.upcasts)
-            return {
-                emit: emitTree(
-                    [lOp.emit, emitTree(jsArgs.map(a => a.emit)), upcastEmit, callEmit, exprUpcastEmit],
-                    mCall.name.parseNode
-                ),
-                resultVar
-            }
-        }
-        case 'field-access-op': {
-            const lOp = emitOperand(unaryExpr.operand, ctx)
-            const upcastEmit = emitUpcasts(lOp.resultVar, upcasts)
-            return {
-                emit: emitTree([
-                    lOp.emit,
-                    upcastEmit,
-                    jsVariable(resultVar, emitToken(`${lOp.resultVar}.value.${unaryExpr.op.name.value}`))
-                ]),
-                resultVar
-            }
-        }
         case 'call-op':
             const call = unaryExpr.op
             const args = call.args.map(a => {
@@ -139,6 +99,9 @@ export const emitUnaryExpr = (unaryExpr: UnaryExpr, ctx: Context): EmitExpr => {
         case 'await-op': {
             // TODO
             return { emit: emitToken(''), resultVar: jsError('bind-op').value }
+        }
+        case 'compose-op': {
+            unreachable()
         }
     }
 }

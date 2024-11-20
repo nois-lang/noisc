@@ -14,7 +14,6 @@ export type Operand =
     | ForExpr
     | MatchExpr
     | ClosureExpr
-    | Expr
     | ListExpr
     | StringLiteral
     | StringInterpolated
@@ -36,8 +35,6 @@ export const buildOperand = (node: ParseNode, ctx: Context): Operand => {
             return buildMatchExpr(n, ctx)
         case 'closure-expr':
             return buildClosureExpr(n, ctx)
-        case 'expr':
-            return buildExpr(n, ctx)
         case 'list-expr':
             return buildListExpr(n, ctx)
         case 'string':
@@ -58,9 +55,6 @@ export const buildOperand = (node: ParseNode, ctx: Context): Operand => {
 
 export const identifierFromOperand = (operand: Operand): Identifier | undefined => {
     if (operand.kind === 'identifier') return operand
-    if (operand.kind === 'operand-expr') {
-        return identifierFromOperand(operand.operand)
-    }
     return undefined
 }
 

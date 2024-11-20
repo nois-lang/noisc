@@ -1,7 +1,7 @@
 import { nameLikeTokens } from '.'
 import { Parser } from '..'
 import { syntaxError } from '../../error'
-import { parseExpr, parseTypeArgs } from './expr'
+import { parseExpr, parseOperand } from './expr'
 
 /**
  * infix-op ::= add-op | sub-op | mult-op | div-op | exp-op | mod-op | eq-op | ne-op | ge-op | le-op | gt-op
@@ -80,7 +80,7 @@ export const parseInfixOp = (parser: Parser): void => {
 }
 
 /**
- * postfix-op ::= method-call-op | field-access-op | call-op | unwrap-op | bind-op | await-op
+ * postfix-op ::= compose-op | call-op | unwrap-op | bind-op | await-op
  */
 export const parsePostfixOp = (parser: Parser): void => {
     if (parser.at('o-paren')) {
@@ -93,14 +93,8 @@ export const parsePostfixOp = (parser: Parser): void => {
             parser.advance()
             parser.advance()
             parser.close(mark, 'await-op')
-        } else if (
-            parser.nth(2) === 'o-paren' ||
-            (parser.nth(2) === 'o-angle' &&
-                parser.encounter('c-angle', [...nameLikeTokens, 'comma', 'o-angle', 'underscore'], 2))
-        ) {
-            parseMethodCallOp(parser)
         } else {
-            parseFieldAccessOp(parser)
+            parseComposeOp(parser)
         }
         return
     }
@@ -117,27 +111,13 @@ export const parsePostfixOp = (parser: Parser): void => {
 }
 
 /*
- * method-call-op ::= PERIOD NAME type-args? call-op
+ * compose-op ::= PERIOD operand
  */
-export const parseMethodCallOp = (parser: Parser): void => {
+export const parseComposeOp = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('period')
-    parser.expectAny(nameLikeTokens)
-    if (parser.at('o-angle')) {
-        parseTypeArgs(parser)
-    }
-    parseCallOp(parser)
-    parser.close(mark, 'method-call-op')
-}
-
-/*
- * field-access-op ::= PERIOD NAME
- */
-export const parseFieldAccessOp = (parser: Parser): void => {
-    const mark = parser.open()
-    parser.expect('period')
-    parser.expectAny(nameLikeTokens)
-    parser.close(mark, 'field-access-op')
+    parseOperand(parser)
+    parser.close(mark, 'compose-op')
 }
 
 /**

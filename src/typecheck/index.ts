@@ -1,10 +1,7 @@
-import { UnaryExpr } from '../ast/expr'
 import { FieldPattern } from '../ast/match'
-import { FieldAccessOp, MethodCallOp } from '../ast/op'
-import { Name } from '../ast/operand'
 import { Generic, Type } from '../ast/type'
 import { Context, idToString } from '../scope'
-import { assert, unreachable } from '../util/todo'
+import { assert } from '../util/todo'
 
 /**
  * TODO: attach "source" node to a type to indicate where this type is coming from
@@ -26,9 +23,7 @@ export type InferredType =
           params: InferredType[]
           returnType: InferredType
       }
-    | { kind: 'field-access'; operandType: InferredType; fieldName: Name }
     | { kind: 'field-pattern'; operandType: InferredType; fieldPattern: FieldPattern }
-    | { kind: 'method-call'; operandType: InferredType; op: MethodCallOp }
     | Type
     | { kind: 'return'; type: InferredType }
     | ErrorType
@@ -62,22 +57,10 @@ export const makeInferredType = (bounds: InferredType[] = []) => ({ kind: <const
 
 export const makeTypeParam = (type: Generic) => ({ kind: <const>'type-param', type })
 
-export const makeFieldAccessType = (expr: UnaryExpr) => ({
-    kind: <const>'field-access',
-    operandType: expr.operand.type!,
-    fieldName: (<FieldAccessOp>expr.op).name
-})
-
 export const makeFieldPatternType = (operandType: InferredType, fieldPattern: FieldPattern) => ({
     kind: <const>'field-pattern',
     operandType,
     fieldPattern
-})
-
-export const makeMethodCallType = (expr: UnaryExpr) => ({
-    kind: <const>'method-call',
-    operandType: expr.operand.type!,
-    op: <MethodCallOp>expr.op
 })
 
 export const makeReturnType = (type: InferredType) => ({ kind: <const>'return', type })
@@ -132,16 +115,10 @@ export const inferredTypeToString = (t: InferredType, depth = 0): string => {
             )}`
         case 'return':
             return `ret(${inferredTypeToString(t.type, depth + 1)})`
-        case 'field-access':
-            return `(${inferredTypeToString(t.operandType, depth + 1)}).${t.fieldName.value}`
         case 'field-pattern':
             return `dest(${inferredTypeToString(t.operandType)}, ${t.fieldPattern.variant?.name.value ?? '_'}(${
                 t.fieldPattern.name.value
             }))`
-        case 'method-call':
-            return `(${inferredTypeToString(t.operandType, depth + 1)}).${t.op.name.value}(${t.op.call.args
-                .map(a => inferredTypeToString(a.type!, depth + 1))
-                .join(', ')})`
         case 'identifier':
         case 'name':
         case 'fn-type':
@@ -151,7 +128,6 @@ export const inferredTypeToString = (t: InferredType, depth = 0): string => {
             const msg = t.error.message ? `, ${t.error.message}` : ''
             return `error(${t.error.errorKind}${msg})`
     }
-    return unreachable(t)
 }
 
 export const typeToString = (t: Type): string => {

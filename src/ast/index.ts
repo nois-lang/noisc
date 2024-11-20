@@ -11,15 +11,14 @@ import {
     AwaitOp,
     BindOp,
     CallOp,
+    ComposeOp,
     DivOp,
     EqOp,
     ExpOp,
-    FieldAccessOp,
     GeOp,
     GtOp,
     LeOp,
     LtOp,
-    MethodCallOp,
     ModOp,
     MultOp,
     NeOp,
@@ -111,8 +110,7 @@ export type AstNode =
     | AndOp
     | OrOp
     | AssignOp
-    | MethodCallOp
-    | FieldAccessOp
+    | ComposeOp
     | CallOp
     | UnwrapOp
     | BindOp
@@ -157,8 +155,7 @@ export const astInfixOpKinds = <const>[
 ]
 
 export const astPostfixOpKinds = <const>[
-    'method-call-op',
-    'field-access-op',
+    'compose-op',
     'call-op',
     'unwrap-op',
     'bind-op',

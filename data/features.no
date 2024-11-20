@@ -125,3 +125,23 @@ fn main() {
     // equivalent to |v: Vec2| v.show()
     let r = Vec2::show
 }
+
+trait Show<I> {
+    // actual type is fn<T: Show<T>>(a: T): String
+    show = fn(a: I): String
+}
+
+trait Debug<I> {
+    debug = fn(a: I): String
+}
+
+impl Show<String> {
+    show = id
+}
+
+impl <T: Debug<T>> Show<T> {
+    show = fn(a: T): String {
+        // sugar for debug(a)
+        a.debug()
+    }
+}

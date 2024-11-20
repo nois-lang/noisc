@@ -77,7 +77,7 @@ impl Runtime {
             let next = self.queue.popFront()!
             next.state = FutureState::Pending()
             self.pending.add(next)
-            let _ = (next.f)(|res| {
+            let _ = {next.f}(|res| {
                 next.state = FutureState::Resolved(res)
                 for s in next.subscribers {
                     s(res)
