@@ -1,13 +1,13 @@
-import { Module } from '../ast'
+import { AstNode, Module } from '../ast'
 import { Identifier, Name } from '../ast/operand'
-import { FnDef, ImplDef, TraitDef } from '../ast/statement'
+import { TraitDef, TraitStatement } from '../ast/statement'
 import { TypeParam } from '../ast/type'
-import { TypeDef, Variant } from '../ast/type-def'
+import { FieldDef, TypeDef, Variant } from '../ast/type-def'
 import { Config } from '../config'
 import { Package } from '../package'
 import { ParseNode } from '../parser'
 import { StdTypeIds } from '../phase/std-type'
-import { SemanticError } from '../semantic/error'
+import { SemanticError, duplicateDefError } from '../semantic/error'
 import { typeToString } from '../typecheck'
 import { unreachable } from '../util/todo'
 
@@ -30,30 +30,46 @@ export type Context = {
     variableCounter: number
 }
 
-/**
- * Key is a name of the def
- */
-export type DefinitionMap = Map<string, Definition>
+export type TypeDefinition = TraitDef | TypeDef | TypeParam
 
-export type Definition = Module | Name | FnDef | TraitDef | ImplDef | TypeDef | Variant | TypeParam
+export type ValueDefinition = Name | Variant | FieldDef | TraitStatement
+
+export type Definition = Module | TypeDefinition | ValueDefinition
+
+export type Namespace = 'type' | 'value'
+
+export type Scope = {
+    type: Map<string, TypeDefinition>
+    value: Map<string, ValueDefinition>
+}
 
 export const defKey = (def: Definition): string => {
     switch (def.kind) {
-        case 'module':
-            return idToString(def.identifier)
         case 'name':
             return def.value
-        case 'fn-def':
-        case 'trait-def':
-        case 'type-def':
-        case 'variant':
-        case 'generic':
-            return def.name.value
-        case 'impl-def':
-            if (!def.forTrait) {
-                return def.identifier.names[0].value
-            }
-            return unreachable()
+        case 'module':
+            return idToString(def.identifier)
+        default:
+            return defKey(def.name)
+    }
+}
+
+export const addDef = (node: Definition, scope: Scope, ctx: Context, sourceNode: AstNode = node): void => {
+    const key = defKey(node)
+    if (node.kind === 'type-def' || node.kind === 'trait-def' || node.kind === 'type-param') {
+        if (scope.type.has(key)) {
+            addError(ctx, duplicateDefError(ctx, sourceNode))
+            return
+        }
+        scope.type.set(key, node)
+    } else if (node.kind === 'name' || node.kind === 'variant' || node.kind === 'field-def') {
+        if (scope.value.has(key)) {
+            addError(ctx, duplicateDefError(ctx, sourceNode))
+            return
+        }
+        scope.value.set(key, node)
+    } else {
+        unreachable()
     }
 }
 

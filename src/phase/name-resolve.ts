@@ -1,8 +1,8 @@
 import { AstNode, AstNodeKind } from '../ast'
 import { Identifier, Name } from '../ast/operand'
 import { TypeParam } from '../ast/type'
-import { Context, Definition, DefinitionMap, addError, defKey, idToString } from '../scope'
-import { duplicateDefError, genericError, notFoundError } from '../semantic/error'
+import { Context, Definition, Namespace, Scope, addDef, addError, defKey, idToString } from '../scope'
+import { genericError, notFoundError } from '../semantic/error'
 import { unreachable } from '../util/todo'
 
 /**
@@ -19,8 +19,7 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
             break
         }
         case 'variant': {
-            addDef(defKey(node), node, ctx)
-            node.fieldDefs.forEach(fd => resolveName(fd, ctx))
+            node.fields.forEach(fd => resolveName(fd, ctx))
             break
         }
         case 'arg': {
@@ -41,11 +40,14 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
         case 'fn-type': {
             resolveName(node.returnType, ctx)
             node.paramTypes.forEach(pt => resolveName(pt, ctx))
-            node.generics.forEach(g => resolveName(g, ctx))
+            node.typeParams.forEach(g => resolveName(g, ctx))
             break
         }
-        case 'generic': {
-            addDef(defKey(node), node, ctx)
+        case 'type-param': {
+            const stack = m.scopeStack.at(-1)
+            if (stack) {
+                addDef(node, stack, ctx)
+            }
             node.bounds.forEach(b => resolveName(b, ctx))
             break
         }
@@ -103,7 +105,10 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
         case 'name': {
             const p = getParent(ctx)
             if (p?.kind === 'pattern' || p?.kind === 'field-pattern') {
-                addDef(node.value, node, ctx)
+                const stack = m.scopeStack.at(-1)
+                if (stack) {
+                    addDef(node, stack, ctx)
+                }
                 break
             }
             unreachable(p?.kind)
@@ -130,16 +135,6 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
             resolveName(node.lOperand, ctx)
             resolveName(node.rOperand, ctx)
             resolveName(node.binaryOp, ctx)
-            break
-        }
-        case 'closure-expr': {
-            withScope(ctx, () => {
-                node.params.forEach(p => resolveName(p, ctx))
-                if (node.returnType) {
-                    resolveName(node.returnType, ctx)
-                }
-                resolveName(node.block, ctx)
-            })
             break
         }
         case 'list-expr': {
@@ -176,7 +171,7 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
         }
         case 'fn-def': {
             withScope(ctx, () => {
-                node.generics.forEach(g => resolveName(g, ctx))
+                node.typeParams.forEach(g => resolveName(g, ctx))
                 node.params.forEach(p => resolveName(p, ctx))
                 if (node.returnType) {
                     resolveName(node.returnType, ctx)
@@ -190,22 +185,20 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
         case 'trait-def':
         case 'impl-def': {
             withScope(ctx, () => {
-                if (!node.generics.find(g => g.name.value === 'Self')) {
+                if (!node.typeParams.find(g => g.name.value === 'Self')) {
                     const g: TypeParam = {
-                        kind: 'generic',
+                        kind: 'type-param',
                         name: { kind: 'name', value: 'Self' },
-                        parseNode: node.kind === 'trait-def' ? node.name.parseNode : node.identifier.parseNode,
+                        parseNode: node.kind === 'trait-def' ? node.name.parseNode : node.trait.parseNode,
                         bounds: []
                     }
                     g.name.def = g
-                    node.generics.push(g)
+                    node.typeParams.unshift(g)
                 }
-                node.generics.forEach(g => resolveName(g, ctx))
+                node.typeParams.forEach(g => resolveName(g, ctx))
                 if (node.kind === 'impl-def') {
-                    resolveName(node.identifier, ctx)
-                    if (node.forTrait) {
-                        resolveName(node.forTrait, ctx)
-                    }
+                    resolveName(node.trait, ctx)
+                    resolveName(node.for, ctx)
                 }
                 if (node.block) {
                     resolveName(node.block, ctx)
@@ -215,7 +208,7 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
         }
         case 'type-def': {
             withScope(ctx, () => {
-                node.generics.forEach(g => resolveName(g, ctx))
+                node.typeParams.forEach(g => resolveName(g, ctx))
                 node.variants.forEach(v => resolveName(v, ctx))
             })
             break
@@ -236,10 +229,10 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
     m.astStack.pop()
 }
 
-export const findName = (name: string, ctx: Context): Definition | undefined => {
+export const findName = (name: string, ctx: Context, ns: Namespace = 'value'): Definition | undefined => {
     const m = ctx.moduleStack.at(-1)!
-    for (const stack of [...m.scopeStack.toReversed(), m.topScope, m.useScope, ctx.prelude!.useScope!]) {
-        const def = findNameInStack(name, stack)
+    for (const scope of [...m.scopeStack.toReversed(), m.topScope, m.useScope, ctx.prelude!.useScope!]) {
+        const def = findNameInScope(name, scope, ns)
         if (def) return def
     }
     return undefined
@@ -255,8 +248,8 @@ export const findById = (id: Identifier, ctx: Context): Definition | undefined =
     return findWithinDef(def, id.names[1], ctx)
 }
 
-export const findNameInStack = (name: string, stack: DefinitionMap): Definition | undefined => {
-    return stack.get(name)
+export const findNameInScope = (name: string, scope: Scope, ns: Namespace): Definition | undefined => {
+    return scope[ns].get(name)
 }
 
 export const findParent = (ctx: Context, ofKind: AstNodeKind[]): AstNode | undefined => {
@@ -268,43 +261,24 @@ export const getParent = (ctx: Context): AstNode | undefined => {
     return m.astStack.at(-2)!
 }
 
-const addDef = (name: string, def: Definition, ctx: Context): void => {
-    const m = ctx.moduleStack.at(-1)!
-    const scope = m.scopeStack.at(-1)
-    if (!scope) {
-        // topScope is already populated
-        return
-    }
-    if (scope.has(name)) {
-        console.trace(name)
-        addError(ctx, duplicateDefError(ctx, def))
-    }
-    scope.set(name, def)
-}
-
 const findWithinDef = (def: Definition, name: Name, ctx: Context): Definition | undefined => {
     const key = defKey(name)
     switch (def.kind) {
         case 'module': {
-            return def.topScope.get(key)
+            return def.topScope.type.get(key)
         }
-        case 'trait-def':
-        case 'impl-def': {
-            if (def.kind === 'impl-def' && def.forTrait) return unreachable()
-            return <FnDef | undefined>def.block.statements.find(s => s.kind === 'fn-def' && defKey(s) === key)
+        case 'trait-def': {
+            return def.block.statements.find(s => defKey(s.name) === key)
         }
         case 'type-def': {
             const variant = def.variants.find(v => defKey(v) === key)
             if (variant) return variant
-            if (def.impl) {
-                return findWithinDef(def.impl, name, ctx)
-            }
             return undefined
         }
         case 'name': {
             return undefined
         }
-        case 'generic': {
+        case 'type-param': {
             // TODO
             return undefined
         }
@@ -317,7 +291,7 @@ const findWithinDef = (def: Definition, name: Name, ctx: Context): Definition | 
 
 const withScope = <T>(ctx: Context, f: () => T): T => {
     const m = ctx.moduleStack.at(-1)!
-    m.scopeStack.push(new Map())
+    m.scopeStack.push({ type: new Map(), value: new Map() })
     const res = f()
     m.scopeStack.pop()
     return res

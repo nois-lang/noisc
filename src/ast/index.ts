@@ -1,5 +1,5 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
-import { Context, DefinitionMap } from '../scope'
+import { Context, Scope } from '../scope'
 import { Source } from '../source'
 import { InferredType } from '../typecheck'
 import { BinaryExpr, Expr, OperandExpr, UnaryExpr, buildExpr } from './expr'
@@ -29,8 +29,8 @@ import {
 import {
     BoolLiteral,
     CharLiteral,
-    ClosureExpr,
     FloatLiteral,
+    FnDef,
     ForExpr,
     Identifier,
     IntLiteral,
@@ -44,16 +44,17 @@ import {
 import {
     Block,
     BreakStmt,
-    FnDef,
     ImplDef,
     ReturnStmt,
+    TraitBlock,
     TraitDef,
+    TraitStatement,
     UseExpr,
     VarDef,
     buildStatement,
     buildUseExpr
 } from './statement'
-import { FnType, TypeParam, Type, buildType } from './type'
+import { FnType, ParamType, Type, TypeParam, buildType } from './type'
 import { FieldDef, TypeDef, Variant } from './type-def'
 
 export type AstNode =
@@ -66,6 +67,7 @@ export type AstNode =
     | Block
     | Param
     | FnType
+    | ParamType
     | TypeParam
     | MatchClause
     | Pattern
@@ -79,14 +81,15 @@ export type AstNode =
     | OperandExpr
     | UnaryExpr
     | BinaryExpr
-    | ClosureExpr
     | ListExpr
+    | FnDef
     | WhileExpr
     | ForExpr
     | MatchExpr
     | VarDef
-    | FnDef
     | TraitDef
+    | TraitBlock
+    | TraitStatement
     | ImplDef
     | TypeDef
     | FieldDef
@@ -127,12 +130,13 @@ export const astExprKinds = <const>[
     'binary-expr',
     'closure-expr',
     'list-expr',
+    'fn-def',
     'while-expr',
     'for-expr',
     'match-expr'
 ]
 
-export const astDefKinds = <const>['var-def', 'fn-def', 'trait-def', 'impl-def', 'type-def', 'field-def']
+export const astDefKinds = <const>['var-def', 'trait-def', 'impl-def', 'type-def', 'variant', 'field-def']
 
 export const astLiteralKinds = <const>['string-literal', 'char-literal', 'int-literal', 'float-literal', 'bool-literal']
 
@@ -154,26 +158,22 @@ export const astInfixOpKinds = <const>[
     'assign-op'
 ]
 
-export const astPostfixOpKinds = <const>[
-    'compose-op',
-    'call-op',
-    'unwrap-op',
-    'bind-op',
-    'await-op'
-]
+export const astPostfixOpKinds = <const>['compose-op', 'call-op', 'unwrap-op', 'bind-op', 'await-op']
 
 export const astKinds = <const>[
     'module',
     'use-expr',
-    'variant',
     'return-stmt',
     'break-stmt',
     'arg',
     'block',
+    'trait-block',
+    'trait-statement',
     'param',
     'type-bounds',
     'fn-type',
-    'generic',
+    'param-type',
+    'type-param',
     'match-clause',
     'pattern',
     'con-pattern',
@@ -219,7 +219,7 @@ export type Module = BaseAstNode & {
     mod: boolean
     block: Block
 
-    scopeStack: DefinitionMap[]
+    scopeStack: Scope[]
     useExprs: UseExpr[]
 
     /**
@@ -233,7 +233,7 @@ export type Module = BaseAstNode & {
     /**
      * Persistent top level scope
      */
-    topScope: DefinitionMap
+    topScope: Scope
     compiled: boolean
     /**
      * List of resolved imports used by this module
@@ -242,7 +242,7 @@ export type Module = BaseAstNode & {
     /**
      * Map of definitions accessible in this module via use exprs
      */
-    useScope: DefinitionMap
+    useScope: Scope
     astStack: AstNode[]
     impls: ImplDef[]
 }
@@ -268,10 +268,10 @@ export const buildModuleAst = (
         block,
         scopeStack: [],
         useExprs,
-        topScope: new Map(),
+        topScope: { type: new Map(), value: new Map() },
         compiled,
         imports: [],
-        useScope: new Map(),
+        useScope: { type: new Map(), value: new Map() },
         astStack: [],
         impls: []
     }

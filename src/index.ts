@@ -109,7 +109,6 @@ if (isDir) {
 }
 
 reportErrors(ctx)
-console.log(inspect(debugAst(pkg.modules[0].block), { compact: true, depth: null, breakLength: 120 }))
 
 const packages = [...lib, pkg]
 

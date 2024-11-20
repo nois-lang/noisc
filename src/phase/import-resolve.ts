@@ -1,10 +1,10 @@
 import { Module } from '../ast'
 import { Identifier } from '../ast/operand'
-import { FnDef } from '../ast/statement'
-import { Context, Definition, addError, defKey } from '../scope'
+import { Context, Definition, addDef, addError } from '../scope'
 import { idEq, idFromString, idToString } from '../scope'
-import { duplicateUseError, notFoundError } from '../semantic/error'
+import { notFoundError } from '../semantic/error'
 import { flatUseExprs } from '../semantic/use-expr'
+import { unreachable } from '../util/todo'
 
 export const setExports = (module: Module, ctx: Context): void => {
     module.references = module.useExprs.filter(e => !e.pub).flatMap(e => flatUseExprs(e))
@@ -16,30 +16,22 @@ export const setExports = (module: Module, ctx: Context): void => {
  */
 export const resolveImports = (module: Module, ctx: Context): void => {
     ;[...module.references!, ...module.reExports!].forEach(useExpr => {
-        const node = resolvePubId(useExpr, ctx)
-        if (node) {
-            addDef(node, module, useExpr, ctx)
+        const defs = resolvePubId(useExpr, ctx)
+        if (defs.length > 0) {
+            defs.forEach(def => addDef(def, module.useScope, ctx, useExpr))
         } else {
             addError(ctx, notFoundError(ctx, useExpr, idToString(useExpr)))
         }
     })
 }
 
-const addDef = (node: Definition, module: Module, importId: Identifier, ctx: Context): void => {
-    const key = defKey(node)
-    if (module.useScope.has(key)) {
-        addError(ctx, duplicateUseError(ctx, importId))
-        return
-    }
-    module.useScope.set(key, node)
-}
-
-const resolvePubId = (id: Identifier, ctx: Context): Definition | undefined => {
-    if (id.names.length < 2) return undefined
+const resolvePubId = (id: Identifier, ctx: Context): Definition[] => {
+    const defs: Definition[] = []
+    if (id.names.length < 2) return defs
 
     const pkgName = id.names[0].value
     const pkg = ctx.packages.find(p => p.name === pkgName)
-    if (!pkg) return undefined
+    if (!pkg) return defs
 
     // base case, e.g. std::option::Option
     let nodeName = id.names.at(-1)!.value
@@ -51,18 +43,27 @@ const resolvePubId = (id: Identifier, ctx: Context): Definition | undefined => {
     )
     let mod = pkg.modules.find(m => idEq(m.identifier, modId))
     if (mod) {
-        const node = mod.topScope.get(nodeName)
-        if (node) return node
+        const typeDef = mod.topScope.type.get(nodeName)
+        if (typeDef) {
+            defs.push(typeDef)
+        }
+
+        const valueDef = mod.topScope.value.get(nodeName)
+        if (valueDef) {
+            defs.push(valueDef)
+        }
 
         // id is re exported
         const reExport = mod.reExports!.find(re => re.names.at(-1)!.value === id.names.at(-1)!.value)
         if (reExport) {
-            return resolvePubId(reExport, ctx)
+            defs.push(...resolvePubId(reExport, ctx))
         }
+
+        return defs
     }
 
-    // case of Variant | FnDef, e.g. std::option::Option::Some
-    if (id.names.length < 3) return undefined
+    // case of TraitStatement, e.g. std::iter::Iter::next
+    if (id.names.length < 3) return defs
     nodeName = id.names.at(-2)!.value
     modId = idFromString(
         id.names
@@ -72,28 +73,16 @@ const resolvePubId = (id: Identifier, ctx: Context): Definition | undefined => {
     )
     mod = pkg.modules.find(m => idEq(m.identifier, modId))
     if (mod) {
-        const node = mod.topScope.get(nodeName)
+        const node = mod.topScope.type.get(nodeName)
         if (node) {
-            switch (node.kind) {
-                case 'type-def': {
-                    const vName = id.names.at(-1)!
-                    const v = node.variants.find(v => v.name.value === vName.value)
-                    if (v) return v
-                    break
-                }
-                case 'trait-def':
-                case 'impl-def': {
-                    const mName = id.names.at(-1)!
-                    // TODO: report private matches as private, not just "not found"
-                    const m = <FnDef | undefined>(
-                        node.block.statements.find(s => s.kind === 'fn-def' && s.pub && s.name.value === mName.value)
-                    )
-                    if (m) return m
-                    break
-                }
+            if (node.kind !== 'trait-def') return unreachable()
+            const mName = id.names.at(-1)!
+            const stmt = node.block.statements.find(s => s.name.value === mName.value)
+            if (stmt) {
+                defs.push(stmt)
             }
         }
     }
 
-    return undefined
+    return defs
 }

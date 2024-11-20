@@ -1,5 +1,5 @@
 import { FieldPattern } from '../ast/match'
-import { TypeParam, Type } from '../ast/type'
+import { Type, TypeParam } from '../ast/type'
 import { Context, idToString } from '../scope'
 import { assert } from '../util/todo'
 
@@ -80,7 +80,7 @@ export const instantiateDefType = (t: InferredType, ctx: Context): InferredType 
             return makeInferredType([
                 {
                     kind: 'inferred-fn',
-                    generics: t.generics.map(g => {
+                    generics: t.typeParams.map(g => {
                         assert(!!g.type)
                         return instantiateDefType(g.type!, ctx)
                     }),
@@ -135,8 +135,10 @@ export const typeToString = (t: Type): string => {
         case 'identifier':
             return idToString(t)
         case 'fn-type':
-            const main = `|${t.paramTypes.map(typeToString).join(', ')}|: ${typeToString(t.returnType)}`
-            const typeArgs = t.generics.length > 0 ? `<${t.generics.map(g => g.name.value).join(', ')}>` : ''
+            const main = `fn(${t.paramTypes
+                .map(pt => `${pt.name.value}: ${typeToString(pt.paramType)}`)
+                .join(', ')}): ${typeToString(t.returnType)}`
+            const typeArgs = t.typeParams.length > 0 ? `<${t.typeParams.map(g => g.name.value).join(', ')}>` : ''
             return typeArgs + main
         case 'hole':
             return '_'

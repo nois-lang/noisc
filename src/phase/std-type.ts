@@ -24,7 +24,7 @@ export type StdTypeIds = {
 export const preludeId = idFromString('std::prelude')
 
 /**
- * Set `ctx.stdTypeIds` by resolving compiler-required types in std
+ * Set {@link Context.stdTypeIds} by resolving compiler-required types in std
  */
 export const setStdTypeIds = (node: AstNode, ctx: Context): void => {
     ctx.stdTypeIds = {}
@@ -37,10 +37,7 @@ export const setStdTypeIds = (node: AstNode, ctx: Context): void => {
         ['int', 'Int'],
         ['float', 'Float'],
         ['list', 'List'],
-
         ['show', 'Show'],
-        ['trace', 'Trace'],
-
         ['iter', 'Iter'],
         ['iterable', 'Iterable'],
         ['unwrap', 'Unwrap'],

@@ -138,9 +138,9 @@ export const buildTraitStatement = (node: ParseNode, ctx: Context): TraitStateme
 
 export type ImplDef = BaseAstNode & {
     kind: 'impl-def'
-    identifier: Identifier
+    trait: Identifier
     typeParams: TypeParam[]
-    forTrait?: Identifier
+    for: Identifier
     block: TraitBlock
 }
 
@@ -152,10 +152,9 @@ export const buildImplDef = (node: ParseNode, ctx: Context): ImplDef => {
     const typeParams =
         nodes.at(idx)?.kind === 'type-params' ? filterNonAstNodes(nodes[idx++]).map(n => buildTypeParam(n, ctx)) : []
     const identifier = buildIdentifier(nodes[idx++], ctx)
-    const forTrait =
-        nodes.at(idx)?.kind === 'impl-for' ? buildIdentifier(filterNonAstNodes(nodes[idx++])[1], ctx) : undefined
+    const forTrait = buildIdentifier(filterNonAstNodes(nodes[idx++])[1], ctx)
     const block = buildTraitBlock(nodes[idx++], ctx)
-    return { kind: 'impl-def', parseNode: node, identifier, typeParams, forTrait, block }
+    return { kind: 'impl-def', parseNode: node, trait: identifier, typeParams, for: forTrait, block }
 }
 
 export type ReturnStmt = BaseAstNode & {

@@ -2,7 +2,6 @@ import { BaseAstNode } from '.'
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { Context } from '../scope'
 import { Name, buildName } from './operand'
-import { ImplDef } from './statement'
 import { Type, TypeParam, buildType, buildTypeParam } from './type'
 
 export type TypeDef = BaseAstNode & {
@@ -11,7 +10,6 @@ export type TypeDef = BaseAstNode & {
     typeParams: TypeParam[]
     variants: Variant[]
     pub: boolean
-    impl?: ImplDef
 }
 
 export const buildTypeDef = (node: ParseNode, ctx: Context): TypeDef => {
@@ -33,7 +31,7 @@ export const buildTypeDef = (node: ParseNode, ctx: Context): TypeDef => {
         // Foo()       -> variant Foo::Foo()
         // Foo(x: Int) -> variant Foo::Foo(x: Int)
         const fieldDefs = filterNonAstNodes(nodes[idx]).map(n => buildFieldDef(n, ctx))
-        variants = [{ kind: 'variant', parseNode: nodes[idx++], name, fieldDefs }]
+        variants = [{ kind: 'variant', parseNode: nodes[idx++], name, fields: fieldDefs }]
     }
     return { kind: 'type-def', parseNode: node, name, typeParams, variants, pub }
 }
@@ -41,7 +39,7 @@ export const buildTypeDef = (node: ParseNode, ctx: Context): TypeDef => {
 export type Variant = BaseAstNode & {
     kind: 'variant'
     name: Name
-    fieldDefs: FieldDef[]
+    fields: FieldDef[]
     typeDef?: TypeDef
 }
 
@@ -49,7 +47,7 @@ export const buildTypeCon = (node: ParseNode, ctx: Context): Variant => {
     const nodes = filterNonAstNodes(node)
     const name = buildName(nodes[0], ctx)
     const fieldDefs = nodes.at(1) ? filterNonAstNodes(nodes[1]).map(n => buildFieldDef(n, ctx)) : []
-    return { kind: 'variant', parseNode: node, name, fieldDefs }
+    return { kind: 'variant', parseNode: node, name, fields: fieldDefs }
 }
 
 export type FieldDef = BaseAstNode & {
