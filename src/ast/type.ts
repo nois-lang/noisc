@@ -1,6 +1,7 @@
-import { BaseAstNode } from '.'
+import { BaseAstNode, Param } from '.'
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { Context } from '../scope'
+import { assert } from '../util/todo'
 import { Hole, buildHole } from './match'
 import { Identifier, Name, buildIdentifier, buildName } from './operand'
 
@@ -65,14 +66,33 @@ export const buildFnType = (node: ParseNode, ctx: Context): FnType => {
 
 export type ParamType = BaseAstNode & {
     kind: 'param-type'
-    name: Name
+    name?: Name
     paramType: Type
 }
 
 export const buildParamType = (node: ParseNode, ctx: Context): ParamType => {
     const nodes = filterNonAstNodes(node)
     let i = 0
-    const name = buildName(nodes[i++], ctx)
+    const name = nodes.length > 1 ? buildName(nodes[i++], ctx) : undefined
     const paramType = buildType(nodes[i++], ctx)
     return { kind: 'param-type', parseNode: node, name, paramType }
+}
+
+export const paramToParamType = (param: Param): ParamType => {
+    assert(!!param.paramType)
+    const expr = param.pattern.expr
+    return {
+        kind: 'param-type',
+        parseNode: param.parseNode,
+        name: expr.kind === 'name' ? expr : undefined,
+        paramType: param.paramType!
+    }
+}
+
+export const typeToParamType = (type: Type): ParamType => {
+    return {
+        kind: 'param-type',
+        parseNode: type.parseNode,
+        paramType: type
+    }
 }

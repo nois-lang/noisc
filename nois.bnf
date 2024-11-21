@@ -92,7 +92,7 @@ type                  ::= identifier | fn-type | hole
                       ;
     fn-type-params    ::= O-BRACE (param-type (COMMA param-type)* COMMA?)? C-BRACE
                       ;
-    param-type        ::= NAME COLON type
+    param-type        ::= (NAME COLON)? type
                       ;
 block                 ::= O-BRACE statement* C-BRACE
                       ;

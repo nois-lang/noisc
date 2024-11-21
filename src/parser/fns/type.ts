@@ -103,12 +103,14 @@ export const parseFnTypeParams = (parser: Parser): void => {
 }
 
 /**
- * param-type ::=NAME COLON type
+ * param-type ::= (NAME COLON)? type
  */
 export const parseParamType = (parser: Parser): void => {
     const mark = parser.open()
-    parser.expectAny(nameLikeTokens)
-    parser.expect('colon')
+    if (parser.nth(1) === 'colon') {
+        parser.expectAny(nameLikeTokens)
+        parser.expect('colon')
+    }
     parseType(parser)
     parser.close(mark, 'param-type')
 }

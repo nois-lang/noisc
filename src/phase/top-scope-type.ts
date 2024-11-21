@@ -1,5 +1,6 @@
 import { AstNode } from '../ast'
 import { Identifier } from '../ast/operand'
+import { paramToParamType, typeToParamType } from '../ast/type'
 import { Context } from '../scope'
 import { makeErrorType, makeTypeParam } from '../typecheck'
 import { assert, todo, unreachable } from '../util/todo'
@@ -51,7 +52,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             node.type = {
                 kind: 'fn-type',
                 typeParams: node.typeParams,
-                paramTypes: node.params.map(p => p.paramType!),
+                paramTypes: node.params.map(paramToParamType),
                 returnType: node.returnType!
             }
             break
@@ -75,10 +76,10 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
                 })),
                 def: node.typeDef
             }
-            const fnType = {
+            const fnType: AstNode = {
                 kind: <const>'fn-type',
-                generics: node.typeDef!.typeParams,
-                paramTypes: node.fields.map(f => f.fieldType),
+                typeParams: node.typeDef!.typeParams,
+                paramTypes: node.fields.map(f => typeToParamType(f.fieldType)),
                 returnType: typeDefId
             }
             setTopScopeType(fnType, ctx)

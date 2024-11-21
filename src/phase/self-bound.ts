@@ -9,7 +9,7 @@ export const setSelfBound = (node: AstNode, ctx: Context) => {
             break
         }
         case 'trait-def': {
-            const selfParam = node.generics.find(g => g.name.value === 'Self')
+            const selfParam = node.typeParams.find(g => g.name.value === 'Self')
             // TODO: type args
             const id: Identifier = {
                 kind: 'identifier',
@@ -22,7 +22,7 @@ export const setSelfBound = (node: AstNode, ctx: Context) => {
             break
         }
         case 'impl-def': {
-            const selfParam = node.generics.find(g => g.name.value === 'Self')
+            const selfParam = node.typeParams.find(g => g.name.value === 'Self')
             selfParam?.bounds.push(node.for ? node.for : node.trait)
             break
         }

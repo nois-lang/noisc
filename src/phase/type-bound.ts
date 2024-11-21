@@ -1,6 +1,6 @@
 import { inspect } from 'util'
 import { AstNode } from '../ast'
-import { FnDef } from '../ast/statement'
+import { FnDef } from '../ast/operand'
 import { Context } from '../scope'
 import { operatorImplMap } from '../semantic/op'
 import {
@@ -28,7 +28,8 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         case 'arg':
         case 'block':
         case 'param':
-        case 'generic':
+        case 'type-param':
+        case 'fn-def':
         case 'match-clause':
         case 'identifier':
         case 'name':
@@ -36,7 +37,6 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         case 'operand-expr':
         case 'unary-expr':
         case 'binary-expr':
-        case 'closure-expr':
         case 'list-expr':
         case 'while-expr':
         case 'for-expr':
@@ -96,7 +96,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             collectTypeBounds(node.pattern, ctx, instantiateDefType(node.paramType!.type!, ctx))
             break
         }
-        case 'generic': {
+        case 'type-param': {
             // TODO
             break
         }
@@ -187,10 +187,6 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             node.type = makeReturnType(fnType)
             break
         }
-        case 'closure-expr': {
-            // TODO
-            break
-        }
         case 'list-expr': {
             // TODO
             break
@@ -221,7 +217,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             break
         }
         case 'fn-def': {
-            node.generics.forEach(g => collectTypeBounds(g, ctx))
+            node.typeParams.forEach(g => collectTypeBounds(g, ctx))
             node.params.forEach(p => collectTypeBounds(p, ctx))
             if (node.block) {
                 if (node.type?.kind !== 'fn-type') {
