@@ -36,7 +36,8 @@ export type ValueDefinition = Name | Variant | FieldDef | TraitStatement
 
 export type Definition = ValueDefinition | TypeDefinition | Module
 
-export type Namespace = 'type' | 'value'
+export const namespaces = <const>['type', 'value', 'module']
+export type Namespace = (typeof namespaces)[number]
 
 export type Scope = {
     type: Map<string, TypeDefinition>
@@ -51,7 +52,7 @@ export const defKey = (def: Definition): string => {
         case 'name':
             return def.value
         case 'module':
-            return idToString(def.identifier)
+            return def.identifier.names.at(-1)!.value
         default:
             return defKey(def.name)
     }

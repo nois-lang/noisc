@@ -1,7 +1,18 @@
 import { AstNode, AstNodeKind } from '../ast'
 import { Identifier, Name } from '../ast/operand'
 import { TypeParam } from '../ast/type'
-import { Context, Definition, Namespace, Scope, addDef, addError, defKey, idToString, makeScope } from '../scope'
+import {
+    Context,
+    Definition,
+    Namespace,
+    Scope,
+    addDef,
+    addError,
+    defKey,
+    idToString,
+    makeScope,
+    namespaces
+} from '../scope'
 import { genericError, notFoundError } from '../semantic/error'
 import { unreachable } from '../util/todo'
 
@@ -96,7 +107,7 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
             })
             const def = findById(node, ctx)
             if (!def) {
-                addError(ctx, notFoundError(ctx, node, idToString(node)))
+                addError(ctx, notFoundError(ctx, node, idToString(node)), true)
                 break
             }
             node.def = def
@@ -231,7 +242,7 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
     m.astStack.pop()
 }
 
-export const findName = (name: string, ctx: Context, ns: Namespace[] = ['value', 'type']): Definition | undefined => {
+export const findName = (name: string, ctx: Context, ns?: Namespace[]): Definition | undefined => {
     const m = ctx.moduleStack.at(-1)!
     for (const scope of [...m.scopeStack.toReversed(), m.topScope, m.useScope, ctx.prelude!.useScope!]) {
         const def = findNameInScope(name, scope, ns)
@@ -241,7 +252,7 @@ export const findName = (name: string, ctx: Context, ns: Namespace[] = ['value',
 }
 
 export const findById = (id: Identifier, ctx: Context): Definition | undefined => {
-    const def = findName(id.names[0].value, ctx)
+    const def = findName(id.names[0].value, ctx, id.names.length > 1 ? ['module', 'type'] : undefined)
     if (!def || id.names.length === 1) return def
     if (id.names.length > 2) {
         addError(ctx, genericError(ctx, def))
@@ -250,7 +261,11 @@ export const findById = (id: Identifier, ctx: Context): Definition | undefined =
     return findWithinDef(def, id.names[1], ctx)
 }
 
-export const findNameInScope = (name: string, scope: Scope, ns: Namespace[]): Definition | undefined => {
+export const findNameInScope = (
+    name: string,
+    scope: Scope,
+    ns: Namespace[] = [...namespaces]
+): Definition | undefined => {
     for (const n of ns) {
         const def = scope[n].get(name)
         if (def) return def
@@ -271,15 +286,10 @@ const findWithinDef = (def: Definition, name: Name, ctx: Context): Definition | 
     const key = defKey(name)
     switch (def.kind) {
         case 'module': {
-            return def.topScope.type.get(key)
+            return findNameInScope(name.value, def.topScope)
         }
         case 'trait-def': {
             return def.block.statements.find(s => defKey(s.name) === key)
-        }
-        case 'type-def': {
-            const variant = def.variants.find(v => defKey(v) === key)
-            if (variant) return variant
-            return undefined
         }
         case 'name': {
             return undefined
