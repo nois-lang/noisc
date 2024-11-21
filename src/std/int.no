@@ -30,7 +30,7 @@ impl Num for Int {
     }
 }
 
-pub let mod = fn(int, divisor: Int): Int {
+pub let mod = fn(int: Int, divisor: Int): Int {
     modInt(int, divisor)
 }
 
