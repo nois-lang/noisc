@@ -1,8 +1,10 @@
 import { AstNode } from '../ast'
 import { UnaryExpr } from '../ast/expr'
-import { Context, idFromString } from '../scope'
+import { printAst } from '../debug'
+import { Context, addError, idFromString } from '../scope'
+import { genericError } from '../semantic/error'
 import { assign } from '../util/object'
-import { todo } from '../util/todo'
+import { assert } from '../util/todo'
 
 export type DesugarStage = 'init' | 'pre-name-resolve'
 
@@ -35,33 +37,7 @@ export const desugar = (node: AstNode, stage: DesugarStage, ctx: Context) => {
 
             if (stage === 'init') {
                 if (node.op.kind === 'compose-op') {
-                    if (node.operand.kind === 'unary-expr' && node.operand.op.kind === 'call-op') {
-                        // foo.bar(a, b, c) -> bar(foo, a, b, c)
-                        const newNode = node.operand.op
-                        // TODO: report error if there are named args, e.g. foo.bar(a = 4)
-                        // since we cannot apply argument with a correnct name before typecheck phase
-                        newNode.args.unshift({ kind: 'arg', parseNode: node.operand.parseNode, expr: node.operand })
-                        assign(node, newNode)
-                    } else if (node.operand.kind === 'operand-expr' && node.operand.operand.kind === 'identifier') {
-                        // foo.bar -> bar(foo)
-                        const newNode: UnaryExpr = {
-                            kind: 'unary-expr',
-                            operand: {
-                                kind: 'operand-expr',
-                                parseNode: node.op.operand.parseNode,
-                                operand: node.op.operand
-                            },
-                            op: {
-                                kind: 'call-op',
-                                parseNode: node.parseNode,
-                                args: [{ kind: 'arg', parseNode: node.operand.parseNode, expr: node.operand }]
-                            }
-                        }
-                        assign(node, newNode)
-                    } else {
-                        // foo.{bar} -> fn() { bar(foo)) }
-                        todo('complex compose-op')
-                    }
+                    desugarComposeOp(node, ctx)
                 }
             }
 
@@ -73,9 +49,10 @@ export const desugar = (node: AstNode, stage: DesugarStage, ctx: Context) => {
             desugar(node.op, stage, ctx)
             break
         }
+
         case 'fn-def': {
             if (node.block) {
-                node.block.statements.forEach(s => desugar(s, stage, ctx))
+                desugar(node.block, stage, ctx)
             }
             break
         }
@@ -90,6 +67,14 @@ export const desugar = (node: AstNode, stage: DesugarStage, ctx: Context) => {
         }
         case 'call-op': {
             node.args.forEach(arg => desugar(arg, stage, ctx))
+            break
+        }
+        case 'arg': {
+            desugar(node.expr, stage, ctx)
+            break
+        }
+        case 'compose-op': {
+            desugar(node.operand, stage, ctx)
             break
         }
         case 'trait-def':
@@ -123,5 +108,95 @@ export const desugar = (node: AstNode, stage: DesugarStage, ctx: Context) => {
             }
             break
         }
+        case 'list-expr': {
+            node.exprs.forEach(expr => desugar(expr, stage, ctx))
+            break
+        }
+        case 'while-expr': {
+            desugar(node.condition, stage, ctx)
+            desugar(node.block, stage, ctx)
+            break
+        }
+        case 'for-expr': {
+            desugar(node.pattern, stage, ctx)
+            desugar(node.expr, stage, ctx)
+            desugar(node.block, stage, ctx)
+            break
+        }
+        case 'use-expr':
+        case 'variant':
+        case 'return-stmt':
+        case 'break-stmt':
+        case 'param':
+        case 'fn-type':
+        case 'param-type':
+        case 'type-param':
+        case 'pattern':
+        case 'con-pattern':
+        case 'list-pattern':
+        case 'field-pattern':
+        case 'hole':
+        case 'identifier':
+        case 'name':
+        case 'string-interpolated':
+        case 'type-def':
+        case 'field-def':
+        case 'string-literal':
+        case 'char-literal':
+        case 'int-literal':
+        case 'float-literal':
+        case 'bool-literal':
+        case 'add-op':
+        case 'sub-op':
+        case 'mult-op':
+        case 'div-op':
+        case 'exp-op':
+        case 'mod-op':
+        case 'eq-op':
+        case 'ne-op':
+        case 'ge-op':
+        case 'le-op':
+        case 'gt-op':
+        case 'lt-op':
+        case 'and-op':
+        case 'or-op':
+        case 'assign-op':
+        case 'bind-op':
+        case 'await-op':
+            break
+    }
+}
+
+export const desugarComposeOp = (node: UnaryExpr, ctx: Context) => {
+    if (node.op.kind !== 'compose-op') return assert(false)
+    const left = node.operand
+    const right = node.op.operand
+    if (right.kind === 'unary-expr' && right.op.kind === 'call-op') {
+        // foo.bar(a, b, c) -> bar(foo, a, b, c)
+        const newNode = right
+        // TODO: report error if there are named args, e.g. foo.bar(a = 4)
+        // since we cannot apply argument with a correnct name before typecheck phase
+        right.op.args.unshift({ kind: 'arg', parseNode: left.parseNode, expr: left })
+        assign(node, newNode)
+    } else if (right.kind === 'operand-expr') {
+        // foo.bar -> bar(foo)
+        const newNode: UnaryExpr = {
+            kind: 'unary-expr',
+            parseNode: node.parseNode,
+            operand: {
+                kind: 'operand-expr',
+                parseNode: right.operand.parseNode,
+                operand: right.operand
+            },
+            op: {
+                kind: 'call-op',
+                parseNode: right.operand.parseNode,
+                args: [{ kind: 'arg', parseNode: node.parseNode, expr: node.operand }]
+            }
+        }
+        assign(node, newNode)
+    } else {
+        printAst(node)
+        addError(ctx, genericError(ctx, node, 'unknown `compose-op` structure'), true)
     }
 }

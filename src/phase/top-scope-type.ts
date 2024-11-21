@@ -14,14 +14,14 @@ export const setTopScopeDefType = (node: AstNode, ctx: Context) => {
             break
         }
         case 'trait-def': {
-            node.generics.forEach(g => setTopScopeDefType(g, ctx))
+            node.typeParams.forEach(g => setTopScopeDefType(g, ctx))
             break
         }
         case 'type-def': {
-            node.generics.forEach(g => setTopScopeDefType(g, ctx))
+            node.typeParams.forEach(g => setTopScopeDefType(g, ctx))
             break
         }
-        case 'generic': {
+        case 'type-param': {
             node.type = makeTypeParam(node)
             break
         }
@@ -44,16 +44,13 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             break
         }
         case 'fn-def': {
-            if (node.instance) {
-                node.generics.push(...node.instance.generics)
-            }
-            node.generics.forEach(g => setTopScopeType(g, ctx))
+            node.typeParams.forEach(g => setTopScopeType(g, ctx))
             node.params.forEach(p => setTopScopeType(p, ctx))
             assert(!!node.returnType)
             setTopScopeType(node.returnType!, ctx)
             node.type = {
                 kind: 'fn-type',
-                typeParams: node.generics,
+                typeParams: node.typeParams,
                 paramTypes: node.params.map(p => p.paramType!),
                 returnType: node.returnType!
             }
@@ -70,7 +67,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
                 kind: 'identifier',
                 parseNode: node.parseNode,
                 names: [node.typeDef!.name],
-                typeArgs: node.typeDef!.generics.map(g => ({
+                typeArgs: node.typeDef!.typeParams.map(g => ({
                     kind: 'identifier',
                     names: [g.name],
                     typeArgs: [],
@@ -80,7 +77,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             }
             const fnType = {
                 kind: <const>'fn-type',
-                generics: node.typeDef!.generics,
+                generics: node.typeDef!.typeParams,
                 paramTypes: node.fields.map(f => f.fieldType),
                 returnType: typeDefId
             }
@@ -97,7 +94,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
         }
         case 'trait-def':
         case 'impl-def': {
-            node.generics.forEach(g => setTopScopeType(g, ctx))
+            node.typeParams.forEach(g => setTopScopeType(g, ctx))
             node.block.statements.forEach(s => setTopScopeType(s, ctx))
             break
         }
@@ -130,7 +127,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             node.type = { kind: 'hole' }
             break
         }
-        case 'generic': {
+        case 'type-param': {
             node.type = makeTypeParam(node)
             break
         }
