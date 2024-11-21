@@ -1,3 +1,4 @@
+import { inspect } from 'util'
 import { AstNode } from './ast'
 import { inferredTypeToString } from './typecheck'
 import { ExtractKeys } from './util/type'
@@ -6,9 +7,9 @@ export const debugAst = (
     node: AstNode,
     focusKinds: ExtractKeys<AstNode>[] = ['kind', 'type', 'value'],
     reportRecursive = false,
-    depth = 0
+    stack: AstNode[] = []
 ): any => {
-    if (depth > 10) return reportRecursive ? '@rec' : undefined
+    if (stack.includes(node)) return reportRecursive ? '@rec' : undefined
 
     const o = Object.fromEntries(
         Object.entries(node)
@@ -30,17 +31,16 @@ export const debugAst = (
                 }
                 if (Array.isArray(v)) {
                     const items = v
-                        .map(i => debugAst(i, focusKinds, reportRecursive, depth + 1))
+                        .map(i => debugAst(i, focusKinds, reportRecursive, [...stack, node]))
                         .filter(i => i !== undefined)
                     return [p, items]
                 }
                 if (typeof v === 'object' && 'parseNode' in v) {
-                    return [p, debugAst(v, focusKinds, reportRecursive, depth + 1)]
+                    return [p, debugAst(v, focusKinds, reportRecursive, [...stack, node])]
                 }
                 if (focusKinds.includes(<any>p)) {
                     return [p, v]
                 }
-                console.log(p, node.kind)
                 return undefined
             })
             .filter(t => t !== undefined)
@@ -49,4 +49,9 @@ export const debugAst = (
     )
     if (Object.keys(o).length === 0) return undefined
     return o
+}
+
+export const printAst = (node: AstNode, focusKinds: ExtractKeys<AstNode>[] = ['kind', 'type', 'value']): void => {
+    // biome-ignore lint:
+    console.log(inspect(debugAst(node, focusKinds), { compact: true, depth: null, breakLength: 120 }))
 }

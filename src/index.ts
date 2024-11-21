@@ -1,10 +1,9 @@
 import { existsSync, readFileSync, statSync } from 'fs'
 import { basename, dirname, join } from 'path'
 import { fileURLToPath } from 'url'
-import { inspect } from 'util'
 import { parseOption, reportErrors, reportWarnings } from './cli'
 import { fromCmd } from './config'
-import { debugAst } from './debug'
+import { printAst } from './debug'
 import { Package } from './package'
 import { buildModule } from './package/build'
 import { emitPackage } from './package/emit'
@@ -124,8 +123,7 @@ assert(!!ctx.prelude, 'no prelude')
 
 semanticCheck(ctx)
 
-// biome-ignore lint:
-console.log(inspect(debugAst(pkg.modules[0].block), { compact: true, depth: null, breakLength: 120 }))
+printAst(pkg.modules[0].block)
 
 reportErrors(ctx)
 reportWarnings(ctx)
