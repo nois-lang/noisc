@@ -4,6 +4,7 @@ import { Context } from '../scope'
 import { assert } from '../util/todo'
 import { Hole, buildHole } from './match'
 import { Identifier, Name, buildIdentifier, buildName } from './operand'
+import { FieldDef } from './type-def'
 
 export type Type = Identifier | FnType | Hole | Name
 
@@ -85,14 +86,27 @@ export const paramToParamType = (param: Param): ParamType => {
         kind: 'param-type',
         parseNode: param.parseNode,
         name: expr.kind === 'name' ? expr : undefined,
-        paramType: param.paramType!
+        paramType: param.paramType!,
+        type: param.type
     }
 }
 
-export const typeToParamType = (type: Type): ParamType => {
+export const typeToParamType = (type: Type, name?: Name): ParamType => {
     return {
         kind: 'param-type',
         parseNode: type.parseNode,
-        paramType: type
+        name,
+        paramType: type,
+        type
+    }
+}
+
+export const fieldToParamType = (field: FieldDef): ParamType => {
+    return {
+        kind: 'param-type',
+        parseNode: field.parseNode,
+        name: field.name,
+        paramType: field.fieldType,
+        type: field.type
     }
 }

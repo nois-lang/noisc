@@ -1,33 +1,9 @@
 import { AstNode } from '../ast'
 import { Identifier } from '../ast/operand'
-import { paramToParamType, typeToParamType } from '../ast/type'
+import { fieldToParamType, paramToParamType, typeToParamType } from '../ast/type'
 import { Context } from '../scope'
 import { makeErrorType, makeTypeParam } from '../typecheck'
 import { assert, todo, unreachable } from '../util/todo'
-
-/**
- * Set inferred def types of topScope nodes
- */
-export const setTopScopeDefType = (node: AstNode, ctx: Context) => {
-    switch (node.kind) {
-        case 'module': {
-            node.block.statements.forEach(s => setTopScopeDefType(s, ctx))
-            break
-        }
-        case 'trait-def': {
-            node.typeParams.forEach(g => setTopScopeDefType(g, ctx))
-            break
-        }
-        case 'type-def': {
-            node.typeParams.forEach(g => setTopScopeDefType(g, ctx))
-            break
-        }
-        case 'type-param': {
-            node.type = makeTypeParam(node)
-            break
-        }
-    }
-}
 
 /**
  * Set inferred types of topScope nodes
@@ -39,9 +15,17 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             break
         }
         case 'var-def': {
-            if (node.pattern.expr.kind !== 'name') return unreachable()
+            if (node.pattern.expr.kind !== 'name') return unreachable('top level destructuring')
+            if (node.expr) {
+                setTopScopeType(node.expr, ctx)
+            }
             const def = node.pattern.expr
-            def.type = node.varType ?? makeErrorType()
+            def.type = node.varType ?? node.expr?.type ?? makeErrorType()
+            break
+        }
+        case 'operand-expr': {
+            setTopScopeType(node.operand, ctx)
+            node.type = node.operand.type
             break
         }
         case 'fn-def': {
@@ -68,18 +52,18 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
                 kind: 'identifier',
                 parseNode: node.parseNode,
                 names: [node.typeDef!.name],
-                typeArgs: node.typeDef!.typeParams.map(g => ({
+                typeArgs: node.typeDef!.typeParams.map(ta => ({
                     kind: 'identifier',
-                    names: [g.name],
+                    names: [ta.name],
                     typeArgs: [],
-                    def: g
+                    def: ta
                 })),
                 def: node.typeDef
             }
             const fnType: AstNode = {
                 kind: <const>'fn-type',
                 typeParams: node.typeDef!.typeParams,
-                paramTypes: node.fields.map(f => typeToParamType(f.fieldType)),
+                paramTypes: node.fields.map(f => fieldToParamType(f)),
                 returnType: typeDefId
             }
             setTopScopeType(fnType, ctx)
@@ -89,8 +73,27 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
         case 'field-def': {
             assert(!!node.fieldType)
             setTopScopeType(node.fieldType!, ctx)
-            node.type = node.fieldType!
-            setTopScopeType(node.name, ctx)
+            // TODO: ugly
+            const typeDef = node.variant!.typeDef!
+            const typeDefId: Identifier = {
+                kind: 'identifier',
+                parseNode: node.parseNode,
+                names: [typeDef.name],
+                typeArgs: typeDef.typeParams.map(ta => ({
+                    kind: 'identifier',
+                    names: [ta.name],
+                    typeArgs: [],
+                    def: ta
+                })),
+                def: typeDef
+            }
+            const accessorType: AstNode = {
+                kind: <const>'fn-type',
+                typeParams: typeDef.typeParams,
+                paramTypes: [typeToParamType(typeDefId)],
+                returnType: node.fieldType
+            }
+            node.type = accessorType
             break
         }
         case 'trait-def':

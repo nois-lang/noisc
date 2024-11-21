@@ -9,7 +9,7 @@ import { resolveModuleScope } from '../phase/module-resolve'
 import { resolveName } from '../phase/name-resolve'
 import { setStdTypeIds } from '../phase/std-type'
 import { desugar } from '../phase/sugar'
-import { setTopScopeDefType, setTopScopeType } from '../phase/top-scope-type'
+import { setTopScopeType } from '../phase/top-scope-type'
 import { collectTypeBounds } from '../phase/type-bound'
 import { unifyTypeBounds } from '../phase/type-unify'
 import { Context, eachModule, idToString, pathToId } from '../scope'
@@ -48,7 +48,6 @@ describe('semantic', () => {
             setStdTypeIds,
             desugar,
             resolveName,
-            setTopScopeDefType,
             setTopScopeType,
             collectTypeBounds,
             unifyTypeBounds
