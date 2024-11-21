@@ -172,13 +172,13 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             break
         }
         case 'binary-expr': {
-            if (node.binaryOp.kind === 'assign-op') {
+            if (node.op.kind === 'assign-op') {
                 // TODO
                 break
             }
             collectTypeBounds(node.lOperand, ctx)
             collectTypeBounds(node.rOperand, ctx)
-            const methodId = operatorImplMap.get(node.binaryOp.kind)
+            const methodId = operatorImplMap.get(node.op.kind)
             assert(!!methodId)
             const methodDef = findById(methodId!, ctx)
             assert(!!methodDef)
@@ -235,7 +235,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         case 'trait-def':
         case 'impl-def': {
             // TODO
-            if (node.kind === 'impl-def' && node.forTrait) {
+            if (node.kind === 'impl-def' && node.for) {
                 break
             }
             node.block.statements.forEach(s => collectTypeBounds(s, ctx))

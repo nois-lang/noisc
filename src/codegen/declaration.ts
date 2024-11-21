@@ -55,9 +55,9 @@ export const emitStatement = (statement: Statement, pubOnly = true): string | un
                 statement.typeParams?.length > 0
                     ? `<${statement.typeParams.map(g => emitParseNode(g.parseNode)).join(', ')}> `
                     : ''
-            if (statement.forTrait) {
-                const id = emitParseNode(statement.identifier.parseNode)
-                const forTrait = emitParseNode(statement.forTrait.parseNode)
+            if (statement.for) {
+                const id = emitParseNode(statement.trait.parseNode)
+                const forTrait = emitParseNode(statement.for.parseNode)
                 return `impl ${generics}${id} for ${forTrait} {}`
             }
             const statements = statement.block.statements
@@ -65,7 +65,7 @@ export const emitStatement = (statement: Statement, pubOnly = true): string | un
                 .filter(s => !!s)
                 .map(s => s!)
             const block = statements.length > 0 ? `{\n${statements.map(s => indentStr(s)).join('\n')}\n}` : '{}'
-            return `impl ${generics}${emitParseNode(statement.identifier.parseNode)} ${block}`
+            return `impl ${generics}${emitParseNode(statement.trait.parseNode)} ${block}`
         }
         case 'type-def': {
             if (!statement.pub) return undefined
@@ -74,11 +74,11 @@ export const emitStatement = (statement: Statement, pubOnly = true): string | un
                     ? `<${statement.typeParams.map(g => emitParseNode(g.parseNode)).join(', ')}>`
                     : ''
             const variants = statement.variants.map(v => {
-                const fields = v.fieldDefs
+                const fields = v.fields
                     .map(emitFieldDef)
                     .filter(f => !!f)
                     .map(f => f!)
-                const fieldDefs = v.fieldDefs.length > 0 ? `(${fields})` : ''
+                const fieldDefs = v.fields.length > 0 ? `(${fields})` : ''
                 return `${v.name.value}${fieldDefs}`
             })
             const block = variants.length > 0 ? ` {\n${variants.map(s => indentStr(s)).join(',\n')}\n}` : ''

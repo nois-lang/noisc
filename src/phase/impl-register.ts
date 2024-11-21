@@ -7,7 +7,7 @@ export const registerImpl = (node: AstNode, ctx: Context): void => {
             node.block.statements.forEach(s => registerImpl(s, ctx))
             break
         case 'impl-def':
-            if (!node.forTrait) return
+            if (!node.for) return
             const m = ctx.moduleStack.at(-1)!
             m.impls.push(node)
             break

@@ -29,7 +29,7 @@ export type UnaryExpr = BaseAstNode & {
 
 export type BinaryExpr = BaseAstNode & {
     kind: 'binary-expr'
-    binaryOp: BinaryOp
+    op: BinaryOp
     lOperand: Expr
     rOperand: Expr
 }
@@ -62,7 +62,7 @@ export const buildExpr = (node: ParseNode, ctx: Context): Expr => {
                     exprStack.push({
                         kind: 'binary-expr',
                         parseNode: { kind: 'expr', nodes: [lExp, o2, rExp].map(e => e.parseNode).filter(n => !!n) },
-                        binaryOp: o2,
+                        op: o2,
                         lOperand: lExp,
                         rOperand: rExp
                     })
@@ -81,7 +81,7 @@ export const buildExpr = (node: ParseNode, ctx: Context): Expr => {
         exprStack.push({
             kind: 'binary-expr',
             parseNode: { kind: 'expr', nodes: [lExp, op, rExp].map(e => e.parseNode).filter(n => !!n) },
-            binaryOp: op,
+            op: op,
             lOperand: lExp,
             rOperand: rExp
         })

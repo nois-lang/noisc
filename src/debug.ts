@@ -4,7 +4,7 @@ import { ExtractKeys } from './util/type'
 
 export const debugAst = (
     node: AstNode,
-    focusKinds: ExtractKeys<AstNode>[] = ['kind', 'type'],
+    focusKinds: ExtractKeys<AstNode>[] = ['kind', 'type', 'value'],
     reportRecursive = false,
     depth = 0
 ): any => {
@@ -40,6 +40,7 @@ export const debugAst = (
                 if (focusKinds.includes(<any>p)) {
                     return [p, v]
                 }
+                console.log(p, node.kind)
                 return undefined
             })
             .filter(t => t !== undefined)

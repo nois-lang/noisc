@@ -134,7 +134,7 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
         case 'binary-expr': {
             resolveName(node.lOperand, ctx)
             resolveName(node.rOperand, ctx)
-            resolveName(node.binaryOp, ctx)
+            resolveName(node.op, ctx)
             break
         }
         case 'list-expr': {
@@ -218,6 +218,8 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
             break
         }
         case 'compose-op': {
+            addError(ctx, genericError(ctx, node), true)
+
             unreachable()
             break
         }

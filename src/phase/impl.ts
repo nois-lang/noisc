@@ -13,14 +13,14 @@ export const checkImpl = (node: AstNode, ctx: Context): void => {
             node.block.statements.forEach(s => checkImpl(s, ctx))
             break
         case 'impl-def':
-            if (!node.forTrait) return
-            const traitDef = node.identifier.def
+            if (!node.for) return
+            const traitDef = node.trait.def
             if (!traitDef) {
                 // already reported
                 break
             }
             if (traitDef.kind !== 'trait-def') {
-                addError(ctx, genericError(ctx, node.identifier, `\`${idToString(node.identifier)}\` is not a trait`))
+                addError(ctx, genericError(ctx, node.trait, `\`${idToString(node.trait)}\` is not a trait`))
                 break
             }
             const traitMethods = traitDef.block.statements.filter(s => s.kind === 'fn-def').map(s => <FnDef>s)
@@ -28,8 +28,8 @@ export const checkImpl = (node: AstNode, ctx: Context): void => {
             const implMethods = node.block.statements.filter(s => s.kind === 'fn-def').map(s => <FnDef>s)
             implMethods.forEach(im => {
                 if (im.kind !== 'fn-def') {
-                    const msg = `\`${idToString(node.identifier)}\` is not a trait`
-                    addError(ctx, genericError(ctx, node.identifier, msg))
+                    const msg = `\`${idToString(node.trait)}\` is not a trait`
+                    addError(ctx, genericError(ctx, node.trait, msg))
                     return
                 }
                 if (!im.block) {
@@ -60,7 +60,7 @@ export const checkImpl = (node: AstNode, ctx: Context): void => {
                     const msg = `missing method \`${rm.name.value}\` required by trait \`${traitDef.name.value}\``
                     const rmStr = `${emitParseNode(rm.parseNode!)} { todo() }`
                     const note = `implement method\n    ${rmStr}`
-                    addError(ctx, genericError(ctx, node.identifier, msg, [note]))
+                    addError(ctx, genericError(ctx, node.trait, msg, [note]))
                     return
                 }
             })

@@ -90,11 +90,11 @@ export const jsRelName = (instanceDef: TraitDef | ImplDef): string => {
     if (instanceDef.kind === 'trait-def') {
         return instanceDef.name.value
     }
-    const idStr = idToString(instanceDef.identifier).replace(/[:<>, ]/g, '')
-    if (!instanceDef.forTrait) {
+    const idStr = idToString(instanceDef.trait).replace(/[:<>, ]/g, '')
+    if (!instanceDef.for) {
         return `impl_${idStr}`
     } else {
-        const forStr = idToString(instanceDef.forTrait).replace(/[:<>, ]/g, '')
+        const forStr = idToString(instanceDef.for).replace(/[:<>, ]/g, '')
         return `impl_${idStr}_${forStr}`
     }
 }

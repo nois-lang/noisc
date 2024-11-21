@@ -21,11 +21,11 @@ export const findMethodDefForMethodCall = (
     if (m) return m
 
     const impls = ctx.packages.flatMap(p =>
-        p.modules.flatMap(m => m.impls).filter(impl => impl.forTrait && impl.forTrait.def === def)
+        p.modules.flatMap(m => m.impls).filter(impl => impl.for && impl.for.def === def)
     )
     const impldTraits = dedup(
         impls
-            .map(impl => impl.identifier)
+            .map(impl => impl.trait)
             .filter(i => i.def && i.def.kind === 'trait-def')
             .map(i => <TraitDef>i.def)
     )

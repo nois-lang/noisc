@@ -110,7 +110,7 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): EmitExpr =
     const lOp = emitOperand(binaryExpr.lOperand, ctx)
     const resultVar = nextVariable(ctx)
     const rOp = emitOperand(binaryExpr.rOperand, ctx)
-    switch (binaryExpr.binaryOp.kind) {
+    switch (binaryExpr.op.kind) {
         case 'assign-op': {
             return {
                 emit: emitTree([
@@ -125,11 +125,11 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): EmitExpr =
             }
         }
         default: {
-            const op = binaryExpr.binaryOp
+            const op = binaryExpr.op
             const methodVid = operatorImplMap.get(op.kind)!
             const trait = methodVid.names.at(-2)!
             const method = methodVid.names.at(-1)!
-            const callerEmit = binaryExpr.binaryOp.impl ? jsRelName(binaryExpr.binaryOp.impl) : trait
+            const callerEmit = binaryExpr.op.impl ? jsRelName(binaryExpr.op.impl) : trait
             const callEmit = jsVariable(
                 resultVar,
                 emitToken(`${callerEmit}().${method}(${lOp.resultVar}, ${rOp.resultVar})`)

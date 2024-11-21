@@ -184,7 +184,7 @@ export const unifyType = (type: InferredType, ctx: Context): void => {
                 // failed unify
                 break
             }
-            const f = variant.fieldDefs.find(fd => fd.name.value === type.fieldPattern.name.value)
+            const f = variant.fields.find(fd => fd.name.value === type.fieldPattern.name.value)
             if (!f) {
                 assign(type, makeErrorType(type.fieldPattern.name.value, 'no-field'))
                 break

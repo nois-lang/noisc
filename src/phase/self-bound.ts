@@ -23,7 +23,7 @@ export const setSelfBound = (node: AstNode, ctx: Context) => {
         }
         case 'impl-def': {
             const selfParam = node.generics.find(g => g.name.value === 'Self')
-            selfParam?.bounds.push(node.forTrait ? node.forTrait : node.identifier)
+            selfParam?.bounds.push(node.for ? node.for : node.trait)
             break
         }
     }

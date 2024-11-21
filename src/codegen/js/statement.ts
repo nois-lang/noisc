@@ -131,7 +131,7 @@ export const emitBlock = (block: Block, ctx: Context, resultVar?: boolean | stri
 }
 
 export const emitVariant = (v: Variant, typeDef: TypeDef, ctx: Context): EmitNode => {
-    const fieldNames = v.fieldDefs.map(f => f.name.value)
+    const fieldNames = v.fields.map(f => f.name.value)
     const fields_ = fieldNames.map(f => `${f}`)
     const fields = fields_.length > 0 ? ` ${fields_.join(',')} ` : ''
     const type = jsString(vidToString(typeDefToVirtualType(typeDef, ctx, ctx.moduleStack.at(-1)!).identifier))
@@ -152,7 +152,7 @@ export const emitUpcastFn = (v: Variant, typeDef: TypeDef, ctx: Context): EmitNo
     const params = ['value', 'Self', ...typeDef.typeParams.map(g => g.name.value)]
     const selfG = 'Object.assign(value, Self);'
     const gs = typeDef.typeParams.flatMap(g => {
-        const fields = v.fieldDefs.filter(f => virtualTypeToString(f.type!) === g.name.value).map(f => f.name.value)
+        const fields = v.fields.filter(f => virtualTypeToString(f.type!) === g.name.value).map(f => f.name.value)
         if (fields.length === 0) return []
         const fs = fields
             .map(f => {

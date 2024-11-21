@@ -4,8 +4,9 @@ import { TraitDef, TraitStatement } from '../ast/statement'
 import { TypeParam } from '../ast/type'
 import { FieldDef, TypeDef, Variant } from '../ast/type-def'
 import { Config } from '../config'
+import { prettySourceMessage } from '../error'
 import { Package } from '../package'
-import { ParseNode } from '../parser'
+import { ParseNode, getSpan } from '../parser'
 import { StdTypeIds } from '../phase/std-type'
 import { SemanticError, duplicateDefError } from '../semantic/error'
 import { typeToString } from '../typecheck'
@@ -107,15 +108,17 @@ export const pathToId = (path: string, packageName?: string): Identifier => {
     return idFromString(dirs.join('::'))
 }
 
-export const addError = (ctx: Context, error: SemanticError): void => {
-    // console.trace(
-    //     prettySourceMessage(
-    //         error.message,
-    //         error.source,
-    //         error.node.parseNode ? getSpan(error.node.parseNode) : undefined,
-    //         error.notes
-    //     )
-    // )
+export const addError = (ctx: Context, error: SemanticError, immediate = false): void => {
+    if (immediate) {
+        console.trace(
+            prettySourceMessage(
+                error.message,
+                error.source,
+                error.node.parseNode ? getSpan(error.node.parseNode) : undefined,
+                error.notes
+            )
+        )
+    }
     ctx.errors.push(error)
 }
 

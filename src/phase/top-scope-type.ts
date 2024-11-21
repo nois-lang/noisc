@@ -53,7 +53,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             setTopScopeType(node.returnType!, ctx)
             node.type = {
                 kind: 'fn-type',
-                generics: node.generics,
+                typeParams: node.generics,
                 paramTypes: node.params.map(p => p.paramType!),
                 returnType: node.returnType!
             }
@@ -64,7 +64,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             break
         }
         case 'variant': {
-            node.fieldDefs.forEach(f => setTopScopeType(f, ctx))
+            node.fields.forEach(f => setTopScopeType(f, ctx))
             // TODO: ugly
             const typeDefId: Identifier = {
                 kind: 'identifier',
@@ -81,7 +81,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             const fnType = {
                 kind: <const>'fn-type',
                 generics: node.typeDef!.generics,
-                paramTypes: node.fieldDefs.map(f => f.fieldType),
+                paramTypes: node.fields.map(f => f.fieldType),
                 returnType: typeDefId
             }
             setTopScopeType(fnType, ctx)
@@ -120,7 +120,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             break
         }
         case 'fn-type': {
-            node.generics.forEach(pt => setTopScopeType(pt, ctx))
+            node.typeParams.forEach(pt => setTopScopeType(pt, ctx))
             node.paramTypes.forEach(pt => setTopScopeType(pt, ctx))
             setTopScopeType(node.returnType, ctx)
             node.type = node
