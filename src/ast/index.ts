@@ -1,5 +1,5 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
-import { Context, Scope } from '../scope'
+import { Context, Scope, makeScope } from '../scope'
 import { Source } from '../source'
 import { InferredType } from '../typecheck'
 import { BinaryExpr, Expr, OperandExpr, UnaryExpr, buildExpr } from './expr'
@@ -268,10 +268,10 @@ export const buildModuleAst = (
         block,
         scopeStack: [],
         useExprs,
-        topScope: { type: new Map(), value: new Map() },
+        topScope: makeScope(),
         compiled,
         imports: [],
-        useScope: { type: new Map(), value: new Map() },
+        useScope: makeScope(),
         astStack: [],
         impls: []
     }

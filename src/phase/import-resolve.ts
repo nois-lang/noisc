@@ -62,6 +62,13 @@ const resolvePubId = (id: Identifier, ctx: Context): Definition[] => {
         return defs
     }
 
+    // case of module import, e.g. std::float
+    mod = pkg.modules.find(m => idEq(m.identifier, id))
+    if (mod) {
+        defs.push(mod)
+        return defs
+    }
+
     // case of TraitStatement, e.g. std::iter::Iter::next
     if (id.names.length < 3) return defs
     nodeName = id.names.at(-2)!.value

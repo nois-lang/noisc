@@ -1,7 +1,7 @@
 import { AstNode, AstNodeKind } from '../ast'
 import { Identifier, Name } from '../ast/operand'
 import { TypeParam } from '../ast/type'
-import { Context, Definition, Namespace, Scope, addDef, addError, defKey, idToString } from '../scope'
+import { Context, Definition, Namespace, Scope, addDef, addError, defKey, idToString, makeScope } from '../scope'
 import { genericError, notFoundError } from '../semantic/error'
 import { unreachable } from '../util/todo'
 
@@ -231,7 +231,7 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
     m.astStack.pop()
 }
 
-export const findName = (name: string, ctx: Context, ns: Namespace = 'value'): Definition | undefined => {
+export const findName = (name: string, ctx: Context, ns: Namespace[] = ['value', 'type']): Definition | undefined => {
     const m = ctx.moduleStack.at(-1)!
     for (const scope of [...m.scopeStack.toReversed(), m.topScope, m.useScope, ctx.prelude!.useScope!]) {
         const def = findNameInScope(name, scope, ns)
@@ -250,8 +250,12 @@ export const findById = (id: Identifier, ctx: Context): Definition | undefined =
     return findWithinDef(def, id.names[1], ctx)
 }
 
-export const findNameInScope = (name: string, scope: Scope, ns: Namespace): Definition | undefined => {
-    return scope[ns].get(name)
+export const findNameInScope = (name: string, scope: Scope, ns: Namespace[]): Definition | undefined => {
+    for (const n of ns) {
+        const def = scope[n].get(name)
+        if (def) return def
+    }
+    return undefined
 }
 
 export const findParent = (ctx: Context, ofKind: AstNodeKind[]): AstNode | undefined => {
@@ -293,7 +297,7 @@ const findWithinDef = (def: Definition, name: Name, ctx: Context): Definition | 
 
 const withScope = <T>(ctx: Context, f: () => T): T => {
     const m = ctx.moduleStack.at(-1)!
-    m.scopeStack.push({ type: new Map(), value: new Map() })
+    m.scopeStack.push(makeScope())
     const res = f()
     m.scopeStack.pop()
     return res

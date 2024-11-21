@@ -53,5 +53,5 @@ export const debugAst = (
 
 export const printAst = (node: AstNode, focusKinds: ExtractKeys<AstNode>[] = ['kind', 'type', 'value']): void => {
     // biome-ignore lint:
-    console.log(inspect(debugAst(node, focusKinds), { compact: true, depth: null, breakLength: 120 }))
+    console.info(inspect(debugAst(node, focusKinds), { compact: true, depth: null, breakLength: 120 }))
 }

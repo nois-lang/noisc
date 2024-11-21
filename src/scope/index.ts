@@ -10,7 +10,6 @@ import { ParseNode, getSpan } from '../parser'
 import { StdTypeIds } from '../phase/std-type'
 import { SemanticError, duplicateDefError } from '../semantic/error'
 import { typeToString } from '../typecheck'
-import { unreachable } from '../util/todo'
 
 export type Context = {
     config: Config
@@ -35,14 +34,17 @@ export type TypeDefinition = TraitDef | TypeDef | TypeParam
 
 export type ValueDefinition = Name | Variant | FieldDef | TraitStatement
 
-export type Definition = Module | TypeDefinition | ValueDefinition
+export type Definition = ValueDefinition | TypeDefinition | Module
 
 export type Namespace = 'type' | 'value'
 
 export type Scope = {
     type: Map<string, TypeDefinition>
     value: Map<string, ValueDefinition>
+    module: Map<string, Module>
 }
+
+export const makeScope = (): Scope => ({ type: new Map(), value: new Map(), module: new Map() })
 
 export const defKey = (def: Definition): string => {
     switch (def.kind) {
@@ -57,20 +59,29 @@ export const defKey = (def: Definition): string => {
 
 export const addDef = (node: Definition, scope: Scope, ctx: Context, sourceNode: AstNode = node): void => {
     const key = defKey(node)
-    if (node.kind === 'type-def' || node.kind === 'trait-def' || node.kind === 'type-param') {
-        if (scope.type.has(key)) {
-            addError(ctx, duplicateDefError(ctx, sourceNode))
-            return
-        }
-        scope.type.set(key, node)
-    } else if (node.kind === 'name' || node.kind === 'variant' || node.kind === 'field-def') {
-        if (scope.value.has(key)) {
-            addError(ctx, duplicateDefError(ctx, sourceNode))
-            return
-        }
-        scope.value.set(key, node)
-    } else {
-        unreachable()
+    switch (node.kind) {
+        case 'type-def':
+        case 'trait-def':
+        case 'type-param':
+            if (scope.type.has(key)) {
+                addError(ctx, duplicateDefError(ctx, sourceNode))
+                break
+            }
+            scope.type.set(key, node)
+            break
+        case 'name':
+        case 'variant':
+        case 'field-def':
+        case 'trait-statement':
+            if (scope.value.has(key)) {
+                addError(ctx, duplicateDefError(ctx, sourceNode))
+                break
+            }
+            scope.value.set(key, node)
+            break
+        case 'module':
+            scope.module.set(key, node)
+            break
     }
 }
 

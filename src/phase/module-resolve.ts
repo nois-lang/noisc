@@ -14,6 +14,9 @@ export const resolveModuleScope = (node: AstNode, ctx: Context): void => {
             }
             break
         }
+        case 'type-def':
+            addDef(node, m.topScope, ctx)
+            break
         case 'trait-def':
             addDef(node, m.topScope, ctx)
             break

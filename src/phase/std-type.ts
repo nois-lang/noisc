@@ -27,6 +27,7 @@ export const preludeId = idFromString('std::prelude')
  * Set {@link Context.stdTypeIds} by resolving compiler-required types in std
  */
 export const setStdTypeIds = (node: AstNode, ctx: Context): void => {
+    if (Object.keys(ctx.stdTypeIds).length > 0) return
     ctx.stdTypeIds = {}
     const pairs = <const>[
         ['unit', 'Unit'],
