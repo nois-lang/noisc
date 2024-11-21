@@ -91,13 +91,13 @@ export const buildExpr = (node: ParseNode, ctx: Context): Expr => {
     return result
 }
 
-export const buildSubExpr = (node: ParseNode, ctx: Context): UnaryExpr => {
+export const buildSubExpr = (node: ParseNode, ctx: Context): UnaryExpr | OperandExpr => {
     const nodes = filterNonAstNodes(node)
     const operand = buildOperand(nodes[0], ctx)
     const ops = nodes.slice(1).map(n => buildPostfixOp(n, ctx))
     let expr: Expr = { kind: 'operand-expr', parseNode: operand.parseNode, operand }
     // fold a list of ops into left-associative unary-exprs
-    for (const op of ops) {
+    for (const op of ops.toReversed()) {
         expr = {
             kind: 'unary-expr',
             parseNode: { kind: 'expr', nodes: [expr.parseNode, op.parseNode].filter(n => !!n) },
@@ -105,5 +105,5 @@ export const buildSubExpr = (node: ParseNode, ctx: Context): UnaryExpr => {
             op
         }
     }
-    return <UnaryExpr>expr
+    return expr
 }

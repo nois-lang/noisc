@@ -1,7 +1,7 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { Context } from '../scope'
+import { Expr, buildSubExpr } from './expr'
 import { Arg, AstNode, AstNodeKind, BaseAstNode, buildArg } from './index'
-import { Operand, buildOperand } from './operand'
 
 export type PostfixOp = ComposeOp | CallOp | UnwrapOp | BindOp | AwaitOp
 
@@ -116,12 +116,12 @@ export const buildBinaryOp = (node: ParseNode): BinaryOp => {
 
 export type ComposeOp = BaseAstNode & {
     kind: 'compose-op'
-    operand: Operand
+    operand: Expr
 }
 
 export const buildComposeOp = (node: ParseNode, ctx: Context): ComposeOp => {
-    const operand = buildOperand(filterNonAstNodes(node)[0], ctx)
-    return { kind: 'compose-op', parseNode: node, operand }
+    const expr = buildSubExpr(filterNonAstNodes(node)[0], ctx)
+    return { kind: 'compose-op', parseNode: node, operand: expr }
 }
 
 export type CallOp = BaseAstNode & {

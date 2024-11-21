@@ -38,7 +38,7 @@ export const parseSubExpr = (parser: Parser): void => {
 }
 
 /**
- * operand ::= fn-def | match-expr | closure-expr | list-expr | STRING | CHAR | number | TRUE
+ * operand ::= fn-def | match-expr | list-expr | STRING | CHAR | number | TRUE
  * | FALSE | identifier | block
  */
 export const parseOperand = (parser: Parser): void => {

@@ -1,7 +1,7 @@
 import { nameLikeTokens } from '.'
 import { Parser } from '..'
 import { syntaxError } from '../../error'
-import { parseExpr, parseOperand } from './expr'
+import { parseExpr, parseSubExpr } from './expr'
 
 /**
  * infix-op ::= add-op | sub-op | mult-op | div-op | exp-op | mod-op | eq-op | ne-op | ge-op | le-op | gt-op
@@ -111,12 +111,12 @@ export const parsePostfixOp = (parser: Parser): void => {
 }
 
 /*
- * compose-op ::= PERIOD operand
+ * compose-op ::= PERIOD sub-expr
  */
 export const parseComposeOp = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('period')
-    parseOperand(parser)
+    parseSubExpr(parser)
     parser.close(mark, 'compose-op')
 }
 
