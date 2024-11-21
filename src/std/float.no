@@ -1,31 +1,33 @@
 pub type Float
 
-pub let neg = fn(float): Float {
-    negFloat(float)
-}
+impl Num for Float {
+    neg = fn(self): Self {
+        negFloat(self)
+    }
 
-pub let abs = fn(float): Float {
-    absFloat(float)
-}
+    abs = fn(self): Self {
+        absFloat(self)
+    }
 
-pub let add = fn(float, other: Float): Float {
-    addFloat(float, other)
-}
+    add = fn(self, other: Self): Self {
+        addFloat(self, other)
+    }
 
-pub let sub = fn(float, other: Float): Float {
-    subFloat(float, other)
-}
+    sub = fn(self, other: Self): Self {
+        subFloat(self, other)
+    }
 
-pub let mult = fn(float, other: Float): Float {
-    multFloat(float, other)
-}
+    mult = fn(self, other: Self): Self {
+        multFloat(self, other)
+    }
 
-pub let div = fn(float, other: Float): Float {
-    divFloat(float, other)
-}
+    div = fn(self, other: Self): Self {
+        divFloat(self, other)
+    }
 
-pub let exp = fn(float, other: Float): Float {
-    expFloat(float, other)
+    exp = fn(self, other: Self): Self {
+        expFloat(self, other)
+    }
 }
 
 impl Eq for Float {

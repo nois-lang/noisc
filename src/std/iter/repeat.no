@@ -16,6 +16,6 @@ impl <T> Iter<T> for RepeatIter<T> {
 }
 
 pub let repeat = fn<T>(item: T, count: Int): RepeatIter<T> {
-    RepeatIter(range: RangeIter::RangeIter(0, count), item)
+    RepeatIter(range: RangeIter(0, count), item)
 }
 

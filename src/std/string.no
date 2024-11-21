@@ -3,7 +3,7 @@ use std::iter::MapAdapter
 pub type String
 
 // TODO: belongs to the Monoid trait
-pub concat = fn(string: String, other: Self): String {
+pub let concat = fn(string: String, other: String): String {
     concatString(string, other)
 }
 

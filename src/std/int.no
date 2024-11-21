@@ -1,31 +1,33 @@
 pub type Int
 
-pub let neg = fn(int): Int {
-    negInt(int)
-}
+impl Num for Int {
+    neg = fn(self): Self {
+        negInt(self)
+    }
 
-pub let abs = fn(int): Int {
-    absInt(int)
-}
+    abs = fn(self): Self {
+        absInt(self)
+    }
 
-pub let add = fn(int, other: Int): Int {
-    addInt(int, other)
-}
+    add = fn(self, other: Self): Self {
+        addInt(self, other)
+    }
 
-pub let sub = fn(int, other: Int): Int {
-    subInt(int, other)
-}
+    sub = fn(self, other: Self): Self {
+        subInt(self, other)
+    }
 
-pub let mult = fn(int, other: Int): Int {
-    multInt(int, other)
-}
+    mult = fn(self, other: Self): Self {
+        multInt(self, other)
+    }
 
-pub let div = fn(int, other: Int): Int {
-    divInt(int, other)
-}
+    div = fn(self, other: Self): Self {
+        divInt(self, other)
+    }
 
-pub let exp = fn(int, other: Int): Int {
-    expInt(int, other)
+    exp = fn(self, other: Self): Self {
+        expInt(self, other)
+    }
 }
 
 pub let mod = fn(int, divisor: Int): Int {

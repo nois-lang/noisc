@@ -1,4 +1,6 @@
 use std::ref::eqRef
+use std::list::{ add }
+use std::future::runtime::{ Runtime, runtime }
 
 pub type Future<T>(
     f: fn(resolve: fn(result: T): Unit): Unit, 
@@ -16,8 +18,8 @@ pub type FutureState<T> {
 
 impl <T> Trace for FutureState<T> {}
 
-pub let new = fn<T>(f: fn(resolve: fn(result: T): Unit): Unit): Self {
-    Future(f, [], FutureState::Created())
+pub let new = fn<T>(f: fn(resolve: fn(result: T): Unit): Unit): Future<T> {
+    Future(f, [], Created())
 }
 
 pub let onResolve = fn<T>(future: Future<T>, f: fn(result: T): Unit): Unit {
@@ -37,18 +39,18 @@ pub let onResolve = fn<T>(future: Future<T>, f: fn(result: T): Unit): Unit {
 // TODO: belongs to std::control::Functor
 pub let map = fn<T, U>(future: Future<T>, f: fn(value: T): U): Future<U> {
     // TODO: use .await
-    Future::new(fn(resolve) { future.onResolve(fn(res) { resolve(f(res)) }) })
+    new(fn(resolve) { future.onResolve(fn(res) { resolve(f(res)) }) })
 }
 
 // TODO: belongs to std::control::Monad
 pub let flatMap = fn<T, U>(future: Future<T>, f: fn(value: T): Future<U>): Future<U> {
     // TODO: use .await
-    Future::new(fn(resolve) {
+    new(fn(resolve) {
         future.onResolve(fn (res) { f(res).onResolve(fn(inner) { resolve(inner) }) })
     })
 }
 
-pub let spawn = fn<T>(future: Future<T>, runtime: Runtime): Self {
+pub let spawn = fn<T>(future: Future<T>, runtime: Runtime): Future<T> {
     runtime.spawn(future)
 }
 

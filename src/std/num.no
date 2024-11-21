@@ -1,0 +1,15 @@
+pub trait Num {
+    neg = fn(self): Self
+
+    abs = fn(self): Self
+
+    add = fn(self, other: Self): Self
+
+    sub = fn(self, other: Self): Self
+
+    mult = fn(self, other: Self): Self
+
+    div = fn(self, other: Self): Self
+
+    exp = fn(self, other: Self): Self
+}

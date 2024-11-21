@@ -1,3 +1,8 @@
+use std::future::{ self, FutureState, state, subscribers }
+use std::list::{ add, count, popAt, clear, popFront }
+use std::iter::{ Iter::position }
+use std::ref::eqRef
+
 pub type Runtime(
     // TODO: use std::time::Duration
     pollingRate: Int,
@@ -5,23 +10,23 @@ pub type Runtime(
     pending: List<Future<_>>,
 )
 
-pub let runtime: Runtime = Runtime::new()
+pub let runtime: Runtime = new()
 
 pub let new = fn(): Runtime {
-    Runtime::withPollingRate(10)
+    withPollingRate(10)
 }
 
 pub let withPollingRate = fn(pollingRate: Int): Runtime {
-    Runtime::Runtime(pollingRate, [], [])
+    Runtime(pollingRate, [], [])
 }
 
 pub let loop = fn(runtime): Unit {
     while runtime.queue.count() > 0 {
         let next = runtime.queue.popFront()!
-        next.state = FutureState::Pending()
+        next.state = future::Pending()
         runtime.pending.add(next)
-        let _ = {next.f}(fn(res) {
-            next.state = FutureState::Resolved(res)
+        let _ = {next.future::f}(fn(res) {
+            next.state = future::Resolved(res)
             for s in next.subscribers {
                 s(res)
             }
@@ -39,13 +44,13 @@ pub let loop = fn(runtime): Unit {
 
 pub let spawn = fn<T>(runtime, future: Future<T>): Future<T> {
     runtime.queue.add(future)
-    future.state = FutureState::Queued()
+    future.state = future::Queued()
     future
 }
 
 // TODO: use std::time::Duration
 pub let delay = fn(delay: Int): Future<Unit> {
-    Future::new(fn(resolve) { deferFor(fn() { resolve(unit) }, delay) })
+    future::new(fn(resolve) { deferFor(fn() { resolve(unit) }, delay) })
 }
 
 pub let defer = fn(f: fn(): Unit): Unit {

@@ -1,3 +1,5 @@
+use std::iter::Iter::next
+
 pub type PeekableIter<T>(
     iter: Iter<T>,
     peeked: Option<Option<T>>
