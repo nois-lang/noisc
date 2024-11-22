@@ -3,7 +3,7 @@ import { FnDef } from '../ast/statement'
 import { emitParseNode } from '../codegen/declaration'
 import { Context, addError, idToString } from '../scope'
 import { genericError, typeError } from '../semantic/error'
-import { instantiateDefType } from '../typecheck'
+import { instantiateType } from '../typecheck'
 import { assert } from '../util/todo'
 import { findTypeErrors, unify } from './type-unify'
 
@@ -45,7 +45,7 @@ export const checkImpl = (node: AstNode, ctx: Context): void => {
                 assert(!!im.type)
                 assert(!!traitMethod.type)
                 // TODO: handle unify of 'fn-type's specifically for this case (get rid of `instantiateDefType`)
-                const t = unify(instantiateDefType(im.type!, ctx), instantiateDefType(traitMethod.type!, ctx), ctx)
+                const t = unify(instantiateType(im.type!, ctx), instantiateType(traitMethod.type!, ctx), ctx)
                 findTypeErrors(t).forEach(e => {
                     if (e.error.reported) return
                     // TODO: don't print method body

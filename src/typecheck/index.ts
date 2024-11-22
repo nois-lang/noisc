@@ -74,14 +74,17 @@ export const makeErrorType = (message?: string, errorKind: ErrorTypeKind = 'othe
     }
 })
 
-export const instantiateDefType = <T extends InferredType>(t: T, ctx: Context): T => {
+export const instantiateType = <T extends InferredType>(t: T, ctx: Context): T => {
     switch (t.kind) {
         case 'fn-type': {
             const inst: FnType = {
                 kind: 'fn-type',
                 typeParams: t.typeParams.map(tp => ({ ...tp })),
-                paramTypes: t.paramTypes.map(pt => ({ ...pt, type: instantiateDefType(pt.type!, ctx) })),
-                returnType: instantiateDefType(t.returnType ?? ctx.stdTypeIds.unit, ctx)
+                paramTypes: t.paramTypes.map(pt => {
+                    assert(!!pt.type)
+                    return { ...pt, type: instantiateType(pt.type!, ctx) }
+                }),
+                returnType: instantiateType(t.returnType ?? ctx.stdTypeIds.unit, ctx)
             }
             return inst as any
         }

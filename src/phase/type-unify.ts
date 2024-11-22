@@ -39,7 +39,7 @@ export const unifyTypeBounds = (node: AstNode, ctx: Context, report = true): voi
             unifyTypeBounds(node.pattern, ctx)
             break
         }
-        case 'generic': {
+        case 'type-param': {
             // TODO
             break
         }
@@ -97,10 +97,6 @@ export const unifyTypeBounds = (node: AstNode, ctx: Context, report = true): voi
         case 'binary-expr': {
             unifyTypeBounds(node.lOperand, ctx)
             unifyTypeBounds(node.rOperand, ctx)
-            break
-        }
-        case 'closure-expr': {
-            // TODO
             break
         }
         case 'list-expr': {
@@ -252,7 +248,7 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context): InferredType =>
                     const t: InferredType = {
                         kind: 'inferred-fn',
                         // TODO
-                        generics: [],
+                        typeParams: [],
                         params: zip(a.params, b.params, (a_, b_) => unify(a_, b_, ctx)),
                         returnType: unify(a.returnType, b.returnType, ctx)
                     }

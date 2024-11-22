@@ -1,13 +1,12 @@
-import { inspect } from 'util'
 import { AstNode } from '../ast'
 import { FnDef } from '../ast/operand'
-import { Context } from '../scope'
+import { Context, idToString } from '../scope'
 import { operatorImplMap } from '../semantic/op'
 import {
     InferredType,
     addBounds,
     boundFromCall,
-    instantiateDefType as instantiateType,
+    instantiateType,
     makeErrorType,
     makeFieldPatternType,
     makeInferredType,
@@ -93,7 +92,8 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             break
         }
         case 'param': {
-            collectTypeBounds(node.pattern, ctx, instantiateType(node.paramType!.type!, ctx))
+            const type = node.paramType ? node.paramType.type! : makeInferredType()
+            collectTypeBounds(node.pattern, ctx, instantiateType(type, ctx))
             break
         }
         case 'type-param': {
@@ -132,8 +132,11 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         case 'identifier':
         case 'name': {
             if (node.def) {
-                assert(!!node.def.type, `no def type ${inspect(node.def)}`)
-                node.type = instantiateType(node.def.type!, ctx)
+                if (node.def.type) {
+                    node.type = instantiateType(node.def.type, ctx)
+                } else {
+                    node.type = node
+                }
                 break
             } else {
                 node.type = makeInferredType()
@@ -178,11 +181,11 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             }
             collectTypeBounds(node.lOperand, ctx)
             collectTypeBounds(node.rOperand, ctx)
-            const methodId = operatorImplMap.get(node.op.kind)
-            assert(!!methodId)
-            const methodDef = findById(methodId!, ctx)
-            assert(!!methodDef)
-            const fnType = instantiateType(methodDef!.type!, ctx)
+            const opFn = operatorImplMap.get(node.op.kind)
+            assert(!!opFn)
+            const opFnDef = findById(opFn!, ctx)
+            assert(!!opFnDef, `${idToString(opFn!)} not found`)
+            const fnType = makeInferredType([instantiateType(opFnDef!.type!, ctx)])
             addBounds(fnType, [boundFromCall([node.lOperand.type!, node.rOperand.type!])])
             node.type = makeReturnType(fnType)
             break
@@ -220,11 +223,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             node.typeParams.forEach(g => collectTypeBounds(g, ctx))
             node.params.forEach(p => collectTypeBounds(p, ctx))
             if (node.block) {
-                if (node.type?.kind !== 'fn-type') {
-                    unreachable()
-                    break
-                }
-                collectTypeBounds(node.block, ctx, node.type.returnType.type)
+                collectTypeBounds(node.block, ctx, makeReturnType(node.type!))
             }
             break
         }

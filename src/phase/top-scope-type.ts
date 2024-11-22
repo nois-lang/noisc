@@ -31,13 +31,14 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
         case 'fn-def': {
             node.typeParams.forEach(g => setTopScopeType(g, ctx))
             node.params.forEach(p => setTopScopeType(p, ctx))
-            assert(!!node.returnType)
-            setTopScopeType(node.returnType!, ctx)
+            if (node.returnType) {
+                setTopScopeType(node.returnType!, ctx)
+            }
             node.type = {
                 kind: 'fn-type',
                 typeParams: node.typeParams,
                 paramTypes: node.params.map(paramToParamType),
-                returnType: node.returnType!
+                returnType: node.returnType ?? ctx.stdTypeIds.unit!
             }
             break
         }
@@ -102,6 +103,11 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             node.block.statements.forEach(s => setTopScopeType(s, ctx))
             break
         }
+        case 'trait-statement': {
+            setTopScopeType(node.expr, ctx)
+            node.type = node.expr.type
+            break
+        }
         case 'param': {
             assert(!!node.paramType)
             setTopScopeType(node.paramType!, ctx)
@@ -125,6 +131,11 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             node.paramTypes.forEach(pt => setTopScopeType(pt, ctx))
             setTopScopeType(node.returnType, ctx)
             node.type = node
+            break
+        }
+        case 'param-type': {
+            setTopScopeType(node.paramType, ctx)
+            node.type = node.paramType.type
             break
         }
         case 'hole': {

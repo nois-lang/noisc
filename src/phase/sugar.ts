@@ -1,6 +1,5 @@
 import { AstNode } from '../ast'
 import { UnaryExpr } from '../ast/expr'
-import { printAst } from '../debug'
 import { Context, addError, idFromString } from '../scope'
 import { genericError } from '../semantic/error'
 import { assign } from '../util/object'
@@ -196,7 +195,6 @@ export const desugarComposeOp = (node: UnaryExpr, ctx: Context) => {
         }
         assign(node, newNode)
     } else {
-        printAst(node)
         addError(ctx, genericError(ctx, node, 'unknown `compose-op` structure'), true)
     }
 }
