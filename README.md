@@ -14,7 +14,7 @@
 use std::{ math::pi, iter::MapAdapter }
 
 trait Area {
-    fn area(self): Float
+    area = fn(self): Float
 }
 
 type Shape {
@@ -23,26 +23,25 @@ type Shape {
 }
 
 impl Area for Shape {
-    fn area(self): Float {
+    area = fn(self): Float {
         match self {
-            Shape::Rect(width, height) { width * height }
-            Shape::Circle(radius) { pi * radius ^ 2. }
+            Rect(width, height) { width * height }
+            Circle(radius) { pi * radius ^ 2. }
         }
     }
 }
 
 pub fn main() {
     let shapes: List<Shape> = [
-        Shape::Rect(width: 4., height: 2.),
-        Shape::Circle(radius: 12.34),
+        Rect(width = 4., height = 2.),
+        Circle(radius = 12.34),
     ]
-    println(
-        shapes
-            .iter()
-            .map(|s| s.area())
-            .collect<List<_>>()
-            .show()
-    )
+    shapes
+        .iter()
+        .map(area)
+        .collect<List<_>>()
+        .show()
+        .println()
 }
 ```
 
