@@ -116,7 +116,7 @@ for-expr              ::= FOR-KEYWORD pattern IN-KEYWORD expr block
                       ;
 match-expr            ::= MATCH-KEYWORD expr match-clauses
                       ;
-  match-clauses       ::= O-BRACE match-clause* C-BRACE
+  match-clauses       ::= O-BRACE (match-clause COMMA?)* C-BRACE
                       ;
     match-clause      ::= patterns guard? block
                       ;
