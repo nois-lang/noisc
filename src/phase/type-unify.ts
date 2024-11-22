@@ -238,13 +238,13 @@ export const unify = (a: InferredType, b: InferredType, ctx: Context): InferredT
 
 const unify_ = (a: InferredType, b: InferredType, ctx: Context): InferredType => {
     if (a === b) return a
-    if (b.kind === 'inferred' || b.kind === 'fn-type') {
+    if (b.kind === 'inferred') {
         unreachable(inferredTypeToString(b))
     }
     switch (a.kind) {
         case 'inferred-fn': {
             switch (b.kind) {
-                case 'inferred-fn':
+                case 'inferred-fn': {
                     const t: InferredType = {
                         kind: 'inferred-fn',
                         // TODO
@@ -253,6 +253,17 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context): InferredType =>
                         returnType: unify(a.returnType, b.returnType, ctx)
                     }
                     return t
+                }
+                case 'fn-type': {
+                    const t: InferredType = {
+                        kind: 'inferred-fn',
+                        // TODO
+                        typeParams: [],
+                        params: zip(a.params, b.paramTypes, (a_, b_) => unify(a_, b_.type!, ctx)),
+                        returnType: unify(a.returnType, b.returnType, ctx)
+                    }
+                    return t
+                }
             }
             break
         }
@@ -308,17 +319,17 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context): InferredType =>
             }
             return b
         }
-        case 'name':
-            break
         case 'hole':
             return b
         case 'error':
             return a
         case 'fn-type':
+            break
         case 'inferred':
         case 'return':
+        case 'name':
             // these should never appear in a result of `unifyType`
-            return unreachable()
+            return unreachable(a.kind)
     }
     return makeErrorType(`unify [${[inferredTypeToString(a), inferredTypeToString(b)].join(', ')}]`, 'unhandled')
 }
@@ -343,6 +354,7 @@ const extractReturnType = (type: InferredType, ctx: Context): InferredType | und
         case 'error':
             return type
         case 'fn-type':
+            return type.returnType
         case 'return':
             return unreachable(type.kind)
     }
