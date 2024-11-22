@@ -1,6 +1,6 @@
 use std::future::{ self, FutureState, state, subscribers }
 use std::list::{ add, count, popAt, clear, popFront }
-use std::iter::{ Iter::position }
+use std::iter::position
 use std::ref::eqRef
 
 pub type Runtime(

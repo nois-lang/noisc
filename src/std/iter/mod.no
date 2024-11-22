@@ -1,8 +1,8 @@
 pub use std::iter::{
-    intersperseIter::{ IntersperseIter, IntersperseAdapter },
-    mapIter::{ MapIter, MapAdapter },
-    peekable::{ PeekableIter, PeekableAdapter },
-    takeWhile::{ TakeWhileIter, TakeWhileAdapter },
+    intersperseIter::intersperse,
+    mapIter::map,
+    peekable::{ peekable, peek },
+    takeWhile::takeWhile,
 }
 
 pub trait Iterable<T> {
@@ -32,17 +32,6 @@ pub trait Iter<T> {
         return res
     }
 
-    position = fn(self, f: fn(elem: T): Bool): Option<Int> {
-        let i = 0
-        for n in self {
-            match f(n) {
-                true { return Some(i) }
-            }
-            i = i + 1
-        }
-        None()
-    }
-
     find = fn(self, f: fn(elem: T): Bool): Option<T> {
         for n in self {
             match f(n) {
@@ -53,9 +42,18 @@ pub trait Iter<T> {
     }
 
     collect = fn<C: Collector<T>>(self): C {
-        // TODO
-        // C::fromIter(self)
-        todo()
+        fromIter<C>(self)
+    }
+
+    position = fn(self, f: fn(elem: T): Bool): Option<Int> {
+        let i = 0
+        for n in self {
+            match f(n) {
+                true { return Some(i) }
+            }
+            i = i + 1
+        }
+        None()
     }
 }
 

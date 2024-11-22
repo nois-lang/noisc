@@ -38,6 +38,7 @@ pub let unwrap = fn<T>(option: Option<T>): T {
 }
 
 impl <T> Unwrap<T> for Option<T> {
+    // TODO: use identity fn
     bind = fn(self): Option<T> {
         self
     }

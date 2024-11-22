@@ -1,5 +1,3 @@
 pub trait Copy {
     copy = fn(self): Self
 }
-
-pub let copy = fn<T>(value: T): T

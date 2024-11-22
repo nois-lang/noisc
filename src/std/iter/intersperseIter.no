@@ -1,4 +1,4 @@
-use std::iter::{ PeekableIter, PeekableAdapter }
+use std::iter::peekable::PeekableIter
 
 pub type IntersperseIter<T>(
     iter: PeekableIter<T>,

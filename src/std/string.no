@@ -1,5 +1,3 @@
-use std::iter::MapAdapter
-
 pub type String
 
 // TODO: belongs to the Monoid trait

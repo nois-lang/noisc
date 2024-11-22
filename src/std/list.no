@@ -1,5 +1,3 @@
-use std::iter::{ MapAdapter, IntersperseAdapter }
-
 pub type List<T>
 
 pub let at = fn<T>(list: List<T>, index: Int): Option<T> {
