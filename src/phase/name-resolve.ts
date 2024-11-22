@@ -1,4 +1,4 @@
-import { AstNode, AstNodeKind } from '../ast'
+import { AstNode, AstNodeKind, Module } from '../ast'
 import { Identifier, Name } from '../ast/operand'
 import { TypeParam } from '../ast/type'
 import {
@@ -19,93 +19,15 @@ import { unreachable } from '../util/todo'
 /**
  * Resolve every name to its definition
  */
-export const resolveName = (node: AstNode, ctx: Context): void => {
+export const resolveName = (node: AstNode, ctx: Context, ns: Namespace[] = [...namespaces]): void => {
     const m = ctx.moduleStack.at(-1)!
     m.astStack.push(node)
     switch (node.kind) {
-        case 'module': {
-            for (const statement of node.block.statements) {
-                resolveName(statement, ctx)
-            }
-            break
-        }
-        case 'variant': {
-            node.fields.forEach(fd => resolveName(fd, ctx))
-            break
-        }
-        case 'arg': {
-            resolveName(node.expr, ctx)
-            break
-        }
-        case 'block': {
-            withScope(ctx, () => node.statements.forEach(s => resolveName(s, ctx)))
-            break
-        }
-        case 'param': {
-            resolveName(node.pattern, ctx)
-            if (node.paramType) {
-                resolveName(node.paramType, ctx)
-            }
-            break
-        }
-        case 'fn-type': {
-            resolveName(node.returnType, ctx)
-            node.paramTypes.forEach(pt => resolveName(pt, ctx))
-            node.typeParams.forEach(g => resolveName(g, ctx))
-            break
-        }
-        case 'type-param': {
-            const stack = m.scopeStack.at(-1)
-            if (stack) {
-                addDef(node, stack, ctx)
-            }
-            node.bounds.forEach(b => resolveName(b, ctx))
-            break
-        }
-        case 'match-clause': {
-            withScope(ctx, () => {
-                node.patterns.forEach(p => resolveName(p, ctx))
-                if (node.guard) {
-                    resolveName(node.guard, ctx)
-                }
-                resolveName(node.block, ctx)
-            })
-            break
-        }
-        case 'pattern': {
-            resolveName(node.expr, ctx)
-            if (node.name) {
-                resolveName(node.name, ctx)
-            }
-            break
-        }
-        case 'con-pattern': {
-            resolveName(node.identifier, ctx)
-            node.fieldPatterns.forEach(fp => {
-                const def = node.identifier.def
-                fp.variant = def?.kind === 'variant' ? def : undefined
-                resolveName(fp, ctx)
-            })
-            break
-        }
-        case 'list-pattern': {
-            node.itemPatterns.forEach(ip => resolveName(ip, ctx))
-            break
-        }
-        case 'field-pattern': {
-            if (node.pattern) {
-                resolveName(node.pattern, ctx)
-            }
-            if (node.name) {
-                resolveName(node.name, ctx)
-            }
-            break
-        }
         case 'identifier': {
             node.typeArgs.forEach(ta => {
-                return resolveName(ta, ctx)
+                return resolveName(ta, ctx, ns)
             })
-            const def = findById(node, ctx)
+            const def = findById(node, ctx, ns)
             if (!def) {
                 addError(ctx, notFoundError(ctx, node, idToString(node)), true)
                 break
@@ -125,70 +47,148 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
             unreachable(p?.kind)
             break
         }
+        case 'module': {
+            for (const statement of node.block.statements) {
+                resolveName(statement, ctx, ns)
+            }
+            break
+        }
+        case 'variant': {
+            node.fields.forEach(fd => resolveName(fd, ctx, ['value']))
+            break
+        }
+        case 'arg': {
+            resolveName(node.expr, ctx, ['value'])
+            break
+        }
+        case 'block': {
+            withScope(ctx, () => node.statements.forEach(s => resolveName(s, ctx, ns)))
+            break
+        }
+        case 'param': {
+            resolveName(node.pattern, ctx, ns)
+            if (node.paramType) {
+                resolveName(node.paramType, ctx, ['type'])
+            }
+            break
+        }
+        case 'fn-type': {
+            resolveName(node.returnType, ctx, ns)
+            node.paramTypes.forEach(pt => resolveName(pt, ctx, ns))
+            node.typeParams.forEach(g => resolveName(g, ctx, ns))
+            break
+        }
+        case 'type-param': {
+            const stack = m.scopeStack.at(-1)
+            if (stack) {
+                addDef(node, stack, ctx)
+            }
+            node.bounds.forEach(b => resolveName(b, ctx, ns))
+            break
+        }
+        case 'match-clause': {
+            withScope(ctx, () => {
+                node.patterns.forEach(p => resolveName(p, ctx, ns))
+                if (node.guard) {
+                    resolveName(node.guard, ctx, ns)
+                }
+                resolveName(node.block, ctx, ns)
+            })
+            break
+        }
+        case 'pattern': {
+            resolveName(node.expr, ctx, ns)
+            if (node.name) {
+                resolveName(node.name, ctx, ns)
+            }
+            break
+        }
+        case 'con-pattern': {
+            resolveName(node.identifier, ctx, ns)
+            node.fieldPatterns.forEach(fp => {
+                const def = node.identifier.def
+                fp.variant = def?.kind === 'variant' ? def : undefined
+                resolveName(fp, ctx, ns)
+            })
+            break
+        }
+        case 'list-pattern': {
+            node.itemPatterns.forEach(ip => resolveName(ip, ctx, ns))
+            break
+        }
+        case 'field-pattern': {
+            if (node.pattern) {
+                resolveName(node.pattern, ctx, ns)
+            }
+            if (node.name) {
+                resolveName(node.name, ctx, ns)
+            }
+            break
+        }
         case 'string-interpolated': {
             node.tokens.map(t => {
                 if (typeof t !== 'string') {
-                    resolveName(t, ctx)
+                    resolveName(t, ctx, ns)
                 }
             })
             break
         }
         case 'operand-expr': {
-            resolveName(node.operand, ctx)
+            resolveName(node.operand, ctx, ['value'])
             break
         }
         case 'unary-expr': {
-            resolveName(node.operand, ctx)
-            resolveName(node.op, ctx)
+            resolveName(node.operand, ctx, ['value'])
+            resolveName(node.op, ctx, ns)
             break
         }
         case 'binary-expr': {
-            resolveName(node.lOperand, ctx)
-            resolveName(node.rOperand, ctx)
-            resolveName(node.op, ctx)
+            resolveName(node.lOperand, ctx, ['value'])
+            resolveName(node.rOperand, ctx, ['value'])
+            resolveName(node.op, ctx, ns)
             break
         }
         case 'list-expr': {
-            node.exprs.forEach(e => resolveName(e, ctx))
+            node.exprs.forEach(e => resolveName(e, ctx, ['value']))
             break
         }
         case 'while-expr': {
-            resolveName(node.condition, ctx)
-            resolveName(node.block, ctx)
+            resolveName(node.condition, ctx, ns)
+            resolveName(node.block, ctx, ns)
             break
         }
         case 'for-expr': {
             withScope(ctx, () => {
-                resolveName(node.pattern, ctx)
-                resolveName(node.expr, ctx)
-                resolveName(node.block, ctx)
+                resolveName(node.pattern, ctx, ns)
+                resolveName(node.expr, ctx, ns)
+                resolveName(node.block, ctx, ns)
             })
             break
         }
         case 'match-expr': {
-            resolveName(node.expr, ctx)
-            node.clauses.forEach(c => resolveName(c, ctx))
+            resolveName(node.expr, ctx, ns)
+            node.clauses.forEach(c => resolveName(c, ctx, ns))
             break
         }
         case 'var-def': {
-            resolveName(node.pattern, ctx)
+            resolveName(node.pattern, ctx, ns)
             if (node.expr) {
-                resolveName(node.expr, ctx)
+                resolveName(node.expr, ctx, ns)
             }
             if (node.varType) {
-                resolveName(node.varType, ctx)
+                resolveName(node.varType, ctx, ['type'])
             }
             break
         }
         case 'fn-def': {
             withScope(ctx, () => {
-                node.typeParams.forEach(g => resolveName(g, ctx))
-                node.params.forEach(p => resolveName(p, ctx))
+                node.typeParams.forEach(g => resolveName(g, ctx, ['type']))
+                node.params.forEach(p => resolveName(p, ctx, ns))
                 if (node.returnType) {
-                    resolveName(node.returnType, ctx)
+                    resolveName(node.returnType, ctx, ['type'])
                 }
                 if (node.block) {
-                    resolveName(node.block, ctx)
+                    resolveName(node.block, ctx, ns)
                 }
             })
             break
@@ -206,44 +206,42 @@ export const resolveName = (node: AstNode, ctx: Context): void => {
                     g.name.def = g
                     node.typeParams.unshift(g)
                 }
-                node.typeParams.forEach(g => resolveName(g, ctx))
+                node.typeParams.forEach(g => resolveName(g, ctx, ns))
                 if (node.kind === 'impl-def') {
-                    resolveName(node.trait, ctx)
-                    resolveName(node.for, ctx)
+                    resolveName(node.trait, ctx, ns)
+                    resolveName(node.for, ctx, ns)
                 }
                 if (node.block) {
-                    resolveName(node.block, ctx)
+                    resolveName(node.block, ctx, ns)
                 }
             })
             break
         }
         case 'type-def': {
             withScope(ctx, () => {
-                node.typeParams.forEach(g => resolveName(g, ctx))
-                node.variants.forEach(v => resolveName(v, ctx))
+                node.typeParams.forEach(g => resolveName(g, ctx, ns))
+                node.variants.forEach(v => resolveName(v, ctx, ns))
             })
             break
         }
         case 'field-def': {
-            resolveName(node.fieldType, ctx)
-            break
-        }
-        case 'compose-op': {
-            addError(ctx, genericError(ctx, node), true)
-
-            unreachable()
+            resolveName(node.fieldType, ctx, ['type'])
             break
         }
         case 'call-op': {
-            node.args.forEach(a => resolveName(a, ctx))
+            node.args.forEach(a => resolveName(a, ctx, ['value']))
             break
         }
     }
     m.astStack.pop()
 }
 
-export const findName = (name: string, ctx: Context, ns?: Namespace[]): Definition | undefined => {
-    const m = ctx.moduleStack.at(-1)!
+export const findName = (
+    name: string,
+    ctx: Context,
+    ns?: Namespace[],
+    m: Module = ctx.moduleStack.at(-1)!
+): Definition | undefined => {
     for (const scope of [...m.scopeStack.toReversed(), m.topScope, m.useScope, ctx.prelude!.useScope!]) {
         const def = findNameInScope(name, scope, ns)
         if (def) return def
@@ -251,8 +249,21 @@ export const findName = (name: string, ctx: Context, ns?: Namespace[]): Definiti
     return undefined
 }
 
-export const findById = (id: Identifier, ctx: Context): Definition | undefined => {
-    const def = findName(id.names[0].value, ctx, id.names.length > 1 ? ['module', 'type'] : undefined)
+export const findById = (id: Identifier, ctx: Context, ns: Namespace[]): Definition | undefined => {
+    const m = ctx.moduleStack.at(-1)!
+    if (id.names.length === 1) {
+        return findName(id.names[0].value, ctx, ns)
+    } else {
+        const moduleId = id.names
+            .map(n => n.value)
+            .slice(0, -1)
+            .join('::')
+        const module = findNameInScope(moduleId, m.useScope, ['module'])
+        if (module && module.kind === 'module') {
+            return findName(id.names.at(-1)!.value, ctx, ns, module)
+        }
+    }
+    const def = findName(id.names[0].value, ctx, ns)
     if (!def || id.names.length === 1) return def
     if (id.names.length > 2) {
         addError(ctx, genericError(ctx, def))
