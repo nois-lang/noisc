@@ -1,7 +1,7 @@
 import { AstNode } from '../ast'
 import { FnDef } from '../ast/operand'
 import { Context, idToString } from '../scope'
-import { operatorImplMap } from '../semantic/op'
+import { opFnIdMap } from '../semantic/op'
 import {
     InferredType,
     addBounds,
@@ -181,7 +181,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             }
             collectTypeBounds(node.lOperand, ctx)
             collectTypeBounds(node.rOperand, ctx)
-            const opFn = operatorImplMap.get(node.op.kind)
+            const opFn = opFnIdMap.get(node.op.kind)
             assert(!!opFn)
             const opFnDef = findById(opFn!, ctx)
             assert(!!opFnDef, `${idToString(opFn!)} not found`)

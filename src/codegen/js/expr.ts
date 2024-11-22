@@ -4,7 +4,7 @@ import { BinaryExpr, Expr, OperandExpr, UnaryExpr } from '../../ast/expr'
 import { MatchExpr, Pattern, PatternExpr } from '../../ast/match'
 import { Identifier, Operand } from '../../ast/operand'
 import { Context } from '../../scope'
-import { operatorImplMap } from '../../semantic/op'
+import { opFnIdMap } from '../../semantic/op'
 import { ConcreteGeneric } from '../../typecheck'
 import { unreachable } from '../../util/todo'
 import { EmitNode, EmitToken, emitToken, emitTree, jsError, jsVariable } from './node'
@@ -126,7 +126,7 @@ export const emitBinaryExpr = (binaryExpr: BinaryExpr, ctx: Context): EmitExpr =
         }
         default: {
             const op = binaryExpr.op
-            const methodVid = operatorImplMap.get(op.kind)!
+            const methodVid = opFnIdMap.get(op.kind)!
             const trait = methodVid.names.at(-2)!
             const method = methodVid.names.at(-1)!
             const callerEmit = binaryExpr.op.impl ? jsRelName(binaryExpr.op.impl) : trait

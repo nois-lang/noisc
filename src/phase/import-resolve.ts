@@ -4,7 +4,6 @@ import { Context, Definition, addDef, addError } from '../scope'
 import { idEq, idFromString, idToString } from '../scope'
 import { notFoundError } from '../semantic/error'
 import { flatUseExprs } from '../semantic/use-expr'
-import { unreachable } from '../util/todo'
 
 export const setExports = (module: Module, ctx: Context): void => {
     module.references = module.useExprs.filter(e => !e.pub).flatMap(e => flatUseExprs(e))
@@ -27,15 +26,13 @@ export const resolveImports = (module: Module, ctx: Context): void => {
 
 const resolvePubId = (id: Identifier, ctx: Context): Definition[] => {
     const defs: Definition[] = []
-    if (id.names.length < 2) return defs
 
     const pkgName = id.names[0].value
     const pkg = ctx.packages.find(p => p.name === pkgName)
     if (!pkg) return defs
 
-    // base case, e.g. std::option::Option
-    let nodeName = id.names.at(-1)!.value
-    let modId = idFromString(
+    const defName = id.names.at(-1)!.value
+    const modId = idFromString(
         id.names
             .slice(0, -1)
             .map(n => n.value)
@@ -43,12 +40,12 @@ const resolvePubId = (id: Identifier, ctx: Context): Definition[] => {
     )
     let mod = pkg.modules.find(m => idEq(m.identifier, modId))
     if (mod) {
-        const typeDef = mod.topScope.type.get(nodeName)
+        const typeDef = mod.topScope.type.get(defName)
         if (typeDef) {
             defs.push(typeDef)
         }
 
-        const valueDef = mod.topScope.value.get(nodeName)
+        const valueDef = mod.topScope.value.get(defName)
         if (valueDef) {
             defs.push(valueDef)
         }
@@ -67,28 +64,6 @@ const resolvePubId = (id: Identifier, ctx: Context): Definition[] => {
     if (mod) {
         defs.push(mod)
         return defs
-    }
-
-    // case of TraitStatement, e.g. std::iter::Iter::next
-    if (id.names.length < 3) return defs
-    nodeName = id.names.at(-2)!.value
-    modId = idFromString(
-        id.names
-            .slice(0, -2)
-            .map(n => n.value)
-            .join('::')
-    )
-    mod = pkg.modules.find(m => idEq(m.identifier, modId))
-    if (mod) {
-        const node = mod.topScope.type.get(nodeName)
-        if (node) {
-            if (node.kind !== 'trait-def') return unreachable()
-            const mName = id.names.at(-1)!
-            const stmt = node.block.statements.find(s => s.name.value === mName.value)
-            if (stmt) {
-                defs.push(stmt)
-            }
-        }
     }
 
     return defs

@@ -3,7 +3,7 @@ import { Context, addDef } from '../scope'
 import { todo } from '../util/todo'
 
 /**
- * Set {@link Module.typeScope}, {@link Module.valueScope}
+ * Set {@link Module.topScope}
  */
 export const resolveModuleScope = (node: AstNode, ctx: Context): void => {
     const m = ctx.moduleStack.at(-1)!
@@ -16,22 +16,7 @@ export const resolveModuleScope = (node: AstNode, ctx: Context): void => {
         }
         case 'type-def':
             addDef(node, m.topScope, ctx)
-            break
-        case 'trait-def':
-            addDef(node, m.topScope, ctx)
-            break
-        case 'var-def': {
-            if (node.pattern.expr.kind === 'name') {
-                addDef(node.pattern.expr, m.topScope, ctx)
-            } else if (node.pattern.expr.kind === 'hole') {
-            } else {
-                todo('destructuring is not allowed in module scope')
-            }
-            break
-        }
-    }
-    switch (node.kind) {
-        case 'type-def': {
+
             for (const variant of node.variants) {
                 addDef(variant, m.topScope, ctx)
                 variant.typeDef = node
@@ -43,6 +28,22 @@ export const resolveModuleScope = (node: AstNode, ctx: Context): void => {
                     }
                 }
             }
+            break
+        case 'trait-def':
+            addDef(node, m.topScope, ctx)
+
+            for (const statement of node.block.statements) {
+                addDef(statement.name, m.topScope, ctx)
+            }
+            break
+        case 'var-def': {
+            if (node.pattern.expr.kind === 'name') {
+                addDef(node.pattern.expr, m.topScope, ctx)
+            } else if (node.pattern.expr.kind === 'hole') {
+            } else {
+                todo('destructuring is not allowed in module scope')
+            }
+            break
         }
     }
 }
