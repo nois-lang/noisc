@@ -259,7 +259,12 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context): InferredType =>
                         kind: 'inferred-fn',
                         // TODO
                         typeParams: [],
-                        params: zip(a.params, b.paramTypes, (a_, b_) => unify(a_, b_.type!, ctx)),
+                        // TODO: try to preserve param names
+                        params: zip(
+                            a.params,
+                            b.paramTypes.map(t => t.paramType),
+                            (a_, b_) => unify(a_, b_, ctx)
+                        ),
                         returnType: unify(a.returnType, b.returnType, ctx)
                     }
                     return t

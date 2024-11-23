@@ -132,16 +132,21 @@ export const typeToString = (t: Type): string => {
         case 'identifier':
             return idToString(t)
         case 'fn-type':
-            const main = `fn(${t.paramTypes
-                .map(pt => (pt.name ? `${pt.name.value}: ` : '') + typeToString(pt.paramType))
-                .join(', ')}): ${typeToString(t.returnType)}`
-            const typeArgs = t.typeParams.length > 0 ? `<${t.typeParams.map(g => g.name.value).join(', ')}>` : ''
-            return typeArgs + main
+            const tps = t.typeParams.length > 0 ? `<${t.typeParams.map(typeParamToString)}>` : ''
+            const pts = t.paramTypes
+                .map(pt => `${pt.name ? `${pt.name.value}: ` : ''}${typeToString(pt.paramType)}`)
+                .join(', ')
+            return `fn${tps}(${pts}): ${typeToString(t.returnType)}`
         case 'hole':
             return '_'
         case 'name':
             return t.value
     }
+}
+
+export const typeParamToString = (tp: TypeParam): string => {
+    const bounds = tp.bounds.length > 0 ? `: ${tp.bounds.map(b => typeToString(b)).join(' + ')}` : ''
+    return `${tp.name.value}${bounds}`
 }
 
 export const addBounds = (type: InferredType, bounds: InferredType[]): void => {

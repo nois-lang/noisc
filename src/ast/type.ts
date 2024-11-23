@@ -1,7 +1,6 @@
 import { BaseAstNode, Param } from '.'
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { Context } from '../scope'
-import { assert } from '../util/todo'
 import { Hole, buildHole } from './match'
 import { Identifier, Name, buildIdentifier, buildName } from './operand'
 import { FieldDef } from './type-def'
@@ -80,7 +79,6 @@ export const buildParamType = (node: ParseNode, ctx: Context): ParamType => {
 }
 
 export const paramToParamType = (param: Param): ParamType => {
-    assert(!!param.paramType)
     const expr = param.pattern.expr
     return {
         kind: 'param-type',
