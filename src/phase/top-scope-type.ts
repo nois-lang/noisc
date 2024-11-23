@@ -106,6 +106,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
         case 'trait-statement': {
             setTopScopeType(node.expr, ctx)
             node.type = node.expr.type
+            node.name.def = node
             break
         }
         case 'param': {

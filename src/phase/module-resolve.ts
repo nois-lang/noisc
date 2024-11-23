@@ -35,7 +35,7 @@ export const resolveModuleScope = (node: AstNode, ctx: Context): void => {
 
             for (const statement of node.block.statements) {
                 statement.def = node
-                addDef(statement.name, m.topScope, ctx)
+                addDef(statement, m.topScope, ctx)
             }
             break
         case 'impl-def':
