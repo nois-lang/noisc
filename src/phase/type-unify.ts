@@ -185,7 +185,7 @@ export const unifyType = (type: InferredType, ctx: Context): void => {
                 assign(type, makeErrorType(type.fieldPattern.name.value, 'no-field'))
                 break
             }
-            // TODO: handle type-def generics
+            // TODO: handle type-def type params
             assert(!!f.type, `field has no type: ${typeDef.name.value}.${f.name.value}`)
             assign(type, f.type!)
             unifyType(type, ctx)

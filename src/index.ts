@@ -8,7 +8,7 @@ import { Package } from './package'
 import { buildModule } from './package/build'
 import { emitPackage } from './package/emit'
 import { buildPackage } from './package/io'
-import { Context, pathToId } from './scope'
+import { Context, idToString, pathToId } from './scope'
 import { semanticCheck } from './semantic'
 import { Source } from './source'
 import { assert } from './util/todo'
@@ -123,7 +123,8 @@ assert(!!ctx.prelude, 'no prelude')
 
 semanticCheck(ctx)
 
-printAst(pkg.modules[0].block)
+// printAst(pkg.modules[0].block)
+printAst(std.modules.find(m => idToString(m.identifier) === 'std::fmt::show')!.block)
 
 reportErrors(ctx)
 reportWarnings(ctx)

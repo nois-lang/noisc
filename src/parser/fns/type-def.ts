@@ -3,7 +3,7 @@ import { nameLikeTokens, paramFirstTokens } from './index'
 import { parseTypeAnnot, parseTypeParams } from './type'
 
 /**
- * type-def ::= PUB-KEYWORD? TYPE-KEYWORD NAME generics? (variant-list | variant-params)?
+ * type-def ::= PUB-KEYWORD? TYPE-KEYWORD NAME type-params? (variant-list | variant-params)?
  */
 export const parseTypeDef = (parser: Parser): void => {
     const mark = parser.open()

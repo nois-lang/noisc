@@ -138,7 +138,7 @@ export const parseTraitStatement = (parser: Parser): void => {
 }
 
 /**
- * impl-def ::= IMPL-KEYWORD generics? identifier impl-for trait-block
+ * impl-def ::= IMPL-KEYWORD type-params? identifier impl-for trait-block
  */
 export const parseImplDef = (parser: Parser): void => {
     const mark = parser.open()

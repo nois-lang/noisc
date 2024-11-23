@@ -102,7 +102,7 @@ export const inferredTypeToString = (t: InferredType, depth = 0): string => {
             const unified = t.unified ? ` (${inferredTypeToString(t.unified, depth + 1)})` : ''
             const bounds =
                 t.type.bounds.length > 0
-                    ? `: ${t.type.bounds.map(b => inferredTypeToString(b, depth + 1)).join('+')}`
+                    ? `: ${t.type.bounds.map(b => inferredTypeToString(b, depth + 1)).join(' + ')}`
                     : ''
             return `<${t.type.name.value}${bounds}${unified}>`
         case 'inferred-fn':

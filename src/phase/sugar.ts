@@ -1,5 +1,6 @@
 import { AstNode } from '../ast'
 import { UnaryExpr } from '../ast/expr'
+import { TypeParam } from '../ast/type'
 import { Context, addError, idFromString } from '../scope'
 import { genericError } from '../semantic/error'
 import { assign } from '../util/object'
@@ -79,6 +80,32 @@ export const desugar = (node: AstNode, stage: DesugarStage, ctx: Context) => {
         case 'trait-def':
         case 'impl-def': {
             desugar(node.block, stage, ctx)
+
+            if (stage === 'init') {
+                if (!node.typeParams.find(g => g.name.value === 'Self')) {
+                    const g: TypeParam = {
+                        kind: 'type-param',
+                        name: { kind: 'name', value: 'Self' },
+                        parseNode: node.kind === 'trait-def' ? node.name.parseNode : node.trait.parseNode,
+                        bounds: []
+                    }
+                    node.typeParams.unshift(g)
+                }
+                const selfParam = node.typeParams.find(g => g.name.value === 'Self')!
+                switch (node.kind) {
+                    case 'trait-def':
+                        selfParam.bounds.push({
+                            kind: 'identifier',
+                            parseNode: node.parseNode,
+                            names: [node.name],
+                            typeArgs: []
+                        })
+                        break
+                    case 'impl-def':
+                        selfParam.bounds.push(node.for)
+                        break
+                }
+            }
             break
         }
         case 'trait-block': {

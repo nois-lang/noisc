@@ -20,7 +20,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
                 setTopScopeType(node.expr, ctx)
             }
             const def = node.pattern.expr
-            def.type = node.varType ?? node.expr?.type ?? makeErrorType()
+            def.type = node.expr?.type ?? makeErrorType()
             break
         }
         case 'operand-expr': {

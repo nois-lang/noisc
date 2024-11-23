@@ -3,7 +3,8 @@ import { Context, addDef } from '../scope'
 import { todo } from '../util/todo'
 
 /**
- * Set {@link Module.topScope}
+ * - set {@link Module.topScope}
+ * - set parent refs like typeDef, variant and traitDef
  */
 export const resolveModuleScope = (node: AstNode, ctx: Context): void => {
     const m = ctx.moduleStack.at(-1)!
@@ -33,7 +34,13 @@ export const resolveModuleScope = (node: AstNode, ctx: Context): void => {
             addDef(node, m.topScope, ctx)
 
             for (const statement of node.block.statements) {
+                statement.def = node
                 addDef(statement.name, m.topScope, ctx)
+            }
+            break
+        case 'impl-def':
+            for (const statement of node.block.statements) {
+                statement.def = node
             }
             break
         case 'var-def': {

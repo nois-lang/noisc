@@ -1,6 +1,5 @@
 import { AstNode, AstNodeKind, Module } from '../ast'
 import { Identifier, Name } from '../ast/operand'
-import { TypeParam } from '../ast/type'
 import {
     Context,
     Definition,
@@ -14,7 +13,6 @@ import {
     namespaces
 } from '../scope'
 import { genericError, notFoundError } from '../semantic/error'
-import { unreachable } from '../util/todo'
 
 /**
  * Resolve every name to its definition
@@ -24,9 +22,7 @@ export const resolveName = (node: AstNode, ctx: Context, ns: Namespace[] = [...n
     m.astStack.push(node)
     switch (node.kind) {
         case 'identifier': {
-            node.typeArgs.forEach(ta => {
-                return resolveName(ta, ctx, ns)
-            })
+            node.typeArgs.forEach(ta => resolveName(ta, ctx, ['type']))
             const def = findById(node, ctx, ns)
             if (!def) {
                 addError(ctx, notFoundError(ctx, node, idToString(node)), true)
@@ -36,15 +32,10 @@ export const resolveName = (node: AstNode, ctx: Context, ns: Namespace[] = [...n
             break
         }
         case 'name': {
-            const p = getParent(ctx)
-            if (p?.kind === 'pattern' || p?.kind === 'field-pattern') {
-                const stack = m.scopeStack.at(-1)
-                if (stack) {
-                    addDef(node, stack, ctx)
-                }
-                break
+            const stack = m.scopeStack.at(-1)
+            if (stack) {
+                addDef(node, stack, ctx)
             }
-            unreachable(p?.kind)
             break
         }
         case 'module': {
@@ -73,17 +64,12 @@ export const resolveName = (node: AstNode, ctx: Context, ns: Namespace[] = [...n
             break
         }
         case 'fn-type': {
+            const stack = m.scopeStack.at(-1)!
+            node.typeParams.forEach(tp => addDef(tp, stack, ctx))
+            node.typeParams.forEach(tp => tp.bounds.forEach(b => resolveName(b, ctx, ['type'])))
+
             resolveName(node.returnType, ctx, ns)
             node.paramTypes.forEach(pt => resolveName(pt, ctx, ns))
-            node.typeParams.forEach(g => resolveName(g, ctx, ns))
-            break
-        }
-        case 'type-param': {
-            const stack = m.scopeStack.at(-1)
-            if (stack) {
-                addDef(node, stack, ctx)
-            }
-            node.bounds.forEach(b => resolveName(b, ctx, ns))
             break
         }
         case 'match-clause': {
@@ -182,7 +168,10 @@ export const resolveName = (node: AstNode, ctx: Context, ns: Namespace[] = [...n
         }
         case 'fn-def': {
             withScope(ctx, () => {
-                node.typeParams.forEach(g => resolveName(g, ctx, ['type']))
+                const stack = m.scopeStack.at(-1)!
+                node.typeParams.forEach(tp => addDef(tp, stack, ctx))
+                node.typeParams.forEach(tp => tp.bounds.forEach(b => resolveName(b, ctx, ['type'])))
+
                 node.params.forEach(p => resolveName(p, ctx, ns))
                 if (node.returnType) {
                     resolveName(node.returnType, ctx, ['type'])
@@ -196,20 +185,18 @@ export const resolveName = (node: AstNode, ctx: Context, ns: Namespace[] = [...n
         case 'trait-def':
         case 'impl-def': {
             withScope(ctx, () => {
-                if (!node.typeParams.find(g => g.name.value === 'Self')) {
-                    const g: TypeParam = {
-                        kind: 'type-param',
-                        name: { kind: 'name', value: 'Self' },
-                        parseNode: node.kind === 'trait-def' ? node.name.parseNode : node.trait.parseNode,
-                        bounds: []
-                    }
-                    g.name.def = g
-                    node.typeParams.unshift(g)
-                }
-                node.typeParams.forEach(g => resolveName(g, ctx, ns))
-                if (node.kind === 'impl-def') {
-                    resolveName(node.trait, ctx, ns)
-                    resolveName(node.for, ctx, ns)
+                const stack = m.scopeStack.at(-1)!
+                node.typeParams.forEach(tp => addDef(tp, stack, ctx))
+                node.typeParams.forEach(tp => tp.bounds.forEach(b => resolveName(b, ctx, ['type'])))
+
+                switch (node.kind) {
+                    case 'trait-def':
+                        resolveName(node.name, ctx, ns)
+                        break
+                    case 'impl-def':
+                        resolveName(node.trait, ctx, ns)
+                        resolveName(node.for, ctx, ns)
+                        break
                 }
                 if (node.block) {
                     resolveName(node.block, ctx, ns)
@@ -217,9 +204,22 @@ export const resolveName = (node: AstNode, ctx: Context, ns: Namespace[] = [...n
             })
             break
         }
+        case 'trait-block': {
+            withScope(ctx, () => node.statements.forEach(s => resolveName(s, ctx, ns)))
+            break
+        }
+        case 'trait-statement': {
+            resolveName(node.name, ctx, ns)
+            resolveName(node.expr, ctx, ns)
+            node.name.def = node
+            break
+        }
         case 'type-def': {
             withScope(ctx, () => {
-                node.typeParams.forEach(g => resolveName(g, ctx, ns))
+                const stack = m.scopeStack.at(-1)!
+                node.typeParams.forEach(tp => addDef(tp, stack, ctx))
+                node.typeParams.forEach(tp => tp.bounds.forEach(b => resolveName(b, ctx, ['type'])))
+
                 node.variants.forEach(v => resolveName(v, ctx, ns))
             })
             break

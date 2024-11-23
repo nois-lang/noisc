@@ -183,7 +183,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             collectTypeBounds(node.rOperand, ctx)
             const opFn = opFnIdMap.get(node.op.kind)
             assert(!!opFn)
-            const opFnDef = findById(opFn!, ctx)
+            const opFnDef = findById(opFn!, ctx, ['value'])
             assert(!!opFnDef, `${idToString(opFn!)} not found`)
             const fnType = makeInferredType([instantiateType(opFnDef!.type!, ctx)])
             addBounds(fnType, [boundFromCall([node.lOperand.type!, node.rOperand.type!])])
@@ -230,10 +230,22 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         case 'trait-def':
         case 'impl-def': {
             // TODO
-            if (node.kind === 'impl-def' && node.for) {
+            if (node.kind === 'impl-def') {
                 break
             }
-            node.block.statements.forEach(s => collectTypeBounds(s, ctx))
+            node.block.statements.forEach(s => {
+                collectTypeBounds(s, ctx)
+                if (s.type?.kind !== 'fn-type') {
+                    assert(false)
+                    return
+                }
+                s.type.typeParams.unshift(...node.typeParams)
+            })
+            break
+        }
+        case 'trait-statement': {
+            collectTypeBounds(node.expr, ctx)
+            collectTypeBounds(node.name, ctx, node.expr.type)
             break
         }
         case 'string-interpolated': {

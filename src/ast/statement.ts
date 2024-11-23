@@ -126,6 +126,7 @@ export type TraitStatement = BaseAstNode & {
     kind: 'trait-statement'
     name: Name
     expr: Expr
+    def?: TraitDef | ImplDef
 }
 
 export const buildTraitStatement = (node: ParseNode, ctx: Context): TraitStatement => {
