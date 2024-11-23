@@ -9,28 +9,28 @@ pub trait Ord {
 
     ge = fn(self, other: Self): Bool {
         match self.cmp(other) {
-            Ordering::Less() { false }
+            Less() { false }
             _ { true }
         }
     }
 
     le = fn(self, other: Self): Bool {
         match self.cmp(other) {
-            Ordering::Greater() { false }
+            Greater() { false }
             _ { true }
         }
     }
 
     gt = fn(self, other: Self): Bool {
         match self.cmp(other) {
-            Ordering::Greater() { true }
+            Greater() { true }
             _ { false }
         }
     }
 
     lt = fn(self, other: Self): Bool {
         match self.cmp(other) {
-            Ordering::Less() { true }
+            Less() { true }
             _ { false }
         }
     }

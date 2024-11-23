@@ -52,13 +52,13 @@ impl <T> Collector<T> for List<T> {
 
 impl <T: Show> Show for List<T> {
     show = fn(self): String {
-        "[{self.iter().map(Show::show).intersperse(", ").collect<String>()}]"
+        "[{self.iter().map(show).intersperse(", ").collect<String>()}]"
     }
 }
 
 impl <T: Trace> Trace for List<T> {
     trace = fn(self): String {
-        "[{self.iter().map(Trace::trace).intersperse(", ").collect<String>()}]"
+        "[{self.iter().map(trace).intersperse(", ").collect<String>()}]"
     }
 }
 

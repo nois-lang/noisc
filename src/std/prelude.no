@@ -10,7 +10,7 @@ pub use std::{
     eq::{ Eq, eq, ne },
     copy::{ Copy, copy },
     ord::{ Ordering, Less, Equal, Greater, Ord, cmp, ge, le, gt, lt },
-    iter::{ self, Iterable, iter , Iter, next, count, last, fold, find, collect, Collector },
+    iter::{ self, Iterable, iter , Iter, next, count, last, fold, find, collect, Collector, map },
     iter::range::range,
     iter::repeat::repeat,
     list::{ self, List },

@@ -37,7 +37,7 @@ impl Collector<String> for String {
 
 impl Collector<Char> for String {
     fromIter = fn(iter: Iter<Char>): Self {
-        iter.map(Show::show).collect<String>()
+        iter.map(show).collect<String>()
     }
 }
 

@@ -36,3 +36,4 @@ let notBool = fn(a: Bool): Bool
 
 let showBool = fn(a: Bool): String
 
+let eqBool = fn(a: Bool, b: Bool): Bool
