@@ -229,23 +229,11 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
         }
         case 'trait-def':
         case 'impl-def': {
-            // TODO
-            if (node.kind === 'impl-def') {
-                break
-            }
-            node.block.statements.forEach(s => {
-                collectTypeBounds(s, ctx)
-                if (s.type?.kind !== 'fn-type') {
-                    assert(false)
-                    return
-                }
-                s.type.typeParams.unshift(...node.typeParams)
-            })
+            node.block.statements.forEach(s => collectTypeBounds(s, ctx))
             break
         }
         case 'trait-statement': {
             collectTypeBounds(node.expr, ctx)
-            collectTypeBounds(node.name, ctx, node.expr.type)
             break
         }
         case 'string-interpolated': {

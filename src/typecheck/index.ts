@@ -74,22 +74,25 @@ export const makeErrorType = (message?: string, errorKind: ErrorTypeKind = 'othe
     }
 })
 
-export const instantiateType = <T extends InferredType>(t: T, ctx: Context): T => {
+export const makeInferredFnType = (t: FnType, ctx: Context) => ({
+    kind: <const>'inferred-fn',
+    typeParams: t.typeParams.map(makeTypeParam),
+    // TODO: preserve param names
+    params: t.paramTypes.map(pt => {
+        assert(!!pt.type)
+        return instantiateType(pt.type!, ctx)
+    }),
+    returnType: instantiateType(t.returnType ?? ctx.stdTypeIds.unit, ctx)
+})
+
+export const instantiateType = (t: InferredType, ctx: Context): InferredType => {
     switch (t.kind) {
         case 'fn-type': {
-            const inst: FnType = {
-                kind: 'fn-type',
-                typeParams: t.typeParams.map(tp => ({ ...tp })),
-                paramTypes: t.paramTypes.map(pt => {
-                    assert(!!pt.type)
-                    return { ...pt, type: instantiateType(pt.type!, ctx) }
-                }),
-                returnType: instantiateType(t.returnType ?? ctx.stdTypeIds.unit, ctx)
-            }
-            return inst as any
+            return makeInferredFnType(t, ctx)
         }
         default:
-            return t
+            // dereference type to avoid modifying by unifyTypeBounds phase
+            return { ...t }
     }
 }
 
@@ -106,10 +109,10 @@ export const inferredTypeToString = (t: InferredType, depth = 0): string => {
                     : ''
             return `<${t.type.name.value}${bounds}${unified}>`
         case 'inferred-fn':
-            return `fn(${t.params.map(p => inferredTypeToString(p, depth + 1)).join(', ')}): ${inferredTypeToString(
-                t.returnType,
-                depth + 1
-            )}`
+            const tps = t.typeParams.length > 0 ? `<${t.typeParams.map(inferredTypeToString)}>` : ''
+            return `inf-fn${tps}(${t.params
+                .map(p => inferredTypeToString(p, depth + 1))
+                .join(', ')}): ${inferredTypeToString(t.returnType, depth + 1)}`
         case 'return':
             return `ret(${inferredTypeToString(t.type, depth + 1)})`
         case 'field-pattern':
@@ -141,6 +144,8 @@ export const typeToString = (t: Type): string => {
             return '_'
         case 'name':
             return t.value
+        // default:
+        // return unreachable(inspect(t))
     }
 }
 

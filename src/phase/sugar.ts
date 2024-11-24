@@ -149,6 +149,13 @@ export const desugar = (node: AstNode, stage: DesugarStage, ctx: Context) => {
             desugar(node.block, stage, ctx)
             break
         }
+        case 'string-interpolated':
+            node.tokens.forEach(t => {
+                if (typeof t === 'object') {
+                    desugar(t, stage, ctx)
+                }
+            })
+            break
         case 'use-expr':
         case 'variant':
         case 'return-stmt':
@@ -164,7 +171,6 @@ export const desugar = (node: AstNode, stage: DesugarStage, ctx: Context) => {
         case 'hole':
         case 'identifier':
         case 'name':
-        case 'string-interpolated':
         case 'type-def':
         case 'field-def':
         case 'string-literal':
@@ -217,7 +223,7 @@ export const desugarComposeOp = (node: UnaryExpr, ctx: Context) => {
             op: {
                 kind: 'call-op',
                 parseNode: right.operand.parseNode,
-                args: [{ kind: 'arg', parseNode: node.parseNode, expr: node.operand }]
+                args: [{ kind: 'arg', parseNode: node.parseNode, expr: left }]
             }
         }
         assign(node, newNode)

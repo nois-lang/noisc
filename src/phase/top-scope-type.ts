@@ -100,7 +100,15 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
         case 'trait-def':
         case 'impl-def': {
             node.typeParams.forEach(g => setTopScopeType(g, ctx))
-            node.block.statements.forEach(s => setTopScopeType(s, ctx))
+            node.block.statements.forEach(s => {
+                setTopScopeType(s, ctx)
+
+                if (s.type?.kind !== 'fn-type') {
+                    assert(false)
+                    return
+                }
+                s.type!.typeParams.unshift(...node.typeParams)
+            })
             break
         }
         case 'trait-statement': {

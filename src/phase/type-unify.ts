@@ -298,7 +298,10 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context): InferredType =>
                 case 'inferred-fn':
                 case 'fn-type':
                 case 'name':
-                    const e = makeErrorType(`failed unify [${[a, b].map(inferredTypeToString).join(', ')}]`, 'no-unify')
+                    const e = makeErrorType(
+                        `failed unify [${[a, b].map(t => `${inferredTypeToString(t)} (${t.kind})`).join(', ')}]`,
+                        'no-unify'
+                    )
                     assign(a, e)
                     assign(b, e)
                     return a
@@ -329,6 +332,12 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context): InferredType =>
         case 'error':
             return a
         case 'fn-type':
+            if (b.kind === 'fn-type') {
+                if (a.parseNode === b.parseNode) {
+                    assign(b, a)
+                    return a
+                }
+            }
             break
         case 'inferred':
         case 'return':
@@ -336,7 +345,7 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context): InferredType =>
             // these should never appear in a result of `unifyType`
             return unreachable(a.kind)
     }
-    return makeErrorType(`unify [${[inferredTypeToString(a), inferredTypeToString(b)].join(', ')}]`, 'unhandled')
+    return makeErrorType(`unify [${[a, b].map(t => `${inferredTypeToString(t)} (${t.kind})`).join(', ')}]`, 'unhandled')
 }
 
 const extractReturnType = (type: InferredType, ctx: Context): InferredType | undefined => {
