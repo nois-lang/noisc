@@ -37,7 +37,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             node.type = {
                 kind: 'fn-type',
                 typeParams: node.typeParams,
-                paramTypes: node.params.map(paramToParamType),
+                params: node.params.map(paramToParamType),
                 returnType: node.returnType ?? ctx.stdTypeIds.unit!
             }
             break
@@ -64,7 +64,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             const fnType: AstNode = {
                 kind: <const>'fn-type',
                 typeParams: node.typeDef!.typeParams,
-                paramTypes: node.fields.map(f => fieldToParamType(f)),
+                params: node.fields.map(f => fieldToParamType(f)),
                 returnType: typeDefId
             }
             setTopScopeType(fnType, ctx)
@@ -91,7 +91,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             const accessorType: AstNode = {
                 kind: <const>'fn-type',
                 typeParams: typeDef.typeParams,
-                paramTypes: [typeToParamType(typeDefId)],
+                params: [typeToParamType(typeDefId)],
                 returnType: node.fieldType
             }
             node.type = accessorType
@@ -137,7 +137,7 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
         }
         case 'fn-type': {
             node.typeParams.forEach(pt => setTopScopeType(pt, ctx))
-            node.paramTypes.forEach(pt => setTopScopeType(pt, ctx))
+            node.params.forEach(pt => setTopScopeType(pt, ctx))
             setTopScopeType(node.returnType, ctx)
             node.type = node
             break

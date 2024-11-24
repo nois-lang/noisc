@@ -69,7 +69,7 @@ export const resolveName = (node: AstNode, ctx: Context, ns: Namespace[] = [...n
             node.typeParams.forEach(tp => tp.bounds.forEach(b => resolveName(b, ctx, ['type'])))
 
             resolveName(node.returnType, ctx, ns)
-            node.paramTypes.forEach(pt => resolveName(pt, ctx, ns))
+            node.params.forEach(pt => resolveName(pt, ctx, ns))
             break
         }
         case 'match-clause': {

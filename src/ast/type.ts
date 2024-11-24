@@ -48,7 +48,7 @@ export const buildTypeParam = (node: ParseNode, ctx: Context): TypeParam => {
 export type FnType = BaseAstNode & {
     kind: 'fn-type'
     typeParams: TypeParam[]
-    paramTypes: ParamType[]
+    params: ParamType[]
     returnType: Type
 }
 
@@ -61,7 +61,7 @@ export const buildFnType = (node: ParseNode, ctx: Context): FnType => {
         nodes[i].kind === 'type-params' ? filterNonAstNodes(nodes[i++]).map(n => buildTypeParam(n, ctx)) : []
     const paramTypes = filterNonAstNodes(nodes[i++]).map(n => buildParamType(n, ctx))
     const returnType = buildType(filterNonAstNodes(nodes[i++])[0], ctx)
-    return { kind: 'fn-type', parseNode: node, typeParams: generics, paramTypes, returnType }
+    return { kind: 'fn-type', parseNode: node, typeParams: generics, params: paramTypes, returnType }
 }
 
 export type ParamType = BaseAstNode & {

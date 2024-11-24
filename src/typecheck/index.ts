@@ -1,3 +1,4 @@
+import { AstNode } from '../ast'
 import { FieldPattern } from '../ast/match'
 import { FnType, Type, TypeParam } from '../ast/type'
 import { Context, idToString } from '../scope'
@@ -20,13 +21,18 @@ export type InferredType =
     | {
           kind: 'inferred-fn'
           typeParams: InferredType[]
-          params: InferredType[]
+          params: InferredParamType[]
           returnType: InferredType
       }
     | { kind: 'field-pattern'; operandType: InferredType; fieldPattern: FieldPattern }
     | Type
     | { kind: 'return'; type: InferredType }
     | ErrorType
+
+export type InferredParamType = {
+    name?: string
+    type: InferredType
+}
 
 export type ErrorTypeKind =
     | 'no-unify'
@@ -77,10 +83,9 @@ export const makeErrorType = (message?: string, errorKind: ErrorTypeKind = 'othe
 export const makeInferredFnType = (t: FnType, ctx: Context) => ({
     kind: <const>'inferred-fn',
     typeParams: t.typeParams.map(makeTypeParam),
-    // TODO: preserve param names
-    params: t.paramTypes.map(pt => {
+    params: t.params.map(pt => {
         assert(!!pt.type)
-        return instantiateType(pt.type!, ctx)
+        return { name: pt.name?.value, type: instantiateType(pt.type!, ctx) }
     }),
     returnType: instantiateType(t.returnType ?? ctx.stdTypeIds.unit, ctx)
 })
@@ -110,9 +115,10 @@ export const inferredTypeToString = (t: InferredType, depth = 0): string => {
             return `<${t.type.name.value}${bounds}${unified}>`
         case 'inferred-fn':
             const tps = t.typeParams.length > 0 ? `<${t.typeParams.map(inferredTypeToString)}>` : ''
-            return `inf-fn${tps}(${t.params
-                .map(p => inferredTypeToString(p, depth + 1))
-                .join(', ')}): ${inferredTypeToString(t.returnType, depth + 1)}`
+            const pts = t.params
+                .map(pt => `${pt.name ? `${pt.name}: ` : ''}${inferredTypeToString(pt.type)}`)
+                .join(', ')
+            return `inf-fn${tps}(${pts}): ${inferredTypeToString(t.returnType, depth + 1)}`
         case 'return':
             return `ret(${inferredTypeToString(t.type, depth + 1)})`
         case 'field-pattern':
@@ -136,7 +142,7 @@ export const typeToString = (t: Type): string => {
             return idToString(t)
         case 'fn-type':
             const tps = t.typeParams.length > 0 ? `<${t.typeParams.map(typeParamToString)}>` : ''
-            const pts = t.paramTypes
+            const pts = t.params
                 .map(pt => `${pt.name ? `${pt.name.value}: ` : ''}${typeToString(pt.paramType)}`)
                 .join(', ')
             return `fn${tps}(${pts}): ${typeToString(t.returnType)}`
@@ -162,6 +168,14 @@ export const addBounds = (type: InferredType, bounds: InferredType[]): void => {
     assert(false, `adding bounds to kind ${type.kind}`)
 }
 
-export const boundFromCall = (args: InferredType[]): InferredType => {
-    return { kind: 'inferred-fn', typeParams: [], params: args, returnType: { kind: 'hole' } }
+export const boundFromCall = (args: AstNode[]): InferredType => {
+    return {
+        kind: 'inferred-fn',
+        typeParams: [],
+        params: args.map(arg => {
+            assert(!!arg.type)
+            return { name: arg.kind === 'arg' ? arg.name?.value : undefined, type: arg.type! }
+        }),
+        returnType: { kind: 'hole' }
+    }
 }

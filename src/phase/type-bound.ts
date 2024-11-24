@@ -157,7 +157,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
                 case 'call-op': {
                     const fnType = makeInferredType([instantiateType(node.operand.type!, ctx)])
                     node.op.args.forEach(a => collectTypeBounds(a, ctx))
-                    addBounds(fnType, [boundFromCall(node.op.args.map(a => a.type!))])
+                    addBounds(fnType, [boundFromCall(node.op.args)])
                     node.type = makeReturnType(fnType)
                     break
                 }
@@ -186,7 +186,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             const opFnDef = findById(opFn!, ctx, ['value'])
             assert(!!opFnDef, `${idToString(opFn!)} not found`)
             const fnType = makeInferredType([instantiateType(opFnDef!.type!, ctx)])
-            addBounds(fnType, [boundFromCall([node.lOperand.type!, node.rOperand.type!])])
+            addBounds(fnType, [boundFromCall([node.lOperand, node.rOperand])])
             node.type = makeReturnType(fnType)
             break
         }

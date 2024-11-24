@@ -249,7 +249,10 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context): InferredType =>
                         kind: 'inferred-fn',
                         // TODO
                         typeParams: [],
-                        params: zip(a.params, b.params, (a_, b_) => unify(a_, b_, ctx)),
+                        params: zip(a.params, b.params, (a_, b_) => ({
+                            name: a_.name === b_.name ? a_.name : undefined,
+                            type: unify(a_.type, b_.type, ctx)
+                        })),
                         returnType: unify(a.returnType, b.returnType, ctx)
                     }
                     return t
@@ -259,12 +262,13 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context): InferredType =>
                         kind: 'inferred-fn',
                         // TODO
                         typeParams: [],
-                        // TODO: try to preserve param names
-                        params: zip(
-                            a.params,
-                            b.paramTypes.map(t => t.paramType),
-                            (a_, b_) => unify(a_, b_, ctx)
-                        ),
+                        params: zip(a.params, b.params, (a_, b_) => {
+                            assert(!!b_.type)
+                            return {
+                                name: a_.name === b_.name?.value ? a_.name : undefined,
+                                type: unify(a_.type, b_.type!, ctx)
+                            }
+                        }),
                         returnType: unify(a.returnType, b.returnType, ctx)
                     }
                     return t
@@ -387,7 +391,7 @@ export const reportTypeErrors = (ctx: Context, node: AstNode, type: InferredType
 export const findTypeErrors = (t: InferredType): ErrorType[] => {
     switch (t.kind) {
         case 'inferred-fn':
-            return [...t.params.flatMap(findTypeErrors), ...findTypeErrors(t.returnType)]
+            return [...t.params.map(p => p.type).flatMap(findTypeErrors), ...findTypeErrors(t.returnType)]
         case 'error':
             return [t]
     }
