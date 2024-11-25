@@ -135,7 +135,7 @@ export const inferredTypeToString = (t: InferredType, depth = 0): string => {
         case 'inferred':
             return `[${t.bounds.map(b => inferredTypeToString(b, depth + 1)).join(', ')}]`
         case 'inferred-fn':
-            const tps = t.typeParams.length > 0 ? `<${t.typeParams.map(typeParamToString)}>` : ''
+            const tps = t.typeParams.length > 0 ? `<${t.typeParams.map(typeParamToString).join(', ')}>` : ''
             const pts = t.params
                 .map(pt => `${pt.name ? `${pt.name}: ` : ''}${inferredTypeToString(pt.type)}`)
                 .join(', ')
@@ -162,7 +162,7 @@ export const typeToString = (t: Type): string => {
         case 'identifier':
             return idToString(t)
         case 'fn-type':
-            const tps = t.typeParams.length > 0 ? `<${t.typeParams.map(typeParamToString)}>` : ''
+            const tps = t.typeParams.length > 0 ? `<${t.typeParams.map(typeParamToString).join(', ')}>` : ''
             const pts = t.params
                 .map(pt => `${pt.name ? `${pt.name.value}: ` : ''}${typeToString(pt.paramType)}`)
                 .join(', ')

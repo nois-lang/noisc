@@ -256,7 +256,6 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context): InferredType =>
                 return b
             }
             switch (b.kind) {
-                // biome-ignore lint:
                 case 'identifier': {
                     if (a.def && a.def === b.def) {
                         if (a.typeArgs.length === b.typeArgs.length) {
@@ -273,6 +272,15 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context): InferredType =>
                             return u
                         }
                     }
+                    if (a.def?.kind === 'type-def' && b.def?.kind === 'type-def') {
+                        const e = makeErrorType(
+                            `failed unify [${[a, b].map(t => inferredTypeToString(t)).join(', ')}]`,
+                            'no-unify'
+                        )
+                        assign(a, e)
+                        assign(b, e)
+                        return e
+                    }
                     if (a.def?.kind === 'type-param') {
                         if (a.def.unified) {
                             const u = unify(a.def.unified, b, ctx)
@@ -285,17 +293,18 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context): InferredType =>
                             return b
                         }
                     }
+                    break
                 }
                 case 'inferred-fn':
                 case 'fn-type':
                 case 'name':
                     const e = makeErrorType(
-                        `failed unify [${[a, b].map(t => `${inferredTypeToString(t)} (${t.kind})`).join(', ')}]`,
+                        `failed unify [${[a, b].map(t => inferredTypeToString(t)).join(', ')}]`,
                         'no-unify'
                     )
                     assign(a, e)
                     assign(b, e)
-                    return a
+                    return e
             }
             break
         }
