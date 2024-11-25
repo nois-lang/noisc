@@ -135,14 +135,13 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
                 if (node.def.type) {
                     node.type = instantiateType(node.def.type, ctx)
                 } else {
-                    node.type = node
+                    node.type = instantiateType(node, ctx)
                 }
                 break
             } else {
-                node.type = makeInferredType()
-                if (parentBound) {
-                    addBounds(node.type!, [parentBound])
-                }
+                // no def means it *is* the definition
+                assert(!!parentBound)
+                node.type = parentBound
             }
             break
         }

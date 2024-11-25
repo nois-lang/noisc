@@ -1,6 +1,7 @@
 import { BaseAstNode, Param } from '.'
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { Context } from '../scope'
+import { InferredType } from '../typecheck'
 import { Hole, buildHole } from './match'
 import { Identifier, Name, buildIdentifier, buildName } from './operand'
 import { FieldDef } from './type-def'
@@ -36,6 +37,7 @@ export type TypeParam = BaseAstNode & {
     name: Name
     key?: string
     bounds: Identifier[]
+    unified?: InferredType
 }
 
 export const buildTypeParam = (node: ParseNode, ctx: Context): TypeParam => {

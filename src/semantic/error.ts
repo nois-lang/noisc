@@ -55,6 +55,12 @@ export const genericError = (ctx: Context, def: AstNode, msg: string = 'error', 
 
 export const typeError = (ctx: Context, node: AstNode, e: ErrorType_, notes?: string[]): SemanticError => {
     const msg = `type error (${e.errorKind})${e.message ? `: ${e.message}` : ''}`
-    const stackStr = e.stack && e.stack.length > 0 ? e.stack.map(t => `\n  in ${t}`).join('') : ''
+    const stackStr =
+        e.stack && e.stack.length > 0
+            ? e.stack
+                  .toReversed()
+                  .map(t => `\n  in ${t}`)
+                  .join('')
+            : ''
     return semanticError(45, ctx, node, `${msg}${stackStr}`, notes)
 }

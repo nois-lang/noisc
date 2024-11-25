@@ -2,7 +2,7 @@ import { AstNode } from '../ast'
 import { Identifier } from '../ast/operand'
 import { fieldToParamType, paramToParamType, typeToParamType } from '../ast/type'
 import { Context } from '../scope'
-import { makeErrorType, makeTypeParam } from '../typecheck'
+import { makeErrorType } from '../typecheck'
 import { assert, todo, unreachable } from '../util/todo'
 
 /**
@@ -152,7 +152,6 @@ export const setTopScopeType = (node: AstNode, ctx: Context) => {
             break
         }
         case 'type-param': {
-            node.type = makeTypeParam(node)
             break
         }
     }

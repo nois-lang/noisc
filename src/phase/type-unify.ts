@@ -5,7 +5,7 @@ import { typeError } from '../semantic/error'
 import { ErrorType, InferredType, inferredTypeToString, makeErrorType } from '../typecheck'
 import { dedup, zip } from '../util/array'
 import { assign } from '../util/object'
-import { assert, unreachable } from '../util/todo'
+import { assert, todo, unreachable } from '../util/todo'
 
 /**
  * Unify type bounds
@@ -151,9 +151,6 @@ export const unifyType = (type: InferredType, ctx: Context): void => {
             assign(type, unified)
             break
         }
-        case 'inferred-fn':
-            // TODO
-            break
         case 'field-pattern': {
             unifyType(type.operandType, ctx)
             const variant = type.fieldPattern.variant
@@ -204,14 +201,9 @@ export const unifyType = (type: InferredType, ctx: Context): void => {
             break
         }
         case 'identifier':
-            if (type.def?.type?.kind === 'type-param') {
-                assign(type, type.def.type)
-                break
-            }
-            break
         case 'fn-type':
+        case 'inferred-fn':
         case 'name':
-        case 'type-param':
         case 'hole':
         case 'error':
             break
@@ -257,22 +249,6 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context): InferredType =>
                     }
                     return t
                 }
-                case 'fn-type': {
-                    const t: InferredType = {
-                        kind: 'inferred-fn',
-                        // TODO
-                        typeParams: [],
-                        params: zip(a.params, b.params, (a_, b_) => {
-                            assert(!!b_.type)
-                            return {
-                                name: a_.name === b_.name?.value ? a_.name : undefined,
-                                type: unify(a_.type, b_.type!, ctx)
-                            }
-                        }),
-                        returnType: unify(a.returnType, b.returnType, ctx)
-                    }
-                    return t
-                }
             }
             break
         }
@@ -298,6 +274,21 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context): InferredType =>
                             return u
                         }
                     }
+                    if (a.def?.kind === 'type-param') {
+                        if (b.def?.kind === 'type-param') {
+                            todo('tp <> tp')
+                        }
+                        if (a.def.unified) {
+                            const u = unify(a.def.unified, b, ctx)
+                            assign(a, u)
+                            assign(b, u)
+                            return u
+                        } else {
+                            a.def.unified = b
+                            assign(a, b)
+                            return b
+                        }
+                    }
                 }
                 case 'inferred-fn':
                 case 'fn-type':
@@ -309,27 +300,8 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context): InferredType =>
                     assign(a, e)
                     assign(b, e)
                     return a
-                case 'type-param':
-                    break
             }
             break
-        }
-        case 'type-param': {
-            // HACK to unify method signatures unify(traitMethod.type, implMethod.type)
-            if (b.kind === 'type-param' && a.type.name.value === b.type.name.value) {
-                assign(b, a)
-                return a
-            }
-            if (a.unified) {
-                const u = unify(a.unified, b, ctx)
-                assign(a.unified, u)
-                return u
-            }
-            if (b.kind !== 'hole') {
-                // TODO: unify with type bounds
-                a.unified = b
-            }
-            return b
         }
         case 'hole':
             return b
@@ -358,11 +330,6 @@ const extractReturnType = (type: InferredType, ctx: Context): InferredType | und
         case 'field-pattern':
             unifyType(type, ctx)
             return extractReturnType(type, ctx)
-        case 'type-param':
-            if (type.unified) {
-                return extractReturnType(type.unified, ctx)
-            }
-            return undefined
         case 'inferred-fn':
             return type.returnType
         case 'identifier':
@@ -408,8 +375,6 @@ const extractIds = (t: InferredType): Identifier[] => {
                 return [t]
             }
             break
-        case 'type-param':
-            return t.type.bounds
     }
     return []
 }
