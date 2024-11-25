@@ -232,6 +232,9 @@ export const resolveName = (node: AstNode, ctx: Context, ns: Namespace[] = [...n
             node.args.forEach(a => resolveName(a, ctx, ['value']))
             break
         }
+        case 'return-stmt': {
+            resolveName(node.returnExpr, ctx, ns)
+        }
     }
     m.astStack.pop()
 }

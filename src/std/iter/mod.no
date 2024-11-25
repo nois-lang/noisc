@@ -35,7 +35,7 @@ pub trait Iter<T> {
     find = fn(self, f: fn(elem: T): Bool): Option<T> {
         for n in self {
             match f(n) {
-                true { return Some(i) }
+                true { return Some(n) }
             }
         }
         None()

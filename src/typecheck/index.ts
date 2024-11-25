@@ -1,6 +1,5 @@
 import { AstNode } from '../ast'
 import { FieldPattern } from '../ast/match'
-import { Identifier } from '../ast/operand'
 import { FnType, Type, TypeParam } from '../ast/type'
 import { Context, idToString } from '../scope'
 import { assert, unreachable } from '../util/todo'
@@ -123,7 +122,7 @@ export const instantiateType = (t: InferredType, ctx: Context): InferredType => 
             return makeInferredFnType(t, ctx)
         }
         case 'identifier': {
-            return { ...t, typeArgs: t.typeArgs.map(ta => instantiateType(ta, ctx) as Identifier) }
+            return { ...t, typeArgs: t.typeArgs.map(ta => instantiateType(ta, ctx) as Type) }
         }
         default:
             return t

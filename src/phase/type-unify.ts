@@ -2,10 +2,17 @@ import { AstNode } from '../ast'
 import { Identifier } from '../ast/operand'
 import { Context, addError } from '../scope'
 import { typeError } from '../semantic/error'
-import { ErrorType, InferredType, inferredTypeToString, makeErrorType } from '../typecheck'
+import {
+    ErrorType,
+    InferredType,
+    inferredTypeToString,
+    instantiateType,
+    makeErrorType,
+    makeReturnType
+} from '../typecheck'
 import { dedup, zip } from '../util/array'
 import { assign } from '../util/object'
-import { assert, todo, unreachable } from '../util/todo'
+import { assert, unreachable } from '../util/todo'
 
 /**
  * Unify type bounds
@@ -159,33 +166,15 @@ export const unifyType = (type: InferredType, ctx: Context): void => {
                 assign(type, e)
                 break
             }
-            const typeDefs = extractIds(type.operandType)
-                .filter(t => t.def?.kind === 'type-def')
-                .map(id => id.def)
-                .filter(def => def?.kind === 'type-def')
-            if (typeDefs.length > 1) {
-                // TODO
-                assign(type, makeErrorType('multiple defs', 'todo'))
-                break
-            }
-            if (typeDefs.length === 0) {
-                assign(type, makeErrorType(`no def ${inferredTypeToString(type)}`, 'todo'))
-                break
-            }
-            const typeDef = typeDefs[0]
-            if (typeDef !== variant.typeDef) {
-                // failed unify
-                break
-            }
             const f = variant.fields.find(fd => fd.name.value === type.fieldPattern.name.value)
             if (!f) {
                 assign(type, makeErrorType(type.fieldPattern.name.value, 'no-field'))
                 break
             }
-            // TODO: handle type-def type params
-            assert(!!f.type, `field has no type: ${typeDef.name.value}.${f.name.value}`)
-            assign(type, f.type!)
-            unifyType(type, ctx)
+            assert(!!f.type, `field has no type: ${inferredTypeToString(type.operandType)}.${f.name.value}`)
+            const fType = makeReturnType(instantiateType(f.type!, ctx))
+            const u = unify(type.operandType, fType!, ctx)
+            assign(type, u)
             break
         }
         case 'return': {
@@ -201,6 +190,11 @@ export const unifyType = (type: InferredType, ctx: Context): void => {
             break
         }
         case 'identifier':
+            if (type.def?.kind === 'type-param' && type.def.unified) {
+                assign(type, type.def.unified)
+            }
+            type.typeArgs.forEach(t => unifyType(t, ctx))
+            break
         case 'fn-type':
         case 'inferred-fn':
         case 'name':
@@ -275,9 +269,6 @@ const unify_ = (a: InferredType, b: InferredType, ctx: Context): InferredType =>
                         }
                     }
                     if (a.def?.kind === 'type-param') {
-                        if (b.def?.kind === 'type-param') {
-                            todo('tp <> tp')
-                        }
                         if (a.def.unified) {
                             const u = unify(a.def.unified, b, ctx)
                             assign(a, u)
@@ -361,20 +352,6 @@ export const findTypeErrors = (t: InferredType): ErrorType[] => {
             return [...t.params.map(p => p.type).flatMap(findTypeErrors), ...findTypeErrors(t.returnType)]
         case 'error':
             return [t]
-    }
-    return []
-}
-
-/**
- * TODO: better name
- */
-const extractIds = (t: InferredType): Identifier[] => {
-    switch (t.kind) {
-        case 'identifier':
-            if (t.def) {
-                return [t]
-            }
-            break
     }
     return []
 }
