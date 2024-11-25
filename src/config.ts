@@ -14,6 +14,7 @@ export type Config = {
 
 export type OutConfig = {
     write: boolean
+    errorTrace: boolean
 }
 
 export const makeConfig = (pkgName: string, pkgPath: string): Config => {
@@ -28,7 +29,8 @@ export const makeConfig = (pkgName: string, pkgPath: string): Config => {
         libCheck: false,
         emit: true,
         output: {
-            write: false
+            write: false,
+            errorTrace: false
         }
     }
 }

@@ -56,7 +56,7 @@ export const genericError = (ctx: Context, def: AstNode, msg: string = 'error', 
 export const typeError = (ctx: Context, node: AstNode, e: ErrorType_, notes?: string[]): SemanticError => {
     const msg = `type error (${e.errorKind})${e.message ? `: ${e.message}` : ''}`
     const stackStr =
-        e.stack && e.stack.length > 0
+        ctx.config.output.errorTrace && e.stack && e.stack.length > 0
             ? e.stack
                   .toReversed()
                   .map(t => `\n  in ${t}`)
