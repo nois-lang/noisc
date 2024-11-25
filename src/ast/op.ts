@@ -1,7 +1,9 @@
 import { ParseNode, filterNonAstNodes } from '../parser'
 import { Context } from '../scope'
-import { Expr, buildSubExpr } from './expr'
+import { Expr } from './expr'
 import { Arg, AstNode, AstNodeKind, BaseAstNode, buildArg } from './index'
+import { buildIdentifier } from './operand'
+import { buildBlock } from './statement'
 
 export type PostfixOp = ComposeOp | CallOp | UnwrapOp | BindOp | AwaitOp
 
@@ -120,8 +122,29 @@ export type ComposeOp = BaseAstNode & {
 }
 
 export const buildComposeOp = (node: ParseNode, ctx: Context): ComposeOp => {
-    const expr = buildSubExpr(filterNonAstNodes(node)[0], ctx)
-    return { kind: 'compose-op', parseNode: node, operand: expr }
+    const nodes = filterNonAstNodes(node)
+    let i = 0
+    let expr: Expr | undefined
+    if (nodes.at(i)?.kind === 'identifier') {
+        const id = buildIdentifier(nodes[i++], ctx)
+        const idExpr: Expr = { kind: 'operand-expr', parseNode: id.parseNode, operand: id }
+        if (nodes.at(i)?.kind === 'call-op') {
+            const op = buildCallOp(nodes[i++], ctx)
+            expr = {
+                kind: 'unary-expr',
+                parseNode: { kind: 'expr', nodes: [id, op].map(n => n.parseNode!) },
+                operand: idExpr,
+                op
+            }
+        } else {
+            expr = idExpr
+        }
+    }
+    if (nodes.at(i)?.kind === 'block') {
+        const block = buildBlock(nodes[i++], ctx)
+        expr = { kind: 'operand-expr', parseNode: block.parseNode, operand: block }
+    }
+    return { kind: 'compose-op', parseNode: node, operand: expr! }
 }
 
 export type CallOp = BaseAstNode & {

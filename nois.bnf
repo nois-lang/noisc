@@ -68,7 +68,7 @@ statement             ::= var-def | fn-def | trait-def | impl-def | type-def | r
 
     postfix-op        ::= compose-op | call-op | unwrap-op | bind-op | await-op
                       ;                                                                                                                                                                                                                                                                                                
-      compose-op      ::= PERIOD sub-expr
+      compose-op      ::= PERIOD (identifier call-op | identifier | block)
                       ;
       call-op         ::= O-PAREN (arg (COMMA arg)*)? COMMA? C-PAREN
                       ;

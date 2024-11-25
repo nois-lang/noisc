@@ -1,7 +1,8 @@
 import { nameLikeTokens } from '.'
 import { Parser } from '..'
 import { syntaxError } from '../../error'
-import { parseExpr, parseSubExpr } from './expr'
+import { parseExpr, parseIdentifier } from './expr'
+import { parseBlock } from './statement'
 
 /**
  * infix-op ::= add-op | sub-op | mult-op | div-op | exp-op | mod-op | eq-op | ne-op | ge-op | le-op | gt-op
@@ -111,12 +112,23 @@ export const parsePostfixOp = (parser: Parser): void => {
 }
 
 /*
- * compose-op ::= PERIOD sub-expr
+ * compose-op ::= PERIOD (identifier call-op | identifier | block)
  */
 export const parseComposeOp = (parser: Parser): void => {
     const mark = parser.open()
     parser.expect('period')
-    parseSubExpr(parser)
+
+    if (parser.at('name')) {
+        parseIdentifier(parser)
+        if (parser.at('o-paren')) {
+            parseCallOp(parser)
+        }
+    } else if (parser.at('o-brace')) {
+        parseBlock(parser)
+    } else {
+        parser.advanceWithError(syntaxError(parser, 'expected infix operator'), mark)
+    }
+
     parser.close(mark, 'compose-op')
 }
 

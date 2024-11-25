@@ -96,8 +96,7 @@ export const buildSubExpr = (node: ParseNode, ctx: Context): UnaryExpr | Operand
     const operand = buildOperand(nodes[0], ctx)
     const ops = nodes.slice(1).map(n => buildPostfixOp(n, ctx))
     let expr: Expr = { kind: 'operand-expr', parseNode: operand.parseNode, operand }
-    // fold a list of ops into left-associative unary-exprs
-    for (const op of ops.toReversed()) {
+    for (const op of ops) {
         expr = {
             kind: 'unary-expr',
             parseNode: { kind: 'expr', nodes: [expr.parseNode, op.parseNode].filter(n => !!n) },
