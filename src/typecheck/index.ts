@@ -188,7 +188,7 @@ export const addBounds = (type: InferredType, bounds: InferredType[]): void => {
     assert(false, `adding bounds to kind ${type.kind}`)
 }
 
-export const boundFromCall = (args: AstNode[]): InferredType => {
+export const makeCallTypeFromArgs = (args: AstNode[]): InferredType => {
     return {
         kind: 'inferred-fn',
         typeParams: [],
@@ -196,6 +196,15 @@ export const boundFromCall = (args: AstNode[]): InferredType => {
             assert(!!arg.type)
             return { name: arg.kind === 'arg' ? arg.name?.value : undefined, type: arg.type! }
         }),
+        returnType: { kind: 'hole' }
+    }
+}
+
+export const makeCallTypeFromArgTypes = (args: InferredType[]): InferredType => {
+    return {
+        kind: 'inferred-fn',
+        typeParams: [],
+        params: args.map(type => ({ type })),
         returnType: { kind: 'hole' }
     }
 }

@@ -5,7 +5,7 @@ import { opFnIdMap } from '../semantic/op'
 import {
     InferredType,
     addBounds,
-    boundFromCall,
+    makeCallTypeFromArgs,
     instantiateType,
     makeErrorType,
     makeFieldPatternType,
@@ -100,35 +100,6 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             // TODO
             break
         }
-        case 'match-clause': {
-            node.type = makeInferredType()
-            node.patterns.forEach(p => collectTypeBounds(p, ctx, parentBound))
-            collectTypeBounds(node.block, ctx)
-            addBounds(node.type!, [node.block.type!])
-            // TODO
-            break
-        }
-        case 'pattern': {
-            collectTypeBounds(node.expr, ctx, parentBound)
-            break
-        }
-        case 'con-pattern': {
-            node.fieldPatterns.forEach(fp => collectTypeBounds(fp, ctx, parentBound))
-            break
-        }
-        case 'field-pattern': {
-            assert(!!parentBound)
-            node.name.type = makeFieldPatternType(parentBound!, node)
-            break
-        }
-        case 'list-pattern': {
-            // TODO
-            break
-        }
-        case 'hole': {
-            // TODO
-            break
-        }
         case 'identifier':
         case 'name': {
             if (node.def) {
@@ -140,8 +111,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
                 break
             } else {
                 // no def means it *is* the definition
-                assert(!!parentBound)
-                node.type = parentBound
+                node.type = parentBound ?? makeErrorType('no def', 'no-def')
             }
             break
         }
@@ -156,7 +126,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
                 case 'call-op': {
                     const fnType = makeInferredType([instantiateType(node.operand.type!, ctx)])
                     node.op.args.forEach(a => collectTypeBounds(a, ctx))
-                    addBounds(fnType, [boundFromCall(node.op.args)])
+                    addBounds(fnType, [makeCallTypeFromArgs(node.op.args)])
                     node.type = makeReturnType(fnType)
                     break
                 }
@@ -185,7 +155,7 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
             const opFnDef = findById(opFn!, ctx, ['value'])
             assert(!!opFnDef, `${idToString(opFn!)} not found`)
             const fnType = makeInferredType([instantiateType(opFnDef!.type!, ctx)])
-            addBounds(fnType, [boundFromCall([node.lOperand, node.rOperand])])
+            addBounds(fnType, [makeCallTypeFromArgs([node.lOperand, node.rOperand])])
             node.type = makeReturnType(fnType)
             break
         }
@@ -208,6 +178,34 @@ export const collectTypeBounds = (node: AstNode, ctx: Context, parentBound?: Inf
                 node.type!,
                 node.clauses.map(c => c.type!)
             )
+            break
+        }
+        case 'match-clause': {
+            node.type = makeInferredType()
+            node.patterns.forEach(p => collectTypeBounds(p, ctx, parentBound))
+            collectTypeBounds(node.block, ctx)
+            addBounds(node.type!, [node.block.type!])
+            break
+        }
+        case 'pattern': {
+            collectTypeBounds(node.expr, ctx, parentBound)
+            break
+        }
+        case 'con-pattern': {
+            node.fieldPatterns.forEach(fp => collectTypeBounds(fp, ctx, parentBound))
+            break
+        }
+        case 'field-pattern': {
+            assert(!!parentBound)
+            node.name.type = makeFieldPatternType(parentBound!, node)
+            break
+        }
+        case 'list-pattern': {
+            // TODO
+            break
+        }
+        case 'hole': {
+            // TODO
             break
         }
         case 'var-def': {

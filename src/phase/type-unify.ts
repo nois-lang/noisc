@@ -7,7 +7,9 @@ import {
     InferredType,
     inferredTypeToString,
     instantiateType,
+    makeCallTypeFromArgTypes,
     makeErrorType,
+    makeInferredType,
     makeReturnType
 } from '../typecheck'
 import { dedup, zip } from '../util/array'
@@ -47,10 +49,6 @@ export const unifyTypeBounds = (node: AstNode, ctx: Context, report = true): voi
             break
         }
         case 'type-param': {
-            // TODO
-            break
-        }
-        case 'match-clause': {
             // TODO
             break
         }
@@ -119,7 +117,16 @@ export const unifyTypeBounds = (node: AstNode, ctx: Context, report = true): voi
             break
         }
         case 'match-expr': {
-            // TODO
+            unifyTypeBounds(node.expr, ctx)
+            node.clauses.forEach(clause => unifyTypeBounds(clause, ctx))
+            break
+        }
+        case 'match-clause': {
+            node.patterns.forEach(p => unifyTypeBounds(p, ctx))
+            if (node.guard) {
+                unifyTypeBounds(node.guard, ctx)
+            }
+            unifyTypeBounds(node.block, ctx)
             break
         }
         case 'var-def': {
@@ -138,10 +145,6 @@ export const unifyTypeBounds = (node: AstNode, ctx: Context, report = true): voi
         case 'trait-def':
         case 'impl-def': {
             node.block.statements.forEach(s => unifyTypeBounds(s, ctx))
-            break
-        }
-        case 'compose-op': {
-            // TODO
             break
         }
     }
@@ -172,8 +175,10 @@ export const unifyType = (type: InferredType, ctx: Context): void => {
                 break
             }
             assert(!!f.type, `field has no type: ${inferredTypeToString(type.operandType)}.${f.name.value}`)
-            const fType = makeReturnType(instantiateType(f.type!, ctx))
-            const u = unify(type.operandType, fType!, ctx)
+            const u = makeReturnType(
+                makeInferredType([makeCallTypeFromArgTypes([type.operandType]), instantiateType(f.type!, ctx)])
+            )
+            unifyType(u, ctx)
             assign(type, u)
             break
         }
