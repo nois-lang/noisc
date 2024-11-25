@@ -25,7 +25,7 @@ export const resolveName = (node: AstNode, ctx: Context, ns: Namespace[] = [...n
             node.typeArgs.forEach(ta => resolveName(ta, ctx, ['type']))
             const def = findById(node, ctx, ns)
             if (!def) {
-                addError(ctx, notFoundError(ctx, node, idToString(node)), true)
+                addError(ctx, notFoundError(ctx, node, idToString(node)))
                 break
             }
             node.def = def

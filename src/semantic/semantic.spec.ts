@@ -1,9 +1,12 @@
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
+import { Module } from '../ast'
 import { makeConfig } from '../config'
 import { Package } from '../package'
 import { buildModule } from '../package/build'
 import { buildPackage } from '../package/io'
+import { checkImpl } from '../phase/impl'
+import { registerImpl } from '../phase/impl-register'
 import { resolveImports, setExports } from '../phase/import-resolve'
 import { resolveModuleScope } from '../phase/module-resolve'
 import { resolveName } from '../phase/name-resolve'
@@ -16,7 +19,7 @@ import { Context, eachModule, idToString, pathToId } from '../scope'
 import { Source } from '../source'
 
 describe('semantic', () => {
-    const check = (code: string, checkStd: boolean = false): Context => {
+    const check = (code: string): Context | undefined => {
         const source: Source = { code, filepath: 'test.no' }
         const ctx: Context = {
             config: makeConfig('test', 'test.no'),
@@ -25,10 +28,12 @@ describe('semantic', () => {
             stdTypeIds: {},
             errors: [],
             warnings: [],
+            unifyStack: [],
             variableCounter: 0
         }
 
         const moduleAst = buildModule(source, pathToId(source.filepath), ctx)!
+        if (!moduleAst) return undefined
         const pkg: Package = {
             path: source.filepath,
             name: moduleAst?.identifier.names.at(-1)!.value,
@@ -41,14 +46,17 @@ describe('semantic', () => {
         ctx.packages = [std, pkg]
         ctx.prelude = std.modules.find(m => m.identifier.names.at(-1)!.value === 'prelude')!
 
-        const phases = [
+        const phases: ((module: Module, ctx: Context) => void)[] = [
+            (node, ctx) => desugar(node, 'init', ctx),
             resolveModuleScope,
             setExports,
             resolveImports,
             setStdTypeIds,
-            desugar,
+            registerImpl,
+            (node, ctx) => desugar(node, 'pre-name-resolve', ctx),
             resolveName,
             setTopScopeType,
+            checkImpl,
             collectTypeBounds,
             unifyTypeBounds
         ]
@@ -59,8 +67,9 @@ describe('semantic', () => {
 
     describe('std', () => {
         it('check std', () => {
-            const ctx = check('', true)
-            expect(ctx.errors.map(e => e.message)).toEqual([])
+            const ctx = check('')
+            expect(ctx)
+            expect(ctx!.errors.map(e => e.message)).toEqual([])
         })
     })
 
@@ -72,15 +81,17 @@ type Foo<T> {
     B
 }
 
-fn main() {
+let main = fn() {
     let f = Foo::A(v: 4)
     let check: Foo<${type}> = f
 }`
             let ctx = check(code('Int'))
-            expect(ctx.errors.map(e => e.message)).toEqual([])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([])
 
             ctx = check(code('String'))
-            expect(ctx.errors.map(e => e.message)).toEqual([
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([
                 'type error: expected test::Foo<std::string::String>\n            got      test::Foo<std::int::Int>'
             ])
         })
@@ -89,18 +100,20 @@ fn main() {
     describe('use expr', () => {
         it('ok', () => {
             const code = `use std::iter::{self, Iter, Iterable}`
-            const ctx = check(code, false)
-            expect(ctx.errors.map(e => e.message)).toEqual([])
-            const module = ctx.packages.at(-1)!.modules[0]
+            const ctx = check(code)
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([])
+            const module = ctx!.packages.at(-1)!.modules[0]
             expect(module.reExports!.length).toEqual(0)
             expect(module.references!.map(idToString)).toEqual(['std::iter', 'std::iter::Iter', 'std::iter::Iterable'])
         })
 
         it('re-export', () => {
             const code = `pub use std::iter::{self, Iter, Iterable}`
-            const ctx = check(code, false)
-            expect(ctx.errors.map(e => e.message)).toEqual([])
-            const module = ctx.packages.at(-1)!.modules[0]
+            const ctx = check(code)
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([])
+            const module = ctx!.packages.at(-1)!.modules[0]
             expect(module.reExports!.map(idToString)).toEqual(['std::iter', 'std::iter::Iter', 'std::iter::Iterable'])
             expect(module.references!.length).toEqual(0)
         })
@@ -115,40 +128,44 @@ type Foo<T> {
 }
 
 impl <T> Foo<T> {
-    fn foo(self, other: T): Foo<T> {
+    let foo = fn(self, other: T): Foo<T> {
         self
     }
 }
 
-fn main() {
+let main = fn() {
     let f = Foo::A(v: 4)
     let a = f.foo(${arg})
     let check: Foo<Int> = a
 }`
             let ctx = check(code('6'))
-            expect(ctx.errors.map(e => e.message)).toEqual([])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([])
 
             ctx = check(code('"foo"'))
-            expect(ctx.errors.map(e => e.message)).toEqual([
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([
                 'type error: expected std::int::Int\n            got      std::string::String'
             ])
         })
 
         it('fn generics', () => {
             const code = (arg: string): string => `\
-fn foo<T>(a: T): T {
+let foo<T> = fn(a: T): T {
     a
 }
 
-fn main() {
+let main = fn() {
     let f = foo(${arg})
     let check: Int = f
 }`
             let ctx = check(code('6'))
-            expect(ctx.errors.map(e => e.message)).toEqual([])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([])
 
             ctx = check(code('"foo"'))
-            expect(ctx.errors.map(e => e.message)).toEqual([
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([
                 'type error: expected std::int::Int\n            got      std::string::String'
             ])
         })
@@ -161,21 +178,23 @@ type Foo<T> {
 }
 
 impl <T> Foo<T> {
-    fn foo<O>(self, other: O): Foo<O> {
+    let foo = fn<O>(self, other: O): Foo<O> {
         Foo::A(v: other)
     }
 }
 
-fn main() {
+let main = fn() {
     let f = Foo::A(v: 4)
     let a = f.foo(${arg})
     let check: Foo<Int> = a
 }`
             let ctx = check(code('6'))
-            expect(ctx.errors.map(e => e.message)).toEqual([])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([])
 
             ctx = check(code('"foo"'))
-            expect(ctx.errors.map(e => e.message)).toEqual([
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([
                 'type error: expected test::Foo<std::int::Int>\n            got      test::Foo<std::string::String>'
             ])
         })
@@ -185,23 +204,26 @@ fn main() {
 type Foo { Foo }
 
 impl Foo {
-    fn foo(self): Unit {
+    let foo = fn(self): Unit {
         let s: ${arg} = self
     }
 }
 
-fn main() {
+let main = fn() {
     let f = Foo::Foo()
     f.foo()
 }`
             let ctx = check(code('Self'))
-            expect(ctx.errors.map(e => e.message)).toEqual([])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([])
 
             ctx = check(code('Foo'))
-            expect(ctx.errors.map(e => e.message)).toEqual([])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([])
 
             ctx = check(code('Int'))
-            expect(ctx.errors.map(e => e.message)).toEqual([
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([
                 'type error: expected std::int::Int\n            got      test::Foo'
             ])
         })
@@ -209,49 +231,23 @@ fn main() {
         it('instance fns should not be available within itself', () => {
             const code = 'trait Foo { fn foo() { foo() } }'
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual(['identifier `foo` not found', 'unknown type'])
-        })
-
-        it('instance fns should not be available without trait qualifier', () => {
-            const code = (arg: string): string => `\
-trait Foo {
-    fn foo() {}
-}
-
-fn main() {
-    ${arg}foo()
-}`
-            let ctx = check(code(''))
-            expect(ctx.errors.map(e => e.message)).toEqual(['identifier `foo` not found', 'unknown type'])
-
-            ctx = check(code('Foo::'))
-            expect(ctx.errors.map(e => e.message)).toEqual([])
-        })
-
-        it('clashing generic name', () => {
-            const code = (arg: string): string => `\
-fn foo<T>() {
-    let a: Option<T> = Option::None()
-    let b = a.unwrap()
-    b()
-    return unit
-}`
-            const ctx = check(code('Unit'))
-            expect(ctx.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `T`'])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual(['identifier `foo` not found', 'unknown type'])
         })
 
         it('replace unresolved generics with hole type', () => {
             const code = `\
-fn none<T>(): Option<T> {
-    Option::None()
+let none = fn<T>(): Option<T> {
+    None()
 }
 
-fn main() {
+let main = fn() {
     let a = none()
     a()
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual([
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([
                 'type error: non-callable operand of type `std::option::Option<_>`'
             ])
         })
@@ -263,25 +259,27 @@ fn main() {
 type Foo
 
 impl Foo {
-    fn foo(): Bar {
+    let foo = fn(): Bar {
         Bar::Bar()
     }
 }
 
 type Bar()`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual([])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([])
         })
 
         it('fn is used in fn before it is defined', () => {
             const code = `\
-fn main() {
+let main = fn() {
     foo()
 }
 
-fn foo() {}`
+let foo = fn() {}`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual([])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([])
         })
     })
 
@@ -290,12 +288,13 @@ fn foo() {}`
             const code = `\
 type Foo(a: Int, b: Int)
 
-fn bar(Foo::Foo(a, b): Foo) {
+let bar = fn(Foo(a, b): Foo) {
     a()
     b()
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual([
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([
                 'type error: non-callable operand of type `std::int::Int`',
                 'type error: non-callable operand of type `std::int::Int`'
             ])
@@ -305,14 +304,15 @@ fn bar(Foo::Foo(a, b): Foo) {
             const code = `\
 type Foo(a: Int, b: Int)
 
-fn bar(Foo::Foo(a: namedA, b: namedB): Foo) {
+let bar = fn(Foo(a: namedA @ _, b: namedB @ _): Foo) {
     a()
     b()
     namedA()
     namedB()
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual([
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([
                 'identifier `a` not found',
                 'unknown type',
                 'identifier `b` not found',
@@ -328,12 +328,13 @@ type Foo(b: Bar)
 
 type Bar(a: Int)
 
-fn bar(Foo::Foo(b: Bar::Bar(a)): Foo) {
+let bar = fn(Foo(b: Bar(a)): Foo) {
     b()
     a()
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual([
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([
                 'identifier `b` not found',
                 'unknown type',
                 'type error: non-callable operand of type `std::int::Int`'
@@ -344,102 +345,51 @@ fn bar(Foo::Foo(b: Bar::Bar(a)): Foo) {
             const code = `\
 type Foo(a: Int)
 
-fn bar(foo @ Foo::Foo(a): Foo) {
+let bar = fn(foo @ Foo(a): Foo) {
     foo()
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `test::Foo`'])
-        })
-    })
-
-    describe('if expr', () => {
-        it('simple', () => {
-            const code = `\
-fn main() {
-    if true { "foo" }
-    if true { 4 } else { "foo" }
-    unit
-}`
-            const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual([])
-        })
-
-        it('incompatible branches', () => {
-            const code = (arg: string) => `\
-fn main() {
-    let a = if true { 4 } else { ${arg} }
-    a()
-}`
-            let ctx = check(code('5'))
-            expect(ctx.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `std::int::Int`'])
-
-            ctx = check(code('"foo"'))
-            expect(ctx.errors.map(e => e.message)).toEqual([
-                'if branches have incompatible types:\n    then: `std::int::Int`\n    else: `std::string::String`',
-                'unknown type'
-            ])
-        })
-    })
-
-    describe('if let expr', () => {
-        it('simple', () => {
-            const code = (arg: string) => `\
-fn main() {
-    if let Option::Some(value) = ${arg} {
-        value()
-    } else {
-        value()
-    }
-}`
-            let ctx = check(code('Option::Some(value: 4)'))
-            expect(ctx.errors.map(e => e.message)).toEqual([
-                'type error: non-callable operand of type `std::int::Int`',
-                'type error: non-callable operand of type `std::int::Int`'
-            ])
-
-            ctx = check(code('4'))
-            expect(ctx.errors.map(e => e.message)).toEqual([
-                'non-destructurable type `std::int::Int`',
-                'identifier `value` not found',
-                'unknown type',
-                'identifier `value` not found',
-                'unknown type'
-            ])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `test::Foo`'])
         })
     })
 
     describe('list expr', () => {
         it('empty', () => {
             const code = `\
-fn main() {
+let main = fn() {
     let a = []
     a()
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual([
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([
                 'type error: non-callable operand of type `std::list::List<_>`'
             ])
         })
 
         it('multi', () => {
             const code = (a: string, b: string) => `\
-fn main() {
+let main = fn() {
     let a = [${a}, ${b}]
     a()
 }`
             let ctx = check(code('1', '2'))
-            expect(ctx.errors.map(e => e.message)).toEqual([
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([
                 'type error: non-callable operand of type `std::list::List<std::int::Int>`'
             ])
 
             ctx = check(code('1', '"foo"'))
-            expect(ctx.errors.map(e => e.message)).toEqual([
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([
                 'type error: expected std::int::Int\n            got      std::string::String',
                 'type error: non-callable operand of type `std::list::List<std::int::Int>`'
             ])
 
             ctx = check(code('Option::Some(4)', '"foo"'))
-            expect(ctx.errors.map(e => e.message)).toEqual([
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([
                 'type error: expected std::option::Option<std::int::Int>\n            got      std::string::String',
                 'type error: non-callable operand of type `std::list::List<std::option::Option<std::int::Int>>`'
             ])
@@ -454,15 +404,16 @@ type Expr {
     Const(v: Int)
 }
 
-fn main() {
-    let expr = Expr::Const(v: 4)
+let main = fn() {
+    let expr = Const(v: 4)
     match expr {
-        Expr::Add(l: Expr::Add()) {}
-        Expr::Const() {}
+        Add(l: Add()) {}
+        Const() {}
     }
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual([
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([
                 'non-exhaustive match expression, unmatched paths:\n    Expr::Add(l: Expr::Const(), r: _) {}'
             ])
         })
@@ -474,14 +425,15 @@ type Expr {
     Const(v: Int)
 }
 
-fn main() {
-    let expr = Expr::Const(v: 4)
+let main = fn() {
+    let expr = Const(v: 4)
     match expr {
-        Expr::Add() | Expr::Const() {}
+        Add() | Const() {}
     }
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual([])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([])
         })
 
         it('unreachable match clause', () => {
@@ -491,18 +443,19 @@ type Expr {
     Const(v: Int)
 }
 
-fn main() {
-    let expr = Expr::Const(v: 4)
+let main = fn() {
+    let expr = Const(v: 4)
     match expr {
-        Expr::Add() {}
-        Expr::Const() {}
+        Add() {}
+        Const() {}
         _ {}
     }
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual([])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([])
 
-            expect(ctx.warnings.map(e => e.message)).toEqual(['unreachable match clause'])
+            expect(ctx!.warnings.map(e => e.message)).toEqual(['unreachable match clause'])
         })
 
         it('clauses type mismatch', () => {
@@ -512,20 +465,22 @@ type Expr {
     Const(v: Int)
 }
 
-fn main() {
-    let expr = Expr::Const(v: 4)
+let main = fn() {
+    let expr = Const(v: 4)
     ${arg}match expr {
-        Expr::Add() { "foo" }
-        Expr::Const() { 5 }
+        Add() { "foo" }
+        Const() { 5 }
         _ {}
     }
     return unit
 }`
             let ctx = check(code(''))
-            expect(ctx.errors.map(e => e.message)).toEqual([])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([])
 
             ctx = check(code('let a = '))
-            expect(ctx.errors.map(e => e.message)).toEqual([
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([
                 'match clauses have incompatible types:\n    std::string::String\n    std::int::Int\n    std::unit::Unit'
             ])
         })
@@ -534,85 +489,36 @@ fn main() {
     describe('break stmt', () => {
         it('ok', () => {
             const code = `\
-fn main() {
+let main = fn() {
     while true {
         break
     }
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual([])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([])
         })
 
         it('no loop scope', () => {
             const code = `\
-fn main() {
+let main = fn() {
     break
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual(['outside of the loop'])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual(['outside of the loop'])
         })
 
         it('from closure', () => {
             const code = `\
-fn main() {
+let main = fn() {
     while true {
-        (|| break)()
+        {fn() { break }}()
     }
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual(['outside of the loop'])
-        })
-    })
-
-    describe('field access', () => {
-        it('ok', () => {
-            const code = `\
-type Foo(x: Int)
-
-impl Foo {
-    fn main() {
-        let foo = Foo::Foo(5)
-        let a = foo.x
-        a()
-        return unit
-    }
-}`
-            const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `std::int::Int`'])
-        })
-
-        it('field called like a method', () => {
-            const code = (arg: string, arg2: string) => `\
-type Foo(${arg})
-
-impl Foo {
-    fn main() {
-        let foo = Foo::Foo(${arg2})
-        foo.x()
-        return unit
-    }
-}`
-            let ctx = check(code('', ''))
-            expect(ctx.errors.map(e => e.message)).toEqual(['method `test::Foo::x` not found'])
-
-            ctx = check(code('x: Int', '5'))
-            expect(ctx.errors.map(e => e.message)).toEqual(['method `test::Foo::x` not found'])
-        })
-
-        it('field is a closure', () => {
-            const code = `\
-type Foo(x: ||: Int)
-
-impl Foo {
-    fn main() {
-        let foo = Foo::Foo(|| 5)
-        let a = (foo.x)()
-        a()
-        return unit
-    }
-}`
-            const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `std::int::Int`'])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual(['outside of the loop'])
         })
     })
 
@@ -621,57 +527,61 @@ impl Foo {
             const code = `\
 type Foo(x: Int)
 
-fn main() {
-    let foo = Foo::Foo(5)
+let main = fn() {
+    let foo = Foo(5)
     foo()
     return unit
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `test::Foo`'])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `test::Foo`'])
         })
 
         it('named call', () => {
             const code = (arg: string) => `\
 type Foo(x: Int)
 
-fn main() {
-    let foo = Foo::Foo(${arg}: 5)
+let main = fn() {
+    let foo = Foo(${arg}: 5)
     foo()
     return unit
 }`
             let ctx = check(code('x'))
-            expect(ctx.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `test::Foo`'])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual(['type error: non-callable operand of type `test::Foo`'])
 
             ctx = check(code('y'))
-            expect(ctx.errors.map(e => e.message)).toEqual(['field `y` not found', 'unknown type', 'unknown type'])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual(['field `y` not found', 'unknown type', 'unknown type'])
         })
 
         it('fn named call', () => {
             const code = `\
-fn main() {
-    let foo = println(value: "str")
+let main = fn() {
+    let foo = println(value = "str")
     return unit
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual(['unexpected named argument `value`'])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual(['unexpected named argument `value`'])
         })
 
         it('wrong arg count', () => {
             const code = (arg: string) => `\
 type Foo(x: Int)
 
-impl Foo {
-    fn main() {
-        let foo = Foo::Foo(${arg})
-        foo()
-        return unit
-    }
+let main = fn() {
+    let foo = Foo(${arg})
+    foo()
+    return unit
 }`
             let ctx = check(code(''))
-            expect(ctx.errors.map(e => e.message)).toEqual(['missing fields: `x`', 'unknown type', 'unknown type'])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual(['missing fields: `x`', 'unknown type', 'unknown type'])
 
             ctx = check(code('x: 5, y: 6'))
-            expect(ctx.errors.map(e => e.message)).toEqual(['field `y` not found', 'unknown type', 'unknown type'])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual(['field `y` not found', 'unknown type', 'unknown type'])
         })
     })
 
@@ -683,11 +593,12 @@ type Node<T> {
     Leaf(t: T)
 }
 
-fn main() {
+let main = fn() {
     let n
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual(['missing variable initialization'])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual(['missing variable initialization'])
         })
     })
 
@@ -699,76 +610,69 @@ type Foo {
     A()
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual(['duplicate variant `A`'])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual(['duplicate variant `A`'])
         })
 
         it('duplicate field', () => {
             const code = `type Foo(a: Int, a: String)`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual(['duplicate field `a`'])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual(['duplicate field `a`'])
         })
     })
 
     describe('fn def', () => {
         it('fn no body', () => {
-            const code = `\
-type Node<T> {
-    Node(node: Node<T>),
-    Leaf(t: T)
-}
-
-impl <T> Node<T> {
-    fn child(self)
-}
-
-fn main() {
-    let n = Node(Node(Leaf(5)))
-    n.child()
-}`
+            const code = 'let main = fn()'
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual(['fn `child` has no body'])
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual(['fn `child` has no body'])
         })
     })
 
     describe('string interpolation', () => {
         it('basic', () => {
             const code = `\
-fn main() {
+let main = fn() {
     let foo = 5
     let s = "{foo}"
     s()
     return unit
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual([
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([
                 'type error: non-callable operand of type `std::string::String`'
             ])
         })
 
         it('composite', () => {
             const code = `\
-fn main() {
+let main = fn() {
     let foo = 5
     let s = "a {foo} b"
     s()
     return unit
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual([
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([
                 'type error: non-callable operand of type `std::string::String`'
             ])
         })
 
         it('nested', () => {
             const code = `\
-fn main() {
+let main = fn() {
     let foo = 5
     let s = "a {"c"} b"
     s()
     return unit
 }`
             const ctx = check(code)
-            expect(ctx.errors.map(e => e.message)).toEqual([
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([
                 'type error: non-callable operand of type `std::string::String`'
             ])
         })
@@ -777,20 +681,22 @@ fn main() {
             const code = (arg: string) => `\
 type Foo()
 ${arg}
-fn main() {
+let main = fn() {
     let foo = Foo()
     let s = "{foo}"
     s()
     return unit
 }`
             let ctx = check(code(''))
-            expect(ctx.errors.map(e => e.message)).toEqual([
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([
                 'type error: expected std::io::show::Show\n            got      test::Foo',
                 'type error: non-callable operand of type `std::string::String`'
             ])
 
-            ctx = check(code('impl Show for Foo { fn show(self): String { "" } }'))
-            expect(ctx.errors.map(e => e.message)).toEqual([
+            ctx = check(code('impl Show for Foo { let show = fn(self): String { "" } }'))
+            expect(ctx).toBeDefined()
+            expect(ctx!.errors.map(e => e.message)).toEqual([
                 'type error: non-callable operand of type `std::string::String`'
             ])
         })

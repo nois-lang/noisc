@@ -81,7 +81,7 @@ const compileStd = async (): Promise<void> => {
     const pkg = buildPackage(config.pkgPath, config.pkgName!, ctx)!
 
     ctx.packages = [pkg]
-    ctx.prelude = pkg.modules.find(m => m.identifier.names.at(-1)! === 'prelude')!
+    ctx.prelude = pkg.modules.find(m => m.identifier.names.at(-1)!.value === 'prelude')!
     ctx.packages.forEach(p => {
         p.modules.forEach(m => {
             prepareModule(m)
