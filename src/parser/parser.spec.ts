@@ -52,7 +52,7 @@ describe('parser', () => {
         })
 
         it('variant type', () => {
-            const { tree, errors } = parse('type Option<T> { Some(value: T), None }')
+            const { tree, errors } = parse('type Option<T>{ Some(value: T), None }')
             expect(errors).toEqual([])
             // biome-ignore format: compact
             expect(tree).toEqual(
@@ -61,7 +61,7 @@ describe('parser', () => {
         [ { 'type-def':
              [ { 'type-keyword': 'type' },
                { name: 'Option' },
-               { generics: [ { 'o-angle': '<' }, { generic: [ { name: 'T' } ] }, { 'c-angle': '>' } ] },
+               { 'type-params': [ { 'o-angle': '<' }, { 'type-param': [ { name: 'T' } ] }, { 'c-angle': '>' } ] },
                { 'variant-list':
                   [ { 'o-brace': '{' },
                     { variant:
@@ -81,45 +81,20 @@ describe('parser', () => {
 
     describe('fn-def', () => {
         it('empty', () => {
-            const { tree, errors } = parse('fn main() {}')
+            const { tree, errors } = parse('fn() {}')
             expect(errors).toEqual([])
-            expect(tree).toEqual({
-                module: [
-                    {
-                        statement: [
-                            {
-                                'fn-def': [
-                                    { 'fn-keyword': 'fn' },
-                                    { name: 'main' },
-                                    { params: [{ 'o-paren': '(' }, { 'c-paren': ')' }] },
-                                    { block: [{ 'o-brace': '{' }, { 'c-brace': '}' }] }
-                                ]
-                            }
-                        ]
-                    }
-                ]
-            })
-        })
-
-        it('keyword as name', () => {
-            const { tree, errors } = parse('fn type() {}')
-            expect(errors.length).toEqual(0)
-            expect(tree).toEqual({
-                module: [
-                    {
-                        statement: [
-                            {
-                                'fn-def': [
-                                    { 'fn-keyword': 'fn' },
-                                    { 'type-keyword': 'type' },
-                                    { params: [{ 'o-paren': '(' }, { 'c-paren': ')' }] },
-                                    { block: [{ 'o-brace': '{' }, { 'c-brace': '}' }] }
-                                ]
-                            }
-                        ]
-                    }
-                ]
-            })
+            // biome-ignore format: compact
+            expect(tree).toEqual(
+{ module:
+   [ { statement:
+        [ { expr:
+             [ { 'sub-expr':
+                  [ { operand:
+                       [ { 'fn-def':
+                            [ { 'fn-keyword': 'fn' },
+                              { params: [ { 'o-paren': '(' }, { 'c-paren': ')' } ] },
+                              { block: [ { 'o-brace': '{' }, { 'c-brace': '}' } ] } ] } ] } ] } ] } ] } ] }
+            )
         })
     })
 
@@ -201,11 +176,9 @@ describe('parser', () => {
         // biome-ignore format: compact
         expect(tree).toEqual(
 { module:
-   [ { statement:
-        [ { expr: [ { 'sub-expr': [ { operand: [ { identifier: [ { name: 'foo' } ] } ] } ] } ] } ] },
+   [ { statement: [ { expr: [ { 'sub-expr': [ { operand: [ { identifier: [ { name: 'foo' } ] } ] } ] } ] } ] },
      { statement:
-        [ { comment: '// comment here' },
-          { expr: [ { 'sub-expr': [ { operand: [ { identifier: [ { name: 'bar' } ] } ] } ] } ] } ] } ] }
+        [ { comment: '// comment here' }, { expr: [ { 'sub-expr': [ { operand: [ { identifier: [ { name: 'bar' } ] } ] } ] } ] } ] } ] }
         )
     })
 })

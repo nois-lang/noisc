@@ -29,7 +29,7 @@ trait Area {
 
 // impl for variant type
 impl Area for Shape {
-    fn area(self): Num {
+    area = fn(self): Num {
         match self {
             Rectangle(width, height) { width * height }
             Circle(radius) { math::pi * radius ^ 2 }

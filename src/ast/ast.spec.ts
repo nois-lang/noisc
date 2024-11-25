@@ -74,7 +74,7 @@ describe('ast', () => {
           tokens:
            [ 'str ',
              { kind: 'unary-expr',
-               operand: { kind: 'identifier', names: [ { kind: 'name', value: 'foo' } ], typeArgs: [] },
+               operand: { kind: 'operand-expr', operand: { kind: 'identifier', names: [ { kind: 'name', value: 'foo' } ], typeArgs: [] } },
                op:
                 { kind: 'call-op',
                   args:
@@ -110,76 +110,52 @@ describe('ast', () => {
     describe('type-def', () => {
         it('variant type', () => {
             const ast = buildAst('type Option<T> { Some(value: T), None }')
-            expect(compactAstNode(ast.block)).toEqual({
-                kind: 'block',
-                statements: [
-                    {
-                        kind: 'type-def',
-                        name: { kind: 'name', value: 'Option' },
-                        generics: [{ kind: 'generic', name: { kind: 'name', value: 'T' }, bounds: [] }],
-                        variants: [
-                            {
-                                kind: 'variant',
-                                name: { kind: 'name', value: 'Some' },
-                                fieldDefs: [
-                                    {
-                                        kind: 'field-def',
-                                        name: { kind: 'name', value: 'value' },
-                                        fieldType: {
-                                            kind: 'identifier',
-                                            names: [{ kind: 'name', value: 'T' }],
-                                            typeArgs: []
-                                        },
-                                        pub: false
-                                    }
-                                ]
-                            },
-                            { kind: 'variant', name: { kind: 'name', value: 'None' }, fieldDefs: [] }
-                        ],
-                        pub: false
-                    }
-                ]
-            })
-        })
-    })
-
-    describe('fn-def', () => {
-        it('keyword as name', () => {
-            const ast = buildAst('fn type() {}')
-            expect(compactAstNode(ast.block)).toEqual({
-                kind: 'block',
-                statements: [
-                    {
-                        block: {
-                            kind: 'block',
-                            statements: []
-                        },
-                        generics: [],
-                        kind: 'fn-def',
-                        name: {
-                            kind: 'name',
-                            value: 'type'
-                        },
-                        params: [],
-                        returnType: undefined,
-                        topLevelChecked: false,
-                        pub: false
-                    }
-                ]
-            })
-        })
-    })
-
-    describe('operand', () => {
-        it('operand-expr', () => {
-            const ast = buildAst('a.b')
             // biome-ignore format: compact
             expect(compactAstNode(ast.block)).toEqual(
 { kind: 'block',
   statements:
-   [ { kind: 'unary-expr',
-       operand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] },
-       op: { kind: 'field-access-op', name: { kind: 'name', value: 'b' } } } ] }
+   [ { kind: 'type-def',
+       name: { kind: 'name', value: 'Option' },
+       typeParams: [ { kind: 'type-param', name: { kind: 'name', value: 'T' }, bounds: [] } ],
+       variants:
+        [ { kind: 'variant',
+            name: { kind: 'name', value: 'Some' },
+            fields:
+             [ { kind: 'field-def',
+                 name: { kind: 'name', value: 'value' },
+                 fieldType: { kind: 'identifier', names: [ { kind: 'name', value: 'T' } ], typeArgs: [] },
+                 pub: false } ] },
+          { kind: 'variant', name: { kind: 'name', value: 'None' }, fields: [] } ],
+       pub: false } ] }
+            )
+        })
+    })
+
+    describe('var-def', () => {
+        it('keyword as name', () => {
+            const ast = buildAst('let type = fn() {}')
+            // biome-ignore format: compact
+            expect(compactAstNode(ast.block)).toEqual(
+{ kind: 'block',
+  statements:
+   [ { kind: 'var-def',
+       pattern: { kind: 'pattern', name: undefined, expr: { kind: 'name', value: 'type' } },
+       varType: undefined,
+       expr:
+        { kind: 'operand-expr',
+          operand: { kind: 'fn-def', typeParams: [], params: [], block: { kind: 'block', statements: [] }, returnType: undefined } },
+       pub: false } ] }
+            )
+        })
+    })
+
+    describe('operand', () => {
+        it('basic', () => {
+            const ast = buildAst('a')
+            // biome-ignore format: compact
+            expect(compactAstNode(ast.block)).toEqual(
+{ kind: 'block',
+  statements: [ { kind: 'operand-expr', operand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] } } ] }
             )
         })
     })
@@ -192,13 +168,13 @@ describe('ast', () => {
 { kind: 'block',
   statements:
    [ { kind: 'binary-expr',
-       binaryOp: { kind: 'add-op' },
-       lOperand: { kind: 'int-literal', value: '1' },
+       op: { kind: 'add-op' },
+       lOperand: { kind: 'operand-expr', operand: { kind: 'int-literal', value: '1' } },
        rOperand:
         { kind: 'binary-expr',
-          binaryOp: { kind: 'mult-op' },
-          lOperand: { kind: 'int-literal', value: '2' },
-          rOperand: { kind: 'int-literal', value: '3' } } } ] }
+          op: { kind: 'mult-op' },
+          lOperand: { kind: 'operand-expr', operand: { kind: 'int-literal', value: '2' } },
+          rOperand: { kind: 'operand-expr', operand: { kind: 'int-literal', value: '3' } } } } ] }
             )
         })
 
@@ -209,8 +185,13 @@ describe('ast', () => {
 { kind: 'block',
   statements:
    [ { kind: 'unary-expr',
-       operand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] },
-       op: { kind: 'method-call-op', name: { kind: 'name', value: 'b' }, typeArgs: [], call: { kind: 'call-op', args: [] } } } ] }
+       operand: { kind: 'operand-expr', operand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] } },
+       op:
+        { kind: 'compose-op',
+          operand:
+           { kind: 'unary-expr',
+             operand: { kind: 'operand-expr', operand: { kind: 'identifier', names: [ { kind: 'name', value: 'b' } ], typeArgs: [] } },
+             op: { kind: 'call-op', args: [] } } } } ] }
             )
         })
 
@@ -221,12 +202,18 @@ describe('ast', () => {
 { kind: 'block',
   statements:
    [ { kind: 'unary-expr',
-       operand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] },
+       operand: { kind: 'operand-expr', operand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] } },
        op:
-        { kind: 'method-call-op',
-          name: { kind: 'name', value: 'b' },
-          typeArgs: [ { kind: 'identifier', names: [ { kind: 'name', value: 'A' } ], typeArgs: [] } ],
-          call: { kind: 'call-op', args: [] } } } ] }
+        { kind: 'compose-op',
+          operand:
+           { kind: 'unary-expr',
+             operand:
+              { kind: 'operand-expr',
+                operand:
+                 { kind: 'identifier',
+                   names: [ { kind: 'name', value: 'b' } ],
+                   typeArgs: [ { kind: 'identifier', names: [ { kind: 'name', value: 'A' } ], typeArgs: [] } ] } },
+             op: { kind: 'call-op', args: [] } } } } ] }
             )
         })
 
@@ -241,10 +228,25 @@ describe('ast', () => {
         { kind: 'unary-expr',
           operand:
            { kind: 'unary-expr',
-             operand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] },
-             op: { kind: 'method-call-op', name: { kind: 'name', value: 'b' }, typeArgs: [], call: { kind: 'call-op', args: [] } } },
-          op: { kind: 'method-call-op', name: { kind: 'name', value: 'c' }, typeArgs: [], call: { kind: 'call-op', args: [] } } },
-       op: { kind: 'method-call-op', name: { kind: 'name', value: 'd' }, typeArgs: [], call: { kind: 'call-op', args: [] } } } ] }
+             operand: { kind: 'operand-expr', operand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] } },
+             op:
+              { kind: 'compose-op',
+                operand:
+                 { kind: 'unary-expr',
+                   operand: { kind: 'operand-expr', operand: { kind: 'identifier', names: [ { kind: 'name', value: 'b' } ], typeArgs: [] } },
+                   op: { kind: 'call-op', args: [] } } } },
+          op:
+           { kind: 'compose-op',
+             operand:
+              { kind: 'unary-expr',
+                operand: { kind: 'operand-expr', operand: { kind: 'identifier', names: [ { kind: 'name', value: 'c' } ], typeArgs: [] } },
+                op: { kind: 'call-op', args: [] } } } },
+       op:
+        { kind: 'compose-op',
+          operand:
+           { kind: 'unary-expr',
+             operand: { kind: 'operand-expr', operand: { kind: 'identifier', names: [ { kind: 'name', value: 'd' } ], typeArgs: [] } },
+             op: { kind: 'call-op', args: [] } } } } ] }
             )
         })
 
@@ -261,8 +263,13 @@ describe('ast', () => {
            { kind: 'unary-expr',
              operand:
               { kind: 'unary-expr',
-                operand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] },
-                op: { kind: 'method-call-op', name: { kind: 'name', value: 'b' }, typeArgs: [], call: { kind: 'call-op', args: [] } } },
+                operand: { kind: 'operand-expr', operand: { kind: 'identifier', names: [ { kind: 'name', value: 'a' } ], typeArgs: [] } },
+                op:
+                 { kind: 'compose-op',
+                   operand:
+                    { kind: 'unary-expr',
+                      operand: { kind: 'operand-expr', operand: { kind: 'identifier', names: [ { kind: 'name', value: 'b' } ], typeArgs: [] } },
+                      op: { kind: 'call-op', args: [] } } } },
              op: { kind: 'unwrap-op' } },
           op: { kind: 'bind-op' } },
        op: { kind: 'call-op', args: [] } } ] }
